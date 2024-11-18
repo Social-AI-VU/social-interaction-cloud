@@ -16,6 +16,7 @@ class NaoqiMicrophoneConf(SICConfMessage):
         self.no_channels = 1
         self.sample_rate = 16000
         self.index = -1
+        self.block_size = 0
 
 
 class NaoqiMicrophoneSensor(SICSensor):
@@ -41,7 +42,7 @@ class NaoqiMicrophoneSensor(SICSensor):
             )
 
         self.audio_service.setClientPreferences(
-            self.module_name, self.params.sample_rate, self.params.channel_index, 0
+            self.module_name, self.params.sample_rate, self.params.channel_index, self.params.block_size
         )
         self.audio_service.subscribe(self.module_name)
 
