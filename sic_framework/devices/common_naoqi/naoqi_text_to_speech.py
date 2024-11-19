@@ -40,6 +40,15 @@ class NaoqiTextToSpeechRequest(SICRequest):
         self.volume = volume
 
 
+class NaoqiTextToSpeechStopRequest(SICRequest):
+    """"
+    Request the robot to stop speaking.
+    See: http://doc.aldebaran.com/2-8/naoqi/audio/altexttospeech-api.html#ALTextToSpeechProxy::stopAll
+    """
+    def __init__(self):
+        super(NaoqiTextToSpeechStopRequest, self).__init__()
+
+
 # @dataclass
 class NaoqiTextToSpeechConf(SICConfMessage):
     def __init__(
@@ -108,7 +117,10 @@ class NaoqiTextToSpeechActuator(SICActuator):
 
     @staticmethod
     def get_inputs():
-        return [NaoqiTextToSpeechRequest]
+        return [
+            NaoqiTextToSpeechRequest,
+            NaoqiTextToSpeechStopRequest
+        ]
 
     @staticmethod
     def get_output():
@@ -118,10 +130,16 @@ class NaoqiTextToSpeechActuator(SICActuator):
         # Set tts parameters for current request
         self.set_params(message)
 
-        if message.animated:
-            self.atts.say(message.text, message.language)
-        else:
-            self.tts.say(message.text)
+        if message == NaoqiTextToSpeechRequest:
+            if message.animated:
+                self.atts.say(message.text, message.language)
+            else:
+                self.tts.say(message.text)
+
+        if message == NaoqiTextToSpeechStopRequest:
+            self.tts.stopAll()
+            self.atts.stopAll()
+
         return SICMessage()
 
 
