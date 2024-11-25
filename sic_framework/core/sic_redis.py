@@ -34,6 +34,7 @@ import time
 
 import redis
 import six
+from dotenv import load_dotenv
 from six.moves import queue
 
 from sic_framework.core import utils
@@ -76,6 +77,16 @@ def get_redis_db_ip_password():
     return host, password
 
 
+def get_redis_aws_settings():
+    """
+    Get the aws redis settings from environment variables.
+    """
+    host = os.getenv("REDIS_HOST")
+    username = os.getenv("REDIS_USERNAME")
+    password = os.getenv("REDIS_PASSWORD")
+    return host, username, password
+
+
 class SICRedis:
     """
     A custom version of redis, that more transparently handles the type of communication necessary for SIC. The aim
@@ -93,37 +104,53 @@ class SICRedis:
         self.stopping = False
         self._running_callbacks = []
 
-        # we assume that a password is required
-        host, password = get_redis_db_ip_password()
+        # Load the .env file
+        load_dotenv()
+        aws_redis = os.getenv("REDIS_AWS")
 
-        # Let's try to connect first without TLS / working without TLS facilitates simple use of redis-cli
+        def handle_redis_error(e):
+            print(f"Redis error: {e}")
+
         try:
-            self._redis = redis.Redis(host=host, ssl=False, password=password)
+            # Connecting to AWS ElastiCache if aws_redis is True
+            if aws_redis == "True":
+                host, username, password = get_redis_aws_settings()
+                self._redis = redis.Redis(
+                    host=host,
+                    port=6379,
+                    ssl=True,
+                    decode_responses=False,
+                    username=username,
+                    password=password,
+                    ssl_cert_reqs=None,
+                    socket_timeout=5,
+                )
+                self._redis.ping()
+                print("Connected to AWS Redis successfully.")
+            else:
+                # For non-AWS connection, fallback to localhost with default password
+                host, password = get_redis_db_ip_password()
+                self._redis = redis.Redis(host=host, ssl=False, password=password)
+                self._redis.ping()
+                print("Connected to Redis successfully.")
+
         except redis.exceptions.AuthenticationError:
-            # redis is running without a password, do not supply it.
-            self._redis = redis.Redis(host=host, ssl=False)
+            handle_redis_error("Authentication failed: can't connect to Redis.")
+        except redis.exceptions.TimeoutError:
+            handle_redis_error("Connection timed out while trying to connect to Redis.")
+            if aws_redis == "True":
+                handle_redis_error(
+                    "Check if your IP has been whitelisted to access AWS ElastiCache or if hostname/username/password is correct."
+                )
         except redis.exceptions.ConnectionError as e:
-            # Must be a connection error; so now let's try to connect with TLS
-            ssl_ca_certs = os.path.join(os.path.dirname(__file__), "cert.pem")
-            print(
-                "TLS required. Looking for certificate here:",
-                ssl_ca_certs,
-                "(Source error {})".format(e),
-            )
-            self._redis = redis.Redis(
-                host=host, ssl=True, ssl_ca_certs=ssl_ca_certs, password=password
-            )
-
-        try:
-            self._redis.ping()
-        except redis.exceptions.ConnectionError:
             e = Exception(
                 "Could not connect to redis at {} \n\n Have you started redis? Use: `redis-server conf/redis/redis.conf`".format(
                     host
                 )
             )
-            # six.raise_from(e, None) # unsupported on some peppers
             six.reraise(Exception, e, None)
+        except Exception as e:
+            handle_redis_error(f"An unexpected error occurred: {e}")
 
         # To be set by any component that requires exceptions in the callback threads to be logged to somewhere
         self.parent_logger = None
