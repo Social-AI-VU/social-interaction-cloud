@@ -9,6 +9,7 @@ requirements = [
     "pyaudio",
     "PyTurboJPEG",
     "pyspacemouse",
+    "python-dotenv",
     "redis",
     "scp",
     "six",
