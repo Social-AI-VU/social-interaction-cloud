@@ -46,6 +46,30 @@ shared_naoqi_components = [
 ]
 
 
+def get_install_script(robot_type):
+    '''
+    Returns the shell script to install SIC on the given robot type
+    
+    :param robot_type: either nao or pepper
+    :type robot_type: string
+    '''
+    if robot_type == "nao":
+        file_path = "../scripts/nao_install_script.sh"
+    elif robot_type == "pepper":
+        file_path = "../scripts/pepper_install_script.sh"
+    else:
+        raise Exception("Install script for robot type {} not defined!")
+
+    try:
+        with open(file_path, "r") as file:
+            shell_script = file.read()
+
+        return shell_script
+
+    except FileNotFoundError:
+        print(f"Shell script file {file_path} not found!")
+
+
 class Naoqi(SICDevice):
     __metaclass__ = ABCMeta
 
@@ -110,55 +134,31 @@ class Naoqi(SICDevice):
 
         robot_wrapper_file = device_path + "/" + robot_type
 
+        # install command differs between robots because Pepper cannot pip install from PyPi
         if robot_type == "nao":
-            start_cmd = """
-                    # export environment variables for naoqi
-                    export PYTHONPATH=/opt/aldebaran/lib/python2.7/site-packages;
-                    export LD_LIBRARY_PATH=/opt/aldebaran/lib/naoqi;
+            install_cmd = get_install_script("nao")
+        elif robot_type == "pepper":
+            install_cmd = get_install_script("pepper")
+            
+        # start command is the same for both robots
+        start_cmd = """
+                echo 'Robot: Starting SIC';
+                python2 {robot_wrapper_file}.py --redis_ip={redis_host};
+                """.format(
+            robot_wrapper_file=robot_wrapper_file, redis_host=redis_hostname
+        )
 
-                    if [ -f ~/.local/bin/virtualenv ]; then
-                        echo "virtualenv is installed"
-                    else
-                        echo "virtualenv is not installed. Installing now ..."
-                        pip install --user virtualenv
-                    fi;
-
-                    # create virtual environment if it doesn't exist
-                    if [ ! -d ~/.venv_sic ]; then
-                        echo "Creating virtual environment";
-                        /home/nao/.local/bin/virtualenv ~/.venv_sic;
-                        source ~/.venv_sic/bin/activate;
-
-                        # link OpenCV to the virtualenv
-                        echo "Linking OpenCV to the virtual environment";
-                        ln -s /usr/lib/python2.7/site-packages/cv2.so ~/.venv_sic/lib/python2.7/site-packages/cv2.so;
-
-                        # install required packages
-                        echo "Installing SIC package";
-                        pip install social-interaction-cloud --no-deps;
-                        pip install Pillow PyTurboJPEG numpy redis six
-                    else
-                        echo "sic venv exists already";
-                        # activate virtual environment if it exists
-                        source ~/.venv_sic/bin/activate;
-
-                        # upgrade the social-interaction-cloud package
-                        pip install --upgrade social-interaction-cloud --no-deps
-                    fi;
-
-                    echo 'Robot: Starting SIC';
-                    python2 {robot_wrapper_file}.py --redis_ip={redis_host};
-                    """.format(
-                robot_wrapper_file=robot_wrapper_file, redis_host=redis_hostname
-            )
-        # TODO: Add pepper start command
-
+        # first make sure software is stopped on the robot
         self.ssh.exec_command(self.stop_cmd)
         time.sleep(0.1)
 
         # on_windows = sys.platform == 'win32'
         # use_pty = not on_windows
 
+        # make sure SIC is installed
+        stdin, stdout, _ = self.ssh.exec_command(install_cmd, get_pty=False)
+
+        # start the software
         stdin, stdout, _ = self.ssh.exec_command(start_cmd, get_pty=False)
         # merge stderr to stdout to simplify (and prevent potential deadlock as stderr is not read)
         stdout.channel.set_combine_stderr(True)
