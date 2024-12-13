@@ -159,7 +159,8 @@ class SICConnector(object):
         # TODO this needs to be synchronized with all devices, because if a nao is off by a second or two
         # its data will align wrong with other sources
         # possible solution: do redis.time, and use a custom get time functions that is aware of the offset
-        return time.time()
+        return self._redis.time()
+        # return time.time()
 
     def connect(self, component):
         """

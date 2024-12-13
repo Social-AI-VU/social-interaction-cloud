@@ -263,7 +263,8 @@ class SICComponent:
     def _get_timestamp(self):
         # TODO this needs to be synchronized with all devices, because if a nao is off by a second or two
         # its data will align wrong with other sources
-        return time.time()
+        return self._redis.time()
+        # return time.time()
 
     def stop(self, *args):
         self.logger.debug(
