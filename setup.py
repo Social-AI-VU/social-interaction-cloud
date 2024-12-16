@@ -40,6 +40,11 @@ extras_require = {
         "torch",
         "torchvision",
     ],
+    "nlu": [
+        "torch~=2.4.1",
+        "transformers~=4.45.1",
+        "scikit-learn~=1.5.2",
+    ],
     "openai-gpt": [
         "openai>=1.52.2",
         "python-dotenv",
@@ -83,6 +88,7 @@ setup(
             "run-face-detection-dnn=sic_framework.services.face_detection_dnn:main",
             "run-face-recognition=sic_framework.services.face_recognition_dnn:main",
             "run-gpt=sic_framework.services.openai_gpt:main",
+            "run-nlu=sic_framework.services.nlu.bert_nlu:main",
             "run-whisper=sic_framework.services.openai_whisper_speech_to_text:main",
             "run-webserver=sic_framework.services.webserver.webserver_component:main",
         ],
