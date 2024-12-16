@@ -27,7 +27,7 @@ INSTALLATION INSTRUCTIONS
 ESPEAK
 [Windows]
 download and install espeak: http://espeak.sourceforge.net/
-add eSpeak/command-line to PATH
+add eSpeak/command_line to PATH
 [Linux]
 `sudo apt-get install espeak libespeak-dev`
 [MacOS]
