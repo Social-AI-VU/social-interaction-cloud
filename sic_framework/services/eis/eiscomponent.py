@@ -1,5 +1,5 @@
 import pyaudio
-import espeakng
+from subprocess import call
 
 from sic_framework import SICComponentManager
 from sic_framework.core.component_python2 import SICComponent
@@ -21,6 +21,18 @@ from sic_framework.devices.desktop import Desktop
 from sic_framework.services.text2speech.text2speech_service import Text2Speech, Text2SpeechConf, GetSpeechRequest, \
     SpeechResult
 
+""""
+INSTALLATION INSTRUCTIONS
+
+ESPEAK
+[Windows]
+download and install espeak: http://espeak.sourceforge.net/
+add eSpeak/command-line to PATH
+[Linux]
+`sudo apt-get install espeak libespeak-dev`
+[MacOS]
+brew install espeak
+"""
 
 class DummyConf(SICConfMessage):
     """
@@ -69,9 +81,6 @@ class EISComponent(SICComponent):
 
         # Do component initialization
 
-        # Use espeakng
-        self.my_speaker = espeakng.Speaker()
-
         # Setup desktop device... eSpeak does not work (pip install espeak fails...)
         # tts_conf = TextToSpeechConf(rate=160, pitch=55)
         # self.desktop = Desktop(tts_conf=tts_conf)
@@ -113,7 +122,7 @@ class EISComponent(SICComponent):
             content = content.replace("say(", "", 1).replace(")", "", 1)
             print("I would like to say " + content)
             # Make the tts request; let's not block on it...
-            self.my_speaker.say(content)
+            self.local_tts(content)
             # Would be nice to also be able to use Google tts service
             # self.tts.request(GetSpeechRequest(text=content), block=False)
 
@@ -147,6 +156,9 @@ class EISComponent(SICComponent):
             # grab one second of audio data
             chunk = wavefile.readframes(samplerate)
             output.write(chunk)
+
+    def local_tts(self, text):
+        call(["espeak", "-s140 -ven+18 -z", text])
 
 
 class EISConnector(SICConnector):
