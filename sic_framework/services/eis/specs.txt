@@ -1,0 +1,21 @@
+
+
+----------------------------------------------------------------------------
+ACTIONS:: MARBEL will sent actions on EISComponent:input:<ip>
+Actions:
+- say(<String>) --> text to speech service, say string
+- startListening(15) --> start listening for 15 seconds (stop when intent is received) [OLD: startListening(15, '') in MARBEL agent]
+- stopListening --> stop listening (force intent classifier to give intent)
+
+-----------------------------------------------------------------------------
+PERCEPTS:: MARBEL expects percepts on MARBELConnector:input:<ip>
+Percepts:
+- event/1:
+    // Events related to speaking (tts)
+    event('TextStarted') --> SIC tells MARBEL that it started tts (talking)
+	event('TextDone') --> SIC tells MARBEL that it is done with tts (talking)
+    // Events related to Dialogflow / transcribing / intent classification
+    event('ListeningStarted;1;48000') --> SIC tells MARBEL that listening (to the mic) has started, i.e. mic is open (e.g., Dialogflow is listening)
+    event('ListeningDone') --> SIC tells MARBEL that listening is done, i.e. mic is closed (e.g. Dialogflow stopped listening)
+- intent/5.
+- transcript/1.

@@ -1,3 +1,5 @@
+import wave
+
 import pyaudio
 from subprocess import call
 
@@ -21,18 +23,6 @@ from sic_framework.devices.desktop import Desktop
 from sic_framework.services.text2speech.text2speech_service import Text2Speech, Text2SpeechConf, GetSpeechRequest, \
     SpeechResult
 
-""""
-INSTALLATION INSTRUCTIONS
-
-ESPEAK
-[Windows]
-download and install espeak: http://espeak.sourceforge.net/
-add eSpeak/command-line to PATH
-[Linux]
-`sudo apt-get install espeak libespeak-dev`
-[MacOS]
-brew install espeak
-"""
 
 class DummyConf(SICConfMessage):
     """
@@ -87,11 +77,10 @@ class EISComponent(SICComponent):
 
         # Start text to speech service
         # does not seem to work yet...
-        # conf = Text2SpeechConf(keyfile = "C:/Users/khs650/Git/social-interaction-cloud"
-        #                                 "/sic_framework/services/eis/mas-2023-test-fkcp-f55e450fe830.json")
-        # self.tts = Text2Speech(conf=conf)
-        # Route the output of tts to EISComponent
-        # self.tts.register_callback(self.on_speech_result)
+        conf = Text2SpeechConf(keyfile = "C:/Users/khs650/Git/social-interaction-cloud"
+                                         "/sic_framework/services/eis/mas-2023-test-fkcp-f55e450fe830.json")
+        self.tts = Text2Speech(conf=conf)
+
 
     @staticmethod
     def get_inputs():
@@ -121,10 +110,21 @@ class EISComponent(SICComponent):
             # Get rid of action label and brackets to obtain parameter
             content = content.replace("say(", "", 1).replace(")", "", 1)
             print("I would like to say " + content)
+            # Sent message event('TextStarted') on MARBEL input channel
+            # TODO
+
             # Make the tts request; let's not block on it...
-            self.local_tts(content)
+            # self.local_tts(content)
             # Would be nice to also be able to use Google tts service
-            # self.tts.request(GetSpeechRequest(text=content), block=False)
+            reply = self.tts.request(GetSpeechRequest(text=content), block=True)
+            self.on_speech_result(reply)
+            # Sent message event('TextDone') on MARBEL input channel
+            # TODO
+        elif content.startswith("startListening"): # implement startListening(15) using Dialogflow (or other service)
+            pass
+        elif content.startswith("stopListening"): # tell Dialogflow (or other service) to stop
+            pass
+
 
     def on_request(self, request):
         if is_sic_instance(request, TextRequest):
@@ -141,21 +141,27 @@ class EISComponent(SICComponent):
                 # This will cause problems...
                 print("Unknown request, this will cause problems...")
 
-    def on_speech_result(self, message):
+    def on_speech_result(self, wav_audio):
         print("I am receiving audio!!")
+        with wave.open("myaudiofile.wav", "wb") as audiofile:
+            audiofile.setsampwidth(2)
+            audiofile.setnchannels(1)
+            audiofile.setframerate(16000)
+            audiofile.writeframes(wav_audio.waveform)
         # set up output device to play audio along transcript
         p = pyaudio.PyAudio()
         output = p.open(format=pyaudio.paInt16,
                         channels=1,
-                        rate=samplerate,
+                        rate=wav_audio.sample_rate,
                         output=True)
 
-        wavefile = message.wav_audio
+        wavefile = wav_audio.waveform
         # send the audio in chunks of one second
-        for i in range(wavefile.getnframes() // wavefile.getframerate()):
-            # grab one second of audio data
-            chunk = wavefile.readframes(samplerate)
-            output.write(chunk)
+        output.write(wavefile)
+        # for i in range(len(wavefile) // (wav_audio.sample_rate*2)):
+        #    # grab one second of audio data
+        #    chunk = wavefile[i*(wav_audio.sample_rate*2):(i+1)*(wav_audio.sample_rate*2)-1]
+        #    output.write(chunk)
 
     def local_tts(self, text):
         call(["espeak", "-s140 -ven+18 -z", text])
