@@ -122,41 +122,71 @@ class EISComponent(SICComponent):
         return EISConf()
 
     def on_message(self, message):
-        # We're expecting text messages here...
-        if is_sic_instance(message, TextMessage):
-            print("{} received text message {}".format(
-                self.get_component_name(), message.text))
+        """Handle incoming text messages and process commands."""
+
+        # Validate the message type
+        self._validate_message(message)
+
+        # Extract and process message content
+        content = self._extract_content(message.text)
+        if content.startswith("say"):
+            self._handle_say_command(content)
+        elif content.startswith("startListening"):
+            self._handle_start_listening_command()
+        elif content.startswith("stopListening"):
+            self._handle_stop_listening_command()
         else:
+            print("Unknown command:", content)
+
+    # Helper methods
+    def _validate_message(self, message):
+        """Ensure the message is a valid TextMessage."""
+        if not is_sic_instance(message, TextMessage):
             raise TypeError(
                 "Invalid message type {} for {}".format(
-                    message.__class__.__name__, self.get_component_name())
+                    message.__class__.__name__, self.get_component_name()
+                )
             )
+        print("{} received text message {}".format(
+            self.get_component_name(), message.text
+        ))
 
-        content = message.text.replace("text:", "", 1)
+    def _extract_content(self, text):
+        """Clean and extract the relevant part of the message text."""
+        return text.replace("text:", "", 1).strip()
 
-        if content.startswith("say"):
-            content = content.replace("say(", "", 1).replace(")", "", 1)
-            print("I would like to say " + content)
-            self.redis_client.publish(
-                self.marbel_channel, "event('TextStarted')")
-            reply = self.tts.request(
-                GetSpeechRequest(text=content), block=True)
-            self.on_speech_result(reply)
-            # or
-            # self.local_tts(content)
-            self.redis_client.publish(self.marbel_channel, "event('TextDone')")
-        # implement startListening(15) using Dialogflow (or other service)
-        elif content.startswith("startListening"):
-            x = np.random.randint(10000)
-            contexts_dict = {"name": 1}
-            reply = self.dialogflow.request(GetIntentRequest(x, contexts_dict))
-            print("The detected intent:", reply.intent)
-            if reply.fulfillment_message:
-                text = reply.fulfillment_message
-                print("Reply:", text)
-        # tell Dialogflow (or other service) to stop
-        elif content.startswith("stopListening"):
-            self.dialogflow.stop()
+    def _handle_say_command(self, content):
+        """Process 'say' command by synthesizing speech."""
+        message_text = content.replace(
+            "say(", "", 1).replace(")", "", 1).strip()
+        print("I would like to say", message_text)
+
+        # Publish 'TextStarted' event
+        self.redis_client.publish(self.marbel_channel, "event('TextStarted')")
+
+        # Request speech synthesis
+        reply = self.tts.request(
+            GetSpeechRequest(text=message_text), block=True)
+        self.on_speech_result(reply)
+
+        # Publish 'TextDone' event
+        self.redis_client.publish(self.marbel_channel, "event('TextDone')")
+
+    def _handle_start_listening_command(self):
+        """Process 'startListening' command by interacting with Dialogflow."""
+        request_id = np.random.randint(10000)
+        contexts = {"name": 1}  # Example context; adjust as needed
+
+        reply = self.dialogflow.request(GetIntentRequest(request_id, contexts))
+        print("The detected intent:", reply.intent)
+
+        if reply.fulfillment_message:
+            print("Reply:", reply.fulfillment_message)
+
+    def _handle_stop_listening_command(self):
+        """Process 'stopListening' command to stop Dialogflow or related service."""
+        self.dialogflow.stop()
+        print("Stopped listening.")
 
     def on_request(self, request):
         if is_sic_instance(request, TextRequest):
