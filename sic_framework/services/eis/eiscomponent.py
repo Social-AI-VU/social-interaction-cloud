@@ -69,10 +69,17 @@ class EISComponent(SICComponent):
 
     def __init__(self, *args, **kwargs):
         super(EISComponent, self).__init__(*args, **kwargs)
+        # Setup speakers
+        p = pyaudio.PyAudio()
+        self.speakers_output = p.open(format=pyaudio.paInt16,
+                        channels=1,
+                        rate=24000,
+                        output=True)
+        # Setup text2speech
         keyfile_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mas-2023-test-fkcp-f55e450fe830.json")
         conf = Text2SpeechConf(keyfile = keyfile_path)
         self.tts = Text2Speech(conf=conf)
-        # Redis connection setup with authentication
+        # Setup redis connection setup with authentication
         self.redis_client = redis.Redis(
             host='localhost',       # Redis server address
             port=6379,              # Redis server port
@@ -138,21 +145,8 @@ class EISComponent(SICComponent):
                 print("Unknown request, this will cause problems...")
 
     def on_speech_result(self, wav_audio):
-        print("I am receiving audio!!")
-        # set up output device to play audio along transcript
-        p = pyaudio.PyAudio()
-        output = p.open(format=pyaudio.paInt16,
-                        channels=1,
-                        rate=wav_audio.sample_rate,
-                        output=True)
-
-        wavefile = wav_audio.waveform
-        # send the audio in chunks of one second
-        output.write(wavefile)
-        # for i in range(len(wavefile) // (wav_audio.sample_rate*2)):
-        #    # grab one second of audio data
-        #    chunk = wavefile[i*(wav_audio.sample_rate*2):(i+1)*(wav_audio.sample_rate*2)-1]
-        #    output.write(chunk)
+        print("I am receiving audio at sample rate:" + str(wav_audio.sample_rate))
+        self.speakers_output.write(wav_audio.waveform)
 
     def local_tts(self, text):
         call(["espeak", "-s140 -ven+18 -z", text])
