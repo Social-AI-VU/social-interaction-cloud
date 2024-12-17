@@ -25,27 +25,36 @@ from sic_framework.services.dialogflow.dialogflow import (DialogflowConf, GetInt
                                                           QueryResult, Dialogflow)
 
 
-class DummyConf(SICConfMessage):
+class EISConf(SICConfMessage):
     """
-    Dummy SICConfMessage
+    EIS SICConfMessage
     """
 
     def __init__(self):
         super(SICConfMessage, self).__init__()
 
 
-class DummyRequest(SICRequest):
+class EISRequest(SICRequest):
     """
-    Dummy request
+    EIS request
     """
 
     def __init__(self):
         super(SICRequest, self).__init__()
 
 
-class DummyMessage(SICMessage):
+class EISMessage(SICMessage):
     """
-    Dummy input message
+    EIS input message
+    """
+
+    def __init__(self):
+        super(SICMessage, self).__init__()
+
+
+class EISOutputMessage(SICMessage):
+    """
+    EIS input message
     """
 
     def __init__(self):
@@ -64,11 +73,15 @@ class EISReply(SICMessage):
 
 class EISComponent(SICComponent):
     """
-    Dummy SICAction
+    EIS SICAction
     """
 
     def __init__(self, *args, **kwargs):
         super(EISComponent, self).__init__(*args, **kwargs)
+        # Setup hardware
+        self.desktop = Desktop()
+        speaker_conf = SpeakersConf(sample_rate=24000)
+        self.speakers_output = DesktopSpeakersActuator(conf=speaker_conf)
         # Setup text2speech
         keyfile_path = os.path.join(os.path.dirname(os.path.abspath(
             __file__)), "mas-2023-test-fkcp-f55e450fe830.json")
@@ -83,9 +96,6 @@ class EISComponent(SICComponent):
         )
         self.marbel_channel = "MARBELConnector:input:127.0.1.1"
         # Setup Dialogflow
-        self.desktop = Desktop()
-        speaker_conf = SpeakersConf(sample_rate=24000)
-        self.speakers_output = DesktopSpeakersActuator(conf=speaker_conf)
         keyfile_json = json.load(open(keyfile_path))
         conf = DialogflowConf(keyfile_json=keyfile_json,
                               sample_rate_hertz=44100, language="en")
@@ -100,16 +110,16 @@ class EISComponent(SICComponent):
 
     @staticmethod
     def get_inputs():
-        return [DummyRequest]
+        return [EISRequest]
 
     @staticmethod
     def get_output():
-        return DummyOutputMessage
+        return EISOutputMessage
 
     # This function is optional
     @staticmethod
     def get_conf():
-        return DummyConf()
+        return EISConf()
 
     def on_message(self, message):
         # We're expecting text messages here...
