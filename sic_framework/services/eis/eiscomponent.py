@@ -1,5 +1,6 @@
+import os
 import wave
-
+import redis
 import pyaudio
 from subprocess import call
 
@@ -68,18 +69,18 @@ class EISComponent(SICComponent):
 
     def __init__(self, *args, **kwargs):
         super(EISComponent, self).__init__(*args, **kwargs)
-
-        # Do component initialization
-
-        # Setup desktop device... eSpeak does not work (pip install espeak fails...)
-        # tts_conf = TextToSpeechConf(rate=160, pitch=55)
-        # self.desktop = Desktop(tts_conf=tts_conf)
-
-        # Start text to speech service
-        # does not seem to work yet...
-        conf = Text2SpeechConf(keyfile = "C:/Users/khs650/Git/social-interaction-cloud"
-                                         "/sic_framework/services/eis/mas-2023-test-fkcp-f55e450fe830.json")
+        keyfile_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mas-2023-test-fkcp-f55e450fe830.json")
+        conf = Text2SpeechConf(keyfile = keyfile_path)
         self.tts = Text2Speech(conf=conf)
+        # Redis connection setup with authentication
+        self.redis_client = redis.Redis(
+            host='localhost',       # Redis server address
+            port=6379,              # Redis server port
+            password='changemeplease',  # Redis authentication password
+            db=0                    # Database index (default is 0)
+        )
+        # Define the channel and message
+        self.marbel_channel = "MARBELConnector:input:127.0.1.1"
 
 
     @staticmethod
@@ -107,19 +108,14 @@ class EISComponent(SICComponent):
         content = message.text.replace("text:", "", 1)
 
         if content.startswith("say"):
-            # Get rid of action label and brackets to obtain parameter
             content = content.replace("say(", "", 1).replace(")", "", 1)
             print("I would like to say " + content)
-            # Sent message event('TextStarted') on MARBEL input channel
-            # TODO
-
-            # Make the tts request; let's not block on it...
-            # self.local_tts(content)
-            # Would be nice to also be able to use Google tts service
+            self.redis_client.publish(self.marbel_channel, "event('TextStarted')")
             reply = self.tts.request(GetSpeechRequest(text=content), block=True)
             self.on_speech_result(reply)
-            # Sent message event('TextDone') on MARBEL input channel
-            # TODO
+            # or
+            # self.local_tts(content)
+            self.redis_client.publish(self.marbel_channel, "event('TextDone')")
         elif content.startswith("startListening"): # implement startListening(15) using Dialogflow (or other service)
             pass
         elif content.startswith("stopListening"): # tell Dialogflow (or other service) to stop
@@ -143,11 +139,6 @@ class EISComponent(SICComponent):
 
     def on_speech_result(self, wav_audio):
         print("I am receiving audio!!")
-        with wave.open("myaudiofile.wav", "wb") as audiofile:
-            audiofile.setsampwidth(2)
-            audiofile.setnchannels(1)
-            audiofile.setframerate(16000)
-            audiofile.writeframes(wav_audio.waveform)
         # set up output device to play audio along transcript
         p = pyaudio.PyAudio()
         output = p.open(format=pyaudio.paInt16,
