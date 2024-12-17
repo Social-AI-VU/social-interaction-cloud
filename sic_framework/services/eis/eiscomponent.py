@@ -19,6 +19,7 @@ from sic_framework.core.message_python2 import (
 from sic_framework.core.utils import is_sic_instance
 from sic_framework.devices.common_desktop.desktop_text_to_speech import TextToSpeechConf
 from sic_framework.devices.desktop import Desktop
+from sic_framework.devices.common_desktop.desktop_speakers import DesktopSpeakersActuator, SpeakersConf
 from sic_framework.services.text2speech.text2speech_service import Text2Speech, Text2SpeechConf, GetSpeechRequest, SpeechResult
 from sic_framework.services.dialogflow.dialogflow import (DialogflowConf, GetIntentRequest, RecognitionResult,
                                                           QueryResult, Dialogflow)
@@ -68,12 +69,6 @@ class EISComponent(SICComponent):
 
     def __init__(self, *args, **kwargs):
         super(EISComponent, self).__init__(*args, **kwargs)
-        # Setup speakers
-        p = pyaudio.PyAudio()
-        self.speakers_output = p.open(format=pyaudio.paInt16,
-                                      channels=1,
-                                      rate=24000,
-                                      output=True)
         # Setup text2speech
         keyfile_path = os.path.join(os.path.dirname(os.path.abspath(
             __file__)), "mas-2023-test-fkcp-f55e450fe830.json")
@@ -89,6 +84,8 @@ class EISComponent(SICComponent):
         self.marbel_channel = "MARBELConnector:input:127.0.1.1"
         # Setup Dialogflow
         self.desktop = Desktop()
+        speaker_conf = SpeakersConf(sample_rate=24000)
+        self.speakers_output = DesktopSpeakersActuator(conf=speaker_conf)
         keyfile_json = json.load(open(keyfile_path))
         conf = DialogflowConf(keyfile_json=keyfile_json,
                               sample_rate_hertz=44100, language="en")
@@ -169,7 +166,7 @@ class EISComponent(SICComponent):
 
     def on_speech_result(self, wav_audio):
         print("I am receiving audio at sample rate:" + str(wav_audio.sample_rate))
-        self.speakers_output.write(wav_audio.waveform)
+        self.speakers_output.stream.write(wav_audio.waveform)
 
     def local_tts(self, text):
         call(["espeak", "-s140 -ven+18 -z", text])
