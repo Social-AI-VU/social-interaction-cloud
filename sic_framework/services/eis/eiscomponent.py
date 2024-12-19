@@ -73,29 +73,47 @@ class EISComponent(SICComponent):
     """
 
     def __init__(self, *args, **kwargs):
-        super(EISComponent, self).__init__(*args, **kwargs)
-        # Setup hardware
+        super().__init__(*args, **kwargs)
+        self._setup_hardware()
+        self._setup_text_to_speech()
+        self._setup_redis()
+        self._setup_dialogflow()
+
+    def _setup_hardware(self):
+        """Initialize hardware components."""
         self.desktop = Desktop()
         speaker_conf = SpeakersConf(sample_rate=24000)
         self.speakers_output = DesktopSpeakersActuator(conf=speaker_conf)
-        # Setup text2speech
-        keyfile_path = os.path.join(os.path.dirname(os.path.abspath(
-            __file__)), "mas-2023-test-fkcp-f55e450fe830.json")
+
+    def _setup_text_to_speech(self):
+        """Configure text-to-speech."""
+        keyfile_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                                    "mas-2023-test-fkcp-f55e450fe830.json")
+        self.keyfile_path = keyfile_path  # Save for reuse in Dialogflow
         if not self.params.use_espeak:
             conf = Text2SpeechConf(keyfile=keyfile_path)
             self.tts = Text2Speech(conf=conf)
-        # Setup redis connection setup with authentication
+
+    def _setup_redis(self):
+        """Set up Redis connection."""
         self.redis_client = redis.Redis(
-            host='localhost',       # Redis server address
-            port=6379,              # Redis server port
-            password='changemeplease',  # Redis authentication password
-            db=0                    # Database index (default is 0)
+            host='localhost',
+            port=6379,
+            password='changemeplease',
+            db=0
         )
         self.marbel_channel = "MARBELConnector:input:127.0.1.1"
-        # Setup Dialogflow
-        keyfile_json = json.load(open(keyfile_path))
-        conf = DialogflowConf(keyfile_json=keyfile_json,
-                              sample_rate_hertz=44100, language="en")
+
+    def _setup_dialogflow(self):
+        """Initialize Dialogflow integration."""
+        with open(self.keyfile_path, 'r') as keyfile:
+            keyfile_json = json.load(keyfile)
+
+        conf = DialogflowConf(
+            keyfile_json=keyfile_json,
+            sample_rate_hertz=44100,
+            language="en"
+        )
         self.dialogflow = Dialogflow(ip='localhost', conf=conf)
         self.dialogflow.connect(self.desktop.mic)
         self.dialogflow.register_callback(self.on_dialog)
