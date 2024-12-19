@@ -138,16 +138,17 @@ class EISComponent(SICComponent):
         # connect the output of webserver by registering it as a callback.
         # the output is a flag to determine if the button has been clicked or not
         self.web_server.register_callback(self.on_button_click)
-        time.sleep(5)
+        self._handle_render_page_command("index.html")
 
-    def on_button_click(message):
+    def on_button_click(self, message):
         """
         Callback function for button click event from a web client.
         """
+        print(message)
         if is_sic_instance(message, ButtonClicked):
             if message.button:
-                time.sleep(2.0)
-                print("To do")
+                print("start listening")
+                self._handle_render_page_command("index.html")
 
     def on_dialog(message):
         if message.response:
@@ -231,6 +232,18 @@ class EISComponent(SICComponent):
         reply = self.dialogflow.request(
             GetIntentRequest(self.conversation_id, contexts))
         self._process_dialogflow_reply(reply)
+        # Extract relevant fields
+        intent_name = reply.response.query_result.intent.display_name
+        entities = [{"recipe": "butter chicken"}]  # Example entities
+        entities_str = ", ".join([f"{key}='{value}'" for entity in entities for key, value in entity.items()])
+        confidence = round(float(reply.response.query_result.intent_detection_confidence), 2)
+        transcript = reply.response.query_result.query_text
+        source = "speech"
+
+        # Format the intent message
+        intent_message = f"intent({intent_name}, [{entities_str}], {confidence}, '{transcript}', {source})"
+        self.redis_client.publish(
+                    self.marbel_channel, intent_message)
         self.redis_client.publish(
             self.marbel_channel, "event('ListeningDone')")
 
@@ -255,6 +268,7 @@ class EISComponent(SICComponent):
 
     def _process_dialogflow_reply(self, reply):
         """Handle the common logic for processing a Dialogflow reply."""
+        print("Full reply is:", reply)
         print("The detected intent:", reply.intent)
         if reply.fulfillment_message:
             print("Reply:", reply.fulfillment_message)
