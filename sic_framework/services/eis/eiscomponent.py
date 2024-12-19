@@ -1,6 +1,5 @@
 import os
 import redis
-import pyaudio
 import json
 import numpy as np
 from subprocess import call
@@ -8,20 +7,17 @@ from sic_framework import SICComponentManager
 from sic_framework.core.component_python2 import SICComponent
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
-    AudioMessage,
     SICConfMessage,
-    SICIgnoreRequestMessage,
     SICMessage,
     SICRequest,
     TextMessage,
     TextRequest
 )
 from sic_framework.core.utils import is_sic_instance
-from sic_framework.devices.common_desktop.desktop_text_to_speech import TextToSpeechConf
 from sic_framework.devices.desktop import Desktop
 from sic_framework.devices.common_desktop.desktop_speakers import DesktopSpeakersActuator, SpeakersConf
 from sic_framework.services.text2speech.text2speech_service import Text2Speech, Text2SpeechConf, GetSpeechRequest, SpeechResult
-from sic_framework.services.dialogflow.dialogflow import (DialogflowConf, GetIntentRequest, RecognitionResult,
+from sic_framework.services.dialogflow.dialogflow import (DialogflowConf, GetIntentRequest, StopListeningMessage, RecognitionResult,
                                                           QueryResult, Dialogflow)
 
 
@@ -30,8 +26,8 @@ class EISConf(SICConfMessage):
     EIS SICConfMessage
     """
 
-    def __init__(self):
-        super(SICConfMessage, self).__init__()
+    def __init__(self, use_espeak=False):
+        self.use_espeak = use_espeak
 
 
 class EISRequest(SICRequest):
@@ -85,8 +81,9 @@ class EISComponent(SICComponent):
         # Setup text2speech
         keyfile_path = os.path.join(os.path.dirname(os.path.abspath(
             __file__)), "mas-2023-test-fkcp-f55e450fe830.json")
-        conf = Text2SpeechConf(keyfile=keyfile_path)
-        self.tts = Text2Speech(conf=conf)
+        if not self.params.use_espeak:
+            conf = Text2SpeechConf(keyfile=keyfile_path)
+            self.tts = Text2Speech(conf=conf)
         # Setup redis connection setup with authentication
         self.redis_client = redis.Redis(
             host='localhost',       # Redis server address
@@ -102,6 +99,7 @@ class EISComponent(SICComponent):
         self.dialogflow = Dialogflow(ip='localhost', conf=conf)
         self.dialogflow.connect(self.desktop.mic)
         self.dialogflow.register_callback(self.on_dialog)
+        self.conversation_id = np.random.randint(10000)
 
     def on_dialog(message):
         if message.response:
@@ -165,28 +163,41 @@ class EISComponent(SICComponent):
         self.redis_client.publish(self.marbel_channel, "event('TextStarted')")
 
         # Request speech synthesis
-        reply = self.tts.request(
-            GetSpeechRequest(text=message_text), block=True)
-        self.on_speech_result(reply)
+        if self.params.use_espeak:
+            self.local_tts(text=message_text)
+        else:
+            reply = self.tts.request(
+                GetSpeechRequest(text=message_text), block=True)
+            self.on_speech_result(reply)
 
         # Publish 'TextDone' event
         self.redis_client.publish(self.marbel_channel, "event('TextDone')")
 
     def _handle_start_listening_command(self):
         """Process 'startListening' command by interacting with Dialogflow."""
-        request_id = np.random.randint(10000)
+        self.redis_client.publish(
+            self.marbel_channel, "event('ListeningStarted;1;48000')")
         contexts = {"name": 1}  # Example context; adjust as needed
-
-        reply = self.dialogflow.request(GetIntentRequest(request_id, contexts))
-        print("The detected intent:", reply.intent)
-
-        if reply.fulfillment_message:
-            print("Reply:", reply.fulfillment_message)
+        reply = self.dialogflow.request(
+            GetIntentRequest(self.conversation_id, contexts))
+        self._process_dialogflow_reply(reply)
+        self.redis_client.publish(
+            self.marbel_channel, "event('ListeningDone')")
 
     def _handle_stop_listening_command(self):
         """Process 'stopListening' command to stop Dialogflow or related service."""
-        self.dialogflow.stop()
+        reply = self.dialogflow.request(
+            StopListeningMessage(self.conversation_id))
+        self._process_dialogflow_reply(reply)
         print("Stopped listening.")
+        self.redis_client.publish(
+            self.marbel_channel, "event('ListeningDone')")
+
+    def _process_dialogflow_reply(self, reply):
+        """Handle the common logic for processing a Dialogflow reply."""
+        print("The detected intent:", reply.intent)
+        if reply.fulfillment_message:
+            print("Reply:", reply.fulfillment_message)
 
     def on_request(self, request):
         if is_sic_instance(request, TextRequest):
