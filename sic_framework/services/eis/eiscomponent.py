@@ -2,6 +2,7 @@ import os
 import redis
 import json
 import numpy as np
+import time
 from subprocess import call
 from sic_framework import SICComponentManager
 from sic_framework.core.component_python2 import SICComponent
@@ -19,6 +20,13 @@ from sic_framework.devices.common_desktop.desktop_speakers import DesktopSpeaker
 from sic_framework.services.text2speech.text2speech_service import Text2Speech, Text2SpeechConf, GetSpeechRequest, SpeechResult
 from sic_framework.services.dialogflow.dialogflow import (DialogflowConf, GetIntentRequest, StopListeningMessage, RecognitionResult,
                                                           QueryResult, Dialogflow)
+from sic_framework.services.webserver.webserver_component import (
+    ButtonClicked,
+    HtmlMessage,
+    TranscriptMessage,
+    Webserver,
+    WebserverConf,
+)
 
 
 class EISConf(SICConfMessage):
@@ -78,6 +86,7 @@ class EISComponent(SICComponent):
         self._setup_text_to_speech()
         self._setup_redis()
         self._setup_dialogflow()
+        self._setup_webserver()
 
     def _setup_hardware(self):
         """Initialize hardware components."""
@@ -87,7 +96,7 @@ class EISComponent(SICComponent):
 
     def _setup_text_to_speech(self):
         """Configure text-to-speech."""
-        keyfile_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+        keyfile_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     "mas-2023-test-fkcp-f55e450fe830.json")
         self.keyfile_path = keyfile_path  # Save for reuse in Dialogflow
         if not self.params.use_espeak:
@@ -118,6 +127,27 @@ class EISComponent(SICComponent):
         self.dialogflow.connect(self.desktop.mic)
         self.dialogflow.register_callback(self.on_dialog)
         self.conversation_id = np.random.randint(10000)
+
+    def _setup_webserver(self):
+        """Initialize Webserver integration."""
+        self.port = 8080
+        self.your_ip = "localhost"
+        # webserver setup
+        web_conf = WebserverConf(host="0.0.0.0", port=self.port)
+        self.web_server = Webserver(ip=self.your_ip, conf=web_conf)
+        # connect the output of webserver by registering it as a callback.
+        # the output is a flag to determine if the button has been clicked or not
+        self.web_server.register_callback(self.on_button_click)
+        time.sleep(5)
+
+    def on_button_click(message):
+        """
+        Callback function for button click event from a web client.
+        """
+        if is_sic_instance(message, ButtonClicked):
+            if message.button:
+                time.sleep(2.0)
+                print("To do")
 
     def on_dialog(message):
         if message.response:
@@ -151,6 +181,8 @@ class EISComponent(SICComponent):
             self._handle_start_listening_command()
         elif content.startswith("stopListening"):
             self._handle_stop_listening_command()
+        elif content.startswith("renderPage"):
+            self._handle_render_page_command(content)
         else:
             print("Unknown command:", content)
 
@@ -210,6 +242,16 @@ class EISComponent(SICComponent):
         print("Stopped listening.")
         self.redis_client.publish(
             self.marbel_channel, "event('ListeningDone')")
+
+    def _handle_render_page_command(self, content):
+        # the HTML file to be rendered
+        html_file = content
+        web_url = f"http://{self.your_ip}:{self.port}/"
+        with open(html_file) as file:
+            data = file.read()
+            print("sending html content-------------")
+            self.web_server.send_message(HtmlMessage(text=data))
+            print("now you can open the web page at", web_url)
 
     def _process_dialogflow_reply(self, reply):
         """Handle the common logic for processing a Dialogflow reply."""
