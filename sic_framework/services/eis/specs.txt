@@ -1,22 +1,22 @@
 TODO's:
-
 - MarbelConnector channel is hardcode defined, needs to be dynamically set. (See line 114 of EISComponent)
 
 - EISConnector (Java) needs to be able to send init params for the EISComponent/EISConnector (SIC Framework),
 i.e using espeak or not, or the location of the key file on the computer, etc.
 
-- renderPage is working with cookpanion's start page, the 'start' button is also working (when the button is clicked, 
-meaning the SIC Framework get a message that a button is clicked). 
-However the rendering of the new page is not automatically changed in the browser, 
-even when we send a HtmlMessage to the WebServer. 
-I don't see any example that does this? 
-
-- This newly rendered cookpanion_page.html needs to have the previous fix,
-which includes the clicking logic for microphone on and off in the cookpanion_page.html,
-and the updated transcription text in the text box. 
+WEBSERVER:
+- Add logic for displaying transcript on webpage.
+- Add logic for clicking on microphone on and off.
 
 - Sending the intent needs to contain the key, value pairs from the query object output_contexts.parameters,
 need to loop through all the these and add them to entities variable (See line 237 of EISComponent)
+
+- TIMEOUT: now set to 30 seconds, which is very long...
+
+----------------------------------------------------------------------------
+QUESTIONS:
+- Find out where to locate <script> tag: at the end of HTML page (after <body> tag) works, but can it be put elsewhere?
+    Why can't it be put at the top after other <script> tags located there, for example?
 
 ----------------------------------------------------------------------------
 ACTIONS:: MARBEL will sent actions on EISComponent:input:<ip>

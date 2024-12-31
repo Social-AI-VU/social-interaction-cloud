@@ -135,20 +135,18 @@ class EISComponent(SICComponent):
         # webserver setup
         web_conf = WebserverConf(host="0.0.0.0", port=self.port)
         self.web_server = Webserver(ip=self.your_ip, conf=web_conf)
-        # connect the output of webserver by registering it as a callback.
+        # connect the output of webserver by registering it as a callback
         # the output is a flag to determine if the button has been clicked or not
         self.web_server.register_callback(self.on_button_click)
-        self._handle_render_page_command("index.html")
 
     def on_button_click(self, message):
         """
         Callback function for button click event from a web client.
         """
-        print(message)
+        self.logger.info("EIS component received a button: "+message.button)
         if is_sic_instance(message, ButtonClicked):
-            if message.button:
-                print("start listening")
-                self._handle_render_page_command("index.html")
+            # send to MARBEL agent
+            self.redis_client.publish(self.marbel_channel, "answer('"+message.button+"')")
 
     def on_dialog(message):
         if message.response:
@@ -256,15 +254,11 @@ class EISComponent(SICComponent):
         self.redis_client.publish(
             self.marbel_channel, "event('ListeningDone')")
 
-    def _handle_render_page_command(self, content):
+    def _handle_render_page_command(self, html):
         # the HTML file to be rendered
-        html_file = content
-        web_url = f"http://{self.your_ip}:{self.port}/"
-        with open(html_file) as file:
-            data = file.read()
-            print("sending html content-------------")
-            self.web_server.send_message(HtmlMessage(text=data))
-            print("now you can open the web page at", web_url)
+        web_url = f"http://{self.your_ip}:{self.port}/{html}"
+        self.web_server.send_message(HtmlMessage(text="", html=html))
+        self.logger.info("Open the web page at " + web_url)
 
     def _process_dialogflow_reply(self, reply):
         """Handle the common logic for processing a Dialogflow reply."""
