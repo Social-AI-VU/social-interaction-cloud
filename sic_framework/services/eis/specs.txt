@@ -12,14 +12,14 @@ WEBSERVER (and webpages):
 DIALOGFLOW:
 - Implement sending the intent and other parameters (key, value pairs from the query object output_contexts.parameters,
     need to loop through all the these and add them to entities variable; See line 237 of EISComponent)
+- How to handle Dialogflow exception that occurs after 120 seconds no audio?
 
 OTHER:
-- TIMEOUT: now set to 30 seconds, which is very long...
+- TIMEOUT has been set to 10 seconds (this is long but seems reasonable for now...)
 
 ----------------------------------------------------------------------------
 QUESTIONS:
-- Find out where to locate <script> tag: at the end of HTML page (after <body> tag) works, but can it be put elsewhere?
-    Why can't it be put at the top after other <script> tags located there, for example?
+
 
 ----------------------------------------------------------------------------
 ACTIONS:: MARBEL will sent actions on EISComponent:input:<ip>

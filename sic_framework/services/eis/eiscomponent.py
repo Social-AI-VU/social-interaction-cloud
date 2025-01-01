@@ -20,12 +20,13 @@ from sic_framework.devices.common_desktop.desktop_speakers import DesktopSpeaker
 from sic_framework.services.text2speech.text2speech_service import Text2Speech, Text2SpeechConf, GetSpeechRequest, SpeechResult
 from sic_framework.services.dialogflow.dialogflow import (DialogflowConf, GetIntentRequest, StopListeningMessage, RecognitionResult,
                                                           QueryResult, Dialogflow)
-from sic_framework.services.webserver.webserver_component import (
+from sic_framework.services.webserver.webserver_pca import (
     ButtonClicked,
     HtmlMessage,
+    SwitchTurnMessage,
     TranscriptMessage,
     Webserver,
-    WebserverConf,
+    WebserverConf
 )
 
 
@@ -207,7 +208,7 @@ class EISComponent(SICComponent):
         """Process 'say' command by synthesizing speech."""
         message_text = content.replace(
             "say(", "", 1).replace(")", "", 1).strip()
-        self.logger.info("I would like to say", message_text)
+        self.logger.info("Planning to say: " + message_text)
 
         # Publish 'TextStarted' event
         self.redis_client.publish(self.marbel_channel, "event('TextStarted')")
@@ -220,6 +221,8 @@ class EISComponent(SICComponent):
                 GetSpeechRequest(text=message_text), block=True)
             self.on_speech_result(reply)
 
+        # Inform webserver that turn needs to be passed back to user
+        self.web_server.send_message(SwitchTurnMessage())
         # Publish 'TextDone' event
         self.redis_client.publish(self.marbel_channel, "event('TextDone')")
 

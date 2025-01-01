@@ -30,6 +30,10 @@ class ButtonClicked(SICMessage):
         self.button = button
 
 
+class SwitchTurnMessage(SICMessage):
+    def __init__(self):
+        pass
+
 class WebserverConf(SICConfMessage):
     def __init__(self, host: str, port: int):
         """
@@ -72,7 +76,7 @@ class WebserverComponent(SICComponent):
 
     @staticmethod
     def get_inputs():
-        return [HtmlMessage, TranscriptMessage]
+        return [HtmlMessage, SwitchTurnMessage, TranscriptMessage]
 
     # when the HtmlMessage message arrives, feed it to self.input_text
     def on_message(self, message):
@@ -80,8 +84,12 @@ class WebserverComponent(SICComponent):
         if is_sic_instance(message, HtmlMessage):
             self.logger.info("Receiving HTML message: " + message.html)
 
+        if is_sic_instance(message, SwitchTurnMessage):
+            self.logger.info("Switching turns")
+            self.socketio.emit("switchturn")
+
         if is_sic_instance(message, TranscriptMessage):
-            print(f"Receiving transcript: {message.transcript}-------")
+            self.logger.info(f"Receiving transcript: {message.transcript}-------")
             self.socketio.emit("transcript", message.transcript)
 
     def render_template_string_routes(self):
