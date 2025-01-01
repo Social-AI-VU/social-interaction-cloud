@@ -1,16 +1,19 @@
-TODO's:
+TODO's for PCA course:
+MARBEL AGENT:
 - MarbelConnector channel is hardcode defined, needs to be dynamically set. (See line 114 of EISComponent)
+- MARBELConnector (Java) needs to be able to send init params for the EISComponent/EISConnector (SIC Framework),
+    i.e using espeak or not, or the location of the key file on the computer, etc.
 
-- EISConnector (Java) needs to be able to send init params for the EISComponent/EISConnector (SIC Framework),
-i.e using espeak or not, or the location of the key file on the computer, etc.
+WEBSERVER (and webpages):
+- DONE: Add logic for displaying transcript on webpage.
+- DONE: Add logic for clicking on microphone on and off;
+    turning the mic on now also initiates a request to Dialogflow to start listening and getting an intent
 
-WEBSERVER:
-- Add logic for displaying transcript on webpage.
-- Add logic for clicking on microphone on and off.
+DIALOGFLOW:
+- Implement sending the intent and other parameters (key, value pairs from the query object output_contexts.parameters,
+    need to loop through all the these and add them to entities variable; See line 237 of EISComponent)
 
-- Sending the intent needs to contain the key, value pairs from the query object output_contexts.parameters,
-need to loop through all the these and add them to entities variable (See line 237 of EISComponent)
-
+OTHER:
 - TIMEOUT: now set to 30 seconds, which is very long...
 
 ----------------------------------------------------------------------------

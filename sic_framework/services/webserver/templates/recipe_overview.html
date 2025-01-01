@@ -26,8 +26,8 @@
 	<body>
         <div id="main">
             </div><nav class="navbar mb-1" style="position: static">
-                <button class="btn" name="mic">
-                    <img class="img-fluid" style="width:1.5rem;" src="static/images/mic_out.png" alt="Can not show this image">
+                <button class="btn" id="mic">
+                    <img class="img-fluid" style="width:1.5rem;" id="micimg" src="static/images/mic_out.png" alt="Can not show this image">
                 </button>
             </nav>
             <main class="container-fluid" style="width:100vw; height:60vh">
@@ -57,10 +57,17 @@
                 </div>
                 </div>
             </main>
+            <!-- Footer is used to show transcripts received from ASR -->
             <footer class="fixed-bottom">
-                <p class="lead mb-0 bg-light text-center" style="min-height:0rem"></p>
+                <p class="lead mb-0 bg-light text-center" style="min-height:0rem" id="transcript"></p>
             </footer>
         </div>
-        <audio src="//translate.google.com/translate_tts?ie=UTF-8&amp;client=tw-ob&amp;tl=en-GB&amp;q=Here%20are%20some%20vegetarian%20recipes%20that%20don't%20include%20garlic.%20Is%20there%20anything%20else%20you'd%20like%20me%20to%20add%3F"></audio>
     </body>
+    <!-- DOM manipulating JS at end of HTML -->
+    <script>
+        // Dedicated event listener for the microphone button to toggle from off to on (JS socket event handler turns it off again)
+        document.getElementById('mic').addEventListener('click', function() {
+            document.getElementById('micimg').src  = 'static/images/mic_on.png';
+        });
+    </script>
 </html>

@@ -143,15 +143,16 @@ class EISComponent(SICComponent):
         """
         Callback function for button click event from a web client.
         """
-        self.logger.info("EIS component received a button: "+message.button)
         if is_sic_instance(message, ButtonClicked):
+            self.logger.info("Received a button named: " + message.button)
+            self._handle_start_listening_command()
             # send to MARBEL agent
             self.redis_client.publish(self.marbel_channel, "answer('"+message.button+"')")
 
     def on_dialog(message):
         if message.response:
             if message.response.recognition_result.is_final:
-                print("Transcript:", message.response.recognition_result.transcript)
+                self.logger.info("Transcript: ", message.response.recognition_result.transcript)
 
     @staticmethod
     def get_inputs():
@@ -183,7 +184,7 @@ class EISComponent(SICComponent):
         elif content.startswith("renderPage"):
             self._handle_render_page_command(content)
         else:
-            print("Unknown command:", content)
+            self.logger.info("Unknown command:", content)
 
     # Helper methods
     def _validate_message(self, message):
@@ -194,7 +195,7 @@ class EISComponent(SICComponent):
                     message.__class__.__name__, self.get_component_name()
                 )
             )
-        print("{} received text message {}".format(
+        self.logger.info("{} received text message {}".format(
             self.get_component_name(), message.text
         ))
 
@@ -206,7 +207,7 @@ class EISComponent(SICComponent):
         """Process 'say' command by synthesizing speech."""
         message_text = content.replace(
             "say(", "", 1).replace(")", "", 1).strip()
-        print("I would like to say", message_text)
+        self.logger.info("I would like to say", message_text)
 
         # Publish 'TextStarted' event
         self.redis_client.publish(self.marbel_channel, "event('TextStarted')")
@@ -229,14 +230,19 @@ class EISComponent(SICComponent):
         contexts = {"name": 1}  # Example context; adjust as needed
         reply = self.dialogflow.request(
             GetIntentRequest(self.conversation_id, contexts))
-        self._process_dialogflow_reply(reply)
+
         # Extract relevant fields
+        self._process_dialogflow_reply(reply)
         intent_name = reply.response.query_result.intent.display_name
+        # TODO
         entities = [{"recipe": "butter chicken"}]  # Example entities
         entities_str = ", ".join([f"{key}='{value}'" for entity in entities for key, value in entity.items()])
         confidence = round(float(reply.response.query_result.intent_detection_confidence), 2)
         transcript = reply.response.query_result.query_text
         source = "speech"
+
+        # Send transcript to webserver (to enable displaying transcripts on a webpage)
+        self.web_server.send_message(TranscriptMessage(transcript=transcript))
 
         # Format the intent message
         intent_message = f"intent({intent_name}, [{entities_str}], {confidence}, '{transcript}', {source})"
@@ -262,10 +268,9 @@ class EISComponent(SICComponent):
 
     def _process_dialogflow_reply(self, reply):
         """Handle the common logic for processing a Dialogflow reply."""
-        print("Full reply is:", reply)
-        print("The detected intent:", reply.intent)
-        if reply.fulfillment_message:
-            print("Reply:", reply.fulfillment_message)
+        # self.logger.info("Full reply is:", reply)
+        self.logger.info("Received intent: " + reply.intent)
+        self.logger.info("Got reply from Dialogflow: " + reply.response.query_result.query_text)
 
     def on_request(self, request):
         if is_sic_instance(request, TextRequest):
@@ -284,7 +289,7 @@ class EISComponent(SICComponent):
                 print("Unknown request, this will cause problems...")
 
     def on_speech_result(self, wav_audio):
-        print("I am receiving audio at sample rate:" + str(wav_audio.sample_rate))
+        self.logger.info("Receiving audio at sample rate:" + str(wav_audio.sample_rate))
         self.speakers_output.stream.write(wav_audio.waveform)
 
     def local_tts(self, text):

@@ -46,7 +46,7 @@
                 </div>
                 <div class="jumbotron text-center" style="background: none">
                     <h3>Done reading? Then please press start to begin</h3>
-                    <button class="btn btn-lg btn-info" id="startButton" name="start">
+                    <button class="btn btn-lg btn-info" id="start">
                         <b>Start</b>
                     </button>
                 </div>
@@ -56,7 +56,7 @@
     <!-- DOM manipulating JS at end of HTML -->
     <script>
         // Dedicated event listener for the start button on this page to move to another page
-        document.getElementById('startButton').addEventListener('click', function() {
+        document.getElementById('start').addEventListener('click', function() {
             window.location.href = "recipe_overview.html"
         });
     </script>

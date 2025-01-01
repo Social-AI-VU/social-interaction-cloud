@@ -19,6 +19,7 @@ class TranscriptMessage(SICMessage):
 
 
 class HtmlMessage(SICMessage):
+    """Message for requesting the rendering of an HTML page"""
     def __init__(self, text, html):
         self.text = text
         self.html = html
@@ -47,7 +48,8 @@ class WebserverComponent(SICComponent):
         super(WebserverComponent, self).__init__(*args, **kwargs)
         self.app = Flask(__name__)
 
-        self.socketio = SocketIO(self.app)
+        # Enable logging of low level socket events
+        self.socketio = SocketIO(self.app, logger=True)
 
         thread = threading.Thread(target=self.start_web_app)
         # app should be terminated automatically when the main thread exits
@@ -76,12 +78,11 @@ class WebserverComponent(SICComponent):
     def on_message(self, message):
 
         if is_sic_instance(message, HtmlMessage):
-            self.logger.info("Receiving HTML message: "+message.html)
+            self.logger.info("Receiving HTML message: " + message.html)
 
         if is_sic_instance(message, TranscriptMessage):
-            self.transcript = message.transcript
-            print(f"receiving transcript: {self.transcript}-------")
-            self.socketio.emit("update_textbox", self.transcript)
+            print(f"Receiving transcript: {message.transcript}-------")
+            self.socketio.emit("transcript", message.transcript)
 
     def render_template_string_routes(self):
         # render an html page (with bootstrap and a css file) once a client is connected
@@ -105,14 +106,11 @@ class WebserverComponent(SICComponent):
             self.disconnected = True
             self.logger.info("Client disconnected")
 
-        # register clicked_flag event handler
-        @self.socketio.on("clicked_flag")
+        # register buttonClick event handler
+        @self.socketio.on("buttonClick")
         def handle_flag(name):
-            self.logger.info("Received a button click named: "+name)
+            self.logger.info("Received a button click named: " + name)
             self.output_message(ButtonClicked(button=name))
-            if name.startswith('start'):
-                print("YEAH")
-                return self.app.redirect("recipe_overview.html")
 
 
 class Webserver(SICConnector):
