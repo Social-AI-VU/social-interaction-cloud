@@ -85,11 +85,12 @@ class WebserverComponent(SICComponent):
 
     def render_template_string_routes(self):
         # render an html page (with bootstrap and a css file) once a client is connected
-        @self.app.route("/<string:page_name>")
+        # handle both GET and POST just to make sure we do not get 405 response
+        @self.app.route("/<string:page_name>", methods=['GET', 'POST'])
         def html_page(page_name):
             if not page_name.endswith(".html"):
                 self.logger.info("Request to render non-html page: "+page_name)
-                return render_template_string("404")
+                return render_template_string("<h1>hello???</h1>")
             self.logger.info("Rendering page: "+page_name)
             web_url = f"http://localhost:{self.params.port}/{page_name}"
             self.logger.info("Open the web page at " + web_url)
