@@ -17,17 +17,12 @@ from sic_framework.core.message_python2 import (
 from sic_framework.core.utils import is_sic_instance
 from sic_framework.devices.desktop import Desktop
 from sic_framework.devices.common_desktop.desktop_speakers import DesktopSpeakersActuator, SpeakersConf
-from sic_framework.services.text2speech.text2speech_service import Text2Speech, Text2SpeechConf, GetSpeechRequest, SpeechResult
-from sic_framework.services.dialogflow.dialogflow import (DialogflowConf, GetIntentRequest, StopListeningMessage, RecognitionResult,
-                                                          QueryResult, Dialogflow)
-from sic_framework.services.webserver.webserver_pca import (
-    ButtonClicked,
-    HtmlMessage,
-    SwitchTurnMessage,
-    TranscriptMessage,
-    Webserver,
-    WebserverConf
-)
+from sic_framework.services.text2speech.text2speech_service import \
+    (Text2Speech, Text2SpeechConf, GetSpeechRequest, SpeechResult)
+from sic_framework.services.dialogflow.dialogflow import\
+    (DialogflowConf, GetIntentRequest, StopListeningMessage, RecognitionResult, QueryResult, Dialogflow)
+from sic_framework.services.webserver.webserver_pca import \
+    (ButtonClicked, HtmlMessage, SwitchTurnMessage, TranscriptMessage, Webserver, WebserverConf)
 
 
 class EISConf(SICConfMessage):
@@ -87,6 +82,7 @@ class EISComponent(SICComponent):
         self._setup_text_to_speech()
         self._setup_redis()
         self._setup_dialogflow()
+        self.user_turn = True
         self._setup_webserver()
 
     def _setup_hardware(self):
@@ -145,15 +141,18 @@ class EISComponent(SICComponent):
         Callback function for button click event from a web client.
         """
         if is_sic_instance(message, ButtonClicked):
-            self.logger.info("Received a button named: " + message.button)
-            self._handle_start_listening_command()
             # send to MARBEL agent
             self.redis_client.publish(self.marbel_channel, "answer('"+message.button+"')")
+            if message.button == 'mic' and self.user_turn:
+                self.logger.info("User requested microphone and it's their turn, so let's start listening.")
+                self.user_turn = False  # Only agent saying something can hand back turn to user (see _handle_say below)
+                self.web_server.send_message(SwitchTurnMessage())
+                self._handle_start_listening_command()
 
-    def on_dialog(message):
-        if message.response:
-            if message.response.recognition_result.is_final:
-                self.logger.info("Transcript: ", message.response.recognition_result.transcript)
+    def on_dialog(self, message):
+        if is_sic_instance(message, RecognitionResult):
+            # Send intermediate transcript (recognition) results to the webserver to enable live display
+            self.web_server.send_message(TranscriptMessage(transcript=message.response.recognition_result.transcript))
 
     @staticmethod
     def get_inputs():
@@ -221,7 +220,8 @@ class EISComponent(SICComponent):
                 GetSpeechRequest(text=message_text), block=True)
             self.on_speech_result(reply)
 
-        # Inform webserver that turn needs to be passed back to user
+        # Hand back turn to user and inform webserver about this
+        self.user_turn = True
         self.web_server.send_message(SwitchTurnMessage())
         # Publish 'TextDone' event
         self.redis_client.publish(self.marbel_channel, "event('TextDone')")

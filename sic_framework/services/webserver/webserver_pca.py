@@ -89,7 +89,7 @@ class WebserverComponent(SICComponent):
             self.socketio.emit("switchturn")
 
         if is_sic_instance(message, TranscriptMessage):
-            self.logger.info(f"Receiving transcript: {message.transcript}-------")
+            self.logger.debug(f"Receiving transcript: {message.transcript}-------")
             self.socketio.emit("transcript", message.transcript)
 
     def render_template_string_routes(self):

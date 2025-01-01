@@ -81,8 +81,6 @@ socket.on("transcript", (text) => {
     document.getElementById("transcript").innerHTML = text;
     // when a transcript has been received, the microphone icon should be changed again to indicate the mic has been closed
     document.getElementById('micimg').src  = 'static/images/mic_out.png';
-    // User has just said something, so now it is the agent's turn to respond
-    usersturn = false;
 });
 
 // Event handler for switching turns

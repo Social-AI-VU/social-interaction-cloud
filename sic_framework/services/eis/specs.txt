@@ -12,7 +12,6 @@ WEBSERVER (and webpages):
 DIALOGFLOW:
 - Implement sending the intent and other parameters (key, value pairs from the query object output_contexts.parameters,
     need to loop through all the these and add them to entities variable; See line 237 of EISComponent)
-- How to handle Dialogflow exception that occurs after 120 seconds no audio?
 
 OTHER:
 - TIMEOUT has been set to 10 seconds (this is long but seems reasonable for now...)

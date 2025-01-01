@@ -321,14 +321,14 @@ class DialogflowComponent(SICComponent):
 
         for response in responses:
             if response.recognition_result:
-                self.logger.info(
-                    "Recognition_result: "+ response.recognition_result.transcript
+                self.logger.debug(
+                    "Recognition_result: " + response.recognition_result.transcript
                 )
                 self._redis.send_message(
                     self._output_channel, RecognitionResult(response)
                 )
             if response.query_result:
-                print("query_result: ", response.query_result)
+                self.logger.debug("Query_result: " + response.query_result.intent.display_name)
                 return QueryResult(response)
             if response.recognition_result.is_final:
                 self.logger.info("----- FINAL -----")
