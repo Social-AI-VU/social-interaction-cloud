@@ -30,9 +30,9 @@ class ButtonClicked(SICMessage):
         self.button = button
 
 
-class SwitchTurnMessage(SICMessage):
-    def __init__(self):
-        pass
+class SetTurnMessage(SICMessage):
+    def __init__(self, user_turn):
+        self.user_turn = user_turn
 
 class WebserverConf(SICConfMessage):
     def __init__(self, host: str, port: int):
@@ -76,7 +76,7 @@ class WebserverComponent(SICComponent):
 
     @staticmethod
     def get_inputs():
-        return [HtmlMessage, SwitchTurnMessage, TranscriptMessage]
+        return [HtmlMessage, SetTurnMessage, TranscriptMessage]
 
     # when the HtmlMessage message arrives, feed it to self.input_text
     def on_message(self, message):
@@ -84,9 +84,12 @@ class WebserverComponent(SICComponent):
         if is_sic_instance(message, HtmlMessage):
             self.logger.info("Receiving HTML message: " + message.html)
 
-        if is_sic_instance(message, SwitchTurnMessage):
-            self.logger.info("Switching turns")
-            self.socketio.emit("switchturn")
+        if is_sic_instance(message, SetTurnMessage):
+            if message.user_turn:
+                self.logger.info("Handing back turn to the user")
+            else:
+                self.logger.info("It is the agent's turn to talk now.")
+            self.socketio.emit("set_turn", message.user_turn)
 
         if is_sic_instance(message, TranscriptMessage):
             self.logger.debug(f"Receiving transcript: {message.transcript}-------")

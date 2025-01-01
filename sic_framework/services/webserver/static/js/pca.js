@@ -22,7 +22,7 @@
 var socket = io();
 
 // Flag to keep track of whose turn it is (true --> user, false --> agent)
-var usersturn = true;
+var user_turn = true;
 
 // Code for handling button elements on page
 var elements = document.getElementsByClassName("btn");
@@ -53,7 +53,7 @@ var micButton = document.getElementById('mic');
 
 if (micButton) {
     micButton.addEventListener('click', function() {
-        if (usersturn) {
+        if (user_turn) {
             document.getElementById('micimg').src  = 'static/images/mic_on.png';
         } else {
             alert("It is not your turn.")
@@ -78,12 +78,13 @@ socket.on('disconnect', function() {
 
 // Event handler for transcript event
 socket.on("transcript", (text) => {
-    document.getElementById("transcript").innerHTML = text;
-    // when a transcript has been received, the microphone icon should be changed again to indicate the mic has been closed
-    document.getElementById('micimg').src  = 'static/images/mic_out.png';
+    document.getElementById("transcript").innerHTML = text;    
 });
 
 // Event handler for switching turns
-socket.on("switchturn", () => {
-    usersturn = !usersturn;
+socket.on("set_turn", (whoseturn) => {
+    user_turn = whoseturn;
+    if (!user_turn) {
+        document.getElementById('micimg').src  = 'static/images/mic_out.png';
+    }
 })

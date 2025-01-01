@@ -16,7 +16,7 @@ from sic_framework.services.text2speech.text2speech_service import \
 from sic_framework.services.dialogflow.dialogflow import\
     (DialogflowConf, GetIntentRequest, StopListeningMessage, RecognitionResult, QueryResult, Dialogflow)
 from sic_framework.services.webserver.webserver_pca import \
-    (ButtonClicked, HtmlMessage, SwitchTurnMessage, TranscriptMessage, Webserver, WebserverConf)
+    (ButtonClicked, HtmlMessage, SetTurnMessage, TranscriptMessage, Webserver, WebserverConf)
 
 
 class EISConf(SICConfMessage):
@@ -154,8 +154,6 @@ class EISComponent(SICComponent):
             # special handling of microphone button
             if message.button == 'mic' and self.user_turn:
                 self.logger.info("User requested microphone and it's their turn, so let's start listening.")
-                self.user_turn = False  # Only agent saying something can hand back turn to user (see _handle_say below)
-                self.web_server.send_message(SwitchTurnMessage())
                 self._handle_start_listening_command()
 
     @staticmethod
@@ -180,7 +178,10 @@ class EISComponent(SICComponent):
         # Extract and process message content
         content = self._extract_content(message.text)
         if content.startswith("say"):
-            self._handle_say_command(content)
+            if self.user_turn:
+                self.logger.info("Received "+content+", but ignoring this as it is not the agent's turn")
+            else:
+                self._handle_say_command(content)
         elif content.startswith("startListening"):
             self._handle_start_listening_command()
         elif content.startswith("stopListening"):
@@ -227,7 +228,7 @@ class EISComponent(SICComponent):
 
         # Hand back turn to user and inform webserver about this
         self.user_turn = True
-        self.web_server.send_message(SwitchTurnMessage())
+        self.web_server.send_message(SetTurnMessage(user_turn=self.user_turn))
         # Publish 'TextDone' event
         self.redis_client.publish(self.marbel_channel, "event('TextDone')")
 
@@ -236,7 +237,7 @@ class EISComponent(SICComponent):
 
         # send event to MARBEL agent
         self.redis_client.publish(
-            self.marbel_channel, "event('ListeningStarted;1;48000')")
+            self.marbel_channel, "event('ListeningStarted')")
 
         # Prepare and perform Dialogflow request
         contexts = {"name": 1}  # Example context; adjust as needed
@@ -246,6 +247,7 @@ class EISComponent(SICComponent):
         # Send transcript to webserver (to enable displaying the transcript on a webpage)
         transcript = reply.response.query_result.query_text
         self.web_server.send_message(TranscriptMessage(transcript=transcript))
+        self.redis_client.publish(self.marbel_channel, f"transcript({transcript})")
 
         # Extract relevant fields
         intent_name = reply.response.query_result.intent.display_name
@@ -261,6 +263,8 @@ class EISComponent(SICComponent):
                     self.marbel_channel, intent_message)
         self.redis_client.publish(
             self.marbel_channel, "event('ListeningDone')")
+        self.user_turn = False  # Only agent saying something can hand back turn to user (see _handle_say below)
+        self.web_server.send_message(SetTurnMessage(user_turn=self.user_turn))
 
     def _handle_stop_listening_command(self):
         """Process 'stopListening' command to stop Dialogflow or related service."""
@@ -279,11 +283,20 @@ class EISComponent(SICComponent):
         self.logger.info("Open the web page at " + web_url)
 
     def on_request(self, request):
-        """"Processing of requests; expected only from MARBELConnector and should be text based"""
+        """"
+        Processing of requests received (on the Redis reqreply channel);
+        Expects only requests from MARBELConnector, which should be 'text based'.
+        The requests that we expect to handle here are related to the initial handshake between
+        this component and the MARBELConnector.
+        """
         if is_sic_instance(request, TextRequest):
-            if request.text.startswith("text:reqreply:handshake"):
+            content = request.text.replace("text:reqreply:", "", 1).strip()
+            if content.startswith("handshake"):
                 # handle handshake request
-                self.logger.info("Received handshake request from EIS interface")
+                self.logger.info("Received handshake request from MARBEL Connector")
+                # Expecting MARBEL input channel on Redis after 'handshake:' (by convention)
+                self.marbel_channel = content.replace("handshake:", "", 1).strip()
+                # Prepare reply message
                 input_channel = "{}:input:{}".format(
                     self.get_component_name(), self._ip)
                 # TODO: set request id in reply
