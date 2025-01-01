@@ -52,8 +52,8 @@ class WebserverComponent(SICComponent):
         super(WebserverComponent, self).__init__(*args, **kwargs)
         self.app = Flask(__name__)
 
-        # Enable logging of low level socket events
-        self.socketio = SocketIO(self.app, logger=True)
+        # To enable logging of low level socket events add 'logger=True'
+        self.socketio = SocketIO(self.app)
 
         thread = threading.Thread(target=self.start_web_app)
         # app should be terminated automatically when the main thread exits

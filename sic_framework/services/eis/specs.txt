@@ -1,4 +1,8 @@
 TODO's for PCA course:
+EISComponent:
+- Implement EISConf object
+- Clean up events such as "event('ListeningStarted;1;48000')"
+
 MARBEL AGENT:
 - MarbelConnector channel is hardcode defined, needs to be dynamically set. (See line 114 of EISComponent)
 - MARBELConnector (Java) needs to be able to send init params for the EISComponent/EISConnector (SIC Framework),

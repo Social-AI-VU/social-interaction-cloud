@@ -328,7 +328,8 @@ class DialogflowComponent(SICComponent):
                     self._output_channel, RecognitionResult(response)
                 )
             if response.query_result:
-                self.logger.debug("Query_result: " + response.query_result.intent.display_name)
+                self.logger.info("Received intent: " + response.query_result.action)
+                self.logger.info("Received transcript: " + response.query_result.query_text)
                 return QueryResult(response)
             if response.recognition_result.is_final:
                 self.logger.info("----- FINAL -----")
