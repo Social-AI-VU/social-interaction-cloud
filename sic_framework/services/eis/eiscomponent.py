@@ -91,8 +91,8 @@ class EISComponent(SICComponent):
         # Is set to correct channel in first handshake with a MARBEL agent
         self.marbel_channel = "MARBELConnector:input:127.0.1.1"
 
-        # Flag used to keep track of who can talk, either user or agent
-        self.user_turn = True
+        # Flag used to keep track of who can talk, either user or agent; initially, the agent does the talking
+        self.user_turn = False
 
         # Setup SIC components that we want to use
         self._setup_redis()  # Setup a Redis client
@@ -100,6 +100,8 @@ class EISComponent(SICComponent):
         self._setup_text_to_speech()
         self._setup_dialogflow()
         self._setup_webserver()
+
+        self.web_server.send_message(SetTurnMessage(user_turn=self.user_turn))
 
     def _setup_redis(self):
         """Set up Redis connection."""
@@ -187,6 +189,8 @@ class EISComponent(SICComponent):
         if content.startswith("say"):
             if self.user_turn:
                 self.logger.info("Received " + content + ", but ignoring this as it is not the agent's turn")
+                self.logger.info("Sending event: TextDone")  # Inform agent that we are done with their request...
+                self.redis_client.publish(self.marbel_channel, "event('TextDone')")
             else:
                 self._handle_say_command(content)
         elif content.startswith("startListening"):
@@ -221,6 +225,7 @@ class EISComponent(SICComponent):
         self.logger.info("Planning to say: " + message_text)
 
         # Publish 'TextStarted' event
+        self.logger.info("Sending event: TextStarted")
         self.redis_client.publish(self.marbel_channel, "event('TextStarted')")
 
         # Request speech synthesis
@@ -234,15 +239,17 @@ class EISComponent(SICComponent):
         # Hand back turn to user and inform webserver about this
         self.user_turn = True
         self.web_server.send_message(SetTurnMessage(user_turn=self.user_turn))
+        self.redis_client.publish(self.marbel_channel, "event('UserTurn')")
         # Publish 'TextDone' event
+        self.logger.info("Sending event: TextDone")
         self.redis_client.publish(self.marbel_channel, "event('TextDone')")
 
     def _handle_start_listening_command(self):
         """Process 'startListening' command by interacting with Dialogflow."""
 
         # send event to MARBEL agent
-        self.redis_client.publish(
-            self.marbel_channel, "event('ListeningStarted')")
+        self.logger.info("Sending event: ListeningStarted")
+        self.redis_client.publish(self.marbel_channel, "event('ListeningStarted')")
 
         # Prepare and perform Dialogflow request
         contexts = {"name": 1}  # Example context; adjust as needed
@@ -261,13 +268,15 @@ class EISComponent(SICComponent):
         self.redis_client.publish(self.marbel_channel, intent_str)
 
         # Inform agent that Dialogflow stopped listening and webserver that it is the agent's turn now
+        self.logger.info("Sending event: ListeningDone")
         self.redis_client.publish(self.marbel_channel, "event('ListeningDone')")
         self.user_turn = False  # Only agent saying something can hand back turn to user (see _handle_say below)
+        self.redis_client.publish(self.marbel_channel, "event('AgentTurn')")
         self.web_server.send_message(SetTurnMessage(user_turn=self.user_turn))
 
     def _intent_string(self, query_result: QueryResult) -> str:
         """"Process QueryResult(SICMessage) from Dialogflow component"""
-        # TODO: this needs reworking to make it more generally applicable (also to other NLU services)
+        # TODO: this is Dialogflow specific code and needs to be moved to that component...
         # TODO: probably best to rework the QueryResult object (and rename it to something like NLUResult too)
         intent_name = query_result.response.query_result.action
         entities_str = ""
@@ -277,19 +286,21 @@ class EISComponent(SICComponent):
         confidence = round(float(query_result.response.query_result.intent_detection_confidence), 2)
         transcript = query_result.response.query_result.query_text
         source = "speech"  # Simply assume that speech has been used to get NLU results
-        self.logger.info("Got here with " + entities_str)
-        return f"intent({intent_name}, [{entities_str}], {confidence}, '{transcript}', {source})"
+        if entities_str:
+            self.logger.info(f"Received entities: {entities_str}")
+        # Use double quotes around transcript, as transcript might include single quotes
+        return f"intent({intent_name}#1#[{entities_str}]#1#{confidence}#1#\"{transcript}\"#1#{source})"
 
     def _process_parameters(self, parameters) -> str:
         processed_entities = []
         # Remove empty values
         for key, value in parameters.items():
             if isinstance(value, list) and value:
-                list_values = ", ".join(value)
+                list_values = "#3#".join(value)
                 processed_entities.append(f"{key}=[{list_values}]")  # Turn list into string
             elif isinstance(value, str) and value:
                 processed_entities.append(f"{key}={value}")
-        return ", ".join(processed_entities)
+        return "#2#".join(processed_entities)
 
     def _handle_stop_listening_command(self):
         """Process 'stopListening' command to stop Dialogflow or related service."""

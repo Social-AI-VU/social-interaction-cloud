@@ -22,7 +22,8 @@
 var socket = io();
 
 // Flag to keep track of whose turn it is (true --> user, false --> agent)
-var user_turn = true;
+// Initially, it is the agent's turn; DO NOT CHANGE here, this flag is set by EISComponent in SIC framework
+var user_turn = false;
 
 // Code for handling button elements on page
 var elements = document.getElementsByClassName("btn");
@@ -84,6 +85,7 @@ socket.on("transcript", (text) => {
 // Event handler for switching turns
 socket.on("set_turn", (whoseturn) => {
     user_turn = whoseturn;
+    // If it's not the user's turn (any more), then make sure the microphone icon is mic_out
     if (!user_turn) {
         document.getElementById('micimg').src  = 'static/images/mic_out.png';
     }
