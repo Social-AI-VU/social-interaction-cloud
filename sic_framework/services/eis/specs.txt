@@ -1,12 +1,13 @@
 TODO's for PCA course:
 EISComponent:
-- Implement EISConf object
 - Clean up events such as "event('ListeningStarted;1;48000')"
 
 MARBEL AGENT:
-- MarbelConnector channel is hardcode defined, needs to be dynamically set. (See line 114 of EISComponent)
-- MARBELConnector (Java) needs to be able to send init params for the EISComponent/EISConnector (SIC Framework),
-    i.e using espeak or not, or the location of the key file on the computer, etc.
+- ISSUE: Handshake does not always succeed, looks like a racing condition...
+- DONE: Set MarbelConnector channel during handshake with SIC dynamically.
+- Enable MARBELConnector (Java) to send init params for the EISComponent/EISConnector (SIC Framework),
+    i.e using espeak or not, or the location of the key file on the computer, etc. Implement EISConf object.
+    FOR NOW, by making some mostly simple assumptions, we can avoid this for the moment.
 
 WEBSERVER (and webpages):
 - DONE: Add logic for displaying transcript on webpage.

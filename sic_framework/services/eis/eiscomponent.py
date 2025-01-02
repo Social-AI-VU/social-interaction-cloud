@@ -75,16 +75,21 @@ class EISComponent(SICComponent):
         super().__init__(*args, **kwargs)
 
         # Init parameters
-        # TODO: remove the hard coding by implementing an EISConfig object
+        # ASSUMPTION: Google TTS service will be used
+        self.params.use_espeak = False
         # Keyfile needed for Dialogflow and Google TTS
-        self.keyfile_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    "mas-2023-test-fkcp-f55e450fe830.json")
-        # Redis channel to communicate with MARBEL agent (for sending percepts)
-        self.marbel_channel = "MARBELConnector:input:127.0.1.1"
+        # ASSUMPTION: This file is named 'dialogflow-keyfile.json' and added to the services/eis folder
+        self.keyfile_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dialogflow-keyfile.json")
 
         # IP and port parameters
+        # ASSUMPTION: code is run locally on a single machine, where Redis also runs
         self.your_ip = "localhost"
         self.port = 8080
+
+        # Redis channel to communicate with (a single) MARBEL agent (for sending percepts)
+        # The channel name below illustrates the structure that we assume (by convention, in line with SIC conventions)
+        # Is set to correct channel in first handshake with a MARBEL agent
+        self.marbel_channel = "MARBELConnector:input:127.0.1.1"
 
         # Flag used to keep track of who can talk, either user or agent
         self.user_turn = True
@@ -98,10 +103,9 @@ class EISComponent(SICComponent):
 
     def _setup_redis(self):
         """Set up Redis connection."""
-        # TODO: hard coding of Redis config parameters port and password
         self.redis_client = redis.Redis(
             host=self.your_ip,
-            port=6379,
+            port=6379,  # TODO: hard coding of Redis config parameters port and password
             password='changemeplease',
             db=0
         )
@@ -123,11 +127,10 @@ class EISComponent(SICComponent):
         with open(self.keyfile_path, 'r') as keyfile:
             keyfile_json = json.load(keyfile)
 
-        # TODO: hard coding of language parameter
         conf = DialogflowConf(
             keyfile_json=keyfile_json,
             sample_rate_hertz=44100,
-            language="en"
+            language="en"  # TODO: hard coding of language parameter
         )
         self.dialogflow = Dialogflow(ip=self.your_ip, conf=conf)
         self.dialogflow.connect(self.desktop.mic)
