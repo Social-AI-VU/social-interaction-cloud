@@ -1,5 +1,6 @@
 import os
 import redis
+from google.protobuf.json_format import MessageToDict
 import json
 import numpy as np
 from subprocess import call
@@ -85,12 +86,25 @@ class EISComponent(SICComponent):
         self.your_ip = "localhost"
         self.port = 8080
 
+        # Flag used to keep track of who can talk, either user or agent
+        self.user_turn = True
+
+        # Setup SIC components that we want to use
+        self._setup_redis()  # Setup a Redis client
         self._setup_hardware()
         self._setup_text_to_speech()
-        self._setup_redis()
         self._setup_dialogflow()
-        self.user_turn = True  # Used to keep track of who can talk, either user or agent
         self._setup_webserver()
+
+    def _setup_redis(self):
+        """Set up Redis connection."""
+        # TODO: hard coding of Redis config parameters port and password
+        self.redis_client = redis.Redis(
+            host=self.your_ip,
+            port=6379,
+            password='changemeplease',
+            db=0
+        )
 
     def _setup_hardware(self):
         """Initialize hardware components."""
@@ -103,16 +117,6 @@ class EISComponent(SICComponent):
         if not self.params.use_espeak:
             conf = Text2SpeechConf(keyfile=self.keyfile_path)
             self.tts = Text2Speech(conf=conf)
-
-    def _setup_redis(self):
-        """Set up Redis connection."""
-        # TODO: hard coding of Redis config parameters port and password
-        self.redis_client = redis.Redis(
-            host=self.your_ip,
-            port=6379,
-            password='changemeplease',
-            db=0
-        )
 
     def _setup_dialogflow(self):
         """Initialize Dialogflow integration."""
@@ -179,7 +183,7 @@ class EISComponent(SICComponent):
         content = self._extract_content(message.text)
         if content.startswith("say"):
             if self.user_turn:
-                self.logger.info("Received "+content+", but ignoring this as it is not the agent's turn")
+                self.logger.info("Received " + content + ", but ignoring this as it is not the agent's turn")
             else:
                 self._handle_say_command(content)
         elif content.startswith("startListening"):
@@ -189,7 +193,7 @@ class EISComponent(SICComponent):
         elif content.startswith("renderPage"):
             self._handle_render_page_command(content)
         else:
-            self.logger.info("Unknown command:", content)
+            self.logger.info("Unknown command: " + content)
 
     # Helper methods
     def _validate_message(self, message):
@@ -201,9 +205,7 @@ class EISComponent(SICComponent):
                     message.__class__.__name__, self.get_component_name()
                 )
             )
-        self.logger.info("{} received text message {}".format(
-            self.get_component_name(), message.text
-        ))
+        self.logger.info(f"Received text message: {message.text}")
 
     def _extract_content(self, text):
         """Clean and extract the relevant part of the message text."""
@@ -247,24 +249,44 @@ class EISComponent(SICComponent):
         # Send transcript to webserver (to enable displaying the transcript on a webpage)
         transcript = reply.response.query_result.query_text
         self.web_server.send_message(TranscriptMessage(transcript=transcript))
+        # Send transcript to MARBEL agent
         self.redis_client.publish(self.marbel_channel, f"transcript({transcript})")
 
-        # Extract relevant fields
-        intent_name = reply.response.query_result.intent.display_name
-        # TODO: extract entities
-        entities = [{"recipe": "butter chicken"}]  # Example entities
-        entities_str = ", ".join([f"{key}='{value}'" for entity in entities for key, value in entity.items()])
-        confidence = round(float(reply.response.query_result.intent_detection_confidence), 2)
-        source = "speech"
+        # Send intent percept to MARBEL agent
+        intent_str = self._intent_string(reply)
+        self.logger.info(f"Sending intent: {intent_str}")
+        self.redis_client.publish(self.marbel_channel, intent_str)
 
-        # Format and send the intent message to the MARBEL agent and let agent know that Dialogflow stopped listening
-        intent_message = f"intent({intent_name}, [{entities_str}], {confidence}, '{transcript}', {source})"
-        self.redis_client.publish(
-                    self.marbel_channel, intent_message)
-        self.redis_client.publish(
-            self.marbel_channel, "event('ListeningDone')")
+        # Inform agent that Dialogflow stopped listening and webserver that it is the agent's turn now
+        self.redis_client.publish(self.marbel_channel, "event('ListeningDone')")
         self.user_turn = False  # Only agent saying something can hand back turn to user (see _handle_say below)
         self.web_server.send_message(SetTurnMessage(user_turn=self.user_turn))
+
+    def _intent_string(self, query_result: QueryResult) -> str:
+        """"Process QueryResult(SICMessage) from Dialogflow component"""
+        # TODO: this needs reworking to make it more generally applicable (also to other NLU services)
+        # TODO: probably best to rework the QueryResult object (and rename it to something like NLUResult too)
+        intent_name = query_result.response.query_result.action
+        entities_str = ""
+        if "query_result" in query_result.response and query_result.response.query_result.parameters:
+            entities = MessageToDict(query_result.response._pb).get('queryResult').get('parameters')  # E.g., [{"recipe": "butter chicken"}]
+            entities_str = self._process_parameters(entities)
+        confidence = round(float(query_result.response.query_result.intent_detection_confidence), 2)
+        transcript = query_result.response.query_result.query_text
+        source = "speech"  # Simply assume that speech has been used to get NLU results
+        self.logger.info("Got here with " + entities_str)
+        return f"intent({intent_name}, [{entities_str}], {confidence}, '{transcript}', {source})"
+
+    def _process_parameters(self, parameters) -> str:
+        processed_entities = []
+        # Remove empty values
+        for key, value in parameters.items():
+            if isinstance(value, list) and value:
+                list_values = ", ".join(value)
+                processed_entities.append(f"{key}=[{list_values}]")  # Turn list into string
+            elif isinstance(value, str) and value:
+                processed_entities.append(f"{key}={value}")
+        return ", ".join(processed_entities)
 
     def _handle_stop_listening_command(self):
         """Process 'stopListening' command to stop Dialogflow or related service."""

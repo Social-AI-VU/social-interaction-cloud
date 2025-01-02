@@ -120,7 +120,6 @@ class QueryResult(SICMessage):
         webhook_status {
         }
 
-
         """
         # the raw dialogflow response
         self.response = response
