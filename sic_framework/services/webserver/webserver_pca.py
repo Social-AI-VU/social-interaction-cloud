@@ -18,6 +18,12 @@ class TranscriptMessage(SICMessage):
         self.transcript = transcript
 
 
+class WebInfoMessage(SICMessage):
+    def __init__(self, label, message):
+        self.label = label
+        self.message = message
+
+
 class HtmlMessage(SICMessage):
     """Message for requesting the rendering of an HTML page"""
     def __init__(self, text, html):
@@ -81,15 +87,20 @@ class WebserverComponent(SICComponent):
     # when the HtmlMessage message arrives, feed it to self.input_text
     def on_message(self, message):
 
+        if is_sic_instance(message, WebInfoMessage):
+            self.logger.info(f"Sending {message.label}:{message.message} info to webserver")
+            self.socketio.emit(message.label, message.message)
+
         if is_sic_instance(message, HtmlMessage):
             self.logger.info("Receiving HTML message: " + message.html)
 
         if is_sic_instance(message, SetTurnMessage):
-            if message.user_turn:
-                self.logger.info("Handing back turn to the user")
-            else:
-                self.logger.info("It is the agent's turn to talk now.")
-            self.socketio.emit("set_turn", message.user_turn)
+            pass  # ignore for now
+            # if message.user_turn:
+            #    self.logger.info("Handing back turn to the user")
+            # else:
+            #    self.logger.info("It is the agent's turn to talk now.")
+            # self.socketio.emit("set_turn", message.user_turn)
 
         if is_sic_instance(message, TranscriptMessage):
             self.logger.debug(f"Receiving transcript: {message.transcript}-------")

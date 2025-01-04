@@ -17,7 +17,7 @@ from sic_framework.services.text2speech.text2speech_service import \
 from sic_framework.services.dialogflow.dialogflow import\
     (DialogflowConf, GetIntentRequest, StopListeningMessage, RecognitionResult, QueryResult, Dialogflow)
 from sic_framework.services.webserver.webserver_pca import \
-    (ButtonClicked, HtmlMessage, SetTurnMessage, TranscriptMessage, Webserver, WebserverConf)
+    (ButtonClicked, HtmlMessage, SetTurnMessage, TranscriptMessage, WebInfoMessage, Webserver, WebserverConf)
 
 
 class EISConf(SICConfMessage):
@@ -101,7 +101,7 @@ class EISComponent(SICComponent):
         self._setup_dialogflow()
         self._setup_webserver()
 
-        self.web_server.send_message(SetTurnMessage(user_turn=self.user_turn))
+        # self.web_server.send_message(SetTurnMessage(user_turn=self.user_turn))
 
     def _setup_redis(self):
         """Set up Redis connection."""
@@ -187,12 +187,15 @@ class EISComponent(SICComponent):
         # Extract and process message content
         content = self._extract_content(message.text)
         if content.startswith("say"):
-            if self.user_turn:
-                self.logger.info("Received " + content + ", but ignoring this as it is not the agent's turn")
-                self.logger.info("Sending event: TextDone")  # Inform agent that we are done with their request...
-                self.redis_client.publish(self.marbel_channel, "event('TextDone')")
-            else:
+            # if self.user_turn:
+            #    self.logger.info("Received " + content + ", but ignoring this as it is not the agent's turn")
+            #    self.logger.info("Sending event: TextDone")  # Inform agent that we are done with their request...
+            #    self.redis_client.publish(self.marbel_channel, "event('TextDone')")
+            # else:
                 self._handle_say_command(content)
+        elif content.startswith("webinfo"):
+            self._handle_web_info_command(content)
+        # What follows is OLD
         elif content.startswith("startListening"):
             self._handle_start_listening_command()
         elif content.startswith("stopListening"):
@@ -243,6 +246,14 @@ class EISComponent(SICComponent):
         # Publish 'TextDone' event
         self.logger.info("Sending event: TextDone")
         self.redis_client.publish(self.marbel_channel, "event('TextDone')")
+
+    def _handle_web_info_command(self, command):
+        # remove command and initial and ending brackets
+        parameter_text = command.replace("webinfo(", "", 1)[:-1]
+        label = parameter_text[:parameter_text.find(",")]
+        message = parameter_text.replace(label+",", "", 1)
+        self.logger.info(f"Sending message {message} for label {label} to server")
+        self.web_server.send_message(WebInfoMessage(label, message))
 
     def _handle_start_listening_command(self):
         """Process 'startListening' command by interacting with Dialogflow."""

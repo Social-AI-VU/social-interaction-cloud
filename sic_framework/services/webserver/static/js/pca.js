@@ -25,6 +25,9 @@ var socket = io();
 // Initially, it is the agent's turn; DO NOT CHANGE here, this flag is set by EISComponent in SIC framework
 var user_turn = false;
 
+// Variable to keep track of number of recipes that fullfill criteria
+var recipecounter = -1;
+
 // Code for handling button elements on page
 var elements = document.getElementsByClassName("btn");
 
@@ -79,14 +82,23 @@ socket.on('disconnect', function() {
 
 // Event handler for transcript event
 socket.on("transcript", (text) => {
-    document.getElementById("transcript").innerHTML = text;    
+    document.getElementById("transcript").innerHTML = text;
 });
 
 // Event handler for switching turns
 socket.on("set_turn", (whoseturn) => {
-    user_turn = whoseturn;
+    if (whoseturn=="true") {
+        user_turn = true;
+    } else {
+        user_turn = false;
+    }
     // If it's not the user's turn (any more), then make sure the microphone icon is mic_out
     if (!user_turn) {
         document.getElementById('micimg').src  = 'static/images/mic_out.png';
     }
+})
+
+socket.on("recipecounter", (number) => {
+    recipecounter = number;
+    document.getElementById("recipecounter").innerHTML = recipecounter;
 })
