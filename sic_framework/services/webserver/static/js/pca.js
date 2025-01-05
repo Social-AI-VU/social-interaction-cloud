@@ -41,18 +41,10 @@ for (var i = 0; i < elements.length; i++) {
     elements[i].addEventListener('click', sendButtonClick, false);
 }
 
-// Dedicated event listeners for two SPECIAL BUTTONS: the 'start' and 'mic' buttons.
-// Event listener for the start button (only on the start webpage, so may not be on the current webpage)
-var startButton = document.getElementById('start');
-
-if (startButton) {
-    startButton.addEventListener('click', function() {
-        window.location.href = "recipe_overview.html"
-    });
-}
-
-// Event listener for the microphone button to toggle from off to on
-// (socket handler for 'transcript' event turns it off again, see below)
+// Dedicated event listeners for two SPECIAL BUTTONS: the 'mic' button.
+// Event listener for the mic button to toggle from off to on
+// - We need to check if button is available on the webpage, as this may not be the case, e.g. not on start webpage.
+// - The socket handler for 'transcript' event turns it off again, see below.
 var micButton = document.getElementById('mic');
 
 if (micButton) {
@@ -85,6 +77,22 @@ socket.on("transcript", (text) => {
     document.getElementById("transcript").innerHTML = text;
 });
 
+socket.on("pattern", (pattern) => {
+    switch(pattern) {
+        case "start":
+            window.location.href = "start.html";
+            break;
+        case "c10":
+            window.location.href = "welcome.html";
+            break;
+        case "a50recipeSelect":
+            window.location.href = "recipe_overview.html";
+            break;
+        default:
+          window.location.href = "closing.html";
+      }
+})
+
 // Event handler for switching turns
 socket.on("set_turn", (whoseturn) => {
     if (whoseturn=="true") {
@@ -102,3 +110,25 @@ socket.on("recipecounter", (number) => {
     recipecounter = number;
     document.getElementById("recipecounter").innerHTML = recipecounter;
 })
+
+// Example showing how to work with templates
+// Adding filters to a card deck on an HTML page
+socket.on("filters", (filterString) => {
+    const filtersString = filterString.substring(1, filterString.length-1);
+    if (filterString.length != 0) {
+        const filters = filtersString.split(',');
+        document.getElementById("addFiltersHere").innerHTML = "";
+        filters.forEach((element) => {
+            filterCard(element);
+        });
+    }
+})
+
+// Create and add a single card for a filter based on the template in the HTML file
+// See also https://www.w3schools.com/tags/tag_template.asp
+function filterCard(filter) {
+    let filterTemplate = document.querySelector('#filterCardTemplate');
+    const card = filterTemplate.content.cloneNode(true);
+    card.querySelector('#filterText').innerHTML = filter;
+    document.getElementById("addFiltersHere").appendChild(card);
+}

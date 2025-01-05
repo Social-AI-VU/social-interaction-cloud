@@ -3,7 +3,7 @@
 	<head>
         <meta charset="utf-8"/>
 
-        <title>Project Conversational Agents - Recipe Overview</title>
+        <title>Project Conversational Agents - Welcome</title>
 
         <!-- Suppress favicon.ico request; https://www.reddit.com/r/flask/comments/aucgy9/template_rendering/ -->
         <link rel="icon" href="data:;base64,iVBORw0KGgo=">
@@ -34,23 +34,8 @@
                 <img class="bg-image" style="width: 100%; height: 100vh; position: fixed; top: 0; left: 0; z-index: -1;" src="https://images.pexels.com/photos/349609/pexels-photo-349609.jpeg" alt="Can not show this image">
                 <br>
                 <center>
-                    <h2>What kind of recipe are you looking for?</h2>
+                    <h2>WELCOME, my name is Cookpanion</h2>
                 </center>
-                <br>
-                <div class="alert bg-secondary text-white mx-auto">
-                    <center><h5><span id="recipecounter"></span> recipes have the following features:</h5></center>
-                </div>
-                <div class="row justify-content-center">
-                    <div class="card-deck" id="addFiltersHere">
-                    </div>
-                    <template id="filterCardTemplate">
-                        <div class="card text-center bg-light m-1" style="border:4px solid #07bc4c; max-width: 10rem">
-                            <div class="card-body">
-                                <p class="card-text" id="filterText">Without garlic</p>
-                            </div>
-                        </div>
-                    </template>
-                </div>
             </main>
             <!-- Footer is used to show transcripts received from ASR -->
             <footer class="fixed-bottom">
