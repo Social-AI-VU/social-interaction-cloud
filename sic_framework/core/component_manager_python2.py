@@ -27,8 +27,9 @@ class SICStartComponentRequest(SICRequest):
     will be providing some type of capability from this device.
     """
 
-    def __init__(self, component_name, log_level, conf=None):
+    def __init__(self, component_class, component_name, log_level, conf=None):
         super(SICStartComponentRequest, self).__init__()
+        self.component_class = component_class
         self.component_name = component_name  # str
         self.log_level = log_level  # logging.LOGLEVEL
         self.conf = conf  # SICConfMessage
@@ -140,22 +141,17 @@ class SICComponentManager(object):
             # return an empty stop message as a request must always be replied to
             return SICSuccessMessage()
 
-        # reply to the request if the component manager can start the component
-        if request.component_name in self.component_classes:
-            print(
-                "{} handling request {}".format(
-                    self.__class__.__name__, request.component_name
-                )
-            )
+        if request.component_name not in self.component_classes:
+            print("adding {component_name} to ComponentManager".format(component_name=request.component_name))
+            self.component_classes[request.component_name] = request.component_class
 
-            return self.start_component(request)
-        else:
-            print(
-                "{} ignored request {}".format(
-                    self.__class__.__name__, request.component_name
-                )
+        print(
+            "{} handling request {}".format(
+                self.__class__.__name__, request.component_name
             )
-            return SICIgnoreRequestMessage()
+        )
+        return self.start_component(request)        
+
 
     def get_manager_logger(self, log_level=sic_logging.INFO):
         """
