@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 
 from sic_framework.core import sic_redis, utils
 from sic_framework.core.utils import MAGIC_STARTED_COMPONENT_MANAGER_TEXT
@@ -46,30 +46,6 @@ shared_naoqi_components = [
 ]
 
 
-def get_install_script(robot_type):
-    '''
-    Returns the shell script to install SIC on the given robot type
-    
-    :param robot_type: either nao or pepper
-    :type robot_type: string
-    '''
-    if robot_type == "nao":
-        file_path = "../scripts/nao_install_script.sh"
-    elif robot_type == "pepper":
-        file_path = "../scripts/pepper_install_script.sh"
-    else:
-        raise Exception("Install script for robot type {} not defined!")
-
-    try:
-        with open(file_path, "r") as file:
-            shell_script = file.read()
-
-        return shell_script
-
-    except FileNotFoundError:
-        print(f"Shell script file {file_path} not found!")
-
-
 class Naoqi(SICDevice):
     __metaclass__ = ABCMeta
 
@@ -77,6 +53,7 @@ class Naoqi(SICDevice):
         self,
         ip,
         robot_type,
+        device_path,
         top_camera_conf=None,
         bottom_camera_conf=None,
         mic_conf=None,
@@ -121,49 +98,64 @@ class Naoqi(SICDevice):
             # get own public ip address for the device to use
             redis_hostname = utils.get_ip_adress()
 
-        device_path = (
-            "/data/home/nao/.venv_sic/lib/python2.7/site-packages/sic_framework/devices"
-        )
-
+        # set start and stop scripts
+        robot_wrapper_file = device_path + "/" + robot_type
+        self.start_cmd = """
+            echo 'Robot: Starting SIC';
+            python2 {robot_wrapper_file}.py --redis_ip={redis_host};
+        """.format(robot_wrapper_file=robot_wrapper_file, redis_host=redis_hostname)
         self.stop_cmd = """
             echo 'Killing all previous robot wrapper processes';
-            pkill -f "python2 {device_path}/{robot_type}.py"
-        """.format(
-            device_path=device_path, robot_type=robot_type
-        )
+            pkill -f "python2 {robot_wrapper_file}.py"
+        """.format(robot_wrapper_file=robot_wrapper_file)
 
-        robot_wrapper_file = device_path + "/" + robot_type
-
-        # install command differs between robots because Pepper cannot pip install from PyPi
-        if robot_type == "nao":
-            install_cmd = get_install_script("nao")
-        elif robot_type == "pepper":
-            install_cmd = get_install_script("pepper")
-            
-        # start command is the same for both robots
-        start_cmd = """
-                echo 'Robot: Starting SIC';
-                python2 {robot_wrapper_file}.py --redis_ip={redis_host};
-                """.format(
-            robot_wrapper_file=robot_wrapper_file, redis_host=redis_hostname
-        )
-
-        # first make sure software is stopped on the robot
+        # stop SIC
         self.ssh.exec_command(self.stop_cmd)
         time.sleep(0.1)
 
-        # on_windows = sys.platform == 'win32'
-        # use_pty = not on_windows
-
         # make sure SIC is installed
-        stdin, stdout, _ = self.ssh.exec_command(install_cmd, get_pty=False)
+        self.verify_sic()
 
-        # start the software
-        stdin, stdout, _ = self.ssh.exec_command(start_cmd, get_pty=False)
+        # start SIC
+        print("Starting SIC on {} with redis ip {}".format(self.robot_type, redis_hostname))
+        self.run_sic()
+    
+
+    def verify_sic(self):
+        '''
+        Checks if SIC is installed on the device. installs SIC if not.
+        '''
+        if not self.check_sic_install():
+            print("SIC is not installed, installing now")
+            self.sic_install()
+        else:
+            print("SIC is already installed!")
+
+
+    @abstractmethod
+    def check_sic_install():
+        '''
+        Naos and Peppers have different ways of verifying SIC is installed.
+        '''
+        pass
+
+
+    @abstractmethod
+    def sic_install():
+        '''
+        Naos and Peppers have different ways of installing SIC.
+        '''
+        pass
+    
+
+    def run_sic(self):
+        '''
+        Starts SIC on the device.
+        '''
+        stdin, stdout, _ = self.ssh.exec_command(self.start_cmd, get_pty=False)
         # merge stderr to stdout to simplify (and prevent potential deadlock as stderr is not read)
         stdout.channel.set_combine_stderr(True)
 
-        print("Starting SIC on {} with redis ip {}".format(robot_type, redis_hostname))
         self.logfile = open("sic.log", "w")
 
         # Set up error monitoring
@@ -195,7 +187,7 @@ class Naoqi(SICDevice):
             raise RuntimeError(
                 "Could not start SIC on remote device\nSee sic.log for details"
             )
-
+        
         # write the remaining output to the logfile
         def write_logs():
             for line in stdout:
