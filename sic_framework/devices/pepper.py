@@ -41,9 +41,6 @@ class Pepper(Naoqi):
         Runs a script on Pepper to see if the sic_framework folder is there.
         """
         _, stdout, _ = self.ssh_command("""
-                    export PYTHONPATH=/opt/aldebaran/lib/python2.7/site-packages;
-                    export LD_LIBRARY_PATH=/opt/aldebaran/lib/naoqi;
-
                     if [ -d /home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework ]; then
                         echo "sic framework is installed"
                     else
@@ -60,11 +57,10 @@ class Pepper(Naoqi):
 
     def sic_install(self):
         """
-        1. check to see if directories exist, if not, make them
+        1. git rid of old directories for clean install
         2. curl github repository
-        3. pip install --no-deps
-        4. install dependencies
-        5. if not all dependencies installed, sync .whls over and pip install
+        3. pip install --no-deps git repo
+        4. install dependencies from dep_whls folder
         """
         _, stdout, stderr = self.ssh_command("""
                     if [ -d /home/nao/sic_framework_2 ]; then

@@ -83,9 +83,10 @@ class Nao(Naoqi):
                     """)
         
         output = stdout.read().decode()
+        error = stderr.read().decode()
 
-        if not "SIC successfully installed" in stdout.read().decode():
-            raise Exception("Failed to install sic. Standard error stream from install command: {}".format(stderr.read().decode()))
+        if not "SIC successfully installed" in output:
+            raise Exception("Failed to install sic. Standard error stream from install command: {}".format(error))
 
 
 if __name__ == "__main__":
