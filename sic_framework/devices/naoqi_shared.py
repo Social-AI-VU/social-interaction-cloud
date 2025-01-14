@@ -85,6 +85,8 @@ class Naoqi(SICDevice):
         self.configs[NaoqiSpeaker] = speaker_conf
         self.configs[NaoqiLookAt] = lookat_conf
 
+        self.robot_type = robot_type
+
         assert robot_type in [
             "nao",
             "pepper",
@@ -102,6 +104,11 @@ class Naoqi(SICDevice):
         robot_wrapper_file = device_path + "/" + robot_type
         self.start_cmd = """
             echo 'Robot: Starting SIC';
+
+            # export environment variables so that it can find the naoqi library
+            export PYTHONPATH=/opt/aldebaran/lib/python2.7/site-packages;
+            export LD_LIBRARY_PATH=/opt/aldebaran/lib/naoqi;
+
             python2 {robot_wrapper_file}.py --redis_ip={redis_host};
         """.format(robot_wrapper_file=robot_wrapper_file, redis_host=redis_hostname)
         self.stop_cmd = """
@@ -126,10 +133,11 @@ class Naoqi(SICDevice):
         Checks if SIC is installed on the device. installs SIC if not.
         '''
         if not self.check_sic_install():
-            print("SIC is not installed, installing now")
+            # TODO: change to log statements
+            print("SIC is not installed on Naoqi device {}, installing now".format(self.ip))
             self.sic_install()
         else:
-            print("SIC is already installed!")
+            print("SIC is already installed on Naoqi device {}! starting SIC...".format(self.ip))
 
 
     @abstractmethod

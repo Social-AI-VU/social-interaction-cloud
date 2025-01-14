@@ -15,8 +15,7 @@ from sic_framework.devices.common_naoqi.pepper_tablet import (
     NaoqiTabletComponent,
 )
 from sic_framework.devices.naoqi_shared import *
-
-
+from importlib.metadata import version
 class Pepper(Naoqi):
     """
     Wrapper for Pepper device to easily access its components (connectors)
@@ -48,10 +47,28 @@ class Pepper(Naoqi):
                     fi;
                     """)
         
+        cur_version = version("social-interaction-cloud")
+        print("SIC version on current device: {cur_version}".format(cur_version=cur_version))
+
         output = stdout.read().decode()
 
-        if "is installed" in output:
-            return True
+        if "is installed" in output:     
+            # check to make sure the version is up-to-date (assuming the latest version of SIC is installed locally)
+            _, stdout, _ = self.ssh_command("""
+                        grep -R "^Version:" /home/nao/sic_framework_2/social-interaction-cloud-main/social_interaction_cloud.egg-info/PKG-INFO > /home/nao/sic_framework_2/version.txt;
+                        cat /home/nao/sic_framework_2/version.txt;
+                        """)     
+
+            pepper_version = stdout.read().decode()  
+            pepper_version = pepper_version.replace("Version: ", "") 
+            pepper_version = pepper_version.strip()
+            print("SIC version on Pepper: {}".format(pepper_version))
+
+            if pepper_version == cur_version:
+                print("SIC already installed on Pepper and versions match")
+                return True
+            else:
+                return False
         else:
             return False
 
