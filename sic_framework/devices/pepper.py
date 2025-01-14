@@ -1,6 +1,4 @@
 import argparse
-import subprocess
-from pathlib import Path
 import os
 
 from sic_framework.core.component_manager_python2 import SICComponentManager
