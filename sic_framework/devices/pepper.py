@@ -38,7 +38,7 @@ class Pepper(Naoqi):
         Runs a script on Pepper to see if the sic_framework folder is there.
         """
         _, stdout, _ = self.ssh_command("""
-                    if [ -d /home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework ]; then
+                    if [ pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ]; then
                         echo "sic framework is installed"
                     else
                         echo "sic framework is not installed"

@@ -26,11 +26,7 @@ class Nao(Naoqi):
         """
         Runs a script on Nao to see if SIC is installed there
         """
-        _, stdout, _ = self.ssh_command("""
-                    if [ ! -f ~/.local/bin/virtualenv ]; then
-                        pip install --user virtualenv;
-                    fi;
-                                        
+        _, stdout, _ = self.ssh_command("""         
                     # state if SIC is already installed
                     if [ -d ~/.venv_sic/lib/python2.7/site-packages/social_interaction_cloud* ]; then
                         echo "SIC already installed";    
@@ -56,6 +52,10 @@ class Nao(Naoqi):
         Runs the install script specific to the Nao
         """
         _, stdout, stderr = self.ssh_command("""
+                    if [ ! -f ~/.local/bin/virtualenv ]; then
+                        pip install --user virtualenv;
+                    fi;                                     
+                                        
                     #  create virtual environment
                     /home/nao/.local/bin/virtualenv ~/.venv_sic;
                     source ~/.venv_sic/bin/activate;
@@ -67,7 +67,7 @@ class Nao(Naoqi):
                     pip install social-interaction-cloud --no-deps;
                     pip install Pillow PyTurboJPEG numpy redis six;
                                         
-                    if [ -d /data/home/nao/.venv_sic/lib/python2.7/site-packages/sic_framework ]; then
+                    if [ pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ]; then
                         echo "SIC successfully installed";
                     fi;
                     """)

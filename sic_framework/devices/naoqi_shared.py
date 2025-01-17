@@ -102,9 +102,12 @@ class Naoqi(SICDevice):
 
         # set start and stop scripts
         robot_wrapper_file = device_path + "/" + robot_type
-        self.start_cmd = """
-            echo 'Robot: Starting SIC';
-
+        self.start_cmd = """            
+            # activate virutal environment if there is one
+            if [ -d ~/.venv_sic ]; then
+                source ~/.venv_sic/bin/activate;
+            fi;   
+            
             # export environment variables so that it can find the naoqi library
             export PYTHONPATH=/opt/aldebaran/lib/python2.7/site-packages;
             export LD_LIBRARY_PATH=/opt/aldebaran/lib/naoqi;
