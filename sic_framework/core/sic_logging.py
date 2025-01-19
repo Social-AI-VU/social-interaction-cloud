@@ -13,6 +13,7 @@ def get_log_channel():
     """
     Get the global log channel. All components on any device should log to this channel.
     """
+    # TODO: add IP so each device gets its own separate log channel
     return "sic:logging"
 
 
@@ -31,7 +32,10 @@ class SICRemoteError(Exception):
 
 
 class SICLogSubscriber(object):
+    """
 
+
+    """
     def __init__(self):
         self.redis = None
         # TODO make this a mutex
@@ -40,7 +44,7 @@ class SICLogSubscriber(object):
     def subscribe_to_log_channel_once(self):
         """
         Subscribe to the log channel and display any messages on the terminal to propagate any log messages in the
-        framework tot the user. This function may be called multiple times but will only subscribe once.
+        framework to the user. This function may be called multiple times but will only subscribe once.
         :return:
         """
 
@@ -67,15 +71,9 @@ class SICLogSubscriber(object):
             self.redis.close()
 
 
-# pseudo singleton object. Does nothing when this file is executed during the import, but can subscribe to the log
-# channel for the user with subscribe_to_log_channel_once
-SIC_LOG_SUBSCRIBER = SICLogSubscriber()
-
-
 class SICLogStream(io.TextIOBase):
     """
-    Facilities to log to redis as a file-like object, to integrate with standard python
-    logging facilities.
+    Facilities to log to redis as a file-like object, to integrate with standard python logging facilities.
     """
 
     def __init__(self, redis, logging_channel):
@@ -97,6 +95,40 @@ class SICLogStream(io.TextIOBase):
 
 
 class SICLogFormatter(logging.Formatter):
+    # Define ANSI escape codes for colors
+    LOG_COLORS = {
+        logging.DEBUG: "\033[92m",  # Green
+        logging.INFO: "\033[94m",   # Blue
+        logging.WARNING: "\033[93m",  # Yellow
+        logging.ERROR: "\033[91m",  # Deep Red
+        logging.CRITICAL: "\033[101m\033[97m",  # Bright Red (White on Red Background)
+    }
+    RESET_COLOR = "\033[0m"  # Reset color
+
+    def format(self, record):
+        # Get the color for the current log level
+        color = self.LOG_COLORS.get(record.levelno, self.RESET_COLOR)
+        
+        # Format the message with color applied to name and ip
+        log_message = "[{name} {ip}]: {levelname}: {message}".format(
+            name=record.name,
+            ip=utils.get_ip_adress(),
+            levelname=record.levelname,
+            message=record.msg,
+        )
+        # Apply the color to the name/ip part and reset afterward
+        log_message = f"{color}{log_message}{self.RESET_COLOR}"
+        return log_message
+
+    def formatException(self, exec_info):
+        """
+        Prepend every exception with a | to indicate it is not local.
+        """
+        text = super(SICLogFormatter, self).formatException(exec_info)
+        text = "| " + text.replace("\n", "\n| ")
+        text += "\n| NOTE: Exception occurred in SIC framework, not application"
+        return text
+
 
     def formatException(self, exec_info):
         """
@@ -117,18 +149,20 @@ def get_sic_logger(redis, name, log_level):
     :param redis: The SICRedis object
     :param name: A readable and identifiable name to indicate to the user where the log originated
     :param log_level: The logger.LOGLEVEL verbosity level
-    :param log_messages_channel: the output channel of this service, on which the log output channel is based.
+    # ? still used :param log_messages_channel: the output channel of this service, on which the log output channel is based.
     """
     # logging initialisation
     logger = logging.Logger(name)
     logger.setLevel(log_level)
 
+    # debug stream sends messages to redis
     debug_stream = SICLogStream(redis, get_log_channel())
-    handler_redis = logging.StreamHandler(debug_stream)
 
     log_format = SICLogFormatter(
         "[%(name)s {ip}]: %(levelname)s: %(message)s".format(ip=utils.get_ip_adress())
     )
+
+    handler_redis = logging.StreamHandler(debug_stream)
     handler_redis.setFormatter(log_format)
 
     handler_terminal = logging.StreamHandler()
@@ -154,6 +188,9 @@ SIC_DEBUG_FRAMEWORK_VERBOSE = (
 )
 NOTSET = 0
 
+# pseudo singleton object. Does nothing when this file is executed during the import, but can subscribe to the log
+# channel for the user with subscribe_to_log_channel_once
+SIC_LOG_SUBSCRIBER = SICLogSubscriber()
 
 def debug_framework(self, message, *args, **kws):
     if self.isEnabledFor(SIC_DEBUG_FRAMEWORK):
