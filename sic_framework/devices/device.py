@@ -249,21 +249,32 @@ class SICDevice(object):
         self.ssh.exec_command("touch {}".format(framework_signature))
 
     def ssh_command(self, command):
-        '''
+        """
         Executes the given command and logs any exceptions that may occur
 
         :param command: command to run on ssh client
         :type command: string
-        '''
+        """
         try:
             return self.ssh.exec_command(command)
         except paramiko.AuthenticationException as e:
-            print("Encountered AuthenticationException when trying to execute ssh command: {}".format(e))
+            print(
+                "Encountered AuthenticationException when trying to execute ssh command: {}".format(
+                    e
+                )
+            )
         except paramiko.BadHostKeyException:
-            print("Encountered BadHostKeyException when trying to execute ssh command: {}".format(e))
+            print(
+                "Encountered BadHostKeyException when trying to execute ssh command: {}".format(
+                    e
+                )
+            )
         except Exception as e:
-            print("Encountered unknown exception while trying to execute ssh command: {}".format(e))
-
+            print(
+                "Encountered unknown exception while trying to execute ssh command: {}".format(
+                    e
+                )
+            )
 
     def _get_connector(self, component_connector):
         """

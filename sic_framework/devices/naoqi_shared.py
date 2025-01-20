@@ -113,11 +113,15 @@ class Naoqi(SICDevice):
             export LD_LIBRARY_PATH=/opt/aldebaran/lib/naoqi;
 
             python2 {robot_wrapper_file}.py --redis_ip={redis_host};
-        """.format(robot_wrapper_file=robot_wrapper_file, redis_host=redis_hostname)
+        """.format(
+            robot_wrapper_file=robot_wrapper_file, redis_host=redis_hostname
+        )
         self.stop_cmd = """
             echo 'Killing all previous robot wrapper processes';
             pkill -f "python2 {robot_wrapper_file}.py"
-        """.format(robot_wrapper_file=robot_wrapper_file)
+        """.format(
+            robot_wrapper_file=robot_wrapper_file
+        )
 
         # stop SIC
         self.ssh.exec_command(self.stop_cmd)
@@ -127,42 +131,50 @@ class Naoqi(SICDevice):
         self.verify_sic()
 
         # start SIC
-        print("Starting SIC on {} with redis ip {}".format(self.robot_type, redis_hostname))
+        print(
+            "Starting SIC on {} with redis ip {}".format(
+                self.robot_type, redis_hostname
+            )
+        )
         self.run_sic()
-    
 
     def verify_sic(self):
-        '''
+        """
         Checks if SIC is installed on the device. installs SIC if not.
-        '''
+        """
         if not self.check_sic_install():
             # TODO: change to log statements
-            print("SIC is not installed on Naoqi device {}, installing now".format(self.ip))
+            print(
+                "SIC is not installed on Naoqi device {}, installing now".format(
+                    self.ip
+                )
+            )
             self.sic_install()
         else:
-            print("SIC is already installed on Naoqi device {}! starting SIC...".format(self.ip))
-
+            print(
+                "SIC is already installed on Naoqi device {}! starting SIC...".format(
+                    self.ip
+                )
+            )
 
     @abstractmethod
     def check_sic_install():
-        '''
+        """
         Naos and Peppers have different ways of verifying SIC is installed.
-        '''
+        """
         pass
-
 
     @abstractmethod
     def sic_install():
-        '''
+        """
         Naos and Peppers have different ways of installing SIC.
-        '''
+        """
         pass
-    
 
     def run_sic(self):
-        '''
+        """
         Starts SIC on the device.
-        '''
+        """
         stdin, stdout, _ = self.ssh.exec_command(self.start_cmd, get_pty=False)
         # merge stderr to stdout to simplify (and prevent potential deadlock as stderr is not read)
         stdout.channel.set_combine_stderr(True)
@@ -198,7 +210,7 @@ class Naoqi(SICDevice):
             raise RuntimeError(
                 "Could not start SIC on remote device\nSee sic.log for details"
             )
-        
+
         # write the remaining output to the logfile
         def write_logs():
             for line in stdout:
