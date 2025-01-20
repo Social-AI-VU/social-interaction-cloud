@@ -60,7 +60,6 @@ class SICLogSubscriber(object):
         Handle a message sent on a debug stream. Currently its just printed to the terminal.
         :param message: SICLogMessage
         """
-        print(message.msg, end="")
 
         if "ERROR" in message.msg.split(":")[1]:
             raise SICRemoteError("Error occurred, see remote stacktrace above.")
