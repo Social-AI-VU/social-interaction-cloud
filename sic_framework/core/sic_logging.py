@@ -171,8 +171,7 @@ def get_sic_logger(redis, name, log_level):
     return logger
 
 
-# Loglevel interpretation
-# mostly follows python's defaults
+# loglevel interpretation, mostly follows python's defaults
 
 CRITICAL = 50
 ERROR = 40

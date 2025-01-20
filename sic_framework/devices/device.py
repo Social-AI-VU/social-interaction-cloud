@@ -10,6 +10,8 @@ import six
 from sic_framework.core import utils
 from sic_framework.core.connector import SICConnector
 
+from sic_framework.core import sic_logging
+
 if six.PY3:
     import pathlib
 
