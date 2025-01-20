@@ -98,9 +98,9 @@ class Pepper(Naoqi):
                     curl -L -o sic_repo.zip https://github.com/Social-AI-VU/social-interaction-cloud/archive/refs/heads/main.zip;
                     unzip sic_repo.zip;
                     cd /home/nao/sic_framework_2/social-interaction-cloud-main;
-                    pip install -e . --no-deps;
+                    pip install --user -e . --no-deps;
                                         
-                    if [ -d /home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework ]; then
+                    if pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ; then
                         echo "SIC successfully installed"
                     fi;
                     """
@@ -116,6 +116,12 @@ class Pepper(Naoqi):
         print("Installing package dependencies...")
 
         # install dependency .whls on pepper
+        # _, stdout, stderr = self.ssh_command(
+        #     """
+        #             cd /home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework/devices/dep_whls;
+        #             pip install *.whl
+        #             """
+        # )
         _, stdout, stderr = self.ssh_command(
             """
                     cd /home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework/devices/dep_whls;
