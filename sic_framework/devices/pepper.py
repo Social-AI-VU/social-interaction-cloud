@@ -1,5 +1,6 @@
 import argparse
 import os
+from importlib.metadata import version
 
 from sic_framework.core.component_manager_python2 import SICComponentManager
 from sic_framework.devices.common_naoqi.naoqi_camera import (
@@ -13,7 +14,8 @@ from sic_framework.devices.common_naoqi.pepper_tablet import (
     NaoqiTabletComponent,
 )
 from sic_framework.devices.naoqi_shared import *
-from importlib.metadata import version
+
+
 class Pepper(Naoqi):
     """
     Wrapper for Pepper device to easily access its components (connectors)
@@ -37,28 +39,36 @@ class Pepper(Naoqi):
         """
         Runs a script on Pepper to see if the sic_framework folder is there.
         """
-        _, stdout, _ = self.ssh_command("""
-                    if [ pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ]; then
+        _, stdout, _ = self.ssh_command(
+            """
+                    if pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ; then
                         echo "sic framework is installed"
                     else
                         echo "sic framework is not installed"
                     fi;
-                    """)
-        
+                    """
+        )
+
         cur_version = version("social-interaction-cloud")
-        print("SIC version on current device: {cur_version}".format(cur_version=cur_version))
+        print(
+            "SIC version on current device: {cur_version}".format(
+                cur_version=cur_version
+            )
+        )
 
         output = stdout.read().decode()
 
-        if "is installed" in output:     
+        if "is installed" in output:
             # check to make sure the version is up-to-date (assuming the latest version of SIC is installed locally)
-            _, stdout, _ = self.ssh_command("""
+            _, stdout, _ = self.ssh_command(
+                """
                         grep -R "^Version:" /home/nao/sic_framework_2/social-interaction-cloud-main/social_interaction_cloud.egg-info/PKG-INFO > /home/nao/sic_framework_2/version.txt;
                         cat /home/nao/sic_framework_2/version.txt;
-                        """)     
+                        """
+            )
 
-            pepper_version = stdout.read().decode()  
-            pepper_version = pepper_version.replace("Version: ", "") 
+            pepper_version = stdout.read().decode()
+            pepper_version = pepper_version.replace("Version: ", "")
             pepper_version = pepper_version.strip()
             print("SIC version on Pepper: {}".format(pepper_version))
 
@@ -77,7 +87,8 @@ class Pepper(Naoqi):
         3. pip install --no-deps git repo
         4. install dependencies from dep_whls folder
         """
-        _, stdout, stderr = self.ssh_command("""
+        _, stdout, stderr = self.ssh_command(
+            """
                     if [ -d /home/nao/sic_framework_2 ]; then
                         rm -rf /home/nao/sic_framework_2;
                     fi;
@@ -92,19 +103,25 @@ class Pepper(Naoqi):
                     if [ -d /home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework ]; then
                         echo "SIC successfully installed"
                     fi;
-                    """)
-        
+                    """
+        )
+
         if not "SIC successfully installed" in stdout.read().decode():
-            raise Exception("Failed to install sic. Standard error stream from install command: {}".format(stderr.read().decode()))
+            raise Exception(
+                "Failed to install sic. Standard error stream from install command: {}".format(
+                    stderr.read().decode()
+                )
+            )
 
         print("Installing package dependencies...")
 
         # install dependency .whls on pepper
-        _, stdout, stderr = self.ssh_command("""
+        _, stdout, stderr = self.ssh_command(
+            """
                     cd /home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework/devices/dep_whls;
                     pip install *.whl
-                    """)
-        
+                    """
+        )
 
     @property
     def stereo_camera(self):
