@@ -158,9 +158,7 @@ def get_sic_logger(redis, name, log_level):
     # debug stream sends messages to redis
     debug_stream = SICLogStream(redis, get_log_channel())
 
-    log_format = SICLogFormatter(
-        "[%(name)s {ip}]: %(levelname)s: %(message)s".format(ip=utils.get_ip_adress())
-    )
+    log_format = SICLogFormatter()
 
     handler_redis = logging.StreamHandler(debug_stream)
     handler_redis.setFormatter(log_format)
