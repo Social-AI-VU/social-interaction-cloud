@@ -90,7 +90,7 @@ class Naoqi(SICDevice):
         ], "Robot type must be either 'nao' or 'pepper'"
 
         # self.auto_install()
-
+        
         redis_hostname, _ = sic_redis.get_redis_db_ip_password()
 
         if redis_hostname == "127.0.0.1" or redis_hostname == "localhost":
@@ -163,7 +163,7 @@ class Naoqi(SICDevice):
         # merge stderr to stdout to simplify (and prevent potential deadlock as stderr is not read)
         stdout.channel.set_combine_stderr(True)
 
-        print("Starting SIC on {} with redis ip {}".format(robot_type, redis_hostname))
+        self.logger.info("Starting SIC on {} with redis ip {}".format(robot_type, redis_hostname))
         self.logfile = open("sic.log", "w")
 
         # Set up error monitoring
