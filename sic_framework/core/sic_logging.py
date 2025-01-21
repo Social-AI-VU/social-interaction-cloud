@@ -86,8 +86,10 @@ class SICLogStream(io.TextIOBase):
         return True
 
     def write(self, msg):
-        message = SICLogMessage(msg)
-        self.redis.send_message(self.logging_channel, message)
+        # only send logs to redis if a redis instance is associated with this logger
+        if self.redis != None:
+            message = SICLogMessage(msg)
+            self.redis.send_message(self.logging_channel, message)
 
     def flush(self):
         return
@@ -114,9 +116,8 @@ class SICLogFormatter(logging.Formatter):
         )
 
         # Pad the name_ip portion with dashes if it's less than 150 characters
-        name_ip_padded = name_ip.ljust(40, '-')
+        name_ip_padded = name_ip.ljust(35, '-')
 
-        
         # Format the message with color applied to name and ip
         log_message = "{name_ip}{color}{levelname}{reset_color}: {message}".format(
             name_ip=name_ip_padded,
@@ -150,7 +151,7 @@ class SICLogFormatter(logging.Formatter):
         return text
 
 
-def get_sic_logger(redis, name, log_level):
+def get_sic_logger(name="", redis=None, log_level=logging.DEBUG):
     """
     Set up logging to the log output channel to be able to report messages to users. Also logs to the terminal.
 

@@ -230,7 +230,7 @@ class SICConnector(object):
         """
         name = "{connector}".format(connector=self.__class__.__name__)
 
-        logger = sic_logging.get_sic_logger(self._redis, name, log_level)
+        logger = sic_logging.get_sic_logger(name=name, redis=self._redis, log_level=log_level)
         logger.info("Connector on device {} starting".format(self._ip))
 
         return logger

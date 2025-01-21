@@ -75,7 +75,7 @@ class SICComponent:
         """
         # create logger for the component
         name = self.get_component_name()
-        return sic_logging.get_sic_logger(self._redis, name, log_level)
+        return sic_logging.get_sic_logger(name=name, redis=self._redis, log_level=log_level)
 
     def _start(self):
         """
