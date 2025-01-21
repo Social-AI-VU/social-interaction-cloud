@@ -24,6 +24,7 @@ class Pepper(Naoqi):
         super().__init__(
             ip,
             robot_type="pepper",
+            venv=False,
             username="nao",
             passwords=["pepper", "nao"],
             # device path is where this script is located on the actual Pepper machine
