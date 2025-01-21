@@ -107,16 +107,25 @@ class SICLogFormatter(logging.Formatter):
     def format(self, record):
         # Get the color for the current log level
         color = self.LOG_COLORS.get(record.levelno, self.RESET_COLOR)
+
+        name_ip = "[{name} {ip}]".format(
+            name=record.name,
+            ip=utils.get_ip_adress()
+        )
+
+        # Pad the name_ip portion with dashes if it's less than 150 characters
+        name_ip_padded = name_ip.ljust(40, '-')
+
         
         # Format the message with color applied to name and ip
-        log_message = "[{name} {ip}]: {levelname}: {message}".format(
-            name=record.name,
-            ip=utils.get_ip_adress(),
+        log_message = "{name_ip}{color}{levelname}{reset_color}: {message}".format(
+            name_ip=name_ip_padded,
+            color = color,
             levelname=record.levelname,
+            reset_color=self.RESET_COLOR,
             message=record.msg,
         )
-        # Apply the color to the name/ip part and reset afterward
-        log_message = f"{color}{log_message}{self.RESET_COLOR}"
+
         return log_message
 
     def formatException(self, exec_info):

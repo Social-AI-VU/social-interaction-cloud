@@ -80,7 +80,7 @@ class SICComponentManager(object):
             + ' on ip "{}" with components:'.format(self.ip)
         )
         for c in self.component_classes.values():
-            self.logger.debug(" - {}".format(c.get_component_name()))
+            self.logger.info(" - {}".format(c.get_component_name()))
 
         self.ready_event.set()
         if auto_serve:
