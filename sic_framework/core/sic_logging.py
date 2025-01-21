@@ -60,6 +60,7 @@ class SICLogSubscriber(object):
         Handle a message sent on a debug stream. Currently its just printed to the terminal.
         :param message: SICLogMessage
         """
+        print(message.msg, end="")
 
         if "ERROR" in message.msg.split(":")[1]:
             raise SICRemoteError("Error occurred, see remote stacktrace above.")
@@ -171,12 +172,13 @@ def get_sic_logger(name="", redis=None, log_level=logging.DEBUG):
 
     handler_redis = logging.StreamHandler(debug_stream)
     handler_redis.setFormatter(log_format)
-
-    handler_terminal = logging.StreamHandler()
-    handler_terminal.setFormatter(log_format)
-
     logger.addHandler(handler_redis)
-    logger.addHandler(handler_terminal)
+
+    # if redis instance is not passed in, log to terminal
+    if not redis:
+        handler_terminal = logging.StreamHandler()
+        handler_terminal.setFormatter(log_format)
+        logger.addHandler(handler_terminal)
 
     return logger
 
