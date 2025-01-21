@@ -1,7 +1,6 @@
 import argparse
 import os
-from importlib.metadata import version
-
+import subprocess
 from sic_framework.core.component_manager_python2 import SICComponentManager
 from sic_framework.devices.common_naoqi.naoqi_camera import (
     DepthPepperCamera,
@@ -42,29 +41,30 @@ class Pepper(Naoqi):
         _, stdout, _ = self.ssh_command(
             """
                     if pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ; then
-                        echo "sic framework is installed"
+                        echo "SIC is installed";
                     else
-                        echo "sic framework is not installed"
+                        echo "SIC is not installed";
                     fi;
                     """
         )
 
-        cur_version = version("social-interaction-cloud")
-        print(
-            "SIC version on current device: {cur_version}".format(
-                cur_version=cur_version
-            )
-        )
-
         output = stdout.read().decode()
+        print("Output from SIC installation check: {}".format(output))
 
-        if "is installed" in output:
-            # check to make sure the version is up-to-date (assuming the latest version of SIC is installed locally)
+        if "SIC is installed" in output:
+            # this command gets the version of SIC that is currently installed on the local machine
+            version_cmd = """pip list | grep 'social-interaction-cloud' | awk '{gsub(/[()]/, "", $2); print $2}'"""
+            try:
+                cur_version = subprocess.check_output(version_cmd, shell=True, text=True).strip()
+            except subprocess.CalledProcessError as e:
+                print("Exception encountered while grabbing current SIC version:", e)
+
+            # check to make sure the Pepper version is up-to-date (assuming the latest version of SIC is installed locally)
             _, stdout, _ = self.ssh_command(
                 """
-                        grep -R "^Version:" /home/nao/sic_framework_2/social-interaction-cloud-main/social_interaction_cloud.egg-info/PKG-INFO > /home/nao/sic_framework_2/version.txt;
+                        {version_cmd} > /home/nao/sic_framework_2/version.txt;
                         cat /home/nao/sic_framework_2/version.txt;
-                        """
+                        """.format(version_cmd=version_cmd)
             )
 
             pepper_version = stdout.read().decode()
@@ -76,6 +76,7 @@ class Pepper(Naoqi):
                 print("SIC already installed on Pepper and versions match")
                 return True
             else:
+                print("SIC is installed on Pepper but does not match the local version!")
                 return False
         else:
             return False
@@ -122,12 +123,7 @@ class Pepper(Naoqi):
         #             pip install *.whl
         #             """
         # )
-        _, stdout, stderr = self.ssh_command(
-            """
-                    cd /home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework/devices/dep_whls;
-                    pip install *.whl
-                    """
-        )
+
 
     @property
     def stereo_camera(self):
