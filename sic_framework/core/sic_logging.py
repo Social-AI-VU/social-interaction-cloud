@@ -33,13 +33,12 @@ class SICRemoteError(Exception):
 
 class SICLogSubscriber(object):
     """
-
-
+    A class to subscribe to a redis log channel, ensuring thread-safety with a mutex.
     """
     def __init__(self):
         self.redis = None
-        # TODO make this a mutex
         self.running = False
+        self.lock = threading.Lock()
 
     def subscribe_to_log_channel_once(self):
         """
@@ -47,17 +46,17 @@ class SICLogSubscriber(object):
         framework to the user. This function may be called multiple times but will only subscribe once.
         :return:
         """
-
-        if not self.running:
-            self.running = True
-            self.redis = SICRedis(parent_name="SICLogSubscriber")
-            self.redis.register_message_handler(
-                get_log_channel(), self._handle_log_message
-            )
+        with self.lock:  # Ensure thread-safe access
+            if not self.running:
+                self.running = True
+                self.redis = SICRedis(parent_name="SICLogSubscriber")
+                self.redis.register_message_handler(
+                    get_log_channel(), self._handle_log_message
+                )
 
     def _handle_log_message(self, message):
         """
-        Handle a message sent on a debug stream. Currently its just printed to the terminal.
+        Handle a message sent on a debug stream. Currently it's just printed to the terminal.
         :param message: SICLogMessage
         """
         print(message.msg, end="")
@@ -66,9 +65,11 @@ class SICLogSubscriber(object):
             raise SICRemoteError("Error occurred, see remote stacktrace above.")
 
     def stop(self):
-        if self.running:
-            self.running = False
-            self.redis.close()
+        with self.lock:  # Ensure thread-safe access
+            if self.running:
+                self.running = False
+                self.redis.close()
+
 
 
 class SICLogStream(io.TextIOBase):
@@ -116,8 +117,8 @@ class SICLogFormatter(logging.Formatter):
             ip=utils.get_ip_adress()
         )
 
-        # Pad the name_ip portion with dashes if it's less than 150 characters
-        name_ip_padded = name_ip.ljust(35, '-')
+        # Pad the name_ip portion with dashes
+        name_ip_padded = name_ip.ljust(40, '-')
 
         # Format the message with color applied to name and ip
         log_message = "{name_ip}{color}{levelname}{reset_color}: {message}".format(
@@ -129,6 +130,7 @@ class SICLogFormatter(logging.Formatter):
         )
 
         return log_message
+
 
     def formatException(self, exec_info):
         """
@@ -174,11 +176,9 @@ def get_sic_logger(name="", redis=None, log_level=logging.DEBUG):
     handler_redis.setFormatter(log_format)
     logger.addHandler(handler_redis)
 
-    # if redis instance is not passed in, log to terminal
-    if not redis:
-        handler_terminal = logging.StreamHandler()
-        handler_terminal.setFormatter(log_format)
-        logger.addHandler(handler_terminal)
+    handler_terminal = logging.StreamHandler()
+    handler_terminal.setFormatter(log_format)
+    logger.addHandler(handler_terminal)
 
     return logger
 

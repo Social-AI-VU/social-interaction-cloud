@@ -126,6 +126,7 @@ class SICConnector(object):
                 component_request,
                 timeout=self.component_class.COMPONENT_STARTUP_TIMEOUT,
             )
+            self.logger.info("Sent start component request")
             if is_sic_instance(component_info, SICNotStartedMessage):
                 raise ComponentNotStartedError(
                     "\n\nComponent did not start, error should be logged above. ({})".format(
@@ -142,6 +143,8 @@ class SICConnector(object):
                 ),
                 None,
             )
+        except Exception as e:
+            logging.error("Unknown exception occured while trying to start {name} component: {e}".format(name=self.component_class.get_component_name(), e=e))
 
     def register_callback(self, callback):
         """

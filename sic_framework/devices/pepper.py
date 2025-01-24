@@ -50,7 +50,7 @@ class Pepper(Naoqi):
         )
 
         cur_version = version("social-interaction-cloud")
-        print(
+        self.logger.info(
             "SIC version on current device: {cur_version}".format(
                 cur_version=cur_version
             )
@@ -70,10 +70,10 @@ class Pepper(Naoqi):
             pepper_version = stdout.read().decode()
             pepper_version = pepper_version.replace("Version: ", "")
             pepper_version = pepper_version.strip()
-            print("SIC version on Pepper: {}".format(pepper_version))
+            self.logger.info("SIC version on Pepper: {}".format(pepper_version))
 
             if pepper_version == cur_version:
-                print("SIC already installed on Pepper and versions match")
+                self.logger.info("SIC already installed on Pepper and versions match")
                 return True
             else:
                 return False
@@ -113,7 +113,7 @@ class Pepper(Naoqi):
                 )
             )
 
-        print("Installing package dependencies...")
+        self.logger.info("Installing package dependencies...")
 
         # install dependency .whls on pepper
         # _, stdout, stderr = self.ssh_command(

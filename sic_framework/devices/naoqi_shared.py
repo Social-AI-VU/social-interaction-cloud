@@ -131,7 +131,7 @@ class Naoqi(SICDevice):
         self.verify_sic()
 
         # start SIC
-        print(
+        self.logger.info(
             "Starting SIC on {} with redis ip {}".format(
                 self.robot_type, redis_hostname
             )
@@ -144,14 +144,14 @@ class Naoqi(SICDevice):
         """
         if not self.check_sic_install():
             # TODO: change to log statements
-            print(
+            self.logger.info(
                 "SIC is not installed on Naoqi device {}, installing now".format(
                     self.ip
                 )
             )
             self.sic_install()
         else:
-            print(
+            self.logger.info(
                 "SIC is already installed on Naoqi device {}! starting SIC...".format(
                     self.ip
                 )
@@ -201,7 +201,8 @@ class Naoqi(SICDevice):
         # wait for 3 seconds for SIC to start
         for i in range(300):
             line = stdout.readline()
-            self.logfile.write(line)
+            self.logger.info(line)
+            # self.logfile.write(line)
 
             if MAGIC_STARTED_COMPONENT_MANAGER_TEXT in line:
                 break
@@ -214,7 +215,8 @@ class Naoqi(SICDevice):
         # write the remaining output to the logfile
         def write_logs():
             for line in stdout:
-                self.logfile.write(line)
+                # self.logfile.write(line)
+                self.logger.info(line)
                 if not threading.main_thread().is_alive() or self.stopping:
                     break
 

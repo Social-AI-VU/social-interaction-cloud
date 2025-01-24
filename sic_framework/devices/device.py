@@ -28,6 +28,7 @@ class _SICLibrary(object):
         self.name = name
         self.lib_path = lib_path
         self.lib_install_cmd = lib_install_cmd
+        self.logger = sic_logging.get_sic_logger(name="SICLibraryInstaller")
 
     def check_if_installed(self, pip_freeze):
         for lib in pip_freeze:
@@ -36,7 +37,7 @@ class _SICLibrary(object):
         return False
 
     def install(self, ssh):
-        print("Installing {} on remote device ".format(self.name), end="")
+        self.logger.info("Installing {} on remote device ".format(self.name), end="")
         stdin, stdout, stderr = ssh.exec_command(
             "cd {} && {}".format(self.lib_path, self.lib_install_cmd)
         )
@@ -48,17 +49,17 @@ class _SICLibrary(object):
             if len(line) == 0:
                 break
 
-            print(".", end="")
+            self.logger.info(".", end="")
 
         err = stderr.readlines()
         if len(err) > 0:
-            print("".join(err))
-            print("Command:", "cd {} && {}".format(self.lib_path, self.lib_install_cmd))
+            self.logger.error("".join(err))
+            self.logger.error("Command:", "cd {} && {}".format(self.lib_path, self.lib_install_cmd))
             raise RuntimeError(
                 "Error while installing library on remote device. Please consult manual installation instructions."
             )
         else:
-            print(" done.")
+            self.logger.info(" done.")
 
 
 _LIBS_TO_INSTALL = [
@@ -192,21 +193,21 @@ class SICDevice(object):
         file_exists = len(stdout.readlines()) > 0
 
         if file_exists:
-            print("Up to date framework is installed on the remote device.")
+            self.logger.info("Up to date framework is installed on the remote device.")
             return
 
         # prefetch slow pip freeze command
         _, stdout_pip_freeze, _ = self.ssh.exec_command("pip freeze")
 
         def progress(filename, size, sent):
-            print(
+            self.logger.info(
                 "\r {} progress: {}".format(
                     filename.decode("utf-8"), round(float(sent) / float(size) * 100, 2)
                 ),
                 end="",
             )
 
-        print("Copying framework to the remote device.")
+        self.logger.info("Copying framework to the remote device.")
         with SCPClient(self.ssh.get_transport(), progress=progress) as scp:
 
             # Copy the framework to the remote computer
@@ -220,7 +221,7 @@ class SICDevice(object):
                 f.flush()
                 self.ssh.exec_command("mkdir ~/framework")
                 scp.put(f.name, remote_path="~/framework/sic_files.tar.gz")
-                print()  # newline after progress bar
+                self.logger.info()  # newline after progress bar
             # delete=False for windows compatibility, must delete file manually
             os.unlink(f.name)
 
@@ -232,7 +233,7 @@ class SICDevice(object):
 
             err = stderr.readlines()
             if len(err) > 0:
-                print("".join(err))
+                self.logger.error("".join(err))
                 raise RuntimeError(
                     "\n\nError while extracting library on remote device. Please consult manual installation instructions."
                 )
@@ -241,7 +242,7 @@ class SICDevice(object):
             self.ssh.exec_command("rm ~/framework/sic_files.tar.gz")
 
         # Check and/or install the framework and libraries on the remote computer
-        print("Checking if libraries are installed on the remote device.")
+        self.logger.info("Checking if libraries are installed on the remote device.")
         # stdout_pip_freeze is prefetched above because it is slow
         remote_libs = stdout_pip_freeze.readlines()
         for lib in _LIBS_TO_INSTALL:
@@ -263,19 +264,19 @@ class SICDevice(object):
         try:
             return self.ssh.exec_command(command)
         except paramiko.AuthenticationException as e:
-            print(
+            self.logger.error(
                 "Encountered AuthenticationException when trying to execute ssh command: {}".format(
                     e
                 )
             )
         except paramiko.BadHostKeyException:
-            print(
+            self.logger.error(
                 "Encountered BadHostKeyException when trying to execute ssh command: {}".format(
                     e
                 )
             )
         except Exception as e:
-            print(
+            self.logger.error(
                 "Encountered unknown exception while trying to execute ssh command: {}".format(
                     e
                 )
