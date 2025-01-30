@@ -13,7 +13,7 @@ def get_log_channel():
     """
     Get the global log channel. All components on any device should log to this channel.
     """
-    # TODO: add IP so each device gets its own separate log channel
+    # TODO: add ID so each client/applications gets its own separate log channel
     return "sic:logging"
 
 
@@ -142,18 +142,6 @@ class SICLogFormatter(logging.Formatter):
         return text
 
 
-    def formatException(self, exec_info):
-        """
-        Prepend every exption with a | to indicate it is not local.
-        :param exec_info:
-        :return:
-        """
-        text = super(SICLogFormatter, self).formatException(exec_info)
-        text = "| " + text.replace("\n", "\n| ")
-        text += "\n| NOTE: Exception occurred in SIC framework, not application"
-        return text
-
-
 def get_sic_logger(name="", redis=None, log_level=logging.DEBUG):
     """
     Set up logging to the log output channel to be able to report messages to users. Also logs to the terminal.
@@ -190,30 +178,8 @@ ERROR = 40
 WARNING = 30
 INFO = 20  # service dependent sparse information
 DEBUG = 10  # service dependent verbose information
-SIC_DEBUG_FRAMEWORK = 6  # sparse messages, e.g. when executing, etc.
-SIC_DEBUG_FRAMEWORK_VERBOSE = (
-    4  # detailed messages, e.g. for each input output operation
-)
 NOTSET = 0
 
 # pseudo singleton object. Does nothing when this file is executed during the import, but can subscribe to the log
 # channel for the user with subscribe_to_log_channel_once
 SIC_LOG_SUBSCRIBER = SICLogSubscriber()
-
-def debug_framework(self, message, *args, **kws):
-    if self.isEnabledFor(SIC_DEBUG_FRAMEWORK):
-        # Yes, logger takes its '*args' as 'args'.
-        self._log(SIC_DEBUG_FRAMEWORK, message, args, **kws)
-
-
-def debug_framework_verbose(self, message, *args, **kws):
-    if self.isEnabledFor(SIC_DEBUG_FRAMEWORK_VERBOSE):
-        # Yes, logger takes its '*args' as 'args'.
-        self._log(SIC_DEBUG_FRAMEWORK_VERBOSE, message, args, **kws)
-
-
-logging.addLevelName(SIC_DEBUG_FRAMEWORK, "SIC_DEBUG_FRAMEWORK")
-logging.addLevelName(SIC_DEBUG_FRAMEWORK_VERBOSE, "SIC_DEBUG_FRAMEWORK_VERBOSE")
-
-logging.Logger.debug_framework = debug_framework
-logging.Logger.debug_framework_verbose = debug_framework_verbose

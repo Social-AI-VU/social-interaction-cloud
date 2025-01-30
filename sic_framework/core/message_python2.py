@@ -7,9 +7,7 @@ import time
 import numpy as np
 import six
 
-from . import utils, sic_logging
-
-logger = sic_logging.get_sic_logger(name="SICMessage.py")
+from . import utils
 
 if not six.PY3:
     import cPickle as pickle
@@ -32,7 +30,7 @@ except (RuntimeError, ImportError):
     # fall back to PIL in case TurboJPEG is not installed
     # PIL _can_ use turbojpeg, but can also fall back to a slower libjpeg
     # it is recommended to install turbojpeg
-    logger.warning("Turbojpeg not found, falling back to PIL")
+    print("Turbojpeg not found, falling back to PIL")
     from PIL import Image
 
     class FakeTurboJpeg:
