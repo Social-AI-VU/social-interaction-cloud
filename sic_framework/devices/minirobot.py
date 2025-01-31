@@ -16,7 +16,7 @@ def start_mini_components():
         manager.serve()
 
 
-class Mini(SICDevice):
+class MiniRobot(SICDevice):
     def __init__(self, mic_conf=None, speaker_conf=None):
         super().__init__(ip="127.0.0.1")
         self.configs[MiniMicrophone] = mic_conf
