@@ -4,6 +4,7 @@ import os
 import atexit
 import threading
 from sic_framework import SICComponentManager
+from sic_framework.devices.common_mini.mini_animation import MiniAnimation, MiniAnimationActuator
 from sic_framework.devices.device import SICDevice
 from sic_framework.devices.common_mini.mini_microphone import MiniMicrophone, MiniMicrophoneSensor
 from sic_framework.devices.common_mini.mini_speaker import MiniSpeaker, MiniSpeakerComponent
@@ -40,9 +41,13 @@ class MiniRobot(SICDevice):
     def speaker(self):
         return self._get_connector(MiniSpeaker)
 
+    @property
+    def animation(self):
+        return self._get_connector(MiniAnimation)
+
 
 # mini_component_list = [MiniMicrophoneComponent, MiniSpeakerComponent]
-mini_component_list = [MiniSpeakerComponent]
+mini_component_list = [MiniSpeakerComponent, MiniAnimationActuator]
 
 
 if __name__ == '__main__':
