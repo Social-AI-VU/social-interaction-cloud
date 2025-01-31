@@ -5,7 +5,7 @@ import atexit
 import threading
 from sic_framework import SICComponentManager
 from sic_framework.devices.device import SICDevice
-from sic_framework.devices.common_mini.mini_microphone import MiniMicrophone, MiniMicrophoneComponent
+from sic_framework.devices.common_mini.mini_microphone import MiniMicrophone, MiniMicrophoneSensor
 from sic_framework.devices.common_mini.mini_speaker import MiniSpeaker, MiniSpeakerComponent
 
 mini_active = False
