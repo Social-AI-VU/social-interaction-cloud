@@ -23,29 +23,7 @@ class MiniMicrophoneSensor(SICSensor):
 
     def __init__(self, *args, **kwargs):
         super(MiniMicrophoneSensor, self).__init__(*args, **kwargs)
-
-        self.session = qi.Session()
-        self.session.connect("tcp://127.0.0.1:9559")
-
-        self.audio_service = self.session.service("ALAudioDevice")
-
         self.module_name = "SICMicrophoneService"
-
-        try:
-            self.session_id = self.session.registerService(self.module_name, self)
-        except RuntimeError:
-            # possbile solution: do not catch runtime error, the registering is already done so
-            # the self.audio_service.subscribe(self.module_name) should work
-            raise RuntimeError(
-                "Naoqi error, restart robot. Cannot re-register ALAudioDevice service, this service is a singleton. "
-            )
-
-        self.audio_service.setClientPreferences(
-            self.module_name, self.params.sample_rate, self.params.channel_index, 0
-        )
-        self.audio_service.subscribe(self.module_name)
-
-        self.new_sound_data_available = threading.Event()
 
     @staticmethod
     def get_conf():
@@ -61,15 +39,9 @@ class MiniMicrophoneSensor(SICSensor):
 
     def execute(self):
 
-        self.new_sound_data_available.wait()
-        self.new_sound_data_available.clear()
-
         return AudioMessage(self.audio_buffer, sample_rate=self.params.sample_rate)
 
     def stop(self, *args):
-        self.audio_service.unsubscribe(self.module_name)
-        self.session.unregisterService(self.session_id)
-        self.session.close()
         super(MiniMicrophoneSensor, self).stop(*args)
 
     def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp, inputBuffer):
@@ -82,7 +54,6 @@ class MiniMicrophoneSensor(SICSensor):
         """
         self.audio_buffer = inputBuffer
         self.naoqi_timestamp = timeStamp
-        self.new_sound_data_available.set()
 
 
 class MiniMicrophone(SICConnector):

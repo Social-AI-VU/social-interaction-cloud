@@ -1,4 +1,3 @@
-import argparse
 import atexit
 import threading
 from sic_framework import SICComponentManager
@@ -39,7 +38,8 @@ class Mini(SICDevice):
         return self._get_connector(MiniSpeaker)
 
 
-mini_component_list = [MiniMicrophone, MiniSpeaker]
+# mini_component_list = [MiniMicrophone, MiniSpeaker]
+mini_component_list = [MiniSpeaker]
 
 
 if __name__ == '__main__':

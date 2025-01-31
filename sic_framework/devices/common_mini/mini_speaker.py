@@ -1,63 +1,26 @@
-import io
-import socket
-import threading
+
 import wave
 
-import numpy as np
-
-from sic_framework import SICActuator, SICComponentManager, utils
+from sic_framework import SICComponentManager
 from sic_framework.core.component_python2 import SICComponent
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import AudioMessage, SICConfMessage, SICMessage
-from sic_framework.core.sensor_python2 import SICSensor
+
+from mini import mini_sdk as MiniSdk
+import mini.pkg_tool as Tool
 
 
 
 class MiniSpeakersConf(SICConfMessage):
-    def __init__(self):
-        self.no_channels = 1
-        self.sample_rate = 16000
-        self.index = -1
+    def __init__(self, sample_rate=44100, channels=1):
+        self.sample_rate = sample_rate
+        self.channels = channels
 
 
 class MiniSpeakerComponent(SICComponent):
     def __init__(self, *args, **kwargs):
         super(MiniSpeakerComponent, self).__init__(*args, **kwargs)
-
-        self.session = qi.Session()
-        self.session.connect("tcp://127.0.0.1:9559")
-
-        self.audio_service = self.session.service("ALAudioDevice")
-        self.audio_player_service = self.session.service("ALAudioPlayer")
-
-        # self.module_name = "SICSpeakersService"
-        #
-        # try:
-        #     self.session_id = self.session.registerService(self.module_name, self)
-        # except RuntimeError:
-        #     # possbile solution: do not catch runtime error, the registering is already done so
-        #     # the self.audio_service.subscribe(self.module_name) should work
-        #     raise RuntimeError(
-        #         "Naoqi error, restart robot. Cannot re-register ALAudioDevice service, this service is a singleton. ")
-        #
-        # self.audio_service.setClientPreferences(self.module_name, self.params.sample_rate,
-        #                                         3, 0)
-        # self.audio_service.subscribe(self.module_name)
-
-        # host = "127.0.0.1"
-        # port = 8123
-        #
-        # self.wavstream = "http://" + str(host) + ":" + str(port) + "/wavstream"
-        #
-        #
-        # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # # now connect to the web server on port 80
-        # # - the normal http port
-        # s.connect(("www.mcmillan-inc.com", 80))
-        #
-        # self.wavstream =
-        # self.audio_player_service.playWebStream(wavstream, 1, 0)
-
+        MiniSdk.set_robot_type(MiniSdk.RobotType.EDU)
         self.i = 0
 
     @staticmethod
@@ -80,28 +43,8 @@ class MiniSpeakerComponent(SICComponent):
         return SICMessage()
 
     def play_sound(self, message):
-        # sound = bytearray(message.waveform)
-        # frame_count = len(sound) // 2
-        #
-        # self.audio_service.muteAudioOut(False)
-        # self.audio_service.setOutputVolume(50)
-        #
-        # self.logger.warn("Playing sound with length: {}".format(len(sound)))
-        #
-        # # broken
-        # self.audio_service.sendLocalBufferToOutput(frame_count, id(sound))
-        #
-        # # broken
-        # self.audio_service.sendRemoteBufferToOutput(frame_count, id(sound))
-        #
-        # # broken
-        # self.audio_service.playSine(200, 1, 0, 1)
-        #
-        # self.audio_service.flushAudioOutputs()  # according to doc:  close the audio device for capture
         bytestream = message.waveform
         frame_rate = message.sample_rate
-
-        # self.logger.warn(bytestream)
 
         # Set the parameters for the WAV file
         channels = 1  # 1 for mono audio
@@ -119,7 +62,7 @@ class MiniSpeakerComponent(SICComponent):
         # Write the bytestream to the WAV file
         wav_file.writeframes(bytestream)
         # Launchs the playing of a file
-        self.audio_player_service.playFile(tmp_file)
+        Tool.run_py_pkg(f'play {tmp_file}', robot_id="00167", debug=True)
 
 
 class MiniSpeaker(SICConnector):
