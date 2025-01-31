@@ -1,3 +1,6 @@
+import argparse
+import os
+
 import atexit
 import threading
 from sic_framework import SICComponentManager
@@ -43,4 +46,12 @@ mini_component_list = [MiniSpeakerComponent]
 
 
 if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--redis_ip", type=str, required=True, help="IP address where Redis is running"
+    )
+    args = parser.parse_args()
+
+    os.environ["DB_IP"] = args.redis_ip
     SICComponentManager(mini_component_list)
