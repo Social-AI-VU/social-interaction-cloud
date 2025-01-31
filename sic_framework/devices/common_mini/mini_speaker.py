@@ -1,4 +1,5 @@
-
+import asyncio
+import os
 import wave
 
 from sic_framework import SICComponentManager
@@ -46,22 +47,32 @@ class MiniSpeakerComponent(SICComponent):
         bytestream = message.waveform
         frame_rate = message.sample_rate
 
+        # # Create the directory tmp directory in the home folder if it doesn't exist
+        tmp_path = "/data/data/com.termux/files/home/tmp/"
+        os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
+        # # Define the file path for the temp audio file
+        tmp_file = tmp_path + f"tmp{self.i}.wav"
+
         # Set the parameters for the WAV file
         channels = 1  # 1 for mono audio
         sample_width = 2  # 2 bytes for 16-bit audio
         num_frames = len(bytestream) // (channels * sample_width)
 
-        # Create a WAV file in memory
-        tmp_file = "/tmp/tmp{}.wav".format(self.i)
-
-        wav_file = wave.open(tmp_file, "wb")
+        with wave.open(tmp_file, "wb") as wav_file:
+            wav_file.setparams(
+                (channels, sample_width, frame_rate, num_frames, "NONE", "not compressed")
+            )
+            wav_file.writeframes(bytestream)
         self.i += 1
-        wav_file.setparams(
-            (channels, sample_width, frame_rate, num_frames, "NONE", "not compressed")
-        )
-        # Write the bytestream to the WAV file
-        wav_file.writeframes(bytestream)
-        # Launchs the playing of a file
+
+        # Ensure an event loop exists in the current thread
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        # Play the audio file
         Tool.run_py_pkg(f'play {tmp_file}', robot_id="00167", debug=True)
 
 
