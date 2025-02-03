@@ -39,7 +39,7 @@ from six.moves import queue
 from sic_framework.core import utils
 from sic_framework.core.message_python2 import SICMessage, SICRequest
 from sic_framework.core.utils import is_sic_instance
-
+from sic_framework.core import sic_logging
 
 class CallbackThread:
     def __init__(self, function, pubsub, thread):
@@ -92,6 +92,7 @@ class SICRedis:
 
         self.stopping = False
         self._running_callbacks = []
+
 
         # we assume that a password is required
         host, password = get_redis_db_ip_password()

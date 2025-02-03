@@ -117,6 +117,8 @@ class SICLogFormatter(logging.Formatter):
             ip=utils.get_ip_adress()
         )
 
+        log_message = record.msg.replace('\n','')
+
         # Pad the name_ip portion with dashes
         name_ip_padded = name_ip.ljust(40, '-')
 
@@ -126,7 +128,7 @@ class SICLogFormatter(logging.Formatter):
             color = color,
             levelname=record.levelname,
             reset_color=self.RESET_COLOR,
-            message=record.msg,
+            message=log_message,
         )
 
         return log_message
@@ -149,7 +151,6 @@ def get_sic_logger(name="", redis=None, log_level=logging.DEBUG):
     :param redis: The SICRedis object
     :param name: A readable and identifiable name to indicate to the user where the log originated
     :param log_level: The logger.LOGLEVEL verbosity level
-    # ? still used :param log_messages_channel: the output channel of this service, on which the log output channel is based.
     """
     # logging initialisation
     logger = logging.Logger(name)
