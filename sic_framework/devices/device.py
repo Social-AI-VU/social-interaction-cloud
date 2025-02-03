@@ -19,25 +19,43 @@ if six.PY3:
     from scp import SCPClient
 
 
-class _SICLibrary(object):
+class SICLibrary(object):
     """
     A library to be installed on a remote device.
     """
 
-    def __init__(self, name, lib_path, lib_install_cmd):
+    def __init__(self, name, lib_path="", download_cmd="", version=None, lib_install_cmd=""):
         self.name = name
         self.lib_path = lib_path
+        self.download_cmd = download_cmd
+        self.version = version
         self.lib_install_cmd = lib_install_cmd
         self.logger = sic_logging.get_sic_logger(name="SICLibraryInstaller")
 
     def check_if_installed(self, pip_freeze):
         for lib in pip_freeze:
-            if self.name in lib:
+            lib = lib.replace('\n','')
+            lib_name, lib_ver = lib.split('==')
+            if self.name == lib_name:
+                print("Found package: {}".format(lib))
+                # check to make sure version matches 
+                if self.version:
+                    if self.version in lib_ver:
+                        return True
+                    else:
+                        return False
                 return True
         return False
-
+    
     def install(self, ssh):
-        self.logger.info("Installing {} on remote device ".format(self.name), end="")
+        print("Installing {} on remote device ".format(self.name), end="")
+
+        # if we have to download the binary first, as is the case with Pepper
+        if self.download_cmd:
+            stdin, stdout, stderr = ssh.exec_command(
+                "cd {} && {}".format(self.lib_path, self.download_cmd)
+            )
+
         stdin, stdout, stderr = ssh.exec_command(
             "cd {} && {}".format(self.lib_path, self.lib_install_cmd)
         )
@@ -60,21 +78,6 @@ class _SICLibrary(object):
             )
         else:
             self.logger.info(" done.")
-
-
-_LIBS_TO_INSTALL = [
-    _SICLibrary(
-        "redis",
-        "~/framework/lib/redis",
-        "pip install --user redis-3.5.3-py2.py3-none-any.whl",
-    ),
-    _SICLibrary(
-        "PyTurboJPEG",
-        "~/framework/lib/libtubojpeg/PyTurboJPEG-master",
-        "pip install --user .",
-    ),
-    _SICLibrary("sic-framework", "~/framework", "pip install --user -e ."),
-]
 
 
 def exclude_pyc(tarinfo):

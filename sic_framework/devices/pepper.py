@@ -1,7 +1,6 @@
 import argparse
 import os
-from importlib.metadata import version
-
+import subprocess
 from sic_framework.core.component_manager_python2 import SICComponentManager
 from sic_framework.devices.common_naoqi.naoqi_camera import (
     DepthPepperCamera,
@@ -14,7 +13,42 @@ from sic_framework.devices.common_naoqi.pepper_tablet import (
     NaoqiTabletComponent,
 )
 from sic_framework.devices.naoqi_shared import *
+from sic_framework.devices.device import SICLibrary
 
+# this is where dependency binaries are downloaded to on the Pepper machine
+_LIB_DIRECTORY = "/home/nao/sic_framework_2/social-interaction-cloud-main/lib"
+
+_LIBS_TO_INSTALL = [
+    SICLibrary(
+        "redis",
+        lib_path="/home/nao/sic_framework_2/social-interaction-cloud-main/lib/redis",
+        lib_install_cmd="pip install --user redis-3.5.3-py2.py3-none-any.whl"
+    ),
+    SICLibrary(
+        "PyTurboJPEG",
+        lib_path="/home/nao/sic_framework_2/social-interaction-cloud-main/lib/libturbojpeg/PyTurboJPEG-master",
+        lib_install_cmd="pip install --user .",
+    ),
+    SICLibrary(
+        "Pillow",
+        download_cmd="curl -O https://files.pythonhosted.org/packages/3a/ec/82d468c17ead94734435c7801ec77069926f337b6aeae1be0a07a24bb024/Pillow-6.2.2-cp27-cp27mu-manylinux1_i686.whl",
+        lib_path=_LIB_DIRECTORY,
+        lib_install_cmd="pip install --user Pillow-6.2.2-cp27-cp27mu-manylinux1_i686.whl",
+    ),
+    SICLibrary(
+        "six",
+        download_cmd="curl -O https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl",
+        lib_path=_LIB_DIRECTORY,
+        lib_install_cmd="pip install --user six-1.17.0-py2.py3-none-any.whl",
+    ),
+    SICLibrary(
+        "numpy",
+        download_cmd="curl -O https://files.pythonhosted.org/packages/fd/54/aee23cfc1cdca5064f9951eefd3c5b51cff0cecb37965d4910779ef6b792/numpy-1.16.6-cp27-cp27mu-manylinux1_i686.whl",
+        version="1.16",
+        lib_path=_LIB_DIRECTORY,
+        lib_install_cmd="pip install --user numpy-1.16.6-cp27-cp27mu-manylinux1_i686.whl",
+    ),
+]
 
 class Pepper(Naoqi):
     """
@@ -25,6 +59,7 @@ class Pepper(Naoqi):
         super().__init__(
             ip,
             robot_type="pepper",
+            venv=False,
             username="nao",
             passwords=["pepper", "nao"],
             # device path is where this script is located on the actual Pepper machine
@@ -42,40 +77,44 @@ class Pepper(Naoqi):
         _, stdout, _ = self.ssh_command(
             """
                     if pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ; then
-                        echo "sic framework is installed"
+                        echo "SIC is installed";
                     else
-                        echo "sic framework is not installed"
+                        echo "SIC is not installed";
                     fi;
                     """
         )
 
-        cur_version = version("social-interaction-cloud")
-        self.logger.info(
-            "SIC version on current device: {cur_version}".format(
-                cur_version=cur_version
-            )
-        )
-
         output = stdout.read().decode()
+        print("Output from SIC installation check: {}".format(output))
 
-        if "is installed" in output:
-            # check to make sure the version is up-to-date (assuming the latest version of SIC is installed locally)
+        if "SIC is installed" in output:
+            # this command gets the version of SIC that is currently installed on the local machine
+            version_cmd = """pip list | grep 'social-interaction-cloud' | awk '{gsub(/[()]/, "", $2); print $2}'"""
+            try:
+                cur_version = subprocess.check_output(version_cmd, shell=True, text=True).strip()
+            except subprocess.CalledProcessError as e:
+                print("Exception encountered while grabbing current SIC version:", e)
+
+            # check to make sure the Pepper version is up-to-date (assuming the latest version of SIC is installed locally)
             _, stdout, _ = self.ssh_command(
                 """
-                        grep -R "^Version:" /home/nao/sic_framework_2/social-interaction-cloud-main/social_interaction_cloud.egg-info/PKG-INFO > /home/nao/sic_framework_2/version.txt;
+                        {version_cmd} > /home/nao/sic_framework_2/version.txt;
                         cat /home/nao/sic_framework_2/version.txt;
-                        """
+                        """.format(version_cmd=version_cmd)
             )
 
             pepper_version = stdout.read().decode()
             pepper_version = pepper_version.replace("Version: ", "")
             pepper_version = pepper_version.strip()
             self.logger.info("SIC version on Pepper: {}".format(pepper_version))
+            self.logger.info("SIC local version: {}".format(cur_version))
 
             if pepper_version == cur_version:
                 self.logger.info("SIC already installed on Pepper and versions match")
                 return True
             else:
+                print("SIC is installed on Pepper but does not match the local version! Reinstalling SIC on Pepper")
+                print("(Check to make sure you also have the latest version of SIC installed!)")
                 return False
         else:
             return False
@@ -115,19 +154,15 @@ class Pepper(Naoqi):
 
         self.logger.info("Installing package dependencies...")
 
-        # install dependency .whls on pepper
-        # _, stdout, stderr = self.ssh_command(
-        #     """
-        #             cd /home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework/devices/dep_whls;
-        #             pip install *.whl
-        #             """
-        # )
-        _, stdout, stderr = self.ssh_command(
-            """
-                    cd /home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework/devices/dep_whls;
-                    pip install *.whl
-                    """
-        )
+        _, stdout_pip_freeze, _ = self.ssh_command("pip freeze")
+        installed_libs = stdout_pip_freeze.readlines()
+
+        for lib in _LIBS_TO_INSTALL:
+            print("Checking if library {} is installed...".format(lib.name))
+            if not lib.check_if_installed(installed_libs):
+                print("Library {} is NOT installed, installing now...".format(lib.name))
+                lib.install(self.ssh)
+
 
     @property
     def stereo_camera(self):

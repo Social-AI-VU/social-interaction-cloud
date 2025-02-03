@@ -16,6 +16,7 @@ class Nao(Naoqi):
         super(Nao, self).__init__(
             ip,
             robot_type="nao",
+            venv=True,
             username="nao",
             passwords="nao",
             device_path="/data/home/nao/.venv_sic/lib/python2.7/site-packages/sic_framework/devices",
