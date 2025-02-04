@@ -10,11 +10,11 @@ import six
 from sic_framework.core import utils
 from sic_framework.core.connector import SICConnector
 
-if six.PY3:
-    import pathlib
+# if six.PY3:
+#     import pathlib
 
-    import paramiko
-    from scp import SCPClient
+#     import paramiko
+#     from scp import SCPClient
 
 
 class _SICLibrary(object):
