@@ -71,7 +71,6 @@ class SICLogSubscriber(object):
                 self.redis.close()
 
 
-
 class SICLogStream(io.TextIOBase):
     """
     Facilities to log to redis as a file-like object, to integrate with standard python logging facilities.
@@ -165,9 +164,11 @@ def get_sic_logger(name="", redis=None, log_level=logging.DEBUG):
     handler_redis.setFormatter(log_format)
     logger.addHandler(handler_redis)
 
-    handler_terminal = logging.StreamHandler()
-    handler_terminal.setFormatter(log_format)
-    logger.addHandler(handler_terminal)
+    if not redis:
+        # log to the terminal only if there is not an associated redis instance
+        handler_terminal = logging.StreamHandler()
+        handler_terminal.setFormatter(log_format)
+        logger.addHandler(handler_terminal)
 
     return logger
 

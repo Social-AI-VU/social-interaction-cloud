@@ -104,7 +104,7 @@ class SICDevice(object):
         self.configs = dict()
         self.ip = ip
         
-        self.logger = sic_logging.get_sic_logger(name=self.__class__.__name__)
+        self.logger = sic_logging.get_sic_logger(name="{}DeviceManager".format(self.__class__.__name__))
         self.logger.info("Initializing device with ip: {ip}".format(ip=ip))
 
         if username is not None:

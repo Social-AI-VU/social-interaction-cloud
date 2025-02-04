@@ -205,8 +205,8 @@ class Naoqi(SICDevice):
         # wait for 3 seconds for SIC to start
         for i in range(300):
             line = stdout.readline()
-            self.logger.info(line)
-            # self.logfile.write(line)
+            # self.logger.info(line)
+            self.logfile.write(line)
 
             if MAGIC_STARTED_COMPONENT_MANAGER_TEXT in line:
                 break
@@ -219,8 +219,8 @@ class Naoqi(SICDevice):
         # write the remaining output to the logfile
         def write_logs():
             for line in stdout:
-                # self.logfile.write(line)
-                self.logger.info(line)
+                self.logfile.write(line)
+                # self.logger.info(line)
                 if not threading.main_thread().is_alive() or self.stopping:
                     break
 

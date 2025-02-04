@@ -99,14 +99,14 @@ class SICConnector(object):
 
         """
         self.logger.info(
-            "Component not already alive, requesting",
-            self.component_class.get_component_name(),
-            "from manager ",
-            self._ip,
+            "Component is not already alive, requesting {} from manager {}".format(
+                self.component_class.get_component_name(),
+                self._ip,
+            ),
         )
 
         if issubclass(self.component_class, SICSensor) and self._conf:
-            self.logger.info(
+            self.logger.warning(
                 "Setting configuration for SICSensors only works the first time connecting (sensor "
                 "component instances are reused for now)"
             )
@@ -126,7 +126,6 @@ class SICConnector(object):
                 component_request,
                 timeout=self.component_class.COMPONENT_STARTUP_TIMEOUT,
             )
-            self.logger.info("Sent start component request")
             if is_sic_instance(component_info, SICNotStartedMessage):
                 raise ComponentNotStartedError(
                     "\n\nComponent did not start, error should be logged above. ({})".format(
@@ -231,10 +230,9 @@ class SICConnector(object):
         :type log_level: string
         :return: Logger
         """
-        name = "{connector}".format(connector=self.__class__.__name__)
+        name = "{connector}Connector".format(connector=self.__class__.__name__)
 
         logger = sic_logging.get_sic_logger(name=name, redis=self._redis, log_level=log_level)
-        logger.info("Connector on device {} starting".format(self._ip))
 
         return logger
 

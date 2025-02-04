@@ -143,7 +143,7 @@ class SICComponentManager(object):
         # reply to the request if the component manager can start the component
         if request.component_name in self.component_classes:
             self.logger.info(
-                "{} handling request {}".format(
+                "{} handling request to start component {}".format(
                     self.__class__.__name__, request.component_name
                 )
             )
