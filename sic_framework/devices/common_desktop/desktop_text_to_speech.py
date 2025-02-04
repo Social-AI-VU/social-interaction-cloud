@@ -9,6 +9,7 @@ from sic_framework.core.message_python2 import (
     TextMessage,
     TextRequest,
 )
+from sic_framework.core import sic_logging
 
 """
 Linux installation instructions:
@@ -60,6 +61,8 @@ class DesktopTextToSpeechActuator(SICActuator):
         self.speaker.volume = self.params.volume
         self.speaker.wordgap = self.params.wordgap
 
+        self.logger = sic_logging.get_sic_logger(name="DesktopTextToSpeechActuator")
+
     @staticmethod
     def get_conf():
         return TextToSpeechConf()
@@ -73,7 +76,7 @@ class DesktopTextToSpeechActuator(SICActuator):
         return SICMessage
 
     def on_request(self, request):
-        print("Saying: " + request.text)
+        self.logger.info("Saying: " + request.text)
         self.speaker.say(request.text)
         return SICMessage()
 
