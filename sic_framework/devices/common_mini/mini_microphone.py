@@ -4,6 +4,7 @@ from sic_framework import SICComponentManager
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import AudioMessage, SICConfMessage
 from sic_framework.core.sensor_python2 import SICSensor
+from sic_framework.devices.common_mini.mini_connector import MiniConnector
 
 
 class MicrophoneConf(SICConfMessage):
@@ -15,6 +16,8 @@ class MicrophoneConf(SICConfMessage):
 class MiniMicrophoneSensor(SICSensor):
     def __init__(self, *args, **kwargs):
         super(MiniMicrophoneSensor, self).__init__(*args, **kwargs)
+        self.alphamini = MiniConnector()
+        self.alphamini.connect()
 
         self.audio_buffer = None
 

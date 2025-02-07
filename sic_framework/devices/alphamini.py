@@ -10,7 +10,7 @@ from sic_framework.devices.common_mini.mini_microphone import MiniMicrophone, Mi
 from sic_framework.devices.common_mini.mini_speaker import MiniSpeaker, MiniSpeakerComponent
 
 
-class MiniRobot(SICDevice):
+class Alphamini(SICDevice):
     def __init__(self, ip="127.0.0.1", mic_conf=None, speaker_conf=None):
         super().__init__(ip=ip)
         self.configs[MiniMicrophone] = mic_conf
