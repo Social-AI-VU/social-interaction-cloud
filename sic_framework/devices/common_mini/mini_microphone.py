@@ -1,33 +1,37 @@
-import threading
+import pyaudio
 
-from sic_framework import SICComponentManager, utils
+from sic_framework import SICComponentManager
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import AudioMessage, SICConfMessage
 from sic_framework.core.sensor_python2 import SICSensor
 
-# if utils.PYTHON_VERSION_IS_2:
-#     import qi
-#     from naoqi import ALProxy
 
-
-class MiniMicrophoneConf(SICConfMessage):
+class MicrophoneConf(SICConfMessage):
     def __init__(self):
-        self.channel_index = 3  # front microphone
         self.no_channels = 1
-        self.sample_rate = 16000
-        self.index = -1
+        self.sample_rate = 44100
 
 
 class MiniMicrophoneSensor(SICSensor):
-    COMPONENT_STARTUP_TIMEOUT = 4
-
     def __init__(self, *args, **kwargs):
         super(MiniMicrophoneSensor, self).__init__(*args, **kwargs)
-        self.module_name = "SICMicrophoneService"
+
+        self.audio_buffer = None
+
+        self.device = pyaudio.PyAudio()
+
+        # open stream using callback (3)
+        self.stream = self.device.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=self.params.sample_rate,
+            input=True,
+            output=False,
+        )
 
     @staticmethod
     def get_conf():
-        return MiniMicrophoneConf()
+        return MicrophoneConf()
 
     @staticmethod
     def get_inputs():
@@ -38,22 +42,15 @@ class MiniMicrophoneSensor(SICSensor):
         return AudioMessage
 
     def execute(self):
-
-        return AudioMessage(self.audio_buffer, sample_rate=self.params.sample_rate)
+        self.logger.debug("Reading audio")
+        # read 250ms chunks
+        data = self.stream.read(int(self.params.sample_rate // 4))
+        return AudioMessage(data, sample_rate=self.params.sample_rate)
 
     def stop(self, *args):
         super(MiniMicrophoneSensor, self).stop(*args)
-
-    def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp, inputBuffer):
-        """
-        This function is registered by the self.session.registerService(self) call.
-        :param nbOfChannels:
-        :param nbOfSamplesByChannel:
-        :param timeStamp:
-        :param inputBuffer:
-        """
-        self.audio_buffer = inputBuffer
-        self.naoqi_timestamp = timeStamp
+        self.logger.info("Stopped microphone")
+        self.stream.close()
 
 
 class MiniMicrophone(SICConnector):

@@ -7,9 +7,9 @@ from sic_framework.core.component_python2 import SICComponent
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import AudioMessage, SICConfMessage, SICMessage
 
-from mini import mini_sdk as MiniSdk
 import mini.pkg_tool as Tool
 
+from sic_framework.devices.common_mini.mini_connector import MiniConnector
 
 
 class MiniSpeakersConf(SICConfMessage):
@@ -21,7 +21,8 @@ class MiniSpeakersConf(SICConfMessage):
 class MiniSpeakerComponent(SICComponent):
     def __init__(self, *args, **kwargs):
         super(MiniSpeakerComponent, self).__init__(*args, **kwargs)
-        MiniSdk.set_robot_type(MiniSdk.RobotType.EDU)
+        self.alphamini = MiniConnector()
+        self.alphamini.connect()
         self.i = 0
 
     @staticmethod
@@ -73,7 +74,7 @@ class MiniSpeakerComponent(SICComponent):
             asyncio.set_event_loop(loop)
 
         # Play the audio file
-        Tool.run_py_pkg(f'play {tmp_file}', robot_id="00167", debug=True)
+        Tool.run_py_pkg(f'play {tmp_file}', robot_id=self.alphamini.mini_id, debug=True)
 
 
 class MiniSpeaker(SICConnector):

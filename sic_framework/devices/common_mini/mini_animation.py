@@ -18,8 +18,8 @@ class MiniActionRequest(SICRequest):
     def __init__(self, name):
         super(MiniActionRequest, self).__init__()
         self.name = name
-        alphamini = MiniConnector()
-        alphamini.connect()
+        self.alphamini = MiniConnector()
+        self.alphamini.connect()
 
 
 class MiniAnimationActuator(SICActuator):

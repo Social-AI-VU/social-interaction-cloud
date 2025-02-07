@@ -1,4 +1,6 @@
 import asyncio
+import logging
+import os
 
 import mini.mini_sdk as MiniSdk
 from mini.dns.dns_browser import WiFiDevice
@@ -13,15 +15,28 @@ class CouldNotConnectToMiniException(Exception):
 
 class MiniConnector:
 
-    def __init__(self, mini_id="00167"):
-        self.mini_id = mini_id
+    def __init__(self):
+        self.mini_id = os.environ.get("ROBOT_ID")
 
     def connect(self):
-        asyncio.run(self.connect_to_mini())
+        MiniSdk.set_log_level(logging.INFO)
+        MiniSdk.set_robot_type(MiniSdk.RobotType.EDU)
+        asyncio.run(self._start_dev_mode())
+        asyncio.run(self._connect_to_mini())
 
-    async def connect_to_mini(self):
+    def disconnect(self):
+        asyncio.run(self._disconnect_to_mini())
+
+    async def _connect_to_mini(self):
         device: WiFiDevice = await MiniSdk.get_device_by_name(self.mini_id, 10)
         if device:
             return await MiniSdk.connect(device)
         else:
             raise CouldNotConnectToMiniException(f"Could not connect to mini with id {self.mini_id}")
+
+    async def _disconnect_to_mini(self):
+        await MiniSdk.quit_program()
+        await MiniSdk.release()
+
+    async def _start_dev_mode(self):
+        await MiniSdk.enter_program()

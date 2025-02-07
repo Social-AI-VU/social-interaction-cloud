@@ -29,8 +29,7 @@ class MiniRobot(SICDevice):
         return self._get_connector(MiniAnimation)
 
 
-# mini_component_list = [MiniMicrophoneComponent, MiniSpeakerComponent]
-mini_component_list = [MiniSpeakerComponent, MiniAnimationActuator]
+mini_component_list = [MiniMicrophoneSensor, MiniSpeakerComponent, MiniAnimationActuator]
 
 
 if __name__ == '__main__':
@@ -39,7 +38,12 @@ if __name__ == '__main__':
     parser.add_argument(
         "--redis_ip", type=str, required=True, help="IP address where Redis is running"
     )
+    parser.add_argument(
+        "--robot_id", type=str, required=True, help="Provide the last 5 digits of the robot's serial number"
+    )
     args = parser.parse_args()
 
     os.environ["DB_IP"] = args.redis_ip
+    os.environ["ROBOT_TYPE"] = "alphamini"
+    os.environ["ROBOT_ID"] = args.robot_id
     SICComponentManager(mini_component_list)
