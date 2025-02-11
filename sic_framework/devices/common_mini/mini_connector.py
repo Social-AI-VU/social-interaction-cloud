@@ -16,7 +16,8 @@ class CouldNotConnectToMiniException(Exception):
 class MiniConnector:
 
     def __init__(self):
-        self.mini_id = os.environ.get("ROBOT_ID")
+        self.mini_id = str(os.environ.get("ROBOT_ID"))
+        print(f'mini_id: {self.mini_id}')
 
     def connect(self):
         MiniSdk.set_log_level(logging.INFO)

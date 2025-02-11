@@ -1,8 +1,6 @@
 import argparse
 import os
 
-import atexit
-import threading
 from sic_framework import SICComponentManager
 from sic_framework.devices.common_mini.mini_animation import MiniAnimation, MiniAnimationActuator
 from sic_framework.devices.device import SICDevice

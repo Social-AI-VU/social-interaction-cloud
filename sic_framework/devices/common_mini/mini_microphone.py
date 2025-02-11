@@ -7,7 +7,7 @@ from sic_framework.core.sensor_python2 import SICSensor
 from sic_framework.devices.common_mini.mini_connector import MiniConnector
 
 
-class MicrophoneConf(SICConfMessage):
+class MiniMicrophoneConf(SICConfMessage):
     def __init__(self):
         self.no_channels = 1
         self.sample_rate = 44100
@@ -34,7 +34,7 @@ class MiniMicrophoneSensor(SICSensor):
 
     @staticmethod
     def get_conf():
-        return MicrophoneConf()
+        return MiniMicrophoneConf()
 
     @staticmethod
     def get_inputs():
