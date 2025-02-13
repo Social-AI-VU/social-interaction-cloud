@@ -16,13 +16,11 @@ class CouldNotConnectToMiniException(Exception):
 class MiniConnector:
 
     def __init__(self):
-        self.mini_id = str(os.environ.get("ROBOT_ID"))
-        print(f'mini_id: {self.mini_id}')
+        self.mini_id = os.environ.get("ROBOT_ID")
 
     def connect(self):
         MiniSdk.set_log_level(logging.INFO)
         MiniSdk.set_robot_type(MiniSdk.RobotType.EDU)
-        asyncio.run(self._start_dev_mode())
         asyncio.run(self._connect_to_mini())
 
     def disconnect(self):
