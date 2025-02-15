@@ -11,7 +11,7 @@ from sic_framework.core.utils import is_sic_instance
 from . import utils
 from .component_manager_python2 import SICNotStartedMessage, SICStartComponentRequest
 from .message_python2 import SICMessage, SICPingRequest, SICRequest, SICStopRequest
-from .sic_logging import SIC_LOG_SUBSCRIBER
+from . import sic_logging
 from .sic_redis import SICRedis
 
 
@@ -51,8 +51,11 @@ class SICConnector(object):
         self._log_level = log_level
         self._conf = conf
 
+        self.logger = self.get_connector_logger()
+        self._redis.parent_logger = self.logger
+
         # Subscribe to the log channel to display to the user
-        SIC_LOG_SUBSCRIBER.subscribe_to_log_channel_once()
+        sic_logging.SIC_LOG_SUBSCRIBER.subscribe_to_log_channel()
 
         self.output_channel = self.component_class.get_output_channel(self._ip)
 
@@ -95,16 +98,16 @@ class SICConnector(object):
         :param device_id: The id of the device we wat to start a component on
 
         """
-        print(
-            "Component not already alive, requesting",
-            self.component_class.get_component_name(),
-            "from manager ",
-            self._ip,
+        self.logger.info(
+            "Component is not already alive, requesting {} from manager {}".format(
+                self.component_class.get_component_name(),
+                self._ip,
+            ),
         )
 
         if issubclass(self.component_class, SICSensor) and self._conf:
-            print(
-                "Warning: setting configuration for SICSensors only works the first time connecting (sensor "
+            self.logger.warning(
+                "Setting configuration for SICSensors only works the first time connecting (sensor "
                 "component instances are reused for now)"
             )
 
@@ -139,6 +142,8 @@ class SICConnector(object):
                 ),
                 None,
             )
+        except Exception as e:
+            logging.error("Unknown exception occured while trying to start {name} component: {e}".format(name=self.component_class.get_component_name(), e=e))
 
     def register_callback(self, callback):
         """
@@ -191,7 +196,7 @@ class SICConnector(object):
         :rtype: SICMessage | None
         """
         if isinstance(request, type):
-            print(
+            self.logger.error(
                 "You probably forgot to initiate the class. For example, use NaoRestRequest() instead of NaoRestRequest."
             )
 
@@ -216,7 +221,20 @@ class SICConnector(object):
         if hasattr(self, "_redis"):
             self._redis.close()
 
-        SIC_LOG_SUBSCRIBER.stop()
+        sic_logging.SIC_LOG_SUBSCRIBER.stop()
+
+    def get_connector_logger(self, log_level=sic_logging.DEBUG):
+        """
+        Create a logger to inform the user during the setup of the component by the manager.
+        :param log_level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+        :type log_level: string
+        :return: Logger
+        """
+        name = "{connector}Connector".format(connector=self.__class__.__name__)
+
+        logger = sic_logging.get_sic_logger(name=name, redis=self._redis, log_level=log_level)
+
+        return logger
 
     # TODO: maybe put this in constructor to do a graceful exit on crash?
     # register cleanup to disconnect redis if an exception occurs anywhere during exection
@@ -232,6 +250,5 @@ class SICConnector(object):
     def __del__(self):
         try:
             self.stop()
-        except Exception:
-            print("Error in clean shutdown")
-            pass
+        except Exception as e:
+            self.logger.error("Error in clean shutdown: {}".format(e))

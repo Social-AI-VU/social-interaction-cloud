@@ -70,12 +70,12 @@ class SICComponent:
     def _get_logger(self, log_level):
         """
         Create a logger for the component to use to send messages to the user during its lifetime.
-        :param log_level: The logging verbosity level, such as sic_logging.SIC_DEBUG_FRAMEWORK.
+        :param log_level: The logging verbosity level, such as DEBUG, INFO, etc.
         :return: Logger
         """
         # create logger for the component
         name = self.get_component_name()
-        return sic_logging.get_sic_logger(self._redis, name, log_level)
+        return sic_logging.get_sic_logger(name=name, redis=self._redis, log_level=log_level)
 
     def _start(self):
         """
@@ -112,7 +112,7 @@ class SICComponent:
         """
         channel = connection_request.channel
         if channel in self._input_channels:
-            self.logger.debug_framework(
+            self.logger.debug(
                 "Channel {} is already connected to this component".format(channel)
             )
             return
@@ -130,7 +130,7 @@ class SICComponent:
         :return:
         """
 
-        self.logger.debug_framework_verbose(
+        self.logger.debug(
             "Handling request {}".format(request.get_message_name())
         )
 

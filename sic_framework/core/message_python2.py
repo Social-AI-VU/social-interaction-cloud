@@ -31,6 +31,7 @@ except (RuntimeError, ImportError):
     # PIL _can_ use turbojpeg, but can also fall back to a slower libjpeg
     # it is recommended to install turbojpeg
     print("Turbojpeg not found, falling back to PIL")
+    # logger.info("Turbojpeg not found, falling back to PIL")
     from PIL import Image
 
     class FakeTurboJpeg:

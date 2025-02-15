@@ -145,7 +145,7 @@ class SICService(SICComponent):
         :return: tuple of dictionary of messages and the shared timestamp
         """
 
-        self.logger.debug_framework_verbose(
+        self.logger.debug(
             "input buffers: {}".format(
                 [(k, len(v)) for k, v in self._input_buffers.items()]
             )
@@ -242,14 +242,14 @@ class SICService(SICComponent):
             try:
                 messages, timestamp = self._pop_messages()
             except PopMessageException:
-                self.logger.debug_framework_verbose(
+                self.logger.debug(
                     "Did not pop messages from buffers."
                 )
                 continue
 
             output = self.execute(messages)
 
-            self.logger.debug_framework_verbose("Outputting message {}".format(output))
+            self.logger.debug("Outputting message {}".format(output))
 
             if output:
                 # To keep track of the creation time of this data, the output timestamp is the oldest timestamp of all

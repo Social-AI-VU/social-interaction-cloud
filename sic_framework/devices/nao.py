@@ -29,15 +29,20 @@ class Nao(Naoqi):
         """
         _, stdout, _ = self.ssh_command(
             """         
-                    # state if SIC is already installed
-                    if [ -d ~/.venv_sic/lib/python2.7/site-packages/social_interaction_cloud* ]; then
-                        echo "SIC already installed";    
-
-                        # activate virtual environment if it exists
+                    # if there is a virtual environment, activate it
+                    if [ -f ~/.venv_sic/bin/activate ]; then
                         source ~/.venv_sic/bin/activate;
-
+                    else
+                        # SIC not already installed if venv does not exist, so exit
+                        exit 1;
+                    fi;
+                    
+                    if pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ; then
+                        echo "SIC already installed";
                         # upgrade the social-interaction-cloud package
-                        pip install --upgrade social-interaction-cloud --no-deps         
+                        # pip install --upgrade social-interaction-cloud --no-deps
+                    else
+                        echo "SIC is not installed";
                     fi;
                     """
         )
@@ -45,7 +50,6 @@ class Nao(Naoqi):
         output = stdout.read().decode()
 
         if "SIC already installed" in output:
-
             return True
         else:
             return False
