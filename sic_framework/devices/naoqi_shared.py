@@ -27,6 +27,7 @@ from sic_framework.devices.common_naoqi.naoqi_tracker import (
     NaoqiTrackerActuator,
 )
 from sic_framework.devices.device import SICDevice
+from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage
 
 shared_naoqi_components = [
     NaoqiTopCameraSensor,
@@ -131,6 +132,7 @@ class Naoqi(SICDevice):
         self.ssh.exec_command(self.stop_cmd)
         time.sleep(0.1)
 
+        self.logger.info("Checking to see if SIC is installed on remote device...")
         # make sure SIC is installed
         self.verify_sic()
 
@@ -183,8 +185,6 @@ class Naoqi(SICDevice):
         # merge stderr to stdout to simplify (and prevent potential deadlock as stderr is not read)
         stdout.channel.set_combine_stderr(True)
 
-        self.logfile = open("sic.log", "w")
-
         # Set up error monitoring
         self.stopping = False
 
@@ -193,7 +193,6 @@ class Naoqi(SICDevice):
             status = stdout.channel.recv_exit_status()
             # if remote threads exits before local main thread, report to user.
             if threading.main_thread().is_alive() and not self.stopping:
-                self.logfile.flush()
                 raise RuntimeError(
                     "Remote SIC program has stopped unexpectedly.\nSee sic.log for details"
                 )
@@ -202,31 +201,27 @@ class Naoqi(SICDevice):
         thread.name = "remote_SIC_process_monitor"
         thread.start()
 
-        # wait for 3 seconds for SIC to start
-        for i in range(300):
-            line = stdout.readline()
-            # self.logger.info(line)
-            self.logfile.write(line)
+        # try to ping remote ComponentManager to see if it has started
+        ping_tries = 4
+        manager_started = False
+        for i in range(ping_tries):
+            try:
+                response = self._redis.request(
+                    self.ip, SICPingRequest(), timeout=self._PING_TIMEOUT, block=True
+                )
+                if response == SICPongMessage():
+                    manager_started = True
+                    break
+            except TimeoutError:
+                self.logger.debug("ComponentManager on ip {} hasn't started yet... retrying ping {} more times".format(self.ip, ping_tries - 1 - i))
 
-            if MAGIC_STARTED_COMPONENT_MANAGER_TEXT in line:
-                break
-            time.sleep(0.01)
-        else:
+        if not manager_started:
             raise RuntimeError(
                 "Could not start SIC on remote device\nSee sic.log for details"
             )
+        else:
+            self.logger.debug("ComponentManager on ip {} has started!".format(self.ip))
 
-        # write the remaining output to the logfile
-        def write_logs():
-            for line in stdout:
-                self.logfile.write(line)
-                # self.logger.info(line)
-                if not threading.main_thread().is_alive() or self.stopping:
-                    break
-
-        thread = threading.Thread(target=write_logs)
-        thread.name = "remote_SIC_process_log_writer"
-        thread.start()
 
     def stop(self):
         for connector in self.connectors.values():

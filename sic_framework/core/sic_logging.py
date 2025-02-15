@@ -38,9 +38,10 @@ class SICLogSubscriber(object):
     def __init__(self):
         self.redis = None
         self.running = False
+        self.logfile = open("sic.log", "w")
         self.lock = threading.Lock()
 
-    def subscribe_to_log_channel_once(self):
+    def subscribe_to_log_channel(self):
         """
         Subscribe to the log channel and display any messages on the terminal to propagate any log messages in the
         framework to the user. This function may be called multiple times but will only subscribe once.
@@ -60,6 +61,7 @@ class SICLogSubscriber(object):
         :param message: SICLogMessage
         """
         print(message.msg, end="")
+        self.logfile.write(message.msg)
 
         if "ERROR" in message.msg.split(":")[1]:
             raise SICRemoteError("Error occurred, see remote stacktrace above.")
@@ -119,7 +121,7 @@ class SICLogFormatter(logging.Formatter):
         log_message = record.msg.replace('\n','')
 
         # Pad the name_ip portion with dashes
-        name_ip_padded = name_ip.ljust(40, '-')
+        name_ip_padded = name_ip.ljust(45, '-')
 
         # Format the message with color applied to name and ip
         log_message = "{name_ip}{color}{levelname}{reset_color}: {message}".format(

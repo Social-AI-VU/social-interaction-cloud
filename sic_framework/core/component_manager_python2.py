@@ -17,6 +17,8 @@ from .message_python2 import (
     SICRequest,
     SICStopRequest,
     SICSuccessMessage,
+    SICPingRequest,
+    SICPongMessage
 )
 from .sic_redis import SICRedis
 
@@ -135,11 +137,15 @@ class SICComponentManager(object):
         :param request: The SICStartServiceRequest request
         """
 
+        if is_sic_instance(request, SICPingRequest):
+            # this request is sent to see if the ComponentManager has started
+            return SICPongMessage()
+
         if is_sic_instance(request, SICStopRequest):
             self.stop_event.set()
             # return an empty stop message as a request must always be replied to
             return SICSuccessMessage()
-
+        
         # reply to the request if the component manager can start the component
         if request.component_name in self.component_classes:
             self.logger.info(

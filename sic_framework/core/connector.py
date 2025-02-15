@@ -55,7 +55,7 @@ class SICConnector(object):
         self._redis.parent_logger = self.logger
 
         # Subscribe to the log channel to display to the user
-        sic_logging.SIC_LOG_SUBSCRIBER.subscribe_to_log_channel_once()
+        sic_logging.SIC_LOG_SUBSCRIBER.subscribe_to_log_channel()
 
         self.output_channel = self.component_class.get_output_channel(self._ip)
 

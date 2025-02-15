@@ -39,7 +39,6 @@ from six.moves import queue
 from sic_framework.core import utils
 from sic_framework.core.message_python2 import SICMessage, SICRequest
 from sic_framework.core.utils import is_sic_instance
-from sic_framework.core import sic_logging
 
 class CallbackThread:
     def __init__(self, function, pubsub, thread):
@@ -53,15 +52,18 @@ _sic_redis_instances = []
 
 
 def cleanup_on_exit():
+    from sic_framework.core import sic_logging
+    logger = sic_logging.get_sic_logger("SICRedis")
+
     for s in _sic_redis_instances:
         s.close()
 
     time.sleep(0.2)
     if len([x.is_alive() for x in threading.enumerate()]) > 1:
-        print("Left over threads:")
+        logger.warning("Left over threads:")
         for thread in threading.enumerate():
             if thread.is_alive() and thread.name != "SICRedisCleanup":
-                print(thread.name, " is still alive")
+                logger.warning(thread.name, " is still alive")
 
 
 atexit.register(cleanup_on_exit)

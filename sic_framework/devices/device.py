@@ -11,6 +11,7 @@ from sic_framework.core import utils
 from sic_framework.core.connector import SICConnector
 
 from sic_framework.core import sic_logging
+from sic_framework.core.sic_redis import SICRedis
 
 if six.PY3:
     import pathlib
@@ -103,8 +104,13 @@ class SICDevice(object):
         self.connectors = dict()
         self.configs = dict()
         self.ip = ip
-        
+
+        self._redis = SICRedis()
+        self._PING_TIMEOUT = 1
+
         self.logger = sic_logging.get_sic_logger(name="{}DeviceManager".format(self.__class__.__name__))
+        sic_logging.SIC_LOG_SUBSCRIBER.subscribe_to_log_channel()
+        
         self.logger.info("Initializing device with ip: {ip}".format(ip=ip))
 
         if username is not None:

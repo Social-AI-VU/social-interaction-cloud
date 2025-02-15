@@ -85,7 +85,6 @@ class Pepper(Naoqi):
         )
 
         output = stdout.read().decode()
-        print("Output from SIC installation check: {}".format(output))
 
         if "SIC is installed" in output:
             # this command gets the version of SIC that is currently installed on the local machine
