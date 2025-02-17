@@ -8,13 +8,6 @@ import time
 from sic_framework.core import utils
 from sic_framework.core.connector import SICConnector
 
-if os.environ.get("SIC_ENVIRONMENT") == "desktop":
-    import pathlib
-
-    import paramiko
-    from scp import SCPClient
-
-
 class _SICLibrary(object):
     """
     A library to be installed on a remote device.
@@ -84,6 +77,21 @@ class SICDevice(object):
     Abstract class to facilitate property initialization for SICConnector properties.
     This way components of a device can easily be used without initializing all device components manually.
     """
+
+    def __new__(cls, *args, **kwargs):
+        """ Choose specific imports dependend on the type of device.
+
+        Reasoning: nao, pepper, and alphamini do not support these imports.
+        """
+        instance = super(SICDevice, cls).__new__(cls)
+
+        if cls.__name__ == "Desktop":
+            global pathlib, paramiko, SCPClient
+            import pathlib
+            import paramiko
+            from scp import SCPClient
+
+        return instance
 
     def __init__(self, ip, username=None, passwords=None):
         """

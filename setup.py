@@ -26,6 +26,9 @@ extras_require = {
     "dialogflow": [
         "google-cloud-dialogflow",
     ],
+    "google-tts": [
+      "google-cloud-texttospeech",
+    ],
     "face-detection-dnn": [
         "matplotlib",
         "pandas",
@@ -55,11 +58,16 @@ extras_require = {
         "soundfile",
         "python-dotenv",
     ],
+    "alphamini": [
+        "alphamini",
+        "protobuf~=3.20.2",
+        "websockets~=13.0",
+    ],
 }
 
 setup(
     name="social-interaction-cloud",
-    version="2.0.25",
+    version="2.0.26",
     author="Koen Hindriks",
     author_email="k.v.hindriks@vu.nl",
     long_description=open("README.md").read(),
@@ -85,6 +93,7 @@ setup(
             "run-gpt=sic_framework.services.openai_gpt:main",
             "run-whisper=sic_framework.services.openai_whisper_speech_to_text:main",
             "run-webserver=sic_framework.services.webserver.webserver_component:main",
+            "run-google-tts=sic_framework.services.text2speech.text2speech_service:main"
         ],
     },
 )
