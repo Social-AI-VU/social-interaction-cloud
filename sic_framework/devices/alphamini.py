@@ -133,10 +133,9 @@ class Alphamini(SICDevice):
         Tool.run_py_pkg(".venv_sic/bin/python -m pip install --no-input redis six alphamini pyaudio",
                         robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg(
-            "cd social-interaction-cloud && ../.venv_sic/bin/python -m pip install --no-input -e . --no-deps",
+            "cd social-interaction-cloud && ../.venv_sic/bin/python -m pip install --no-input -e .[alphamini]",
             robot_id=self.mini_id, debug=True)
-        Tool.run_py_pkg(".venv_sic/bin/python -m pip install --upgrade --no-input websockets~=13.0 protobuf~=3.20.2",
-                        robot_id=self.mini_id, debug=True)
+
     def run_sic(self):
         print("Running sic on alphamini...")
         Tool.run_py_pkg("cd social-interaction-cloud && git pull", robot_id=self.mini_id, debug=True)
@@ -200,5 +199,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     os.environ["DB_IP"] = args.redis_ip
-    os.environ["ALPHAMINI_ID"] = args.device_id
+    os.environ["ALPHAMINI_ID"] = args.alphamini_id
     SICComponentManager(mini_component_list)
