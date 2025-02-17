@@ -1,8 +1,10 @@
 import argparse
+import asyncio
 import configparser
 import os
 import socket
 from os.path import join
+from threading import Thread
 from time import sleep
 
 import mini.mini_sdk as MiniSdk
@@ -28,14 +30,15 @@ class Alphamini(SICDevice):
         MiniSdk.set_robot_type(MiniSdk.RobotType.EDU)
         # self._install_installer()
 
-        if self._is_ssh_available(host=ip):
-            self.run_sic()
-        else:
+        if not self._is_ssh_available(host=ip):
             self.install_ssh()
             sleep(30)
             self.install_sic()
             sleep(30)
-            self.run_sic()
+
+        thread = Thread(target=self.run_sic)
+        thread.start()
+        sleep(10)
 
 
     @property
@@ -138,33 +141,15 @@ class Alphamini(SICDevice):
 
     def run_sic(self):
         print("Running sic on alphamini...")
+
+        # Create a new event loop for this thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
         Tool.run_py_pkg("cd social-interaction-cloud && git pull", robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg(f".venv_sic/bin/python social-interaction-cloud/sic_framework/devices/alphamini.py "
                         f"--redis_ip {self.redis_ip} --alphamini_id {self.mini_id}", robot_id=self.mini_id,
                         debug=True)
-
-    # @staticmethod
-    # def create_config_file_for_mini(file_path, mini_id, mini_password, redis_ip):
-    #     config = configparser.ConfigParser()
-    #     config['alphamini'] = {'id': mini_id,
-    #                            'password': mini_password}
-    #
-    #     config['redis'] = {'ip': redis_ip}
-    #
-    #     with open(file_path, 'w') as configfile:
-    #         config.write(configfile)
-
-    # def _install_installer(self):
-    #     print("Package alphamini sic_installer...")
-    #     pkg_path = Tool.setup_py_pkg('common_mini/alphamini_sic_installer')
-    #     print("Done with packaging.")
-    # 
-    #     print("Uninstall old version of alphamini sic_installer...")
-    #     Tool.uninstall_py_pkg(pkg_name="sic_installer", robot_id=self.mini_id)
-    # 
-    #     print("Install latest version of alphamini sic_installer...")
-    #     Tool.install_py_pkg(package_path=pkg_path, robot_id=self.mini_id, debug=False)
-
 
     @staticmethod
     def _is_ssh_available(host, port=8022, timeout=5):
