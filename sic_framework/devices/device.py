@@ -81,15 +81,17 @@ class SICDevice(object):
     def __new__(cls, *args, **kwargs):
         """ Choose specific imports dependend on the type of device.
 
-        Reasoning: nao, pepper, and alphamini do not support these imports.
+        Reasoning: alphamini do not support these imports, they are only needed for remotely installing pkgs for Nao and Pepper
         """
         instance = super(SICDevice, cls).__new__(cls)
 
-        if cls.__name__ == "Desktop":
-            global pathlib, paramiko, SCPClient
-            import pathlib
-            import paramiko
-            from scp import SCPClient
+        if cls.__name__ in ("Nao", "Pepper"):
+            import six
+            if six.PY3:
+                global pathlib, paramiko, SCPClient
+                import pathlib
+                import paramiko
+                from scp import SCPClient
 
         return instance
 
