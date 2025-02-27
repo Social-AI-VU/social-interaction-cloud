@@ -1,6 +1,5 @@
 import argparse
 import atexit
-import os
 import threading
 import time
 
