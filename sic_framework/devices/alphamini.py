@@ -1,45 +1,44 @@
 import argparse
-import asyncio
-import configparser
 import os
 import socket
-from os.path import join
-from threading import Thread
-from time import sleep
+import threading
+import time
 
 import mini.mini_sdk as MiniSdk
 import mini.pkg_tool as Tool
 
 from sic_framework import SICComponentManager
+from sic_framework.core.utils import MAGIC_STARTED_COMPONENT_MANAGER_TEXT
 from sic_framework.devices.common_mini.mini_animation import MiniAnimation, MiniAnimationActuator
-from sic_framework.devices.device import SICDevice
 from sic_framework.devices.common_mini.mini_microphone import MiniMicrophone, MiniMicrophoneSensor
 from sic_framework.devices.common_mini.mini_speaker import MiniSpeaker, MiniSpeakerComponent
+from sic_framework.devices.device import SICDevice
 
 
 class Alphamini(SICDevice):
-    def __init__(self, ip, mini_id, mini_password, redis_ip, mic_conf=None, speaker_conf=None):
-        super().__init__(ip=ip)
+    def __init__(self, ip, mini_id, mini_password, redis_ip, username="u0_a25", port=8022, mic_conf=None, speaker_conf=None):
+        super().__init__(ip=ip, username=username, passwords=mini_password, port=port)
         self.mini_id = mini_id
         self.mini_password = mini_password
         self.redis_ip = redis_ip
         self.configs[MiniMicrophone] = mic_conf
         self.configs[MiniSpeaker] = speaker_conf
+        self.device_path = "/data/data/com.termux/files/home/.venv_sic/lib/python3.12/site-packages/sic_framework/devices/alphamini.py"
 
-        # For connecting to alphamini and installing SIC
         MiniSdk.set_robot_type(MiniSdk.RobotType.EDU)
-        # self._install_installer()
 
+        # Check if ssh is available
         if not self._is_ssh_available(host=ip):
             self.install_ssh()
-            sleep(30)
+
+        if self.check_sic_install():
+            print("SIC already installed on the alphamini")
+        else:
+            print("SIC not installed on the alphamini")
             self.install_sic()
-            sleep(30)
 
-        thread = Thread(target=self.run_sic)
-        thread.start()
-        sleep(10)
-
+        # this should be blocking to make sure SIC starts on a remote mini before the main thread continues
+        self.run_sic()
 
     @property
     def mic(self):
@@ -108,7 +107,7 @@ class Alphamini(SICDevice):
         # The ftp port for mini is 8021
         Tool.run_py_pkg("pkg install -y busybox termux-services", robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg("source $PREFIX/etc/profile.d/start-services.sh", robot_id=self.mini_id, debug=True)
-        sleep(10)
+        time.sleep(10)
         Tool.run_py_pkg("sv-enable ftpd", robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg("sv up ftpd", robot_id=self.mini_id, debug=True)
 
@@ -116,40 +115,158 @@ class Alphamini(SICDevice):
         Tool.run_py_pkg("ifconfig", robot_id=self.mini_id, debug=True)
         print('Connect to alphamini with: ssh u0_a25@<ip> -p 8022')
 
+    def check_sic_install(self):
+        """
+        Runs a script on Alphamini to see if SIC is installed there
+        """
+        _, stdout, _ = self.ssh_command(
+            """
+                    # state if SIC is already installed
+                    if [ -d ~/.venv_sic/lib/python3.12/site-packages/sic_framework ]; then
+                        echo "SIC already installed";
+
+                        # activate virtual environment if it exists
+                        source ~/.venv_sic/bin/activate;
+
+                        # upgrade the social-interaction-cloud package
+                        pip install --upgrade social-interaction-cloud --no-deps
+                    fi;
+                    """
+        )
+
+        output = stdout.read().decode()
+
+        if "SIC already installed" in output:
+            return True
+        else:
+            return False
+
+    def is_system_package_installed(self, pkg_name):
+        pkg_install_cmd = """
+            pkg list-installed | grep -w {pkg_name}
+        """.format(
+            pkg_name=pkg_name
+        )
+        _, stdout, _ = self.ssh_command(pkg_install_cmd)
+        if "installed" in stdout.read().decode():
+            print(f"{pkg_name} is already installed")
+            return True
+        else:
+            return False
+
     def install_sic(self):
-        print("Installing SIC ...")
-        # Install packages for necessary for SIC
-        Tool.run_py_pkg("pkg install -y portaudio", robot_id=self.mini_id, debug=True)
-        Tool.run_py_pkg("pkg install -y python-numpy", robot_id=self.mini_id, debug=True)
-        Tool.run_py_pkg("pkg install -y python-pillow", robot_id=self.mini_id, debug=True)
-        Tool.run_py_pkg("pkg install -y sox", robot_id=self.mini_id, debug=True)
-        Tool.run_py_pkg("pkg install -y git", robot_id=self.mini_id, debug=True)
+        """
+        Run the install script for the Alphamini
+        """
+        # Check if some system packages are installed
+        packages = ["portaudio", "python-numpy", "python-pillow", "git"]
+        for pkg in packages:
+            if not self.is_system_package_installed(pkg):
+                print("Installing package: ", pkg)
+                _, stdout, _ = self.ssh_command(f"pkg install -y {pkg}")
+                print(stdout.read().decode())
 
-        # Git clone git and checkout mini_device branch
-        Tool.run_py_pkg("git clone https://github.com/Social-AI-VU/social-interaction-cloud.git",
-                        robot_id=self.mini_id, debug=True)
-        Tool.run_py_pkg("cd social-interaction-cloud && git checkout mini_device", robot_id=self.mini_id, debug=True)
+        print("Installing SIC on the Alphamini...")
+        print("This may take a while...")
+        _, stdout, stderr = self.ssh_command(
+            """
+                # create virtual environment
+                rm -rf .venv_sic
+                python -m venv .venv_sic --system-site-packages;
+                source ~/.venv_sic/bin/activate;
 
-        # Set-up virtual environment and install pip packages
-        Tool.run_py_pkg("python -m venv .venv_sic --system-site-packages",
-                        robot_id=self.mini_id, debug=True)
-        Tool.run_py_pkg(".venv_sic/bin/python -m pip install --no-input redis six alphamini pyaudio",
-                        robot_id=self.mini_id, debug=True)
-        Tool.run_py_pkg(
-            "cd social-interaction-cloud && ../.venv_sic/bin/python -m pip install --no-input -e .[alphamini]",
-            robot_id=self.mini_id, debug=True)
+                # install required packages and perform a clean sic installation
+                pip install social-interaction-cloud --no-deps;
+                pip install redis six pyaudio alphamini websockets==13.1 protobuf==3.20.3
+
+                """
+        )
+
+        output = stdout.read().decode()
+        error = stderr.read().decode()
+
+        if not "Successfully installed social-interaction-cloud" in output:
+            raise Exception(
+                "Failed to install sic. Standard error stream from install command: {}".format(
+                    error
+                )
+            )
+        else:
+            print("SIC successfully installed")
 
     def run_sic(self):
         print("Running sic on alphamini...")
 
-        # Create a new event loop for this thread
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
 
-        Tool.run_py_pkg("cd social-interaction-cloud && git pull", robot_id=self.mini_id, debug=True)
-        Tool.run_py_pkg(f".venv_sic/bin/python social-interaction-cloud/sic_framework/devices/alphamini.py "
-                        f"--redis_ip {self.redis_ip} --alphamini_id {self.mini_id}", robot_id=self.mini_id,
-                        debug=True)
+        self.stop_cmd = """
+            echo 'Killing all previous robot wrapper processes';
+            pkill -f "python {alphamini_device}"
+        """.format(alphamini_device=self.device_path)
+
+        # stop alphamini
+        print("killing processes")
+        self.ssh.exec_command(self.stop_cmd)
+        time.sleep(1)
+
+        self.start_cmd = """
+            source .venv_sic/bin/activate;
+            python {alphamini_device} --redis_ip={redis_ip} --alphamini_id {mini_id};
+        """.format(
+            alphamini_device= self.device_path, redis_ip=self.redis_ip, mini_id=self.mini_id
+        )
+        print("starting SIC on alphamini")
+        # start alphamini
+        _, stdout, _ = self.ssh.exec_command(self.start_cmd, get_pty=False)
+
+        stdout.channel.set_combine_stderr(True)
+
+        # # # TODO move the remote SIC process monitoring and logging to SICDevice
+        self.logfile = open("sic.log", "w")
+
+        # Set up error monitoring
+        self.stopping = False
+
+        def check_if_exit():
+            # wait for the process to exit
+            status = stdout.channel.recv_exit_status()
+            # if remote threads exits before local main thread, report to user.
+            if threading.main_thread().is_alive() and not self.stopping:
+                self.logfile.flush()
+                raise RuntimeError(
+                    "Remote SIC program has stopped unexpectedly.\nSee sic.log for details"
+                )
+
+        # Start monitoring thread
+        exit_thread = threading.Thread(target=check_if_exit, name="remote_SIC_process_monitor")
+        exit_thread.start()
+
+        # Wait for SIC to start
+        for i in range(300):
+            line = stdout.readline()
+            self.logfile.write(line)
+            self.logfile.flush()
+
+            if MAGIC_STARTED_COMPONENT_MANAGER_TEXT in line:
+                print("SIC started successfully.")
+                break
+            time.sleep(0.01)
+        else:
+            raise RuntimeError("Could not start SIC on remote device\nSee sic.log for details")
+
+        # Write remaining logs in the background
+        def write_logs():
+            for line in stdout:
+                self.logfile.write(line)
+                self.logfile.flush()
+                if not threading.main_thread().is_alive() or self.stopping:
+                    break
+
+        log_thread = threading.Thread(target=write_logs, name="remote_SIC_process_log_writer")
+        log_thread.start()
+
+    def __del__(self):
+        if hasattr(self, "logfile"):
+            self.logfile.close()
 
     @staticmethod
     def _is_ssh_available(host, port=8022, timeout=5):
