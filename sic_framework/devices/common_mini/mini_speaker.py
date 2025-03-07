@@ -15,6 +15,8 @@ class MiniSpeakersConf(SICConfMessage):
 
 
 class MiniSpeakerComponent(SICComponent):
+    COMPONENT_STARTUP_TIMEOUT = 5
+
     def __init__(self, *args, **kwargs):
         super(MiniSpeakerComponent, self).__init__(*args, **kwargs)
 

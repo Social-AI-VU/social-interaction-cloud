@@ -23,6 +23,8 @@ class MiniActionRequest(SICRequest):
 
 
 class MiniAnimationActuator(SICActuator):
+    COMPONENT_STARTUP_TIMEOUT = 5
+
     def __init__(self, *args, **kwargs):
         SICActuator.__init__(self, *args, **kwargs)
 
