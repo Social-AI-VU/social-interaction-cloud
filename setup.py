@@ -60,8 +60,8 @@ extras_require = {
     ],
     "alphamini": [
         "alphamini",
-        "protobuf~=3.20.2",
-        "websockets~=13.0",
+        "protobuf~=3.20.3",
+        "websockets~=13.1",
     ],
 }
 
