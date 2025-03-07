@@ -81,11 +81,11 @@ class SICDevice(object):
     def __new__(cls, *args, **kwargs):
         """ Choose specific imports dependend on the type of device.
 
-        Reasoning: alphamini do not support these imports, they are only needed for remotely installing pkgs for Nao and Pepper
+        Reasoning: Alphamini does not support these imports; they are only needed for remotely installing packages on robots from the local machine
         """
         instance = super(SICDevice, cls).__new__(cls)
 
-        if cls.__name__ in ("Nao", "Pepper"):
+        if cls.__name__ in ("Nao", "Pepper", "Alphamini"):
             import six
             if six.PY3:
                 global pathlib, paramiko, SCPClient
@@ -95,7 +95,7 @@ class SICDevice(object):
 
         return instance
 
-    def __init__(self, ip, username=None, passwords=None):
+    def __init__(self, ip, username=None, passwords=None, port=22):
         """
         Connect to the device and ensure an up to date version of the framework is installed
         :param ip: the ip adress of the device
@@ -105,13 +105,14 @@ class SICDevice(object):
         self.connectors = dict()
         self.configs = dict()
         self.ip = ip
+        self.port = port
 
         if username is not None:
 
             if not isinstance(passwords, list):
                 passwords = [passwords]
 
-            if not utils.ping_server(self.ip, port=22, timeout=3):
+            if not utils.ping_server(self.ip, port=self.port, timeout=3):
                 raise RuntimeError(
                     "Could not connect to device on ip {}. Please check if it is reachable.".format(
                         self.ip
@@ -125,7 +126,7 @@ class SICDevice(object):
                 try:
                     self.ssh.connect(
                         self.ip,
-                        port=22,
+                        port=self.port,
                         username=username,
                         password=p,
                         timeout=3,
