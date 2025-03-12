@@ -5,22 +5,10 @@ import tarfile
 import tempfile
 import time
 
-import six
-
 from sic_framework.core import utils
 from sic_framework.core.connector import SICConnector
 
-from sic_framework.core import sic_logging
-from sic_framework.core.sic_redis import SICRedis
-
-if six.PY3:
-    import pathlib
-
-    import paramiko
-    from scp import SCPClient
-
-
-class SICLibrary(object):
+class _SICLibrary(object):
     """
     A library to be installed on a remote device.
     """
@@ -94,7 +82,24 @@ class SICDevice(object):
     This way components of a device can easily be used without initializing all device components manually.
     """
 
-    def __init__(self, ip, username=None, passwords=None):
+    def __new__(cls, *args, **kwargs):
+        """ Choose specific imports dependend on the type of device.
+
+        Reasoning: Alphamini does not support these imports; they are only needed for remotely installing packages on robots from the local machine
+        """
+        instance = super(SICDevice, cls).__new__(cls)
+
+        if cls.__name__ in ("Nao", "Pepper", "Alphamini"):
+            import six
+            if six.PY3:
+                global pathlib, paramiko, SCPClient
+                import pathlib
+                import paramiko
+                from scp import SCPClient
+
+        return instance
+
+    def __init__(self, ip, username=None, passwords=None, port=22):
         """
         Connect to the device and ensure an up to date version of the framework is installed
         :param ip: the ip adress of the device
@@ -104,6 +109,7 @@ class SICDevice(object):
         self.connectors = dict()
         self.configs = dict()
         self.ip = ip
+        self.port = port
 
         self._redis = SICRedis()
         self._PING_TIMEOUT = 1
@@ -118,7 +124,7 @@ class SICDevice(object):
             if not isinstance(passwords, list):
                 passwords = [passwords]
 
-            if not utils.ping_server(self.ip, port=22, timeout=3):
+            if not utils.ping_server(self.ip, port=self.port, timeout=3):
                 raise RuntimeError(
                     "Could not connect to device on ip {}. Please check if it is reachable.".format(
                         self.ip
@@ -132,7 +138,7 @@ class SICDevice(object):
                 try:
                     self.ssh.connect(
                         self.ip,
-                        port=22,
+                        port=self.port,
                         username=username,
                         password=p,
                         timeout=3,
