@@ -10,7 +10,7 @@ from sic_framework.core.connector import SICConnector
 from sic_framework.core import sic_logging
 from sic_framework.core.sic_redis import SICRedis
 
-class _SICLibrary(object):
+class SICLibrary(object):
     """
     A library to be installed on a remote device.
     """

@@ -20,6 +20,7 @@ class Nao(Naoqi):
             username="nao",
             passwords="nao",
             device_path="/data/home/nao/.venv_sic/lib/python2.7/site-packages/sic_framework/devices",
+            test_device_path="/home/nao/sic_in_test/social-interaction-cloud/sic_framework/devices",
             **kwargs
         )
 
@@ -27,6 +28,11 @@ class Nao(Naoqi):
         """
         Runs a script on Nao to see if SIC is installed there
         """
+
+        if self.dev_test:
+            # if we are testing a development version, assume it is already installed properly
+            return True
+
         _, stdout, _ = self.ssh_command(
             """         
                     # if there is a virtual environment, activate it

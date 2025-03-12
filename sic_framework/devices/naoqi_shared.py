@@ -56,6 +56,8 @@ class Naoqi(SICDevice):
         robot_type,
         venv,
         device_path,
+        dev_test=False,
+        test_device_path="",
         top_camera_conf=None,
         bottom_camera_conf=None,
         mic_conf=None,
@@ -88,6 +90,7 @@ class Naoqi(SICDevice):
         self.configs[NaoqiLookAt] = lookat_conf
 
         self.robot_type = robot_type
+        self.dev_test = dev_test
 
         assert robot_type in [
             "nao",
@@ -103,7 +106,11 @@ class Naoqi(SICDevice):
             redis_hostname = utils.get_ip_adress()
 
         # set start and stop scripts
-        robot_wrapper_file = device_path + "/" + robot_type
+        if dev_test:
+            robot_wrapper_file = test_device_path + "/" + robot_type
+        else:
+            robot_wrapper_file = device_path + "/" + robot_type
+    
         self.start_cmd = """            
             # export environment variables so that it can find the naoqi library
             export PYTHONPATH=/opt/aldebaran/lib/python2.7/site-packages;
@@ -115,7 +122,11 @@ class Naoqi(SICDevice):
         )
 
         # if this robot is expected to have a virtual environment, activate it
-        if venv:
+        if dev_test and venv:
+            self.start_cmd = """
+            source ~/.test_venv/bin/activate;
+        """ + self.start_cmd            
+        elif venv:
             self.start_cmd = """
             source ~/.venv_sic/bin/activate;
         """ + self.start_cmd
