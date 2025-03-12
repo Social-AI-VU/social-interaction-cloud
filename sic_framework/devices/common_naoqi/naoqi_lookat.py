@@ -59,8 +59,6 @@ class NaoqiLookAtComponent(SICComponent):
         self.tracker = self.session.service("ALTracker")
         self.motion = self.session.service("ALMotion")
 
-        self.logger = sic_logging.get_sic_logger(name="NaoqiLookAtComponent")
-
     @staticmethod
     def get_conf():
         return NaoqiLookAtConf()
