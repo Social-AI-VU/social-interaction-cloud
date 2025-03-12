@@ -13,6 +13,8 @@ from sic_framework.devices.common_mini.mini_animation import MiniAnimation, Mini
 from sic_framework.devices.common_mini.mini_microphone import MiniMicrophone, MiniMicrophoneSensor
 from sic_framework.devices.common_mini.mini_speaker import MiniSpeaker, MiniSpeakerComponent
 from sic_framework.devices.device import SICDevice
+from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage
+
 
 
 class Alphamini(SICDevice):
@@ -32,9 +34,9 @@ class Alphamini(SICDevice):
             self.install_ssh()
 
         if self.check_sic_install():
-            print("SIC already installed on the alphamini")
+            self.logger.info("SIC already installed on the alphamini")
         else:
-            print("SIC not installed on the alphamini")
+            self.logger.info("SIC not installed on the alphamini")
             self.install_sic()
 
         # this should be blocking to make sure SIC starts on a remote mini before the main thread continues
@@ -62,28 +64,28 @@ class Alphamini(SICDevice):
                               "/data/data/com.termux/files/usr/etc/apt/sources.list.d/science.list")
         cmd_source_verify = "head /data/data/com.termux/files/usr/etc/apt/sources.list -n 5"
 
-        print('Updating the sources.list files...')
+        self.logger.info('Updating the sources.list files...')
         Tool.run_py_pkg(cmd_source_main, robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg(cmd_source_game, robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg(cmd_source_science, robot_id=self.mini_id, debug=True)
 
-        print('Verify that the source file has been updated')
+        self.logger.info('Verifying that the source file has been updated')
         Tool.run_py_pkg(cmd_source_verify, robot_id=self.mini_id, debug=True)
 
-        print('Update the package manager...')
+        self.logger.info('Update the package manager...')
         Tool.run_py_pkg("apt update && apt clean", robot_id=self.mini_id, debug=True)
 
         # this is necessary otherwise the system pkgs that later `apt` (precisely the https method under `apt`) will link to the old libssl.so.1.1, while
         # apt install -y openssl will install the new libssl.so.3
         # and throw error like "library "libssl.so.1.1" not found"
-        print('Upgrade the package manager...')
+        self.logger.info('Upgrade the package manager...')
         # this will prompt the interactive openssl.cnf (Y/I/N/O/D/Z) [default=N] and hang, so pipe 'N' to it to avoid the prompt
         Tool.run_py_pkg("echo 'N' | apt upgrade -y", robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg("echo 'N' | apt upgrade -y", robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg("echo 'N' | apt upgrade -y", robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg("echo 'N' | apt upgrade -y", robot_id=self.mini_id, debug=True)
 
-        print('Installing ssh...')
+        self.logger.info('Installing ssh...')
         # Install openssh
         Tool.run_py_pkg("echo 'N' | apt install -y openssh", robot_id=self.mini_id, debug=True)
 
@@ -111,9 +113,9 @@ class Alphamini(SICDevice):
         Tool.run_py_pkg("sv-enable ftpd", robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg("sv up ftpd", robot_id=self.mini_id, debug=True)
 
-        print("The alphamini's ip-address is: ")
+        self.logger.info("The alphamini's ip-address is: ")
         Tool.run_py_pkg("ifconfig", robot_id=self.mini_id, debug=True)
-        print('Connect to alphamini with: ssh u0_a25@<ip> -p 8022')
+        self.logger.info('Connect to alphamini with: ssh u0_a25@<ip> -p 8022')
 
     def check_sic_install(self):
         """
@@ -149,7 +151,7 @@ class Alphamini(SICDevice):
         )
         _, stdout, _ = self.ssh_command(pkg_install_cmd)
         if "installed" in stdout.read().decode():
-            print(f"{pkg_name} is already installed")
+            self.logger.info(f"{pkg_name} is already installed")
             return True
         else:
             return False
@@ -162,12 +164,12 @@ class Alphamini(SICDevice):
         packages = ["portaudio", "python-numpy", "python-pillow", "git"]
         for pkg in packages:
             if not self.is_system_package_installed(pkg):
-                print("Installing package: ", pkg)
+                self.logger.info("Installing package: ", pkg)
                 _, stdout, _ = self.ssh_command(f"pkg install -y {pkg}")
-                print(stdout.read().decode())
+                self.logger.info(stdout.read().decode())
 
-        print("Installing SIC on the Alphamini...")
-        print("This may take a while...")
+        self.logger.info("Installing SIC on the Alphamini...")
+        self.logger.info("This may take a while...")
         _, stdout, stderr = self.ssh_command(
             """
                 # create virtual environment
@@ -192,10 +194,10 @@ class Alphamini(SICDevice):
                 )
             )
         else:
-            print("SIC successfully installed")
+            self.logger.info("SIC successfully installed")
 
     def run_sic(self):
-        print("Running sic on alphamini...")
+        self.logger.info("Running sic on alphamini...")
 
 
         self.stop_cmd = """
@@ -204,7 +206,7 @@ class Alphamini(SICDevice):
         """.format(alphamini_device=self.device_path)
 
         # stop alphamini
-        print("killing processes")
+        self.logger.info("killing processes")
         self.ssh.exec_command(self.stop_cmd)
         time.sleep(1)
 
@@ -214,7 +216,7 @@ class Alphamini(SICDevice):
         """.format(
             alphamini_device= self.device_path, redis_ip=self.redis_ip, mini_id=self.mini_id
         )
-        print("starting SIC on alphamini")
+        self.logger.info("starting SIC on alphamini")
         # start alphamini
         _, stdout, _ = self.ssh.exec_command(self.start_cmd, get_pty=False)
 
@@ -241,28 +243,23 @@ class Alphamini(SICDevice):
         exit_thread.start()
 
         # Wait for SIC to start
-        for i in range(300):
-            line = stdout.readline()
-            self.logfile.write(line)
-            self.logfile.flush()
-
-            if MAGIC_STARTED_COMPONENT_MANAGER_TEXT in line:
-                print("SIC started successfully.")
-                break
-            time.sleep(0.01)
-        else:
-            raise RuntimeError("Could not start SIC on remote device\nSee sic.log for details")
-
-        # Write remaining logs in the background
-        def write_logs():
-            for line in stdout:
-                self.logfile.write(line)
-                self.logfile.flush()
-                if not threading.main_thread().is_alive() or self.stopping:
+        # TODO: ping alphamini
+        ping_tries = 3
+        for i in range(ping_tries):
+            try:
+                response = self._redis.request(
+                    self.ip, SICPingRequest(), timeout=self._PING_TIMEOUT, block=True
+                )
+                if response == SICPongMessage():
                     break
-
-        log_thread = threading.Thread(target=write_logs, name="remote_SIC_process_log_writer")
-        log_thread.start()
+            except TimeoutError:
+                self.logger.debug("ComponentManager on ip {} hasn't started yet... retrying ping {} more times".format(self.ip, ping_tries - 1 - i))
+        else:
+            raise RuntimeError(
+                "Could not start SIC on remote device\nSee sic.log for details"
+            )
+        
+        self.logger.debug("ComponentManager on ip {} has started!".format(self.ip))
 
     def __del__(self):
         if hasattr(self, "logfile"):

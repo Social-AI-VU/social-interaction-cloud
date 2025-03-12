@@ -7,6 +7,8 @@ import time
 
 from sic_framework.core import utils
 from sic_framework.core.connector import SICConnector
+from sic_framework.core import sic_logging
+from sic_framework.core.sic_redis import SICRedis
 
 class _SICLibrary(object):
     """
@@ -26,7 +28,7 @@ class _SICLibrary(object):
             lib = lib.replace('\n','')
             lib_name, lib_ver = lib.split('==')
             if self.name == lib_name:
-                print("Found package: {}".format(lib))
+                self.logger.debug("Found package: {}".format(lib))
                 # check to make sure version matches 
                 if self.version:
                     if self.version in lib_ver:
@@ -37,7 +39,7 @@ class _SICLibrary(object):
         return False
     
     def install(self, ssh):
-        print("Installing {} on remote device ".format(self.name), end="")
+        self.logger.info("Installing {} on remote device ".format(self.name), end="")
 
         # if we have to download the binary first, as is the case with Pepper
         if self.download_cmd:
@@ -112,7 +114,7 @@ class SICDevice(object):
         self.port = port
 
         self._redis = SICRedis()
-        self._PING_TIMEOUT = 1
+        self._PING_TIMEOUT = 3
 
         self.logger = sic_logging.get_sic_logger(name="{}DeviceManager".format(self.__class__.__name__))
         sic_logging.SIC_LOG_SUBSCRIBER.subscribe_to_log_channel()

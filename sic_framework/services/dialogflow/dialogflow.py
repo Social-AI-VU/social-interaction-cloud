@@ -321,7 +321,7 @@ class DialogflowComponent(SICComponent):
 
         for response in responses:
             if response.recognition_result:
-                print(
+                self.logger.info(
                     "\r recognition_result:",
                     response.recognition_result.transcript,
                     end="",
@@ -330,10 +330,10 @@ class DialogflowComponent(SICComponent):
                     self._output_channel, RecognitionResult(response)
                 )
             if response.query_result:
-                print("query_result:", response.query_result)
+                self.logger.info("query_result:", response.query_result)
                 return QueryResult(response)
             if response.recognition_result.is_final:
-                print("----- FINAL -----")
+                self.logger.info("----- FINAL -----")
                 # Stop sending audio to dialogflow as it detected the person stopped speaking, but continue this loop
                 # to receive the query result
                 self.message_was_final.set()

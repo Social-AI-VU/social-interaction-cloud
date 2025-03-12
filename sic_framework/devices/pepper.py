@@ -92,7 +92,7 @@ class Pepper(Naoqi):
             try:
                 cur_version = subprocess.check_output(version_cmd, shell=True, text=True).strip()
             except subprocess.CalledProcessError as e:
-                print("Exception encountered while grabbing current SIC version:", e)
+                self.logger.error("Exception encountered while grabbing current SIC version:", e)
 
             # check to make sure the Pepper version is up-to-date (assuming the latest version of SIC is installed locally)
             _, stdout, _ = self.ssh_command(
@@ -157,9 +157,9 @@ class Pepper(Naoqi):
         installed_libs = stdout_pip_freeze.readlines()
 
         for lib in _LIBS_TO_INSTALL:
-            print("Checking if library {} is installed...".format(lib.name))
+            self.logger.info("Checking if library {} is installed...".format(lib.name))
             if not lib.check_if_installed(installed_libs):
-                print("Library {} is NOT installed, installing now...".format(lib.name))
+                self.logger.info("Library {} is NOT installed, installing now...".format(lib.name))
                 lib.install(self.ssh)
 
 

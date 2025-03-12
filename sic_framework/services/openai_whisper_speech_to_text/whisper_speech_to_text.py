@@ -122,13 +122,13 @@ class WhisperComponent(SICComponent):
 
     def on_request(self, request):
         self.source.stream.clear()
-        print("Listening")
+        self.logger.info("Listening...")
         audio = self.recognizer.listen(
             self.source,
             timeout=request.timeout,
             phrase_time_limit=request.phrase_time_limit,
         )
-        print("Transcribing")
+        self.logger.info("Transcribing")
         if self.params.openai_key:
             wav_data = io.BytesIO(audio.get_wav_data())
             wav_data.name = "SpeechRecognition_audio.wav"
@@ -141,7 +141,7 @@ class WhisperComponent(SICComponent):
             no_speech_prob = np.mean(
                 [segment.no_speech_prob for segment in response.segments]
             )
-            print("using online openai model")
+            self.logger.info("using online openai model")
         else:
             response = self.recognizer.recognize_whisper(
                 audio, language="english", model=self.params.model, show_dict=True
@@ -151,12 +151,12 @@ class WhisperComponent(SICComponent):
             no_speech_prob = np.mean(
                 [segment["no_speech_prob"] for segment in response["segments"]]
             )
-        # print("FULL RESPONSE", response)
+        # self.logger.info("FULL RESPONSE", response)
 
         if no_speech_prob > 0.5:
-            print("Whisper heard silence")
+            self.logger.info("Whisper heard silence")
             return Transcript("")
-        print("Whisper thinks you said: " + transcript)
+        self.logger.info("Whisper thinks you said: " + transcript)
 
         # with wave.open(f"audio{self.i}.wav", "wb") as f:
         #     f.setnchannels(1)

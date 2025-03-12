@@ -202,25 +202,22 @@ class Naoqi(SICDevice):
         thread.start()
 
         # try to ping remote ComponentManager to see if it has started
-        ping_tries = 4
-        manager_started = False
+        ping_tries = 3
         for i in range(ping_tries):
             try:
                 response = self._redis.request(
                     self.ip, SICPingRequest(), timeout=self._PING_TIMEOUT, block=True
                 )
                 if response == SICPongMessage():
-                    manager_started = True
                     break
             except TimeoutError:
                 self.logger.debug("ComponentManager on ip {} hasn't started yet... retrying ping {} more times".format(self.ip, ping_tries - 1 - i))
-
-        if not manager_started:
+        else:
             raise RuntimeError(
                 "Could not start SIC on remote device\nSee sic.log for details"
             )
-        else:
-            self.logger.debug("ComponentManager on ip {} has started!".format(self.ip))
+        
+        self.logger.debug("ComponentManager on ip {} has started!".format(self.ip))
 
 
     def stop(self):
