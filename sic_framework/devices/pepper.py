@@ -123,7 +123,7 @@ class Pepper(Naoqi):
         1. git rid of old directories for clean install
         2. curl github repository
         3. pip install --no-deps git repo
-        4. install dependencies from dep_whls folder
+        4. install dependencies from _LIBS_TO_INSTALL
         """
         _, stdout, stderr = self.ssh_command(
             """

@@ -24,6 +24,9 @@ class SICLibrary(object):
         self.logger = sic_logging.get_sic_logger(name="SICLibraryInstaller")
 
     def check_if_installed(self, pip_freeze):
+        """
+        Check to see if a python library name + version is in the 'pip freeze' output of a remote device.
+        """
         for lib in pip_freeze:
             lib = lib.replace('\n','')
             lib_name, lib_ver = lib.split('==')
@@ -39,14 +42,27 @@ class SICLibrary(object):
         return False
     
     def install(self, ssh):
+        """
+        Download and install this Python library on a remote device
+        """
         self.logger.info("Installing {} on remote device ".format(self.name), end="")
 
-        # if we have to download the binary first, as is the case with Pepper
+        # download the binary first if necessary, as is the case with Pepper
         if self.download_cmd:
             stdin, stdout, stderr = ssh.exec_command(
                 "cd {} && {}".format(self.lib_path, self.download_cmd)
             )
 
+            # check to make sure download went smoothly
+            err = stderr.readlines()
+            if len(err) > 0:
+                self.logger.error("Command:", "cd {} && {} \n Gave error:".format(self.lib_path, self.download_cmd))
+                self.logger.error("".join(err))
+                raise RuntimeError(
+                    "Error while downloading library on remote device."
+                )
+
+        # install the library
         stdin, stdout, stderr = ssh.exec_command(
             "cd {} && {}".format(self.lib_path, self.lib_install_cmd)
         )
