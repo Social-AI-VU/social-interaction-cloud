@@ -19,12 +19,9 @@ from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage
 
 class Alphamini(SICDevice):
     def __init__(self, ip, mini_id, mini_password, redis_ip, username="u0_a25", port=8022, mic_conf=None, speaker_conf=None, dev_test=False):
-        super().__init__(ip=ip, username=username, passwords=mini_password, port=port)
         self.mini_id = mini_id
         self.mini_password = mini_password
         self.redis_ip = redis_ip
-        self.configs[MiniMicrophone] = mic_conf
-        self.configs[MiniSpeaker] = speaker_conf
         self.venv = True
         self.dev_test = dev_test
         self.device_path = "/data/data/com.termux/files/home/.venv_sic/lib/python3.12/site-packages/sic_framework/devices/alphamini.py"
@@ -236,6 +233,7 @@ class Alphamini(SICDevice):
 
         # if this is a dev test, we want to use the test environment instead.
         if self.dev_test:
+            self.logger.info("Using developer test environment...")
             self.start_cmd = """
                 source .test_venv/bin/activate;
             """ + self.start_cmd
