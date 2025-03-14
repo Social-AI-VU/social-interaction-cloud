@@ -30,7 +30,7 @@ class NaoqiTabletComponent(SICComponent):
         return SICMessage
 
     def on_message(self, message):
-        # print("url is ", message.url)
+        # self.logger.info("url is ", message.url)
         self.tablet_service.showWebview(message.url)
 
 

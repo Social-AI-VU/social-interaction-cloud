@@ -40,6 +40,6 @@ class SICSensor(SICComponent):
 
             self.output_message(output)
 
-            self.logger.debug_framework_verbose("Outputting message {}".format(output))
+            self.logger.debug("Outputting message {}".format(output))
 
         self.logger.debug("Stopped producing")

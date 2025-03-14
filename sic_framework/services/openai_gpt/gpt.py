@@ -128,7 +128,7 @@ class GPTComponent(SICComponent):
         # self.output_message(output)
 
     def on_request(self, request):
-        print("GOT REQUEST", request)
+        self.logger.debug("GOT REQUEST: ", request)
         output = self.get_openai_response(
             request.text,
             system_messages=request.system_messages,

@@ -88,29 +88,29 @@ class WebserverComponent(SICComponent):
     # when the HtmlMessage message arrives, feed it to self.input_text
     def on_message(self, message):
         if is_sic_instance(message, HtmlMessage):
-            print("receiving text")
+            self.logger.info("receiving text")
             self.input_text = message.text
 
         if is_sic_instance(message, TranscriptMessage):
             self.transcript = message.transcript
-            print(f"receiving transcript: {self.transcript}-------")
+            self.logger.info(f"receiving transcript: {self.transcript}-------")
             self.socketio.emit("update_textbox", self.transcript)
 
     def render_template_string_routes(self):
         # render a html with bootstrap and a css file once a client is connected
         @self.app.route("/")
         def index():
-            print("render function")
+            self.logger.info("render function")
             return render_template_string(self.input_text)
 
         @self.socketio.on("connect")
         def handle_connect():
-            print("Client connected")
+            self.logger.info("Client connected")
 
         @self.socketio.on("disconnect")
         def handle_disconnect():
             self.disconnected = True
-            print("Client disconnected")
+            self.logger.info("Client disconnected")
 
         # register clicked_flag event handler
         @self.socketio.on("clicked_flag")

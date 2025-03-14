@@ -73,7 +73,7 @@ class DesktopTextToSpeechActuator(SICActuator):
         return SICMessage
 
     def on_request(self, request):
-        print("Saying: " + request.text)
+        self.logger.info("Saying: " + request.text)
         self.speaker.say(request.text)
         return SICMessage()
 

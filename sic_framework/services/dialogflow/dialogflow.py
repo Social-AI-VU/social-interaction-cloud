@@ -222,7 +222,7 @@ class DialogflowComponent(SICComponent):
 
     def on_message(self, message):
         if is_sic_instance(message, AudioMessage):
-            self.logger.debug_framework_verbose("Received audio message")
+            self.logger.debug("Received audio message")
             # update the audio message in the queue
             try:
                 self.audio_buffer.put_nowait(message.waveform)
@@ -324,13 +324,12 @@ class DialogflowComponent(SICComponent):
                 print(
                     "\r recognition_result:",
                     response.recognition_result.transcript,
-                    end="",
                 )
                 self._redis.send_message(
                     self._output_channel, RecognitionResult(response)
                 )
             if response.query_result:
-                print("query_result:", response.query_result)
+                print("query_result: ", response.query_result)
                 return QueryResult(response)
             if response.recognition_result.is_final:
                 print("----- FINAL -----")

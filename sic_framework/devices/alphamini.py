@@ -13,17 +13,23 @@ from sic_framework.devices.common_mini.mini_animation import MiniAnimation, Mini
 from sic_framework.devices.common_mini.mini_microphone import MiniMicrophone, MiniMicrophoneSensor
 from sic_framework.devices.common_mini.mini_speaker import MiniSpeaker, MiniSpeakerComponent
 from sic_framework.devices.device import SICDevice
+from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage
+
 
 
 class Alphamini(SICDevice):
-    def __init__(self, ip, mini_id, mini_password, redis_ip, username="u0_a25", port=8022, mic_conf=None, speaker_conf=None):
-        super().__init__(ip=ip, username=username, passwords=mini_password, port=port)
+    def __init__(self, ip, mini_id, mini_password, redis_ip, username="u0_a25", port=8022, mic_conf=None, speaker_conf=None, dev_test=False):
         self.mini_id = mini_id
         self.mini_password = mini_password
         self.redis_ip = redis_ip
-        self.configs[MiniMicrophone] = mic_conf
-        self.configs[MiniSpeaker] = speaker_conf
+        self.venv = True
+        self.dev_test = dev_test
         self.device_path = "/data/data/com.termux/files/home/.venv_sic/lib/python3.12/site-packages/sic_framework/devices/alphamini.py"
+        self.test_device_path = "/data/data/com.termux/files/home/sic_in_test/social-interaction-cloud/sic_framework/devices/alphamini.py"
+
+        # if it's a dev_test, we want to use the device script within the test environment
+        if self.dev_test:
+            self.device_path = self.test_device_path
 
         MiniSdk.set_robot_type(MiniSdk.RobotType.EDU)
 
@@ -31,10 +37,15 @@ class Alphamini(SICDevice):
         if not self._is_ssh_available(host=ip):
             self.install_ssh()
 
+        # only after ssh is available, we can initialize the SICDevice
+        super().__init__(ip=ip, username=username, passwords=mini_password, port=port)
+        self.configs[MiniMicrophone] = mic_conf
+        self.configs[MiniSpeaker] = speaker_conf
+
         if self.check_sic_install():
-            print("SIC already installed on the alphamini")
+            self.logger.info("SIC already installed on the alphamini")
         else:
-            print("SIC not installed on the alphamini")
+            self.logger.info("SIC not installed on the alphamini")
             self.install_sic()
 
         # this should be blocking to make sure SIC starts on a remote mini before the main thread continues
@@ -67,7 +78,7 @@ class Alphamini(SICDevice):
         Tool.run_py_pkg(cmd_source_game, robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg(cmd_source_science, robot_id=self.mini_id, debug=True)
 
-        print('Verify that the source file has been updated')
+        print('Verifying that the source file has been updated')
         Tool.run_py_pkg(cmd_source_verify, robot_id=self.mini_id, debug=True)
 
         print('Update the package manager...')
@@ -119,6 +130,10 @@ class Alphamini(SICDevice):
         """
         Runs a script on Alphamini to see if SIC is installed there
         """
+        if self.dev_test:
+            # if it's a dev test, assume already installed
+            return True
+
         _, stdout, _ = self.ssh_command(
             """
                     # state if SIC is already installed
@@ -149,7 +164,7 @@ class Alphamini(SICDevice):
         )
         _, stdout, _ = self.ssh_command(pkg_install_cmd)
         if "installed" in stdout.read().decode():
-            print(f"{pkg_name} is already installed")
+            self.logger.info(f"{pkg_name} is already installed")
             return True
         else:
             return False
@@ -162,12 +177,12 @@ class Alphamini(SICDevice):
         packages = ["portaudio", "python-numpy", "python-pillow", "git"]
         for pkg in packages:
             if not self.is_system_package_installed(pkg):
-                print("Installing package: ", pkg)
+                self.logger.info("Installing package: ", pkg)
                 _, stdout, _ = self.ssh_command(f"pkg install -y {pkg}")
-                print(stdout.read().decode())
+                self.logger.info(stdout.read().decode())
 
-        print("Installing SIC on the Alphamini...")
-        print("This may take a while...")
+        self.logger.info("Installing SIC on the Alphamini...")
+        self.logger.info("This may take a while...")
         _, stdout, stderr = self.ssh_command(
             """
                 # create virtual environment
@@ -192,10 +207,10 @@ class Alphamini(SICDevice):
                 )
             )
         else:
-            print("SIC successfully installed")
+            self.logger.info("SIC successfully installed")
 
     def run_sic(self):
-        print("Running sic on alphamini...")
+        self.logger.info("Running sic on alphamini...")
 
 
         self.stop_cmd = """
@@ -204,24 +219,35 @@ class Alphamini(SICDevice):
         """.format(alphamini_device=self.device_path)
 
         # stop alphamini
-        print("killing processes")
+        self.logger.info("Killing previously running SIC processes")
         self.ssh.exec_command(self.stop_cmd)
         time.sleep(1)
 
+
         self.start_cmd = """
-            source .venv_sic/bin/activate;
             python {alphamini_device} --redis_ip={redis_ip} --alphamini_id {mini_id};
         """.format(
             alphamini_device= self.device_path, redis_ip=self.redis_ip, mini_id=self.mini_id
         )
-        print("starting SIC on alphamini")
+
+
+        # if this is a dev test, we want to use the test environment instead.
+        if self.dev_test:
+            self.logger.info("Using developer test environment...")
+            self.start_cmd = """
+                source .test_venv/bin/activate;
+            """ + self.start_cmd
+        else:
+            self.start_cmd = """
+                source .venv_sic/bin/activate;
+            """ + self.start_cmd            
+
+
+        self.logger.info("starting SIC on alphamini")
+
         # start alphamini
         _, stdout, _ = self.ssh.exec_command(self.start_cmd, get_pty=False)
-
         stdout.channel.set_combine_stderr(True)
-
-        # # # TODO move the remote SIC process monitoring and logging to SICDevice
-        self.logfile = open("sic.log", "w")
 
         # Set up error monitoring
         self.stopping = False
@@ -231,38 +257,35 @@ class Alphamini(SICDevice):
             status = stdout.channel.recv_exit_status()
             # if remote threads exits before local main thread, report to user.
             if threading.main_thread().is_alive() and not self.stopping:
-                self.logfile.flush()
                 raise RuntimeError(
                     "Remote SIC program has stopped unexpectedly.\nSee sic.log for details"
                 )
 
-        # Start monitoring thread
-        exit_thread = threading.Thread(target=check_if_exit, name="remote_SIC_process_monitor")
-        exit_thread.start()
+        thread = threading.Thread(target=check_if_exit)
+        thread.name = "remote_SIC_process_monitor"
+        thread.start()
+
+
+        # # # TODO move the remote SIC process monitoring and logging to SICDevice
+        self.logger.info("Pinging ComponentManager on Alphamini")
 
         # Wait for SIC to start
-        for i in range(300):
-            line = stdout.readline()
-            self.logfile.write(line)
-            self.logfile.flush()
-
-            if MAGIC_STARTED_COMPONENT_MANAGER_TEXT in line:
-                print("SIC started successfully.")
-                break
-            time.sleep(0.01)
-        else:
-            raise RuntimeError("Could not start SIC on remote device\nSee sic.log for details")
-
-        # Write remaining logs in the background
-        def write_logs():
-            for line in stdout:
-                self.logfile.write(line)
-                self.logfile.flush()
-                if not threading.main_thread().is_alive() or self.stopping:
+        ping_tries = 3
+        for i in range(ping_tries):
+            try:
+                response = self._redis.request(
+                    self.ip, SICPingRequest(), timeout=self._PING_TIMEOUT, block=True
+                )
+                if response == SICPongMessage():
+                    self.logger.info("ComponentManager on ip {} has started!".format(self.ip))
                     break
-
-        log_thread = threading.Thread(target=write_logs, name="remote_SIC_process_log_writer")
-        log_thread.start()
+            except TimeoutError:
+                self.logger.debug("ComponentManager on ip {} hasn't started yet... retrying ping {} more times".format(self.ip, ping_tries - 1 - i))
+        else:
+            raise RuntimeError(
+                "Could not start SIC on remote device\nSee sic.log for details"
+            )
+        
 
     def __del__(self):
         if hasattr(self, "logfile"):

@@ -49,7 +49,7 @@ class MiniAnimationActuator(SICActuator):
         # response: PlayActionResponse
         (resultType, response) = await block.execute()
 
-        print(f'Mini action {request.name} was {resultType}:{response}')
+        self.logger.info(f'Mini action {request.name} was {resultType}:{response}')
 
 
 class MiniAnimation(SICConnector):
