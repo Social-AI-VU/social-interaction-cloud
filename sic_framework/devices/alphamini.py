@@ -19,19 +19,20 @@ from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage
 
 class Alphamini(SICDevice):
     def __init__(self, ip, mini_id, mini_password, redis_ip, username="u0_a25", port=8022, mic_conf=None, speaker_conf=None):
-        super().__init__(ip=ip, username=username, passwords=mini_password, port=port)
         self.mini_id = mini_id
         self.mini_password = mini_password
         self.redis_ip = redis_ip
-        self.configs[MiniMicrophone] = mic_conf
-        self.configs[MiniSpeaker] = speaker_conf
         self.device_path = "/data/data/com.termux/files/home/.venv_sic/lib/python3.12/site-packages/sic_framework/devices/alphamini.py"
-
         MiniSdk.set_robot_type(MiniSdk.RobotType.EDU)
 
         # Check if ssh is available
         if not self._is_ssh_available(host=ip):
             self.install_ssh()
+
+        # only after ssh is available, we can initialize the SICDevice
+        super().__init__(ip=ip, username=username, passwords=mini_password, port=port)
+        self.configs[MiniMicrophone] = mic_conf
+        self.configs[MiniSpeaker] = speaker_conf
 
         if self.check_sic_install():
             self.logger.info("SIC already installed on the alphamini")
@@ -64,28 +65,28 @@ class Alphamini(SICDevice):
                               "/data/data/com.termux/files/usr/etc/apt/sources.list.d/science.list")
         cmd_source_verify = "head /data/data/com.termux/files/usr/etc/apt/sources.list -n 5"
 
-        self.logger.info('Updating the sources.list files...')
+        print('Updating the sources.list files...')
         Tool.run_py_pkg(cmd_source_main, robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg(cmd_source_game, robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg(cmd_source_science, robot_id=self.mini_id, debug=True)
 
-        self.logger.info('Verifying that the source file has been updated')
+        print('Verifying that the source file has been updated')
         Tool.run_py_pkg(cmd_source_verify, robot_id=self.mini_id, debug=True)
 
-        self.logger.info('Update the package manager...')
+        print('Update the package manager...')
         Tool.run_py_pkg("apt update && apt clean", robot_id=self.mini_id, debug=True)
 
         # this is necessary otherwise the system pkgs that later `apt` (precisely the https method under `apt`) will link to the old libssl.so.1.1, while
         # apt install -y openssl will install the new libssl.so.3
         # and throw error like "library "libssl.so.1.1" not found"
-        self.logger.info('Upgrade the package manager...')
+        print('Upgrade the package manager...')
         # this will prompt the interactive openssl.cnf (Y/I/N/O/D/Z) [default=N] and hang, so pipe 'N' to it to avoid the prompt
         Tool.run_py_pkg("echo 'N' | apt upgrade -y", robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg("echo 'N' | apt upgrade -y", robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg("echo 'N' | apt upgrade -y", robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg("echo 'N' | apt upgrade -y", robot_id=self.mini_id, debug=True)
 
-        self.logger.info('Installing ssh...')
+        print('Installing ssh...')
         # Install openssh
         Tool.run_py_pkg("echo 'N' | apt install -y openssh", robot_id=self.mini_id, debug=True)
 
@@ -113,9 +114,9 @@ class Alphamini(SICDevice):
         Tool.run_py_pkg("sv-enable ftpd", robot_id=self.mini_id, debug=True)
         Tool.run_py_pkg("sv up ftpd", robot_id=self.mini_id, debug=True)
 
-        self.logger.info("The alphamini's ip-address is: ")
+        print("The alphamini's ip-address is: ")
         Tool.run_py_pkg("ifconfig", robot_id=self.mini_id, debug=True)
-        self.logger.info('Connect to alphamini with: ssh u0_a25@<ip> -p 8022')
+        print('Connect to alphamini with: ssh u0_a25@<ip> -p 8022')
 
     def check_sic_install(self):
         """
