@@ -2,12 +2,14 @@ from __future__ import print_function
 
 import io
 import logging
+import re
 import threading
 
 from . import utils
 from .message_python2 import SICMessage
 from .sic_redis import SICRedis
 
+ANSI_CODE_REGEX = re.compile(r'\033\[[0-9;]*m')
 
 def get_log_channel():
     """
@@ -61,7 +63,9 @@ class SICLogSubscriber(object):
         :param message: SICLogMessage
         """
         print(message.msg, end="")
-        self.logfile.write(message.msg)
+        # strip ANSI codes before writing to logfile
+        clean_message = ANSI_CODE_REGEX.sub("", message.msg)
+        self.logfile.write(clean_message)
 
         if "ERROR" in message.msg.split(":")[1]:
             raise SICRemoteError("Error occurred, see remote stacktrace above.")
