@@ -277,10 +277,10 @@ class SICDevice(object):
         # Check and/or install the framework and libraries on the remote computer
         self.logger.info("Checking if libraries are installed on the remote device.")
         # stdout_pip_freeze is prefetched above because it is slow
-        remote_libs = stdout_pip_freeze.readlines()
-        for lib in _LIBS_TO_INSTALL:
-            if not lib.check_if_installed(remote_libs):
-                lib.install(self.ssh)
+        # remote_libs = stdout_pip_freeze.readlines()
+        # for lib in _LIBS_TO_INSTALL:
+        #     if not lib.check_if_installed(remote_libs):
+        #         lib.install(self.ssh)
 
         # Remove signatures from the remote computer
         # add own signature to the remote computer
