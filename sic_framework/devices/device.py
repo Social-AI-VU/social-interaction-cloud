@@ -53,15 +53,6 @@ class SICLibrary(object):
                 "cd {} && {}".format(self.lib_path, self.download_cmd)
             )
 
-            # check to make sure download went smoothly
-            err = stderr.readlines()
-            if len(err) > 0:
-                self.logger.error("Command:", "cd {} && {} \n Gave error:".format(self.lib_path, self.download_cmd))
-                self.logger.error("".join(err))
-                raise RuntimeError(
-                    "Error while downloading library on remote device."
-                )
-
         # install the library
         stdin, stdout, stderr = ssh.exec_command(
             "cd {} && {}".format(self.lib_path, self.lib_install_cmd)
