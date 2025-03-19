@@ -127,10 +127,11 @@ class Pepper(Naoqi):
         """
         _, stdout, stderr = self.ssh_command(
             """
+                    rm -rf /home/nao/framework;
                     if [ -d /home/nao/sic_framework_2 ]; then
                         rm -rf /home/nao/sic_framework_2;
                     fi;
-                    
+
                     mkdir /home/nao/sic_framework_2;
                     cd /home/nao/sic_framework_2;
                     curl -L -o sic_repo.zip https://github.com/Social-AI-VU/social-interaction-cloud/archive/refs/heads/main.zip;
