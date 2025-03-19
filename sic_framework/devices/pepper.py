@@ -64,6 +64,7 @@ class Pepper(Naoqi):
             passwords=["pepper", "nao"],
             # device path is where this script is located on the actual Pepper machine
             device_path="/home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework/devices",
+            test_device_path="/home/nao/sic_in_test/social-interaction-cloud/sic_framework/devices",
             **kwargs
         )
 
