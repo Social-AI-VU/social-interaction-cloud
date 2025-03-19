@@ -45,7 +45,7 @@ class SICLibrary(object):
         """
         Download and install this Python library on a remote device
         """
-        self.logger.info("Installing {} on remote device ".format(self.name), end="")
+        self.logger.info("Installing {} on remote device ".format(self.name))
 
         # download the binary first if necessary, as is the case with Pepper
         if self.download_cmd:
