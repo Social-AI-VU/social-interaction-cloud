@@ -46,7 +46,7 @@ class Nao(Naoqi):
                     if pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ; then
                         echo "SIC already installed";
                         # upgrade the social-interaction-cloud package
-                        # pip install --upgrade social-interaction-cloud --no-deps
+                        pip install --upgrade social-interaction-cloud --no-deps
                     else
                         echo "SIC is not installed";
                     fi;
