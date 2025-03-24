@@ -308,9 +308,8 @@ class Alphamini(SICDevice):
         except (socket.timeout, socket.error):
             return False
 
-
-# mini_component_list = [MiniMicrophoneSensor, MiniSpeakerComponent, MiniAnimationActuator]
-mini_component_list = [MiniSpeakerComponent, MiniAnimationActuator]
+mini_component_list = [MiniMicrophoneSensor, MiniSpeakerComponent, MiniAnimationActuator]
+# mini_component_list = [MiniSpeakerComponent, MiniAnimationActuator]
 
 
 if __name__ == '__main__':
