@@ -11,7 +11,7 @@ from sic_framework.core.message_python2 import AudioMessage
 from sic_framework.core.sensor_python2 import SICSensor
 
 class MiniMicrophoneSensor(SICSensor):
-    COMPONENT_STARTUP_TIMEOUT = 5
+    COMPONENT_STARTUP_TIMEOUT = 10
 
     def __init__(self, *args, **kwargs):
         super(MiniMicrophoneSensor, self).__init__(*args, **kwargs)
