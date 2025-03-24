@@ -50,18 +50,24 @@ class MiniMicrophoneSensor(SICSensor):
         # )
 
     def start_app(self, package_name, activity_name):
-        result = subprocess.run(
-            ["adb", "shell", "pidof", package_name],
-            capture_output=True, text=True
-        )
-        pid = result.stdout.strip()
-        if bool(pid):
-            print(f"[INFO] App '{package_name}' is already running.")
-        else:
-            print(f"[INFO] App '{package_name}' is NOT running. Starting it...")
-            subprocess.run([
-                "adb", "shell", "am", "start", "-n", f"{package_name}/{activity_name}"
-            ])
+        # can't find a way to check if an app is running on Android
+        # so we just try to start it anyway
+        subprocess.run([
+            "am", "start", "-n", f"{package_name}/{activity_name}"
+        ])
+        # this is the part if the file is running on a local machine
+        # result = subprocess.run(
+        #     ["adb", "shell", "pidof", package_name],
+        #     capture_output=True, text=True
+        # )
+        # pid = result.stdout.strip()
+        # if bool(pid):
+        #     print(f"[INFO] App '{package_name}' is already running.")
+        # else:
+        #     print(f"[INFO] App '{package_name}' is NOT running. Starting it...")
+        #     subprocess.run([
+        #         "adb", "shell", "am", "start", "-n", f"{package_name}/{activity_name}"
+        #     ])
 
     def execute(self):
         try:
