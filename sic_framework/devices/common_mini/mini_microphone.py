@@ -16,6 +16,8 @@ class MiniMicrophoneSensor(SICSensor):
     A SICSensor component that acts as a TCP server to receive raw audio data
     from the external Android micarraytest application (https://github.com/Social-AI-VU/alphamini_android),
     and streams it as mono audio messages for downstream processing (e.g., Dialogflow or other ASR systems).
+    At the time of writing, this component is running on the AlphaMini robot to stay consistent with the current structure.
+    If performance limitations or lag become more significant in the future, consider running it locally.
 
     This component:
     - Listens on a specified TCP port for incoming stereo audio data.
