@@ -3,14 +3,41 @@ import time
 import subprocess
 
 import numpy as np
-import pyaudio
+# import pyaudio
 
 from sic_framework import SICComponentManager
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import AudioMessage
 from sic_framework.core.sensor_python2 import SICSensor
 
+
 class MiniMicrophoneSensor(SICSensor):
+    """
+    A SICSensor component that acts as a TCP server to receive raw audio data
+    from the external Android micarraytest application (https://github.com/Social-AI-VU/alphamini_android),
+    and streams it as mono audio messages for downstream processing (e.g., Dialogflow or other ASR systems).
+
+    This component:
+    - Listens on a specified TCP port for incoming stereo audio data.
+    - Buffers the incoming audio data and converts it from stereo to mono.
+    - Sends mono audio data encapsulated in an `AudioMessage`.
+    - Attempts to (re)launch the external Android micarraytest app if disconnected
+      for more than 5 seconds.
+
+    Attributes:
+        sample_rate (int): Audio sample rate in Hz (default: 44000).
+        channels (int): Number of audio channels (2 for stereo).
+        bytes_per_sample (int): Bytes per audio sample (2 for 16-bit).
+        frame_size (int): Number of bytes per chunk received over the socket.
+        buffer_time_ms (int): Duration (in ms) of audio data to buffer before sending.
+        buffer_size (int): Computed buffer size in bytes for the target duration.
+        buffer_accumulator (bytes): Accumulates raw audio data until the buffer is full.
+        host (str): IP address the server listens on (default: "0.0.0.0", which means it accepts connections from any network interface).
+        port (int): TCP port the server listens on (default: 5000).
+        server_socket (socket.socket): The main server socket.
+        client_conn (socket.socket): Active client connection, if any.
+        last_connection_time (float): Timestamp of the last successful connection.
+    """
     COMPONENT_STARTUP_TIMEOUT = 10
 
     def __init__(self, *args, **kwargs):
