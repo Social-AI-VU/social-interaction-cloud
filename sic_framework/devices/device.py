@@ -5,73 +5,79 @@ import tarfile
 import tempfile
 import time
 
-import six
-
 from sic_framework.core import utils
 from sic_framework.core.connector import SICConnector
+from sic_framework.core import sic_logging
+from sic_framework.core.sic_redis import SICRedis
 
-if six.PY3:
-    import pathlib
-
-    import paramiko
-    from scp import SCPClient
-
-
-class _SICLibrary(object):
+class SICLibrary(object):
     """
     A library to be installed on a remote device.
     """
 
-    def __init__(self, name, lib_path, lib_install_cmd):
+    def __init__(self, name, lib_path="", download_cmd="", version=None, lib_install_cmd=""):
         self.name = name
         self.lib_path = lib_path
+        self.download_cmd = download_cmd
+        self.version = version
         self.lib_install_cmd = lib_install_cmd
+        self.logger = sic_logging.get_sic_logger(name="SICLibraryInstaller")
 
     def check_if_installed(self, pip_freeze):
+        """
+        Check to see if a python library name + version is in the 'pip freeze' output of a remote device.
+        """
         for lib in pip_freeze:
-            if self.name in lib:
+            lib = lib.replace('\n','')
+            lib_name, lib_ver = lib.split('==')
+            if self.name == lib_name:
+                self.logger.debug("Found package: {}".format(lib))
+                # check to make sure version matches 
+                if self.version:
+                    if self.version in lib_ver:
+                        return True
+                    else:
+                        return False
                 return True
         return False
-
+    
     def install(self, ssh):
-        print("Installing {} on remote device ".format(self.name), end="")
+        """
+        Download and install this Python library on a remote device
+        """
+        self.logger.info("Installing {} on remote device ".format(self.name))
+
+        # download the binary first if necessary, as is the case with Pepper
+        if self.download_cmd:
+            stdin, stdout, stderr = ssh.exec_command(
+                """cd {} && {} && echo "EXIT STATUS: $?" """.format(self.lib_path, self.download_cmd)
+            )
+
+            output = "".join(stdout.readlines())
+            if "EXIT STATUS: 0" not in output:
+                err = "".join(stderr.readlines())
+                self.logger.error("Command: cd {} && {} \n Gave error:".format(self.lib_path, self.download_cmd))
+                self.logger.error(err)
+                raise RuntimeError(
+                    "Error while downloading library on remote device."
+                )
+
+
+        # install the library
         stdin, stdout, stderr = ssh.exec_command(
             "cd {} && {}".format(self.lib_path, self.lib_install_cmd)
         )
 
-        # print a dot every line to indicate progress
-        while True:
-            line = stdout.readline()
-            # empty line means command is done
-            if len(line) == 0:
-                break
-
-            print(".", end="")
-
-        err = stderr.readlines()
-        if len(err) > 0:
-            print("".join(err))
-            print("Command:", "cd {} && {}".format(self.lib_path, self.lib_install_cmd))
+        output = "".join(stdout.readlines())
+        if "Successfully installed" not in output:
+            err = "".join(stderr.readlines())
+            self.logger.error("Command: cd {} && {} \n Gave error:".format(self.lib_path, self.lib_install_cmd))
+            self.logger.error(err)
             raise RuntimeError(
                 "Error while installing library on remote device. Please consult manual installation instructions."
             )
         else:
-            print(" done.")
-
-
-_LIBS_TO_INSTALL = [
-    _SICLibrary(
-        "redis",
-        "~/framework/lib/redis",
-        "pip install --user redis-3.5.3-py2.py3-none-any.whl",
-    ),
-    _SICLibrary(
-        "PyTurboJPEG",
-        "~/framework/lib/libtubojpeg/PyTurboJPEG-master",
-        "pip install --user .",
-    ),
-    _SICLibrary("sic-framework", "~/framework", "pip install --user -e ."),
-]
+            self.logger.info("Successfully installed {} package".format(self.name))
 
 
 def exclude_pyc(tarinfo):
@@ -87,7 +93,24 @@ class SICDevice(object):
     This way components of a device can easily be used without initializing all device components manually.
     """
 
-    def __init__(self, ip, username=None, passwords=None):
+    def __new__(cls, *args, **kwargs):
+        """ Choose specific imports dependend on the type of device.
+
+        Reasoning: Alphamini does not support these imports; they are only needed for remotely installing packages on robots from the local machine
+        """
+        instance = super(SICDevice, cls).__new__(cls)
+
+        if cls.__name__ in ("Nao", "Pepper", "Alphamini"):
+            import six
+            if six.PY3:
+                global pathlib, paramiko, SCPClient
+                import pathlib
+                import paramiko
+                from scp import SCPClient
+
+        return instance
+
+    def __init__(self, ip, username=None, passwords=None, port=22):
         """
         Connect to the device and ensure an up to date version of the framework is installed
         :param ip: the ip adress of the device
@@ -97,13 +120,22 @@ class SICDevice(object):
         self.connectors = dict()
         self.configs = dict()
         self.ip = ip
+        self.port = port
+
+        self._redis = SICRedis()
+        self._PING_TIMEOUT = 3
+
+        self.logger = sic_logging.get_sic_logger(name="{}DeviceManager".format(self.__class__.__name__))
+        sic_logging.SIC_LOG_SUBSCRIBER.subscribe_to_log_channel()
+        
+        self.logger.info("Initializing device with ip: {ip}".format(ip=ip))
 
         if username is not None:
 
             if not isinstance(passwords, list):
                 passwords = [passwords]
 
-            if not utils.ping_server(self.ip, port=22, timeout=3):
+            if not utils.ping_server(self.ip, port=self.port, timeout=3):
                 raise RuntimeError(
                     "Could not connect to device on ip {}. Please check if it is reachable.".format(
                         self.ip
@@ -117,7 +149,7 @@ class SICDevice(object):
                 try:
                     self.ssh.connect(
                         self.ip,
-                        port=22,
+                        port=self.port,
                         username=username,
                         password=p,
                         timeout=3,
@@ -187,21 +219,21 @@ class SICDevice(object):
         file_exists = len(stdout.readlines()) > 0
 
         if file_exists:
-            print("Up to date framework is installed on the remote device.")
+            self.logger.info("Up to date framework is installed on the remote device.")
             return
 
         # prefetch slow pip freeze command
         _, stdout_pip_freeze, _ = self.ssh.exec_command("pip freeze")
 
         def progress(filename, size, sent):
-            print(
+            self.logger.info(
                 "\r {} progress: {}".format(
                     filename.decode("utf-8"), round(float(sent) / float(size) * 100, 2)
                 ),
                 end="",
             )
 
-        print("Copying framework to the remote device.")
+        self.logger.info("Copying framework to the remote device.")
         with SCPClient(self.ssh.get_transport(), progress=progress) as scp:
 
             # Copy the framework to the remote computer
@@ -215,7 +247,7 @@ class SICDevice(object):
                 f.flush()
                 self.ssh.exec_command("mkdir ~/framework")
                 scp.put(f.name, remote_path="~/framework/sic_files.tar.gz")
-                print()  # newline after progress bar
+                self.logger.info()  # newline after progress bar
             # delete=False for windows compatibility, must delete file manually
             os.unlink(f.name)
 
@@ -227,7 +259,7 @@ class SICDevice(object):
 
             err = stderr.readlines()
             if len(err) > 0:
-                print("".join(err))
+                self.logger.error("".join(err))
                 raise RuntimeError(
                     "\n\nError while extracting library on remote device. Please consult manual installation instructions."
                 )
@@ -236,17 +268,45 @@ class SICDevice(object):
             self.ssh.exec_command("rm ~/framework/sic_files.tar.gz")
 
         # Check and/or install the framework and libraries on the remote computer
-        print("Checking if libraries are installed on the remote device.")
+        self.logger.info("Checking if libraries are installed on the remote device.")
         # stdout_pip_freeze is prefetched above because it is slow
-        remote_libs = stdout_pip_freeze.readlines()
-        for lib in _LIBS_TO_INSTALL:
-            if not lib.check_if_installed(remote_libs):
-                lib.install(self.ssh)
+        # remote_libs = stdout_pip_freeze.readlines()
+        # for lib in _LIBS_TO_INSTALL:
+        #     if not lib.check_if_installed(remote_libs):
+        #         lib.install(self.ssh)
 
         # Remove signatures from the remote computer
         # add own signature to the remote computer
         self.ssh.exec_command("rm ~/framework/sic_version_signature_*")
         self.ssh.exec_command("touch {}".format(framework_signature))
+
+    def ssh_command(self, command):
+        """
+        Executes the given command and logs any exceptions that may occur
+
+        :param command: command to run on ssh client
+        :type command: string
+        """
+        try:
+            return self.ssh.exec_command(command)
+        except paramiko.AuthenticationException as e:
+            self.logger.error(
+                "Encountered AuthenticationException when trying to execute ssh command: {}".format(
+                    e
+                )
+            )
+        except paramiko.BadHostKeyException:
+            self.logger.error(
+                "Encountered BadHostKeyException when trying to execute ssh command: {}".format(
+                    e
+                )
+            )
+        except Exception as e:
+            self.logger.error(
+                "Encountered unknown exception while trying to execute ssh command: {}".format(
+                    e
+                )
+            )
 
     def _get_connector(self, component_connector):
         """

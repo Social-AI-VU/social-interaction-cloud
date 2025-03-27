@@ -17,6 +17,8 @@ from .message_python2 import (
     SICRequest,
     SICStopRequest,
     SICSuccessMessage,
+    SICPingRequest,
+    SICPongMessage
 )
 from .sic_redis import SICRedis
 
@@ -100,7 +102,7 @@ class SICComponentManager(object):
             pass
 
         self.stop()
-        print("Stopped component manager.")
+        self.logger.info("Stopped component manager.")
 
     def _sync_time(self):
         """
@@ -110,12 +112,12 @@ class SICComponentManager(object):
         # Check if the time of this device is off, because that would interfere with sensor fusion across devices
         time_diff_seconds = abs(time.time() - float("{}.{}".format(*self.redis.time())))
         if time_diff_seconds > 0.1:
-            print(
+            self.logger.warning(
                 "Warning: device time difference to redis server is {} seconds".format(
                     time_diff_seconds
                 )
             )
-            print(
+            self.logger.info(
                 "This is allowed (max: {}), but might cause data to fused incorrectly in components.".format(
                     self.MAX_REDIS_SERVER_TIME_DIFFERENCE
                 )
@@ -135,36 +137,42 @@ class SICComponentManager(object):
         :param request: The SICStartServiceRequest request
         """
 
+        if is_sic_instance(request, SICPingRequest):
+            # this request is sent to see if the ComponentManager has started
+            return SICPongMessage()
+
         if is_sic_instance(request, SICStopRequest):
             self.stop_event.set()
             # return an empty stop message as a request must always be replied to
             return SICSuccessMessage()
-
+        
         # reply to the request if the component manager can start the component
         if request.component_name in self.component_classes:
-            print(
-                "{} handling request {}".format(
+            self.logger.info(
+                "{} handling request to start component {}".format(
                     self.__class__.__name__, request.component_name
                 )
             )
 
             return self.start_component(request)
         else:
-            print(
+            self.logger.warning(
                 "{} ignored request {}".format(
                     self.__class__.__name__, request.component_name
                 )
             )
             return SICIgnoreRequestMessage()
 
-    def get_manager_logger(self, log_level=sic_logging.INFO):
+    def get_manager_logger(self, log_level=sic_logging.DEBUG):
         """
         Create a logger to inform the user during the setup of the component by the manager.
+        :param log_level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+        :type log_level: string
         :return: Logger
         """
         name = "{manager}".format(manager=self.__class__.__name__)
 
-        logger = sic_logging.get_sic_logger(self.redis, name, log_level)
+        logger = sic_logging.get_sic_logger(name=name, redis=self.redis, log_level=log_level)
         logger.info("Manager on device {} starting".format(self.ip))
 
         return logger
@@ -224,12 +232,12 @@ class SICComponentManager(object):
 
     def stop(self, *args):
         self.stop_event.set()
-        print("Trying to exit manager gracefully...")
+        self.logger.info("Trying to exit manager gracefully...")
         try:
             self.redis.close()
             for component in self.active_components:
                 component.stop()
                 # component._stop_event.set()
-            print("Graceful exit was successful")
+            self.logger.info("Graceful exit was successful")
         except Exception as err:
-            print("Graceful exit has failed: {}".format(err))
+            self.logger.error("Graceful exit has failed: {}".format(err))

@@ -26,6 +26,9 @@ extras_require = {
     "dialogflow": [
         "google-cloud-dialogflow",
     ],
+    "google-tts": [
+      "google-cloud-texttospeech",
+    ],
     "face-detection-dnn": [
         "matplotlib",
         "pandas",
@@ -55,11 +58,16 @@ extras_require = {
         "soundfile",
         "python-dotenv",
     ],
+    "alphamini": [
+        "alphamini",
+        "protobuf==3.20.3",
+        "websockets==13.1",
+    ],
 }
 
 setup(
     name="social-interaction-cloud",
-    version="2.0.23",
+    version="2.0.32",
     author="Koen Hindriks",
     author_email="k.v.hindriks@vu.nl",
     long_description=open("README.md").read(),
@@ -75,7 +83,8 @@ setup(
     },
     install_requires=requirements,
     extras_require=extras_require,
-    python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, !=3.6.*, !=3.7.*, !=3.8.*, !=3.9.*, <3.13",
+    # TODO this doesn't work with Python 2.7
+    # python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, !=3.6.*, !=3.7.*, !=3.8.*, !=3.9.*, <3.13",
     entry_points={
         "console_scripts": [
             "run-dialogflow=sic_framework.services.dialogflow:main",
@@ -85,6 +94,7 @@ setup(
             "run-gpt=sic_framework.services.openai_gpt:main",
             "run-whisper=sic_framework.services.openai_whisper_speech_to_text:main",
             "run-webserver=sic_framework.services.webserver.webserver_component:main",
+            "run-google-tts=sic_framework.services.text2speech.text2speech_service:main"
         ],
     },
 )

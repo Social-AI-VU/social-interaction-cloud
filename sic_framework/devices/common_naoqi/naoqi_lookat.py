@@ -11,6 +11,7 @@ from sic_framework.core.message_python2 import (
 )
 from sic_framework.core.sensor_python2 import SICSensor
 from sic_framework.devices.common_naoqi.naoqi_motion_streamer import NaoJointAngles
+from sic_framework.core import sic_logging
 
 if utils.PYTHON_VERSION_IS_2:
     import qi
@@ -77,8 +78,8 @@ class NaoqiLookAtComponent(SICComponent):
             if len(message.bboxes):
                 bbox = message.bboxes[0]
 
-                print("bbox")
-                print(bbox.x, bbox.y, bbox.confidence)
+                self.logger.debug("bbox:")
+                self.logger.debug(bbox.x, bbox.y, bbox.confidence)
 
                 for x in message.bboxes:
                     if bbox.confidence < x.confidence:

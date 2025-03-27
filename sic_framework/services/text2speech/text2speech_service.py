@@ -153,5 +153,9 @@ class Text2Speech(SICConnector):
     component_class = Text2SpeechService
 
 
-if __name__ == "__main__":
+def main():
     SICComponentManager([Text2SpeechService])
+
+
+if __name__ == "__main__":
+    main()

@@ -14,8 +14,88 @@ class Nao(Naoqi):
 
     def __init__(self, ip, **kwargs):
         super(Nao, self).__init__(
-            ip, robot_type="nao", username="nao", passwords="nao", **kwargs
+            ip,
+            robot_type="nao",
+            venv=True,
+            username="nao",
+            passwords="nao",
+            device_path="/data/home/nao/.venv_sic/lib/python2.7/site-packages/sic_framework/devices",
+            test_device_path="/home/nao/sic_in_test/social-interaction-cloud/sic_framework/devices",
+            **kwargs
         )
+
+    def check_sic_install(self):
+        """
+        Runs a script on Nao to see if SIC is installed there
+        """
+
+        if self.dev_test:
+            # if we are testing a development version, assume it is already installed properly
+            return True
+
+        _, stdout, _ = self.ssh_command(
+            """         
+                    # if there is a virtual environment, activate it
+                    if [ -f ~/.venv_sic/bin/activate ]; then
+                        source ~/.venv_sic/bin/activate;
+                    else
+                        # SIC not already installed if venv does not exist, so exit
+                        exit 1;
+                    fi;
+                    
+                    if pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ; then
+                        echo "SIC already installed";
+                        # upgrade the social-interaction-cloud package
+                        pip install --upgrade social-interaction-cloud --no-deps
+                    else
+                        echo "SIC is not installed";
+                    fi;
+                    """
+        )
+
+        output = stdout.read().decode()
+
+        if "SIC already installed" in output:
+            return True
+        else:
+            return False
+
+    def sic_install(self):
+        """
+        Runs the install script specific to the Nao
+        """
+        _, stdout, stderr = self.ssh_command(
+            """
+                    if [ ! -f ~/.local/bin/virtualenv ]; then
+                        pip install --user virtualenv;
+                    fi;                                     
+                                        
+                    #  create virtual environment
+                    /home/nao/.local/bin/virtualenv ~/.venv_sic;
+                    source ~/.venv_sic/bin/activate;
+
+                    # link OpenCV to the virtualenv
+                    ln -s /usr/lib/python2.7/site-packages/cv2.so ~/.venv_sic/lib/python2.7/site-packages/cv2.so;
+
+                    # install required packages
+                    pip install social-interaction-cloud --no-deps;
+                    pip install Pillow PyTurboJPEG numpy redis six;
+                                        
+                    if pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1; then
+                        echo "SIC successfully installed";
+                    fi;
+                    """
+        )
+
+        output = stdout.read().decode()
+        error = stderr.read().decode()
+
+        if not "SIC successfully installed" in output:
+            raise Exception(
+                "Failed to install sic. Standard error stream from install command: {}".format(
+                    error
+                )
+            )
 
 
 if __name__ == "__main__":
