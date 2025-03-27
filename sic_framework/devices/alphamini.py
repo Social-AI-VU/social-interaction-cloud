@@ -42,11 +42,15 @@ class Alphamini(SICDevice):
         self.configs[MiniMicrophone] = mic_conf
         self.configs[MiniSpeaker] = speaker_conf
 
-        if self.check_sic_install():
-            self.logger.info("SIC already installed on the alphamini")
+
+        if self.dev_test:
+            self.create_test_environment()
         else:
-            self.logger.info("SIC not installed on the alphamini")
-            self.install_sic()
+            if self.check_sic_install():
+                self.logger.info("SIC already installed on the alphamini")
+            else:
+                self.logger.info("SIC not installed on the alphamini")
+                self.install_sic()
 
         # this should be blocking to make sure SIC starts on a remote mini before the main thread continues
         self.run_sic()
@@ -130,10 +134,6 @@ class Alphamini(SICDevice):
         """
         Runs a script on Alphamini to see if SIC is installed there
         """
-        if self.dev_test:
-            # if it's a dev test, assume already installed
-            return True
-
         _, stdout, _ = self.ssh_command(
             """
                     # state if SIC is already installed
@@ -208,6 +208,39 @@ class Alphamini(SICDevice):
             )
         else:
             self.logger.info("SIC successfully installed")
+
+    def create_test_environment(self):
+
+        # 1. check to see if test environment exists
+        # 2. if it does and no repo is passed in, return True
+        # 3. if it doesn't and a repo IS passed in, scp and install the repo
+
+        _, stdout, _ = self.ssh_command(
+            """
+            source ~/.test_venv/bin/activate; echo "EXIT STATUS: $?"
+            """
+        )
+
+        output = "".join(stdout.readlines())
+
+        if "EXIT STATUS: 1" in output:
+            # test environment not created, so create one
+            _, stdout, _ = self.ssh_command(
+                """
+                # start with a clean slate just to be sure
+                rm -rf ~/.test_venv
+
+                # create virtual environment
+                python -m venv .test_venv --system-site-packages;
+                source ~/.test_venv/bin/activate;
+
+                # install required packages and perform a clean sic installation
+                pip install redis six pyaudio alphamini websockets==13.1 protobuf==3.20.3
+                """
+            )
+
+        
+        return
 
     def run_sic(self):
         self.logger.info("Running sic on alphamini...")
