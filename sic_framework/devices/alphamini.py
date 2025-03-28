@@ -18,12 +18,13 @@ from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage
 
 
 class Alphamini(SICDevice):
-    def __init__(self, ip, mini_id, mini_password, redis_ip, username="u0_a25", port=8022, mic_conf=None, speaker_conf=None, dev_test=False):
+    def __init__(self, ip, mini_id, mini_password, redis_ip, username="u0_a25", port=8022, mic_conf=None, speaker_conf=None, dev_test=False, test_repo=""):
         self.mini_id = mini_id
         self.mini_password = mini_password
         self.redis_ip = redis_ip
         self.venv = True
         self.dev_test = dev_test
+        self.test_repo = test_repo
         self.device_path = "/data/data/com.termux/files/home/.venv_sic/lib/python3.12/site-packages/sic_framework/devices/alphamini.py"
         self.test_device_path = "/data/data/com.termux/files/home/sic_in_test/social-interaction-cloud/sic_framework/devices/alphamini.py"
 
@@ -210,24 +211,29 @@ class Alphamini(SICDevice):
             self.logger.info("SIC successfully installed")
 
     def create_test_environment(self):
+        """
+        Creates a test environment on the Alphamini
 
-        # 1. check to see if test environment exists
-        # 2. if it does and no repo is passed in, return True
-        # 3. if it doesn't and a repo IS passed in, scp and install the repo
+        This function:
+        - checks to see if test environment exists
+        - if test_venv exists and no repo is passed in (self.test_repo), return True (no need to do anything)
+        - if test_venv exists but a new repo has been passed in:
+            1. uninstall old version of social-interaction-cloud on Alphamini
+            2. zip the provided repo 
+            3. scp zip file over to alphamini, to 'sic_to_test' folder
+            4. unzip repo and install
+        - if test_venv does not exist:
+            1. check to make sure a test repo has been passed in to device initialization. If not, raise RuntimeError
+            2. if repo has been passed in, create a new .test_venv and install repo
+        """
 
-        _, stdout, _ = self.ssh_command(
+        def init_test_venv():
             """
-            source ~/.test_venv/bin/activate; echo "EXIT STATUS: $?"
+            Initialize a new test virtual environment
             """
-        )
-
-        output = "".join(stdout.readlines())
-
-        if "EXIT STATUS: 1" in output:
-            # test environment not created, so create one
+            # start with a clean slate just to be sure
             _, stdout, _ = self.ssh_command(
                 """
-                # start with a clean slate just to be sure
                 rm -rf ~/.test_venv
 
                 # create virtual environment
@@ -239,8 +245,78 @@ class Alphamini(SICDevice):
                 """
             )
 
-        
-        return
+            # test to make sure the virtual environment was created
+            _, stdout, _ = self.ssh_command(
+                """
+                source ~/.test_venv/bin/activate; echo "EXIT STATUS: $?"
+                """
+            )
+            if "EXIT STATUS: 0" not in output:
+                raise RuntimeError("Failed to create test virtual environment")
+
+        def uninstall_old_repo():
+            """
+            Uninstall the old version of social-interaction-cloud on Alphamini
+            """
+            _, stdout, _ = self.ssh_command(
+                """
+                source ~/.test_venv/bin/activate;
+                pip uninstall social-interaction-cloud -y
+                """
+            )
+
+        def install_new_repo():
+            """
+            Install the new repo on Alphamini
+            """
+            # zip up dev repo and scp over
+            zipped_path = utils.zip_file_path(self.test_repo)
+
+            # get the basename of the repo
+            repo_name = os.path.basename(self.test_repo)
+            
+            # scp transfer file over
+            with SCPClient(self.ssh.get_transport()) as scp:
+                scp.put(
+                    zipped_path,
+                    "/data/data/com.termux/files/home/sic_in_test/"
+                )
+            
+            _, stdout, _ = self.ssh_command(
+                """
+                source ~/.test_venv/bin/activate;
+                cd /data/data/com.termux/files/home/sic_in_test/;
+                unzip {repo_name};
+                cd {repo_name};
+                pip install -e . --no-deps;
+                """.format(repo_name=repo_name)
+            )
+
+        # check to see if test environment already exists
+        _, stdout, _ = self.ssh_command(
+            """
+            source ~/.test_venv/bin/activate; echo "EXIT STATUS: $?"
+            """
+        )
+
+        output = "".join(stdout.readlines())
+
+        if "EXIT STATUS: 0" in output and not self.test_repo:
+            self.logger.info("Test environment already created on Mini and no new dev repo provided... skipping test_venv setup")
+            return True
+        elif "EXIT STATUS: 0" in output and self.test_repo:
+            self.logger.info("Test environment already created on Mini and new dev repo provided... uninstalling old repo and installing new one")
+            uninstall_old_repo()
+            install_new_repo()
+        elif "EXIT STATUS: 0" not in output and self.test_repo:
+            # test environment not created, so create one
+            self.logger.info("Test environment not created on Mini and new dev repo provided... creating test environment and installing new repo")
+            init_test_venv()
+            install_new_repo()
+        elif "EXIT STATUS: 0" not in output and not self.test_repo:
+            self.logger.error("Test environment not created on Mini and no new dev repo provided... raising RuntimeError")
+            raise RuntimeError("Need to provide repo to create test environment")
+
 
     def run_sic(self):
         self.logger.info("Running sic on alphamini...")

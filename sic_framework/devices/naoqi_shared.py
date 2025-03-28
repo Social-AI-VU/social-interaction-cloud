@@ -97,7 +97,6 @@ class Naoqi(SICDevice):
             "pepper",
         ], "Robot type must be either 'nao' or 'pepper'"
 
-        # self.auto_install()
         
         redis_hostname, _ = sic_redis.get_redis_db_ip_password()
 
@@ -145,7 +144,22 @@ class Naoqi(SICDevice):
 
         self.logger.info("Checking to see if SIC is installed on remote device...")
         # make sure SIC is installed
-        self.verify_sic()
+
+        if self.dev_test:
+            self.create_test_environment()
+        elif self.check_sic_install():
+            self.logger.info(
+                "SIC is already installed on Naoqi device {}! starting SIC...".format(
+                    self.ip
+                )
+            )
+        else:
+            self.logger.info(
+                "SIC is not installed on Naoqi device {}, installing now".format(
+                    self.ip
+                )
+            )
+            self.sic_install()
 
         # start SIC
         self.logger.info(
@@ -155,24 +169,6 @@ class Naoqi(SICDevice):
         )
         self.run_sic()
 
-    def verify_sic(self):
-        """
-        Checks if SIC is installed on the device. installs SIC if not.
-        """
-        if not self.check_sic_install():
-            # TODO: change to log statements
-            self.logger.info(
-                "SIC is not installed on Naoqi device {}, installing now".format(
-                    self.ip
-                )
-            )
-            self.sic_install()
-        else:
-            self.logger.info(
-                "SIC is already installed on Naoqi device {}! starting SIC...".format(
-                    self.ip
-                )
-            )
 
     @abstractmethod
     def check_sic_install():
