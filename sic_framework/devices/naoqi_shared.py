@@ -58,6 +58,7 @@ class Naoqi(SICDevice):
         device_path,
         dev_test=False,
         test_device_path="",
+        test_repo=None,
         top_camera_conf=None,
         bottom_camera_conf=None,
         mic_conf=None,
@@ -91,6 +92,7 @@ class Naoqi(SICDevice):
 
         self.robot_type = robot_type
         self.dev_test = dev_test
+        self.test_repo = test_repo
 
         assert robot_type in [
             "nao",

@@ -18,7 +18,7 @@ from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage
 
 
 class Alphamini(SICDevice):
-    def __init__(self, ip, mini_id, mini_password, redis_ip, username="u0_a25", port=8022, mic_conf=None, speaker_conf=None, dev_test=False, test_repo=""):
+    def __init__(self, ip, mini_id, mini_password, redis_ip, username="u0_a25", port=8022, mic_conf=None, speaker_conf=None, dev_test=False, test_repo=None):
         self.mini_id = mini_id
         self.mini_password = mini_password
         self.redis_ip = redis_ip

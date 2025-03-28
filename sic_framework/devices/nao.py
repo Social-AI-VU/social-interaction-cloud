@@ -121,10 +121,10 @@ class Nao(Naoqi):
             # start with a clean slate just to be sure
             _, stdout, _ = self.ssh_command(
                 """
-                rm -rf ~/.test_venv
+                rm -rf ~/.test_venv;
 
                 # create virtual environment
-                python -m venv .test_venv --system-site-packages;
+                /home/nao/.local/bin/virtualenv ~/.test_venv;
                 source ~/.test_venv/bin/activate;
 
                 # link OpenCV to the virtualenv
@@ -141,7 +141,7 @@ class Nao(Naoqi):
                 source ~/.test_venv/bin/activate; echo "EXIT STATUS: $?"
                 """
             )
-            if "EXIT STATUS: 0" not in output:
+            if "EXIT STATUS: 0" not in stdout.read().decode():
                 raise RuntimeError("Failed to create test virtual environment")
 
         def uninstall_old_repo():
@@ -160,27 +160,55 @@ class Nao(Naoqi):
             Install the new repo on Nao
             """
             # zip up dev repo and scp over
-            zipped_path = utils.zip_file_path(self.test_repo)
+            zipped_path = utils.zip_directory(self.test_repo)
 
             # get the basename of the repo
             repo_name = os.path.basename(self.test_repo)
+
+            # create the sic_in_test folder on Nao
+            _, stdout, _ = self.ssh_command(
+                """
+                cd ~;
+                rm -rf sic_in_test;
+                mkdir sic_in_test;
+                """.format(repo_name=repo_name)
+            )            
+
+            self.logger.info("Zipping up dev repo")
             
+            self.logger.info("Transferring zip file over to Nao")
+
+            # ? more graceful way to do this ?
+            from scp import SCPClient
+
             # scp transfer file over
             with SCPClient(self.ssh.get_transport()) as scp:
                 scp.put(
                     zipped_path,
                     "/home/nao/sic_in_test/"
                 )
-            
+
+            self.logger.info("Unzipping repo and installing on Nao")
             _, stdout, _ = self.ssh_command(
                 """
                 source ~/.test_venv/bin/activate;
-                cd /home/nao/sic_in_test/;
+                cd ~/sic_in_test;
                 unzip {repo_name};
                 cd {repo_name};
                 pip install -e . --no-deps;
                 """.format(repo_name=repo_name)
             )
+
+            # check to see if the repo was installed successfully
+            _, stdout, _ = self.ssh_command(
+                """
+                source ~/.test_venv/bin/activate;
+                pip list | grep -w 'social-interaction-cloud'
+                """
+            )
+
+            if "social-interaction-cloud" not in stdout.read().decode():
+                raise RuntimeError("Failed to install social-interaction-cloud")
 
         # check to see if test environment already exists
         _, stdout, _ = self.ssh_command(
@@ -204,7 +232,7 @@ class Nao(Naoqi):
             init_test_venv()
             install_new_repo()
         elif "EXIT STATUS: 0" not in output and not self.test_repo:
-            self.logger.error("Test environment not created on Nao and no new dev repo provided... raising RuntimeError")
+            self.logger.error("No test environment present on Nao and no new dev repo provided... raising RuntimeError")
             raise RuntimeError("Need to provide repo to create test environment")
       
 

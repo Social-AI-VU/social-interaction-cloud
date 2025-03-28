@@ -101,7 +101,8 @@ class SICDevice(object):
     """
 
     def __new__(cls, *args, **kwargs):
-        """ Choose specific imports dependend on the type of device.
+        """
+        Choose specific imports dependend on the type of device.
 
         Reasoning: Alphamini does not support these imports; they are only needed for remotely installing packages on robots from the local machine
         """
@@ -289,31 +290,42 @@ class SICDevice(object):
 
     def ssh_command(self, command):
         """
-        Executes the given command and logs any exceptions that may occur
+        Executes the given command and logs any errors from the SSH session.
 
-        :param command: command to run on ssh client
-        :type command: string
+        Args:
+            command (str): command to run on ssh client
+
+        Returns:
+            tuple: (stdin, stdout, stderr) file-like objects from the SSH session
+            
+        Raises:
+            Various SSH exceptions if connection fails
         """
         try:
-            return self.ssh.exec_command(command)
+            stdin, stdout, stderr = self.ssh.exec_command(command)
+            
+            # Check stderr for any errors
+            error_output = stderr.read().decode('utf-8')
+            if error_output:
+                self.logger.debug("SSH command '{command}' produced errors: {error_output}".format(command=command, error_output=error_output))
+            
+            return stdin, stdout, stderr
+        
         except paramiko.AuthenticationException as e:
             self.logger.error(
-                "Encountered AuthenticationException when trying to execute ssh command: {}".format(
-                    e
-                )
+                "Authentication failed when trying to execute ssh command: {e}".format(e=e)
             )
-        except paramiko.BadHostKeyException:
+            raise
+        except paramiko.SSHException as e:
             self.logger.error(
-                "Encountered BadHostKeyException when trying to execute ssh command: {}".format(
-                    e
-                )
+                "SSH exception occurred when trying to execute command: {e}".format(e=e)
             )
+            raise
         except Exception as e:
             self.logger.error(
-                "Encountered unknown exception while trying to execute ssh command: {}".format(
-                    e
-                )
+                "Unexpected error while executing ssh command: {e}".format(e=e)
             )
+            raise
 
     def _get_connector(self, component_connector):
         """

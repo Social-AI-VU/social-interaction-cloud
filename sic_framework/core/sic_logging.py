@@ -151,7 +151,7 @@ class SICLogFormatter(logging.Formatter):
 
 def get_sic_logger(name="", redis=None, log_level=logging.DEBUG):
     """
-    Set up logging to the log output channel to be able to report messages to users. Also logs to the terminal.
+    Set up logging to the log output channel to be able to report messages to users.
 
     :param redis: The SICRedis object
     :param name: A readable and identifiable name to indicate to the user where the log originated

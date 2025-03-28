@@ -37,15 +37,15 @@ import socket
 def ping_server(server, port, timeout=3):
     """ping server"""
     try:
-        print(f"attempting to connect to device at server: {server} and port: {port}")
+        # print("attempting to connect to device at server: {server} and port: {port}".format(server=server, port=port))
         socket.setdefaulttimeout(timeout)
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((server, port))
     except OSError as error:
-        print(f"ERROR: {error}")
+        print("ERROR: {error}".format(error=error))
         return False
     except Exception as e:
-        print(f"Encountered exception while trying to connect to device: {e}")
+        print("Encountered exception while trying to connect to device: {e}".format(e=e))
     else:
         s.close()
         return True
@@ -135,7 +135,7 @@ def zip_directory(path):
     """
 
     if not os.path.exists(path):
-        raise FileNotFoundError(f"Path {path} does not exist")
+        raise FileNotFoundError("Path {path} does not exist".format(path=path))
     
     # Get the directory and name
     directory = os.path.dirname(path)
@@ -150,7 +150,7 @@ def zip_directory(path):
         return zip_filepath
             
     except Exception as e:
-        raise IOError(f"Error while zipping: {str(e)}")
+        raise IOError("Error while zipping: {}".format(str(e)))
 
 
 
