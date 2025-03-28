@@ -45,46 +45,39 @@ class SICLibrary(object):
         """
         Download and install this Python library on a remote device
         """
-        self.logger.info("Installing {} on remote device ".format(self.name), end="")
+        self.logger.info("Installing {} on remote device ".format(self.name))
 
         # download the binary first if necessary, as is the case with Pepper
         if self.download_cmd:
             stdin, stdout, stderr = ssh.exec_command(
-                "cd {} && {}".format(self.lib_path, self.download_cmd)
+                """cd {} && {} && echo "EXIT STATUS: $?" """.format(self.lib_path, self.download_cmd)
             )
 
-            # check to make sure download went smoothly
-            err = stderr.readlines()
-            if len(err) > 0:
-                self.logger.error("Command:", "cd {} && {} \n Gave error:".format(self.lib_path, self.download_cmd))
-                self.logger.error("".join(err))
+            output = "".join(stdout.readlines())
+            if "EXIT STATUS: 0" not in output:
+                err = "".join(stderr.readlines())
+                self.logger.error("Command: cd {} && {} \n Gave error:".format(self.lib_path, self.download_cmd))
+                self.logger.error(err)
                 raise RuntimeError(
                     "Error while downloading library on remote device."
                 )
+
 
         # install the library
         stdin, stdout, stderr = ssh.exec_command(
             "cd {} && {}".format(self.lib_path, self.lib_install_cmd)
         )
 
-        # print a dot every line to indicate progress
-        while True:
-            line = stdout.readline()
-            # empty line means command is done
-            if len(line) == 0:
-                break
-
-            self.logger.info(".", end="")
-
-        err = stderr.readlines()
-        if len(err) > 0:
-            self.logger.error("".join(err))
-            self.logger.error("Command:", "cd {} && {}".format(self.lib_path, self.lib_install_cmd))
+        output = "".join(stdout.readlines())
+        if "Successfully installed" not in output:
+            err = "".join(stderr.readlines())
+            self.logger.error("Command: cd {} && {} \n Gave error:".format(self.lib_path, self.lib_install_cmd))
+            self.logger.error(err)
             raise RuntimeError(
                 "Error while installing library on remote device. Please consult manual installation instructions."
             )
         else:
-            self.logger.info(" done.")
+            self.logger.info("Successfully installed {} package".format(self.name))
 
 
 def exclude_pyc(tarinfo):
