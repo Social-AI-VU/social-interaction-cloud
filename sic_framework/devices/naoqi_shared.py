@@ -190,27 +190,7 @@ class Naoqi(SICDevice):
         """
         Starts SIC on the device.
         """
-        stdin, stdout, _ = self.ssh_command(self.start_cmd, get_pty=False)
-        # merge stderr to stdout to simplify (and prevent potential deadlock as stderr is not read)
-        stdout.channel.set_combine_stderr(True)
-
-        # Set up error monitoring
-        self.stopping = False
-
-        self.logger.debug("Checking if remote SIC program has exited")
-
-        def check_if_exit():
-            # wait for the process to exit
-            status = stdout.channel.recv_exit_status()
-            # if remote threads exits before local main thread, report to user.
-            if threading.main_thread().is_alive() and not self.stopping:
-                raise RuntimeError(
-                    "Remote SIC program has stopped unexpectedly.\nSee sic.log for details"
-                )
-
-        thread = threading.Thread(target=check_if_exit)
-        thread.name = "remote_SIC_process_monitor"
-        thread.start()
+        self.ssh_command(self.start_cmd, create_thread=True, get_pty=False)
 
         self.logger.debug("Attempting to ping remote ComponentManager to see if it has started")
 
@@ -236,8 +216,8 @@ class Naoqi(SICDevice):
     def stop(self):
         for connector in self.connectors.values():
             connector.stop()
-
-        self.stopping = True
+ 
+        self.stop_event.set()
         self.ssh_command(self.stop_cmd)
 
     @property

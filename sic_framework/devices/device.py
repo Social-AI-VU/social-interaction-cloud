@@ -3,6 +3,7 @@ from __future__ import print_function
 import os.path
 import tarfile
 import tempfile
+import threading
 import time
 
 from sic_framework.core import utils
@@ -122,9 +123,9 @@ class SICDevice(object):
         self.configs = dict()
         self.ip = ip
         self.port = port
-
         self._redis = SICRedis()
         self._PING_TIMEOUT = 3
+        self.stop_event = threading.Event()
 
         self.logger = sic_logging.get_sic_logger(name="{}DeviceManager".format(self.__class__.__name__))
         sic_logging.SIC_LOG_SUBSCRIBER.subscribe_to_log_channel()
@@ -281,7 +282,7 @@ class SICDevice(object):
         self.ssh.exec_command("rm ~/framework/sic_version_signature_*")
         self.ssh.exec_command("touch {}".format(framework_signature))
 
-    def ssh_command(self, command, **kwargs):
+    def ssh_command(self, command, create_thread=False, **kwargs):
         """
         Executes the given command and logs any errors from the SSH session.
 
@@ -296,15 +297,45 @@ class SICDevice(object):
         Raises:
             Various SSH exceptions if connection fails
         """
+
         try:
+            self.logger.debug("Executing command: {command}".format(command=command))
             stdin, stdout, stderr = self.ssh.exec_command(command, **kwargs)
-            
-            # Check stderr for any errors
-            error_output = stderr.read().decode('utf-8')
-            if error_output:
-                self.logger.debug("SSH command '{command}' produced errors: {error_output}".format(command=command, error_output=error_output))
-            
-            return stdin, stdout, stderr
+
+            if create_thread:
+                self.logger.debug("Creating thread to monitor remote command")
+
+                def monitor_call():
+                    # check if command has exited or if there is standard output
+                    while not stdout.channel.exit_status_ready():
+                        if stdout.channel.recv_ready():
+                            line = stdout.channel.recv(1024).decode('utf-8')
+                            self.logger.debug(line)
+                    else:
+                        # get exit status of the command
+                        status = stdout.channel.recv_exit_status()
+
+                        # log exit status and output
+                        self.logger.debug("SSH command exited with status: {status}".format(status=status))
+                        self.logger.debug("SSH command output: {output}".format(output=stdout.read().decode('utf-8')))
+                        self.logger.debug("SSH command error: {error}".format(error=stderr.read().decode('utf-8')))
+                        
+                        # if remote thread exits before local main thread, report to user.
+                        if threading.main_thread().is_alive() and not self.stop_event.is_set():
+                            raise RuntimeError(
+                                "Remote SIC program has stopped unexpectedly.\nSee sic.log for details"
+                            )
+
+                thread = threading.Thread(target=monitor_call)
+                thread.name = "remote_SIC_process_monitor"
+                thread.start()
+                return thread
+            else:
+                # Check stderr for any errors
+                error_output = stderr.read().decode('utf-8')
+                if error_output:
+                    self.logger.debug("SSH command produced errors: {error_output}".format(error_output=error_output))
+                return stdin, stdout, stderr
         
         except paramiko.AuthenticationException as e:
             self.logger.error(

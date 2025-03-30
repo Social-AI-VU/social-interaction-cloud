@@ -44,7 +44,7 @@ class SICLogSubscriber(object):
         
         # Create log filename with current date
         current_date = datetime.now().strftime("%Y-%m-%d")
-        self.logfile = open(f"sic_{current_date}.log", "a")
+        self.logfile = open("sic_{date}.log".format(date=current_date), "a")
         
         self.lock = threading.Lock()
 
