@@ -281,12 +281,14 @@ class SICDevice(object):
         self.ssh.exec_command("rm ~/framework/sic_version_signature_*")
         self.ssh.exec_command("touch {}".format(framework_signature))
 
-    def ssh_command(self, command):
+    def ssh_command(self, command, **kwargs):
         """
         Executes the given command and logs any errors from the SSH session.
 
         Args:
             command (str): command to run on ssh client
+            **kwargs: Additional keyword arguments to pass to ssh.exec_command
+                     (e.g., get_pty=False, timeout=30)
 
         Returns:
             tuple: (stdin, stdout, stderr) file-like objects from the SSH session
@@ -295,7 +297,7 @@ class SICDevice(object):
             Various SSH exceptions if connection fails
         """
         try:
-            stdin, stdout, stderr = self.ssh.exec_command(command)
+            stdin, stdout, stderr = self.ssh.exec_command(command, **kwargs)
             
             # Check stderr for any errors
             error_output = stderr.read().decode('utf-8')

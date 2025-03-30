@@ -141,7 +141,7 @@ class Naoqi(SICDevice):
         )
 
         # stop SIC
-        self.ssh.exec_command(self.stop_cmd)
+        self.ssh_command(self.stop_cmd)
         time.sleep(0.1)
 
         self.logger.info("Checking to see if SIC is installed on remote device...")
@@ -190,12 +190,14 @@ class Naoqi(SICDevice):
         """
         Starts SIC on the device.
         """
-        stdin, stdout, _ = self.ssh.exec_command(self.start_cmd, get_pty=False)
+        stdin, stdout, _ = self.ssh_command(self.start_cmd, get_pty=False)
         # merge stderr to stdout to simplify (and prevent potential deadlock as stderr is not read)
         stdout.channel.set_combine_stderr(True)
 
         # Set up error monitoring
         self.stopping = False
+
+        self.logger.debug("Checking if remote SIC program has exited")
 
         def check_if_exit():
             # wait for the process to exit
@@ -209,6 +211,8 @@ class Naoqi(SICDevice):
         thread = threading.Thread(target=check_if_exit)
         thread.name = "remote_SIC_process_monitor"
         thread.start()
+
+        self.logger.debug("Attempting to ping remote ComponentManager to see if it has started")
 
         # try to ping remote ComponentManager to see if it has started
         ping_tries = 3
@@ -234,7 +238,7 @@ class Naoqi(SICDevice):
             connector.stop()
 
         self.stopping = True
-        self.ssh.exec_command(self.stop_cmd)
+        self.ssh_command(self.stop_cmd)
 
     @property
     def top_camera(self):

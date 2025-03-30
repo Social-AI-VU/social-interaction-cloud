@@ -4,6 +4,7 @@ import io
 import logging
 import re
 import threading
+from datetime import datetime
 
 from . import utils
 from .message_python2 import SICMessage
@@ -40,7 +41,11 @@ class SICLogSubscriber(object):
     def __init__(self):
         self.redis = None
         self.running = False
-        self.logfile = open("sic.log", "w")
+        
+        # Create log filename with current date
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        self.logfile = open(f"sic_{current_date}.log", "a")
+        
         self.lock = threading.Lock()
 
     def subscribe_to_log_channel(self):
@@ -161,20 +166,37 @@ def get_sic_logger(name="", redis=None, log_level=logging.DEBUG):
     logger = logging.Logger(name)
     logger.setLevel(log_level)
 
-    # debug stream sends messages to redis
-    debug_stream = SICLogStream(redis, get_log_channel())
 
     log_format = SICLogFormatter()
 
-    handler_redis = logging.StreamHandler(debug_stream)
+    # remote devices use the remote stream which sends log messages to Redis
+    # remote log messages are then picked up and outputted locally by the SICLogSubscriber
+    remote_stream = SICLogStream(redis, get_log_channel())
+    handler_redis = logging.StreamHandler(remote_stream)
     handler_redis.setFormatter(log_format)
     logger.addHandler(handler_redis)
 
     if not redis:
+        # For local logging, create a custom handler that uses SICLogSubscriber's file
+        class SICFileHandler(logging.Handler):
+            def emit(self, record):
+                msg = self.format(record) + '\n'
+                # Use the same file handle and lock as SICLogSubscriber
+                with SIC_LOG_SUBSCRIBER.lock:
+                    # Strip ANSI codes like SICLogSubscriber does
+                    clean_message = ANSI_CODE_REGEX.sub("", msg)
+                    SIC_LOG_SUBSCRIBER.logfile.write(clean_message)
+                    SIC_LOG_SUBSCRIBER.logfile.flush()
+
         # log to the terminal only if there is not an associated redis instance
         handler_terminal = logging.StreamHandler()
         handler_terminal.setFormatter(log_format)
         logger.addHandler(handler_terminal)
+
+        # File handler
+        handler_file = SICFileHandler()
+        handler_file.setFormatter(log_format)
+        logger.addHandler(handler_file)
 
     return logger
 

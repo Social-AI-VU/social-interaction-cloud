@@ -134,6 +134,7 @@ def zip_directory(path):
         FileNotFoundError: If the path doesn't exist
     """
 
+    # check if the path exists
     if not os.path.exists(path):
         raise FileNotFoundError("Path {path} does not exist".format(path=path))
     
