@@ -12,6 +12,15 @@ from .sic_redis import SICRedis
 
 ANSI_CODE_REGEX = re.compile(r'\033\[[0-9;]*m')
 
+# loglevel interpretation, mostly follows python's defaults
+CRITICAL = 50
+ERROR = 40
+WARNING = 30
+INFO = 20  # service dependent sparse information
+DEBUG = 10  # service dependent verbose information
+NOTSET = 0
+
+
 def get_log_channel():
     """
     Get the global log channel. All components on any device should log to this channel.
@@ -31,7 +40,7 @@ class SICLogMessage(SICMessage):
 
 
 class SICRemoteError(Exception):
-    """An exception indicating the error happend on a remote device"""
+    """An exception indicating the error happened on a remote device"""
 
 
 class SICCommonLog(object):
@@ -50,8 +59,8 @@ class SICCommonLog(object):
 
     def subscribe_to_redis_log(self):
         """
-        Subscribe to the Redis log channel and display any messages on the terminal to propagate any log messages in the
-        framework to the user. This function may be called multiple times but will only subscribe once.
+        Subscribe to the Redis log channel and display any messages on the terminal. 
+        This function may be called multiple times but will only subscribe once.
         :return:
         """
         with self.lock:  # Ensure thread-safe access
@@ -153,7 +162,7 @@ class SICLogFormatter(logging.Formatter):
         # For subsequent lines, indent to align with first line's content
         if len(message_lines) > 1:
             indent = ' ' * len(prefix)
-            formatted_lines.extend("{indent}{line}".format(indent=indent, line=line) for line in message_lines[1:])
+            formatted_lines.extend("{indent}{line}".format(indent=indent, line=line.strip()) for line in message_lines[1:])
 
         # Join all lines with newlines
         return '\n'.join(formatted_lines)
@@ -168,7 +177,7 @@ class SICLogFormatter(logging.Formatter):
         return text
 
 
-def get_sic_logger(name="", redis=None, log_level=logging.DEBUG):
+def get_sic_logger(name="", redis=None, log_level=DEBUG):
     """
     Set up logging to the log output channel to be able to report messages to users.
 
@@ -178,6 +187,7 @@ def get_sic_logger(name="", redis=None, log_level=logging.DEBUG):
     """
     # logging initialisation
     logger = logging.Logger(name)
+
     logger.setLevel(log_level)
 
     log_format = SICLogFormatter()
@@ -209,16 +219,6 @@ def get_sic_logger(name="", redis=None, log_level=logging.DEBUG):
         logger.addHandler(handler_file)
 
     return logger
-
-
-# loglevel interpretation, mostly follows python's defaults
-
-CRITICAL = 50
-ERROR = 40
-WARNING = 30
-INFO = 20  # service dependent sparse information
-DEBUG = 10  # service dependent verbose information
-NOTSET = 0
 
 # pseudo singleton object. Does nothing when this file is executed during the import, but can subscribe to the log
 # channel for the user with subscribe_to_redis_log once

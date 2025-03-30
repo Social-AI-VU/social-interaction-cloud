@@ -75,19 +75,36 @@ class Pepper(Naoqi):
         """
         Runs a script on Pepper to see if the sic_framework folder is there.
         """
+        sic_installed = False
+
         _, stdout, _ = self.ssh_command(
             """
-                    if pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ; then
-                        echo "SIC is installed";
-                    else
-                        echo "SIC is not installed";
-                    fi;
-                    """
+                if pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ; then
+                    echo "SIC is installed";
+                else
+                    echo "SIC is not installed";
+                fi;
+            """
         )
 
         output = stdout.read().decode()
-
         if "SIC is installed" in output:
+            # get the location of SIC to check if it is a test version
+            _, stdout, _ = self.ssh_command(
+                """
+                    pip show social-interaction-cloud | grep 'Location' | awk '{print $2}';
+                """
+            )         
+            
+            sic_location = stdout.read().decode()
+            self.logger.info("SIC is installed at: {}".format(sic_location))
+
+            if 'sic_in_test' in sic_location:
+                self.logger.info("Test version of SIC is installed, uninstalling and reinstalling latest version")
+                return False
+            else:
+                self.logger.info("SIC is already installed, checking version")
+            
             # this command gets the version of SIC that is currently installed on the local machine
             version_cmd = """pip list | grep 'social-interaction-cloud' | awk '{gsub(/[()]/, "", $2); print $2}'"""
             try:
@@ -121,7 +138,10 @@ class Pepper(Naoqi):
 
     def sic_install(self):
         """
-        1. git rid of old directories for clean install
+        Installs SIC on the Pepper
+
+        This function:
+        1. gets rid of old directories for clean install
         2. curl github repository
         3. pip install --no-deps git repo
         4. install dependencies from _LIBS_TO_INSTALL
@@ -166,6 +186,86 @@ class Pepper(Naoqi):
                 self.logger.info("Library {} is NOT installed, installing now...".format(lib.name))
                 library_installer.install(self.ssh, lib)
 
+    def create_test_environment(self):
+        """
+        Creates a test environment on the Pepper
+
+        Instead of creating a virtual environment, we will just copy the repo over to the test directory    
+        and install from there.
+        """
+
+        def uninstall_old_repo():
+            """
+            Uninstall the old version of social-interaction-cloud on Alphamini
+            """
+            _, stdout, _ = self.ssh_command(
+                """
+                pip uninstall social-interaction-cloud -y
+                """
+            )
+
+        def install_new_repo():
+            """
+            Install the new repo on Nao
+            """
+
+            # zip up dev repo and scp over
+            self.logger.info("Zipping up dev repo")
+            zipped_path = utils.zip_directory(self.test_repo)
+
+            # get the basename of the repo
+            repo_name = os.path.basename(self.test_repo)
+
+            # create the sic_in_test folder on Nao
+            _, stdout, _ = self.ssh_command(
+                """
+                cd ~;
+                rm -rf sic_in_test;
+                mkdir sic_in_test;
+                """.format(repo_name=repo_name)
+            )            
+            
+            self.logger.info("Transferring zip file over to Pepper")
+
+            # ? more graceful way to do this ?
+            from scp import SCPClient
+
+            # scp transfer file over
+            with SCPClient(self.ssh.get_transport()) as scp:
+                scp.put(
+                    zipped_path,
+                    "/home/nao/sic_in_test/"
+                )
+
+            self.logger.info("Unzipping repo and installing on Nao")
+            _, stdout, _ = self.ssh_command(
+                """
+                cd ~/sic_in_test;
+                unzip {repo_name};
+                cd {repo_name};
+                pip install --user -e . --no-deps;
+                """.format(repo_name=repo_name)
+            )
+
+            # check to see if the repo was installed successfully
+            _, stdout, _ = self.ssh_command(
+                """
+                pip list | grep -w 'social-interaction-cloud'
+                """
+            )
+
+            if "social-interaction-cloud" not in stdout.read().decode():
+                raise RuntimeError("Failed to install social-interaction-cloud")
+
+
+        if self.test_repo:
+            self.logger.info("Installing test repo on Pepper")
+            uninstall_old_repo()
+            install_new_repo()
+        else:
+            self.logger.info("No test repo provided, assuming test repo is already installed")
+            return True
+
 
     @property
     def stereo_camera(self):
@@ -178,9 +278,6 @@ class Pepper(Naoqi):
     @property
     def tablet_display_url(self):
         return self._get_connector(NaoqiTablet)
-
-    pass
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

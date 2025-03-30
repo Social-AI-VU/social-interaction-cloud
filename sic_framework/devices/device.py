@@ -30,24 +30,28 @@ class SICLibraryInstaller(object):
     def __init__(self):
         self.logger = sic_logging.get_sic_logger(name="SICLibraryInstaller")
 
+
     def check_if_installed(self, pip_freeze, lib):
         """
         Check to see if a python library name + version is in the 'pip freeze' output of a remote device.
         """
-        for lib in pip_freeze:
-            lib = lib.replace('\n','')
-            lib_name, lib_ver = lib.split('==')
-            if lib.name == lib_name:
-                self.logger.debug("Found package: {}".format(lib))
-                # check to make sure version matches 
+        for cur_lib in pip_freeze:
+            cur_lib = cur_lib.replace('\n','')
+            cur_lib_name, cur_lib_ver = cur_lib.split('==')
+            if lib.name == cur_lib_name:
+                self.logger.debug("Found package: {} with version {}".format(cur_lib_name, cur_lib_ver))
+                # check to make sure version matches if there is a version requirement
                 if lib.version:
-                    if lib.version in lib_ver:
+                    if lib.version in cur_lib_ver:
+                        self.logger.debug("{} version matches: remote {} == required {}".format(lib.name, cur_lib_ver, lib.version))
                         return True
                     else:
+                        self.logger.debug("{} version mismatch: remote {} != required {}".format(lib.name, cur_lib_ver, lib.version))
                         return False
                 return True
         return False
     
+
     def install(self, ssh, lib):
         """
         Download and install this Python library on a remote device
