@@ -22,42 +22,48 @@ class SICLibrary(object):
         self.download_cmd = download_cmd
         self.version = version
         self.lib_install_cmd = lib_install_cmd
+        
+class SICLibraryInstaller(object):
+    """
+    A class to install a library on a remote device.
+    """
+    def __init__(self):
         self.logger = sic_logging.get_sic_logger(name="SICLibraryInstaller")
 
-    def check_if_installed(self, pip_freeze):
+    def check_if_installed(self, pip_freeze, lib):
         """
         Check to see if a python library name + version is in the 'pip freeze' output of a remote device.
         """
         for lib in pip_freeze:
             lib = lib.replace('\n','')
             lib_name, lib_ver = lib.split('==')
-            if self.name == lib_name:
+            if lib.name == lib_name:
                 self.logger.debug("Found package: {}".format(lib))
                 # check to make sure version matches 
-                if self.version:
-                    if self.version in lib_ver:
+                if lib.version:
+                    if lib.version in lib_ver:
                         return True
                     else:
                         return False
                 return True
         return False
     
-    def install(self, ssh):
+    def install(self, ssh, lib):
         """
         Download and install this Python library on a remote device
         """
-        self.logger.info("Installing {} on remote device ".format(self.name))
+        self.logger.info("Installing {} on remote device ".format(lib.name))
 
         # download the binary first if necessary, as is the case with Pepper
-        if self.download_cmd:
+        if lib.download_cmd:
             stdin, stdout, stderr = ssh.exec_command(
-                """cd {} && {} && echo "EXIT STATUS: $?" """.format(self.lib_path, self.download_cmd)
+                """cd {} && {} && echo "EXIT STATUS: $?" """.format(lib.lib_path, lib.download_cmd)
             )
 
             output = "".join(stdout.readlines())
             if "EXIT STATUS: 0" not in output:
                 err = "".join(stderr.readlines())
-                self.logger.error("Command: cd {} && {} \n Gave error:".format(self.lib_path, self.download_cmd))
+                self.logger.error("Command: cd {} && {} \n Gave error:".format(lib.lib_path, lib.download_cmd))
                 self.logger.error(err)
                 raise RuntimeError(
                     "Error while downloading library on remote device."
@@ -66,19 +72,19 @@ class SICLibrary(object):
 
         # install the library
         stdin, stdout, stderr = ssh.exec_command(
-            "cd {} && {}".format(self.lib_path, self.lib_install_cmd)
+            "cd {} && {}".format(lib.lib_path, lib.lib_install_cmd)
         )
 
         output = "".join(stdout.readlines())
         if "Successfully installed" not in output:
             err = "".join(stderr.readlines())
-            self.logger.error("Command: cd {} && {} \n Gave error:".format(self.lib_path, self.lib_install_cmd))
+            self.logger.error("Command: cd {} && {} \n Gave error:".format(lib.lib_path, lib.lib_install_cmd))
             self.logger.error(err)
             raise RuntimeError(
                 "Error while installing library on remote device. Please consult manual installation instructions."
             )
         else:
-            self.logger.info("Successfully installed {} package".format(self.name))
+            self.logger.info("Successfully installed {} package".format(lib.name))
 
 
 def exclude_pyc(tarinfo):
@@ -128,7 +134,6 @@ class SICDevice(object):
         self.stop_event = threading.Event()
 
         self.logger = sic_logging.get_sic_logger(name="{}DeviceManager".format(self.__class__.__name__))
-        sic_logging.SIC_LOG_SUBSCRIBER.subscribe_to_log_channel()
         
         self.logger.info("Initializing device with ip: {ip}".format(ip=ip))
 

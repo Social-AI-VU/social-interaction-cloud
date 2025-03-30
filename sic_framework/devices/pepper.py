@@ -13,7 +13,7 @@ from sic_framework.devices.common_naoqi.pepper_tablet import (
     NaoqiTabletComponent,
 )
 from sic_framework.devices.naoqi_shared import *
-from sic_framework.devices.device import SICLibrary
+from sic_framework.devices.device import SICLibrary, SICLibraryInstaller
 
 # this is where dependency binaries are downloaded to on the Pepper machine
 _LIB_DIRECTORY = "/home/nao/sic_framework_2/social-interaction-cloud-main/lib"
@@ -158,11 +158,13 @@ class Pepper(Naoqi):
         _, stdout_pip_freeze, _ = self.ssh_command("pip freeze")
         installed_libs = stdout_pip_freeze.readlines()
 
+        library_installer = SICLibraryInstaller()
+
         for lib in _LIBS_TO_INSTALL:
             self.logger.info("Checking if library {} is installed...".format(lib.name))
-            if not lib.check_if_installed(installed_libs):
+            if not library_installer.check_if_installed(installed_libs, lib):
                 self.logger.info("Library {} is NOT installed, installing now...".format(lib.name))
-                lib.install(self.ssh)
+                library_installer.install(self.ssh, lib)
 
 
     @property

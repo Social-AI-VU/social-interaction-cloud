@@ -54,9 +54,6 @@ class SICConnector(object):
         self.logger = self.get_connector_logger()
         self._redis.parent_logger = self.logger
 
-        # Subscribe to the log channel to display to the user
-        sic_logging.SIC_LOG_SUBSCRIBER.subscribe_to_log_channel()
-
         self.output_channel = self.component_class.get_output_channel(self._ip)
 
         # if we cannot ping the component, request it to be started from the ComponentManager
@@ -220,8 +217,6 @@ class SICConnector(object):
         self._redis.send_message(self._request_reply_channel, SICStopRequest())
         if hasattr(self, "_redis"):
             self._redis.close()
-
-        sic_logging.SIC_LOG_SUBSCRIBER.stop()
 
     def get_connector_logger(self, log_level=sic_logging.DEBUG):
         """
