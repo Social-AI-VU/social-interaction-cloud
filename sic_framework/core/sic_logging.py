@@ -89,7 +89,9 @@ class SICCommonLog(object):
 
             # add timestamp to the log message
             timestamp = datetime.now().strftime("%H:%M:%S")
-            clean_message = "[{timestamp}] {clean_message} \n".format(timestamp=timestamp, clean_message=clean_message)
+            clean_message = "[{timestamp}] {clean_message}".format(timestamp=timestamp, clean_message=clean_message)
+            if clean_message[-1] != "\n":
+                clean_message += "\n"
 
             # write to logfile
             self.logfile.write(clean_message)

@@ -59,6 +59,7 @@ class Naoqi(SICDevice):
         dev_test=False,
         test_device_path="",
         test_repo=None,
+        bypass_install=False,
         top_camera_conf=None,
         bottom_camera_conf=None,
         mic_conf=None,
@@ -93,6 +94,7 @@ class Naoqi(SICDevice):
         self.robot_type = robot_type
         self.dev_test = dev_test
         self.test_repo = test_repo
+        self.bypass_install = bypass_install
 
         assert robot_type in [
             "nao",
@@ -149,7 +151,7 @@ class Naoqi(SICDevice):
 
         if self.dev_test:
             self.create_test_environment()
-        elif self.check_sic_install():
+        elif self.bypass_install or self.check_sic_install():
             self.logger.info(
                 "SIC is already installed on Naoqi device {}! starting SIC...".format(
                     self.ip

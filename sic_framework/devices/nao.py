@@ -119,7 +119,7 @@ class Nao(Naoqi):
             Initialize a new test virtual environment on Nao
             """
             # start with a clean slate just to be sure
-            _, stdout, _ = self.ssh_command(
+            _, stdout, _, exit_status = self.ssh_command(
                 """
                 rm -rf ~/.test_venv;
 
@@ -136,19 +136,19 @@ class Nao(Naoqi):
             )
 
             # test to make sure the virtual environment was created
-            _, stdout, _ = self.ssh_command(
+            _, stdout, _, exit_status = self.ssh_command(
                 """
-                source ~/.test_venv/bin/activate; echo "EXIT STATUS: $?"
+                source ~/.test_venv/bin/activate;
                 """
             )
-            if "EXIT STATUS: 0" not in stdout.read().decode():
+            if exit_status != 0:
                 raise RuntimeError("Failed to create test virtual environment")
 
         def uninstall_old_repo():
             """
             Uninstall the old version of social-interaction-cloud on Alphamini
             """
-            _, stdout, _ = self.ssh_command(
+            _, stdout, _, exit_status = self.ssh_command(
                 """
                 source ~/.test_venv/bin/activate;
                 pip uninstall social-interaction-cloud -y
@@ -159,14 +159,14 @@ class Nao(Naoqi):
             """
             Install the new repo on Nao
             """
-            # zip up dev repo and scp over
+            self.logger.info("Zipping up dev repo")
             zipped_path = utils.zip_directory(self.test_repo)
 
             # get the basename of the repo
             repo_name = os.path.basename(self.test_repo)
 
             # create the sic_in_test folder on Nao
-            _, stdout, _ = self.ssh_command(
+            _, stdout, _, exit_status = self.ssh_command(
                 """
                 cd ~;
                 rm -rf sic_in_test;
@@ -174,22 +174,17 @@ class Nao(Naoqi):
                 """.format(repo_name=repo_name)
             )            
 
-            self.logger.info("Zipping up dev repo")
-            
             self.logger.info("Transferring zip file over to Nao")
 
-            # ? more graceful way to do this ?
-            from scp import SCPClient
-
             # scp transfer file over
-            with SCPClient(self.ssh.get_transport()) as scp:
+            with self.SCPClient(self.ssh.get_transport()) as scp:
                 scp.put(
                     zipped_path,
                     "/home/nao/sic_in_test/"
                 )
 
             self.logger.info("Unzipping repo and installing on Nao")
-            _, stdout, _ = self.ssh_command(
+            _, stdout, _, exit_status = self.ssh_command(
                 """
                 source ~/.test_venv/bin/activate;
                 cd ~/sic_in_test;
@@ -200,40 +195,34 @@ class Nao(Naoqi):
             )
 
             # check to see if the repo was installed successfully
-            _, stdout, _ = self.ssh_command(
-                """
-                source ~/.test_venv/bin/activate;
-                pip list | grep -w 'social-interaction-cloud'
-                """
-            )
-
-            if "social-interaction-cloud" not in stdout.read().decode():
+            if exit_status != 0:
                 raise RuntimeError("Failed to install social-interaction-cloud")
 
         # check to see if test environment already exists
-        _, stdout, _ = self.ssh_command(
+        _, stdout, _, exit_status = self.ssh_command(
             """
-            source ~/.test_venv/bin/activate; echo "EXIT STATUS: $?"
+            source ~/.test_venv/bin/activate;
             """
         )
 
-        output = "".join(stdout.readlines())
-
-        if "EXIT STATUS: 0" in output and not self.test_repo:
+        if exit_status == 0 and not self.test_repo:
             self.logger.info("Test environment already created on Nao and no new dev repo provided... skipping test_venv setup")
             return True
-        elif "EXIT STATUS: 0" in output and self.test_repo:
+        elif exit_status == 0 and self.test_repo:
             self.logger.info("Test environment already created on Nao and new dev repo provided... uninstalling old repo and installing new one")
             uninstall_old_repo()
             install_new_repo()
-        elif "EXIT STATUS: 0" not in output and self.test_repo:
+        elif exit_status == 1 and self.test_repo:
             # test environment not created, so create one
             self.logger.info("Test environment not created on Nao and new dev repo provided... creating test environment and installing new repo")
             init_test_venv()
             install_new_repo()
-        elif "EXIT STATUS: 0" not in output and not self.test_repo:
+        elif exit_status == 1 and not self.test_repo:
             self.logger.error("No test environment present on Nao and no new dev repo provided... raising RuntimeError")
             raise RuntimeError("Need to provide repo to create test environment")
+        else:
+            self.logger.error("Activating test environment on Nao resulted in unknown exit status: {}".format(exit_status))
+            raise RuntimeError("Unknown error occurred while creating test environment on Nao")
       
 
 if __name__ == "__main__":
