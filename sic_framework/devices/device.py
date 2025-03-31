@@ -312,10 +312,10 @@ class SICDevice(object):
                 # check to make sure version matches if there is a version requirement
                 if lib.req_version:
                     if lib.req_version in cur_lib_ver:
-                        self.logger.debug("{} version matches: remote {} == required {}".format(lib.name, cur_lib_ver, lib.version))
+                        self.logger.debug("{} version matches: remote {} == required {}".format(lib.name, cur_lib_ver, lib.req_version))
                         return True
                     else:
-                        self.logger.debug("{} version mismatch: remote {} != required {}".format(lib.name, cur_lib_ver, lib.version))
+                        self.logger.debug("{} version mismatch: remote {} != required {}".format(lib.name, cur_lib_ver, lib.req_version))
                         return False
                 return True
         return False
@@ -329,7 +329,7 @@ class SICDevice(object):
         # download the binary first if necessary, as is the case with Pepper
         if lib.download_cmd:
             stdin, stdout, stderr, exit_status = self.ssh_command(
-                """cd {} && {}" """.format(lib.lib_path, lib.download_cmd)
+                """cd {} && {} """.format(lib.lib_path, lib.download_cmd)
             )
 
             if exit_status != 0:
@@ -341,7 +341,7 @@ class SICDevice(object):
                 )
 
         # install the library
-        stdin, stdout, stderr = self.ssh_command(
+        stdin, stdout, stderr, exit_status = self.ssh_command(
             "cd {} && {}".format(lib.lib_path, lib.lib_install_cmd)
         )
 

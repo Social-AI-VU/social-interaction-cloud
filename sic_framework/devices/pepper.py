@@ -41,13 +41,13 @@ _LIBS_TO_INSTALL = [
         lib_path=_LIB_DIRECTORY,
         lib_install_cmd="pip install --user six-1.17.0-py2.py3-none-any.whl",
     ),
-    # SICLibrary(
-    #     "numpy",
-    #     download_cmd="curl -O https://files.pythonhosted.org/packages/fd/54/aee23cfc1cdca5064f9951eefd3c5b51cff0cecb37965d4910779ef6b792/numpy-1.16.6-cp27-cp27mu-manylinux1_i686.whl",
-    #     req_version="1.16",
-    #     lib_path=_LIB_DIRECTORY,
-    #     lib_install_cmd="pip install --user numpy-1.16.6-cp27-cp27mu-manylinux1_i686.whl",
-    # ),
+    SICLibrary(
+        "numpy",
+        download_cmd="curl -O https://files.pythonhosted.org/packages/fd/54/aee23cfc1cdca5064f9951eefd3c5b51cff0cecb37965d4910779ef6b792/numpy-1.16.6-cp27-cp27mu-manylinux1_i686.whl",
+        req_version="1.16",
+        lib_path=_LIB_DIRECTORY,
+        lib_install_cmd="pip install --user numpy-1.16.6-cp27-cp27mu-manylinux1_i686.whl",
+    ),
 ]
 
 class Pepper(Naoqi):
@@ -230,11 +230,11 @@ class Pepper(Naoqi):
             # check to see if the repo was installed successfully
             _, stdout, _, exit_status = self.ssh_command(
                 """
-                pip list | grep -w 'social-interaction-cloud'
+                pip show social-interaction-cloud;
                 """
             )
 
-            if "social-interaction-cloud" not in stdout.read().decode():
+            if exit_status != 0:
                 raise RuntimeError("Failed to install social-interaction-cloud")
 
 

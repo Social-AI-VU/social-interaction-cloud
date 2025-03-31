@@ -33,7 +33,7 @@ class Nao(Naoqi):
             # if we are testing a development version, assume it is already installed properly
             return True
 
-        _, stdout, _ = self.ssh_command(
+        _, stdout, _, exit_status = self.ssh_command(
             """         
                     # if there is a virtual environment, activate it
                     if [ -f ~/.venv_sic/bin/activate ]; then
@@ -64,7 +64,7 @@ class Nao(Naoqi):
         """
         Runs the install script specific to the Nao
         """
-        _, stdout, stderr = self.ssh_command(
+        _, stdout, stderr, exit_status = self.ssh_command(
             """
                     if [ ! -f ~/.local/bin/virtualenv ]; then
                         pip install --user virtualenv;
