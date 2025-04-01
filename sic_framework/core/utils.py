@@ -36,15 +36,15 @@ import socket
 def ping_server(server, port, timeout=3):
     """ping server"""
     try:
-        print(f"attempting to connect to device at server: {server} and port: {port}")
+        # print("attempting to connect to device at server: {} and port: {}".format(server, port))
         socket.setdefaulttimeout(timeout)
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((server, port))
     except OSError as error:
-        print(f"ERROR: {error}")
+        print("OSError when trying to connect to device: {}".format(error))
         return False
     except Exception as e:
-        print(f"Encountered exception while trying to connect to device: {e}")
+        print("Encountered exception while trying to connect to device: {}".format(e))
     else:
         s.close()
         return True

@@ -112,7 +112,8 @@ class Alphamini(SICDevice):
         # The ssh port for mini is 8022
         # ssh u0_a25@ip --p 8022
         Tool.run_py_pkg("sshd", robot_id=self.mini_id, debug=True)
-        Tool.run_py_pkg('echo "sshd" >> ~/.bashrc', robot_id=self.mini_id, debug=True)
+        # only add sshd to bashrc if it's not there
+        Tool.run_py_pkg("grep -q 'sshd' ~/.bashrc || echo 'sshd' >> ~/.bashrc", robot_id=self.mini_id, debug=True)
 
         # install ftp
         # The ftp port for mini is 8021
@@ -307,9 +308,8 @@ class Alphamini(SICDevice):
         except (socket.timeout, socket.error):
             return False
 
-
-# mini_component_list = [MiniMicrophoneSensor, MiniSpeakerComponent, MiniAnimationActuator]
-mini_component_list = [MiniSpeakerComponent, MiniAnimationActuator]
+mini_component_list = [MiniMicrophoneSensor, MiniSpeakerComponent, MiniAnimationActuator]
+# mini_component_list = [MiniSpeakerComponent, MiniAnimationActuator]
 
 
 if __name__ == '__main__':

@@ -64,6 +64,7 @@ class Pepper(Naoqi):
             passwords=["pepper", "nao"],
             # device path is where this script is located on the actual Pepper machine
             device_path="/home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework/devices",
+            test_device_path="/home/nao/sic_in_test/social-interaction-cloud/sic_framework/devices",
             **kwargs
         )
 
@@ -127,10 +128,11 @@ class Pepper(Naoqi):
         """
         _, stdout, stderr = self.ssh_command(
             """
+                    rm -rf /home/nao/framework;
                     if [ -d /home/nao/sic_framework_2 ]; then
                         rm -rf /home/nao/sic_framework_2;
                     fi;
-                    
+
                     mkdir /home/nao/sic_framework_2;
                     cd /home/nao/sic_framework_2;
                     curl -L -o sic_repo.zip https://github.com/Social-AI-VU/social-interaction-cloud/archive/refs/heads/main.zip;
