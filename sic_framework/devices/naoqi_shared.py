@@ -10,6 +10,10 @@ from sic_framework.devices.common_naoqi.naoqi_button import (
     NaoqiButtonSensor,
 )
 from sic_framework.devices.common_naoqi.naoqi_camera import *
+from sic_framework.devices.common_naoqi.naoqi_camera_gstreamer import BaseGStreamerCameraSensor, GStreamerCameraConf, \
+    GstreamerCamera
+from sic_framework.devices.common_naoqi.naoqi_inverse_kinematics import NaoqiInverseKinematics, \
+    NaoqiInverseKinematicsComponent
 from sic_framework.devices.common_naoqi.naoqi_leds import *
 from sic_framework.devices.common_naoqi.naoqi_lookat import (
     NaoqiLookAt,
@@ -44,6 +48,8 @@ shared_naoqi_components = [
     NaoqiButtonSensor,
     NaoqiTrackerActuator,
     NaoqiLookAtComponent,
+    NaoqiInverseKinematicsComponent,
+    BaseGStreamerCameraSensor,
 ]
 
 
@@ -68,6 +74,7 @@ class Naoqi(SICDevice):
         stiffness_conf=None,
         speaker_conf=None,
         lookat_conf=None,
+        gstreamer_camera_conf=None,
         username=None,
         passwords=None,
     ):
@@ -88,6 +95,7 @@ class Naoqi(SICDevice):
         self.configs[NaoqiStiffness] = stiffness_conf
         self.configs[NaoqiSpeaker] = speaker_conf
         self.configs[NaoqiLookAt] = lookat_conf
+        self.configs[GstreamerCamera] = gstreamer_camera_conf
 
         self.robot_type = robot_type
         self.dev_test = dev_test
@@ -293,6 +301,20 @@ class Naoqi(SICDevice):
     @property
     def look_at(self):
         return self._get_connector(NaoqiLookAt)
+    
+    @property
+    def inverse_kinematics(self):
+        return self._get_connector(NaoqiInverseKinematics)
+    
+    @property
+    def _gstreamer_camera(self):
+        """
+        Note: This property allows access of the camera through gstreamer instead of naoqi, with higher framerate.
+        It requires a lot of additional installation, cannot be used together with naoqi, and is NOT recommended by default
+        See naoqi_camera_gstreamer for further details.
+        :return:
+        """
+        return self._get_connector(GstreamerCamera)
 
     def __del__(self):
         if hasattr(self, "logfile"):
