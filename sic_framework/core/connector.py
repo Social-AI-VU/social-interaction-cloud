@@ -4,7 +4,7 @@ from abc import ABCMeta
 
 import six
 
-from sic_framework.core.component_python2 import ConnectRequest
+from sic_framework.core.component_python2 import ConnectRequest, OutputChannelRequest, OutputChannelResponse
 from sic_framework.core.sensor_python2 import SICSensor
 from sic_framework.core.utils import is_sic_instance
 
@@ -40,21 +40,24 @@ class SICConnector(object):
 
         # default ip adress is local ip adress (the actual inet, not localhost or 127.0.0.1)
 
+        self._client_id = utils.get_ip_adress()
+        
         if ip in ["localhost", "127.0.0.1"]:
-            ip = utils.get_ip_adress()
+            ip = self._client_id
 
-        self._ip = ip
+        self._component_ip = ip
 
         self._callback_threads = []
 
-        self._request_reply_channel = self.component_class.get_request_reply_channel(ip)
+        # control request reply channel handles control requests
+        self._control_reqreply_channel = self.component_class.get_control_reqreply_channel(ip)
         self._log_level = log_level
         self._conf = conf
 
         self.logger = self.get_connector_logger()
         self._redis.parent_logger = self.logger
 
-        self.output_channel = self.component_class.get_output_channel(self._ip)
+        self.output_channel = self.component_class.get_output_channel(self._component_ip) + ":" + self._client_id
 
         # if we cannot ping the component, request it to be started from the ComponentManager
         if not self._ping():
@@ -62,9 +65,11 @@ class SICConnector(object):
 
         # subscribe the component to a channel that the user is able to send a message on if needed
         self.input_channel = "{}:input:{}".format(
-            self.component_class.get_component_name(), self._ip
+            self.component_class.get_component_name(), self._component_ip
         )
-        self.request(ConnectRequest(self.input_channel), timeout=self._PING_TIMEOUT)
+        self.logger.info("Connecting to input channel: {}".format(self.input_channel))
+        # self.request(ConnectRequest(self.input_channel), timeout=self._PING_TIMEOUT)
+        # self.logger.info("Connected to input channel: {}".format(self.input_channel))
 
     def _ping(self):
         try:
@@ -98,7 +103,7 @@ class SICConnector(object):
         self.logger.info(
             "Component is not already alive, requesting {} from manager {}".format(
                 self.component_class.get_component_name(),
-                self._ip,
+                self._component_ip,
             ),
         )
 
@@ -108,10 +113,11 @@ class SICConnector(object):
                 "component instances are reused for now)"
             )
 
-        component_request = SICStartComponentRequest(
+        start_component_request = SICStartComponentRequest(
             component_name=self.component_class.get_component_name(),
             log_level=self._log_level,
             conf=self._conf,
+            client_id=self._client_id
         )
 
         # factory returns a SICStartedComponentInformation
@@ -119,8 +125,8 @@ class SICConnector(object):
         try:
 
             component_info = self._redis.request(
-                self._ip,
-                component_request,
+                self._component_ip, # sent to the component manager on that host
+                start_component_request,
                 timeout=self.component_class.COMPONENT_STARTUP_TIMEOUT,
             )
             if is_sic_instance(component_info, SICNotStartedMessage):
@@ -134,7 +140,7 @@ class SICConnector(object):
             six.raise_from(
                 TimeoutError(
                     "Could not connect to {}. Is SIC running on the device (ip:{})?".format(
-                        self.component_class.get_component_name(), self._ip
+                        self.component_class.get_component_name(), self._component_ip
                     )
                 ),
                 None,
@@ -142,13 +148,19 @@ class SICConnector(object):
         except Exception as e:
             logging.error("Unknown exception occured while trying to start {name} component: {e}".format(name=self.component_class.get_component_name(), e=e))
 
-    def register_callback(self, callback):
+    def register_callback(self, callback, input_source=""):
         """
         Subscribe a callback to be called when there is new data available.
         :param callback: the function to execute.
         """
 
-        ct = self._redis.register_message_handler(self.output_channel, callback)
+        if input_source == "":
+            output_channel = self.output_channel
+        else:
+            # pass in the input channel of the source component to get corresponding output channel
+            output_channel = self.request(OutputChannelRequest(input_source)).output_channel
+
+        ct = self._redis.register_message_handler(output_channel, callback)
 
         self._callback_threads.append(ct)
 
@@ -177,8 +189,10 @@ class SICConnector(object):
             type(component)
         )
 
-        request = ConnectRequest(component.output_channel)
-        self._redis.request(self._request_reply_channel, request)
+        # TODO: maybe we will now need to specify the output channel?
+        # ? what if we're creating pipelines and feeding the output of one service into another?
+        request = ConnectRequest(component.output_channel, self._client_id, self._component_ip)
+        self._redis.request(self._control_reqreply_channel, request)
 
     def request(self, request, timeout=100.0, block=True):
         """
@@ -206,7 +220,7 @@ class SICConnector(object):
         request._timestamp = self._get_timestamp()
 
         return self._redis.request(
-            self._request_reply_channel, request, timeout=timeout, block=block
+            self._control_reqreply_channel, request, timeout=timeout, block=block
         )
 
     def stop(self):
@@ -214,7 +228,7 @@ class SICConnector(object):
         Stop the component and disconnect the callback.
         """
 
-        self._redis.send_message(self._request_reply_channel, SICStopRequest())
+        self._redis.send_message(self._control_reqreply_channel, SICStopRequest())
         if hasattr(self, "_redis"):
             self._redis.close()
 

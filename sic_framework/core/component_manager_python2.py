@@ -29,11 +29,12 @@ class SICStartComponentRequest(SICRequest):
     will be providing some type of capability from this device.
     """
 
-    def __init__(self, component_name, log_level, conf=None):
+    def __init__(self, component_name, log_level, conf=None, client_id=""):
         super(SICStartComponentRequest, self).__init__()
         self.component_name = component_name  # str
         self.log_level = log_level  # logging.LOGLEVEL
         self.conf = conf  # SICConfMessage
+        self.client_id = client_id  # str
 
 
 class SICNotStartedMessage(SICMessage):
@@ -70,9 +71,9 @@ class SICComponentManager(object):
         self.logger = self.get_manager_logger()
         self.redis.parent_logger = self.logger
 
-        # The _handle_request function is calls execute directly, as we must reply when execution done to allow the user
+        # The _control_request_handler function is calls execute directly, as we must reply when execution done to allow the user
         # to wait for this. New messages will be buffered by redis. The component manager listens to
-        self.redis.register_request_handler(self.ip, self._handle_request)
+        self.redis.register_request_handler(self.ip, self._control_request_handler)
 
         # TODO FIXME
         # self._sync_time()
@@ -129,7 +130,7 @@ class SICComponentManager(object):
                 )
             )
 
-    def _handle_request(self, request):
+    def _control_request_handler(self, request):
         """
         Start a component on this device as requested by a user. A thread is started to run the component, and component
         threads are restarted/reused when a user re-requests the component. Separated such that SICSingletonFactory can
@@ -140,28 +141,29 @@ class SICComponentManager(object):
         if is_sic_instance(request, SICPingRequest):
             # this request is sent to see if the ComponentManager has started
             return SICPongMessage()
-
-        if is_sic_instance(request, SICStopRequest):
+        elif is_sic_instance(request, SICStopRequest):
             self.stop_event.set()
             # return an empty stop message as a request must always be replied to
-            return SICSuccessMessage()
-        
-        # reply to the request if the component manager can start the component
-        if request.component_name in self.component_classes:
-            self.logger.info(
-                "{} handling request to start component {}".format(
-                    self.__class__.__name__, request.component_name
+            return SICSuccessMessage() 
+        elif is_sic_instance(request, SICStartComponentRequest):
+            # reply to the request if the component manager can start the component
+            if request.component_name in self.component_classes:
+                self.logger.info(
+                    "{} handling request to start component {}".format(
+                        self.__class__.__name__, request.component_name
+                    )
                 )
-            )
 
-            return self.start_component(request)
-        else:
-            self.logger.warning(
-                "{} ignored request {}".format(
-                    self.__class__.__name__, request.component_name
+                return self.start_component(request)
+            else:
+                self.logger.warning(
+                    "{} ignored request {}".format(
+                        self.__class__.__name__, request.component_name
+                    )
                 )
-            )
-            return SICIgnoreRequestMessage()
+                return SICIgnoreRequestMessage()
+        else:
+            raise RuntimeError("Component Manager received unknown request type: {}".format(type(request)))
 
     def get_manager_logger(self, log_level=sic_logging.DEBUG):
         """
@@ -186,6 +188,7 @@ class SICComponentManager(object):
         """
 
         component_class = self.component_classes[request.component_name]  # SICComponent
+        client_id = request.client_id
 
         component = None
         try:
@@ -196,6 +199,7 @@ class SICComponentManager(object):
                 ready_event=ready_event,
                 log_level=request.log_level,
                 conf=request.conf,
+                client_id=client_id
             )
             self.active_components.append(component)
 
@@ -215,7 +219,12 @@ class SICComponentManager(object):
                         component.COMPONENT_STARTUP_TIMEOUT,
                     )
                 )
-                # Todo do something!
+                raise RuntimeError("Component {} refused to start within {} seconds!".format(
+                        component.get_component_name(),
+                        component.COMPONENT_STARTUP_TIMEOUT,
+                    ))
+
+            self.logger.info("Started component {}".format(component.get_component_name()))
 
             # inform the user their component has started
             reply = SICSuccessMessage()

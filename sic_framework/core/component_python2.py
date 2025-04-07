@@ -10,6 +10,7 @@ from sic_framework.core.utils import is_sic_instance
 from . import sic_logging, utils
 from .message_python2 import (
     SICConfMessage,
+    SICControlMessage,
     SICControlRequest,
     SICMessage,
     SICPingRequest,
@@ -22,15 +23,26 @@ from .sic_redis import SICRedis
 
 
 class ConnectRequest(SICControlRequest):
-    def __init__(self, channel):
+    def __init__(self, component_output_channel, client_id, component_ip):
         """
         A request for this component to start listening to the output of another component. The provided channel should
         be the output channel of the component that serves as input to this component.
         :param channel: the channel
         """
         super(ConnectRequest, self).__init__()
-        self.channel = channel  # str
+        self.component_output_channel = component_output_channel
+        self.client_id = client_id
+        self.component_ip = component_ip
 
+class OutputChannelRequest(SICControlRequest):
+    def __init__(self, input_source):
+        super(OutputChannelRequest, self).__init__()
+        self.input_source = input_source
+
+class OutputChannelResponse(SICControlMessage):
+    def __init__(self, output_channel):
+        super(OutputChannelResponse, self).__init__()
+        self.output_channel = output_channel
 
 class SICComponent:
     """
@@ -41,18 +53,19 @@ class SICComponent:
 
     # This parameter controls how long a SICConnector should wait when requesting the service
     # For example, when the robot has to stand up or model parameters need to load to GPU this might be set higher
-    COMPONENT_STARTUP_TIMEOUT = 2
+    COMPONENT_STARTUP_TIMEOUT = 3
 
     def __init__(
-        self, ready_event=None, stop_event=None, log_level=sic_logging.INFO, conf=None
+        self, ready_event=None, stop_event=None, log_level=sic_logging.INFO, conf=None, client_id=""
     ):
         self._ip = utils.get_ip_adress()
+        self.client_id = client_id
 
         # the events to control this service running in the thread created by the factory
         self._ready_event = ready_event if ready_event else threading.Event()
         self._stop_event = stop_event if stop_event else threading.Event()
 
-        self._input_channels = []
+        self._input_channels = {}
         self._output_channel = self.get_output_channel(self._ip)
 
         self.params = None
@@ -63,6 +76,9 @@ class SICComponent:
         # Initialize logging and enable redis to log any exeptions as well
         self.logger = self._get_logger(log_level)
         self._redis.parent_logger = self.logger
+
+        # client_channels is a dictionary that maps client_ids to the channels of the clients
+        self.client_channels = {}
 
         # load config if set by user
         self.set_config(conf)
@@ -94,15 +110,13 @@ class SICComponent:
         """
         # register a request handler to handle control requests, e.g. ConnectRequest
         self._redis.register_request_handler(
-            self.get_request_reply_channel(self._ip), self._handle_request
+            self.get_control_reqreply_channel(self._ip), self._control_request_handler
         )
 
         # communicate the service is set up and listening to its inputs
         self._ready_event.set()
 
-        self.logger.info("Started component {}".format(self.get_component_name()))
-
-    def _connect(self, connection_request):
+    def _add_input(self, connection_request):
         """
         Connect the output of a component to the input of this component, by registering the output channel
         to the on_message handler.
@@ -110,19 +124,26 @@ class SICComponent:
         :type connection_request: ConnectRequest
         :return:
         """
-        channel = connection_request.channel
-        if channel in self._input_channels:
+        input_channel = connection_request.component_output_channel
+        client_id = connection_request.client_id
+        component_ip = connection_request.component_ip
+        if input_channel in self._input_channels:
             self.logger.debug(
-                "Channel {} is already connected to this component".format(channel)
+                "Channel {} is already connected to this component".format(input_channel)
             )
             return
-        self._input_channels.append(channel)
-        self._redis.register_message_handler(channel, self._handle_message)
+        
+        # map input channel to output channel
+        output_channel = self._output_channel + ":" + component_ip + ":" + client_id
+        self._input_channels[input_channel] = output_channel
 
-    def _handle_message(self, message):
-        return self.on_message(message)
+        # start listening to the input channel
+        self._redis.register_message_handler(input_channel, self._handle_message(output_channel=output_channel))
 
-    def _handle_request(self, request):
+    def _handle_message(self, message, output_channel=""):
+        return self.on_message(message, output_channel)
+
+    def _control_request_handler(self, request):
         """
         An handler for control requests such as ConnectRequest. Normal Requests are passed to the on_request handler.
         Also logs the error to the remote log stream in case an exeption occured in the user-defined handler.
@@ -142,8 +163,11 @@ class SICComponent:
             return SICSuccessMessage()
 
         if is_sic_instance(request, ConnectRequest):
-            self._connect(request)
+            self._add_input(request)
             return SICSuccessMessage()
+        
+        if is_sic_instance(request, OutputChannelRequest):
+            return OutputChannelResponse(self._input_channels[request.input_source])
 
         if not is_sic_instance(request, SICControlRequest):
             return self.on_request(request)
@@ -169,7 +193,7 @@ class SICComponent:
         return "{name}:{ip}".format(name=cls.get_component_name(), ip=ip)
 
     @classmethod
-    def get_request_reply_channel(cls, ip):
+    def get_control_reqreply_channel(cls, ip):
         """
         Get the channel name to communicate with request-replies with this component
         :return: channel name
@@ -206,13 +230,13 @@ class SICComponent:
         """
         raise NotImplementedError("You need to define a message handler.")
 
-    def output_message(self, message):
+    def output_message(self, message, output_channel=""):
         """
         Send a message on the output channel of this component.
         :param message:
         """
         message._previous_component_name = self.get_component_name()
-        self._redis.send_message(self._output_channel, message)
+        self._redis.send_message(output_channel, message)
 
     @staticmethod
     @abstractmethod
