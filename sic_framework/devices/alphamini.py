@@ -217,6 +217,12 @@ class Alphamini(SICDevice):
         """
         Creates a test environment on the Alphamini
 
+        To use test environment, you must pass in a repo to the device initialization. For example:
+        - Mini(ip, mini_id, mini_password, redis_ip, dev_test=True, test_repo=PATH_TO_REPO) OR
+        - Mini(ip, mini_id, mini_password, redis_ip, dev_test=True)
+
+        If you do not pass in a repo, it will assume the repo to test is already installed in a test environment on the Alphamini.
+
         This function:
         - checks to see if test environment exists
         - if test_venv exists and no repo is passed in (self.test_repo), return True (no need to do anything)
@@ -323,11 +329,13 @@ class Alphamini(SICDevice):
             return True
         elif exit_status == 0 and self.test_repo:
             self.logger.info("Test environment already created on Mini and new dev repo provided... uninstalling old repo and installing new one")
+            self.logger.warning("This process may take a minute or two... Please hold tight!")
             uninstall_old_repo()
             install_new_repo()
         elif exit_status == 1 and self.test_repo:
             # test environment not created, so create one
             self.logger.info("Test environment not created on Mini and new dev repo provided... creating test environment and installing new repo")
+            self.logger.warning("This process may take a minute or two... Please hold tight!")
             init_test_venv()
             install_new_repo()
         elif exit_status == 1 and not self.test_repo:

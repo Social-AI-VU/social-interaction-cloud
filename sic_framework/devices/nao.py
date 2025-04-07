@@ -101,6 +101,12 @@ class Nao(Naoqi):
         """
         Creates a test environment on the Nao
 
+        To use test environment, you must pass in a repo to the device initialization. For example:
+        - Nao(ip, dev_test=True, test_repo=PATH_TO_REPO) OR
+        - Nao(ip, dev_test=True)
+
+        If you do not pass in a repo, it will assume the repo to test is already installed in a test environment on the Nao.
+
         This function:
         - checks to see if test environment exists
         - if test_venv exists and no repo is passed in (self.test_repo), return True (no need to do anything)
@@ -210,11 +216,13 @@ class Nao(Naoqi):
             return True
         elif exit_status == 0 and self.test_repo:
             self.logger.info("Test environment already created on Nao and new dev repo provided... uninstalling old repo and installing new one")
+            self.logger.warning("This process may take a minute or two... Please hold tight!")
             uninstall_old_repo()
             install_new_repo()
         elif exit_status == 1 and self.test_repo:
             # test environment not created, so create one
             self.logger.info("Test environment not created on Nao and new dev repo provided... creating test environment and installing new repo")
+            self.logger.warning("This process may take a minute or two... Please hold tight!")
             init_test_venv()
             install_new_repo()
         elif exit_status == 1 and not self.test_repo:

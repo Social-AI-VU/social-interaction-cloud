@@ -173,6 +173,12 @@ class Pepper(Naoqi):
         """
         Creates a test environment on the Pepper
 
+        To use test environment, you must pass in a repo to the device initialization. For example:
+        - Pepper(ip, dev_test=True, test_repo=PATH_TO_REPO) OR
+        - Pepper(ip, dev_test=True)
+
+        If you do not pass in a repo, it will assume the repo to test is already installed in a test environment on the Pepper.
+
         Instead of creating a virtual environment, we will just copy the repo over to the test directory    
         and install from there.
         """
@@ -240,6 +246,7 @@ class Pepper(Naoqi):
 
         if self.test_repo:
             self.logger.info("Installing test repo on Pepper")
+            self.logger.warning("This process may take a minute or two... Please hold tight!")
             uninstall_old_repo()
             install_new_repo()
         else:
