@@ -71,8 +71,11 @@ class SICDevice(object):
         self.stop_event = threading.Event()
         
         self.SCPClient = None
-        if SCPClient:
+
+        try:
             self.SCPClient = SCPClient
+        except:
+            pass
 
         self.logger = sic_logging.get_sic_logger(name="{}DeviceManager".format(self.__class__.__name__))
         
