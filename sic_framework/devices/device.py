@@ -3,6 +3,7 @@ from __future__ import print_function
 import os.path
 import tarfile
 import tempfile
+import threading
 import time
 
 from sic_framework.core import utils
@@ -15,69 +16,12 @@ class SICLibrary(object):
     A library to be installed on a remote device.
     """
 
-    def __init__(self, name, lib_path="", download_cmd="", version=None, lib_install_cmd=""):
+    def __init__(self, name, lib_path="", download_cmd="", req_version=None, lib_install_cmd=""):
         self.name = name
         self.lib_path = lib_path
         self.download_cmd = download_cmd
-        self.version = version
+        self.req_version = req_version
         self.lib_install_cmd = lib_install_cmd
-        self.logger = sic_logging.get_sic_logger(name="SICLibraryInstaller")
-
-    def check_if_installed(self, pip_freeze):
-        """
-        Check to see if a python library name + version is in the 'pip freeze' output of a remote device.
-        """
-        for lib in pip_freeze:
-            lib = lib.replace('\n','')
-            lib_name, lib_ver = lib.split('==')
-            if self.name == lib_name:
-                self.logger.debug("Found package: {}".format(lib))
-                # check to make sure version matches 
-                if self.version:
-                    if self.version in lib_ver:
-                        return True
-                    else:
-                        return False
-                return True
-        return False
-    
-    def install(self, ssh):
-        """
-        Download and install this Python library on a remote device
-        """
-        self.logger.info("Installing {} on remote device ".format(self.name))
-
-        # download the binary first if necessary, as is the case with Pepper
-        if self.download_cmd:
-            stdin, stdout, stderr = ssh.exec_command(
-                """cd {} && {} && echo "EXIT STATUS: $?" """.format(self.lib_path, self.download_cmd)
-            )
-
-            output = "".join(stdout.readlines())
-            if "EXIT STATUS: 0" not in output:
-                err = "".join(stderr.readlines())
-                self.logger.error("Command: cd {} && {} \n Gave error:".format(self.lib_path, self.download_cmd))
-                self.logger.error(err)
-                raise RuntimeError(
-                    "Error while downloading library on remote device."
-                )
-
-
-        # install the library
-        stdin, stdout, stderr = ssh.exec_command(
-            "cd {} && {}".format(self.lib_path, self.lib_install_cmd)
-        )
-
-        output = "".join(stdout.readlines())
-        if "Successfully installed" not in output:
-            err = "".join(stderr.readlines())
-            self.logger.error("Command: cd {} && {} \n Gave error:".format(self.lib_path, self.lib_install_cmd))
-            self.logger.error(err)
-            raise RuntimeError(
-                "Error while installing library on remote device. Please consult manual installation instructions."
-            )
-        else:
-            self.logger.info("Successfully installed {} package".format(self.name))
 
 
 def exclude_pyc(tarinfo):
@@ -94,7 +38,8 @@ class SICDevice(object):
     """
 
     def __new__(cls, *args, **kwargs):
-        """ Choose specific imports dependend on the type of device.
+        """
+        Choose specific imports dependend on the type of device.
 
         Reasoning: Alphamini does not support these imports; they are only needed for remotely installing packages on robots from the local machine
         """
@@ -121,12 +66,15 @@ class SICDevice(object):
         self.configs = dict()
         self.ip = ip
         self.port = port
-
         self._redis = SICRedis()
         self._PING_TIMEOUT = 3
+        self.stop_event = threading.Event()
+        
+        self.SCPClient = None
+        if SCPClient:
+            self.SCPClient = SCPClient
 
         self.logger = sic_logging.get_sic_logger(name="{}DeviceManager".format(self.__class__.__name__))
-        sic_logging.SIC_LOG_SUBSCRIBER.subscribe_to_log_channel()
         
         self.logger.info("Initializing device with ip: {ip}".format(ip=ip))
 
@@ -272,7 +220,7 @@ class SICDevice(object):
         # stdout_pip_freeze is prefetched above because it is slow
         # remote_libs = stdout_pip_freeze.readlines()
         # for lib in _LIBS_TO_INSTALL:
-        #     if not lib.check_if_installed(remote_libs):
+        #     if not lib.check_if_lib_installed(remote_libs):
         #         lib.install(self.ssh)
 
         # Remove signatures from the remote computer
@@ -280,33 +228,134 @@ class SICDevice(object):
         self.ssh.exec_command("rm ~/framework/sic_version_signature_*")
         self.ssh.exec_command("touch {}".format(framework_signature))
 
-    def ssh_command(self, command):
+    def ssh_command(self, command, create_thread=False, **kwargs):
         """
-        Executes the given command and logs any exceptions that may occur
+        Executes the given command and logs any errors from the SSH session.
 
-        :param command: command to run on ssh client
-        :type command: string
+        Args:
+            command (str): command to run on ssh client
+            **kwargs: Additional keyword arguments to pass to ssh.exec_command
+                     (e.g., get_pty=False, timeout=30)
+
+        Returns:
+            tuple: (stdin, stdout, stderr) file-like objects from the SSH session
+            
+        Raises:
+            Various SSH exceptions if connection fails
         """
+
         try:
-            return self.ssh.exec_command(command)
+            self.logger.debug("Executing command: {command}".format(command=command))
+            stdin, stdout, stderr = self.ssh.exec_command(command, **kwargs)
+
+            if create_thread:
+                self.logger.debug("Creating thread to monitor remote command")
+
+                def monitor_call():
+                    # check if command has exited or if there is standard output
+                    while not stdout.channel.exit_status_ready():
+                        if stdout.channel.recv_ready():
+                            line = stdout.channel.recv(1024).decode('utf-8')
+                            self.logger.debug(line)
+                    else:
+                        # get exit status of the command
+                        status = stdout.channel.recv_exit_status()
+
+                        # log exit status and output
+                        self.logger.debug("SSH command exited with status: {status}".format(status=status))
+                        self.logger.debug("SSH command output: {output}".format(output=stdout.read().decode('utf-8')))
+                        self.logger.debug("SSH command error: {error}".format(error=stderr.read().decode('utf-8')))
+                        
+                        # if remote thread exits before local main thread, report to user.
+                        if threading.main_thread().is_alive() and not self.stop_event.is_set():
+                            raise RuntimeError(
+                                "Remote SIC program has stopped unexpectedly.\nSee sic.log for details"
+                            )
+
+                thread = threading.Thread(target=monitor_call)
+                thread.name = "remote_SIC_process_monitor"
+                thread.start()
+                return thread
+            else:
+                # Check stderr for any errors
+                status = stdout.channel.recv_exit_status()
+                error_output = stderr.read().decode('utf-8')
+                if error_output:
+                    self.logger.debug("SSH command produced errors: {error_output}".format(error_output=error_output))
+                return stdin, stdout, stderr, status
+        
         except paramiko.AuthenticationException as e:
             self.logger.error(
-                "Encountered AuthenticationException when trying to execute ssh command: {}".format(
-                    e
-                )
+                "Authentication failed when trying to execute ssh command: {e}".format(e=e)
             )
-        except paramiko.BadHostKeyException:
+            raise
+        except paramiko.SSHException as e:
             self.logger.error(
-                "Encountered BadHostKeyException when trying to execute ssh command: {}".format(
-                    e
-                )
+                "SSH exception occurred when trying to execute command: {e}".format(e=e)
             )
+            raise
         except Exception as e:
             self.logger.error(
-                "Encountered unknown exception while trying to execute ssh command: {}".format(
-                    e
-                )
+                "Unexpected error while executing ssh command: {e}".format(e=e)
             )
+            raise
+
+    def check_if_lib_installed(self, pip_freeze, lib):
+        """
+        Check to see if a python library name + version is in the 'pip freeze' output of a remote device.
+        """
+        for cur_lib in pip_freeze:
+            cur_lib = cur_lib.replace('\n','')
+            cur_lib_name, cur_lib_ver = cur_lib.split('==')
+            if lib.name == cur_lib_name:
+                self.logger.debug("Found package: {} with version {}".format(cur_lib_name, cur_lib_ver))
+                # check to make sure version matches if there is a version requirement
+                if lib.req_version:
+                    if lib.req_version in cur_lib_ver:
+                        self.logger.debug("{} version matches: remote {} == required {}".format(lib.name, cur_lib_ver, lib.req_version))
+                        return True
+                    else:
+                        self.logger.debug("{} version mismatch: remote {} != required {}".format(lib.name, cur_lib_ver, lib.req_version))
+                        return False
+                return True
+        return False
+    
+    def install_lib(self, lib):
+        """
+        Download and install Python library on this remote device
+        """
+        self.logger.info("Installing {} on remote device ".format(lib.name))
+
+        # download the binary first if necessary, as is the case with Pepper
+        if lib.download_cmd:
+            stdin, stdout, stderr, exit_status = self.ssh_command(
+                """cd {} && {} """.format(lib.lib_path, lib.download_cmd)
+            )
+
+            if exit_status != 0:
+                err = "".join(stderr.readlines())
+                self.logger.error("Command: cd {} && {} \n Gave error:".format(lib.lib_path, lib.download_cmd))
+                self.logger.error(err)
+                raise RuntimeError(
+                    "Error while downloading library on remote device."
+                )
+
+        # install the library
+        stdin, stdout, stderr, exit_status = self.ssh_command(
+            "cd {} && {}".format(lib.lib_path, lib.lib_install_cmd)
+        )
+
+        if "Successfully installed" not in stdout.read().decode():
+            err = "".join(stderr.readlines())
+            self.logger.error("Command: cd {} && {} \n Gave error:".format(lib.lib_path, lib.lib_install_cmd))
+            self.logger.error(err)
+            raise RuntimeError(
+                "Error while installing library on remote device. Please consult manual installation instructions."
+            )
+        else:
+            self.logger.info("Successfully installed {} package".format(lib.name))
+
+
 
     def _get_connector(self, component_connector):
         """

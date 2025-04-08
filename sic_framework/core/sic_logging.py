@@ -4,12 +4,22 @@ import io
 import logging
 import re
 import threading
+from datetime import datetime
 
 from . import utils
 from .message_python2 import SICMessage
 from .sic_redis import SICRedis
 
 ANSI_CODE_REGEX = re.compile(r'\033\[[0-9;]*m')
+
+# loglevel interpretation, mostly follows python's defaults
+CRITICAL = 50
+ERROR = 40
+WARNING = 30
+INFO = 20  # service dependent sparse information
+DEBUG = 10  # service dependent verbose information
+NOTSET = 0
+
 
 def get_log_channel():
     """
@@ -30,45 +40,63 @@ class SICLogMessage(SICMessage):
 
 
 class SICRemoteError(Exception):
-    """An exception indicating the error happend on a remote device"""
+    """An exception indicating the error happened on a remote device"""
 
 
-class SICLogSubscriber(object):
+class SICCommonLog(object):
     """
-    A class to subscribe to a redis log channel, ensuring thread-safety with a mutex.
+    A class to subscribe to the Redis log channel and write all log messages to a logfile.
     """
     def __init__(self):
         self.redis = None
         self.running = False
-        self.logfile = open("sic.log", "w")
+        
+        # Create log filename with current date
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        self.logfile = open("sic_{date}.log".format(date=current_date), "a")
+        
         self.lock = threading.Lock()
 
-    def subscribe_to_log_channel(self):
+    def subscribe_to_redis_log(self):
         """
-        Subscribe to the log channel and display any messages on the terminal to propagate any log messages in the
-        framework to the user. This function may be called multiple times but will only subscribe once.
+        Subscribe to the Redis log channel and display any messages on the terminal. 
+        This function may be called multiple times but will only subscribe once.
         :return:
         """
         with self.lock:  # Ensure thread-safe access
             if not self.running:
                 self.running = True
-                self.redis = SICRedis(parent_name="SICLogSubscriber")
+                self.redis = SICRedis(parent_name="SICCommonLog")
                 self.redis.register_message_handler(
-                    get_log_channel(), self._handle_log_message
+                    get_log_channel(), self._handle_redis_log_message
                 )
 
-    def _handle_log_message(self, message):
+    def _handle_redis_log_message(self, message):
         """
         Handle a message sent on a debug stream. Currently it's just printed to the terminal.
         :param message: SICLogMessage
         """
+        # outputs to terminal
         print(message.msg, end="")
-        # strip ANSI codes before writing to logfile
-        clean_message = ANSI_CODE_REGEX.sub("", message.msg)
-        self.logfile.write(clean_message)
 
-        if "ERROR" in message.msg.split(":")[1]:
-            raise SICRemoteError("Error occurred, see remote stacktrace above.")
+        # writes to logfile
+        self._write_to_logfile(message.msg)
+    
+    def _write_to_logfile(self, message):
+        with self.lock:
+            # strip ANSI codes before writing to logfile
+            clean_message = ANSI_CODE_REGEX.sub("", message)
+
+            # add timestamp to the log message
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            clean_message = "[{timestamp}] {clean_message}".format(timestamp=timestamp, clean_message=clean_message)
+            if clean_message[-1] != "\n":
+                clean_message += "\n"
+
+            # write to logfile
+            self.logfile.write(clean_message)
+            self.logfile.flush()
+
 
     def stop(self):
         with self.lock:  # Ensure thread-safe access
@@ -77,7 +105,7 @@ class SICLogSubscriber(object):
                 self.redis.close()
 
 
-class SICLogStream(io.TextIOBase):
+class SICRedisLogStream(io.TextIOBase):
     """
     Facilities to log to redis as a file-like object, to integrate with standard python logging facilities.
     """
@@ -117,27 +145,29 @@ class SICLogFormatter(logging.Formatter):
         # Get the color for the current log level
         color = self.LOG_COLORS.get(record.levelno, self.RESET_COLOR)
 
+        # Create the prefix part
         name_ip = "[{name} {ip}]".format(
             name=record.name,
             ip=utils.get_ip_adress()
         )
-
-        log_message = record.msg.replace('\n','')
-
-        # Pad the name_ip portion with dashes
         name_ip_padded = name_ip.ljust(45, '-')
+        prefix = "{name_ip_padded}{color}{record_level}{reset_color}: ".format(name_ip_padded=name_ip_padded, color=color, record_level=record.levelname, reset_color=self.RESET_COLOR)
 
-        # Format the message with color applied to name and ip
-        log_message = "{name_ip}{color}{levelname}{reset_color}: {message}".format(
-            name_ip=name_ip_padded,
-            color = color,
-            levelname=record.levelname,
-            reset_color=self.RESET_COLOR,
-            message=log_message,
-        )
+        # Split message into lines and handle each line
+        message_lines = record.msg.splitlines()
+        if not message_lines:
+            return prefix
 
-        return log_message
+        # Format first line with full prefix
+        formatted_lines = ["{prefix}{message_lines}".format(prefix=prefix, message_lines=message_lines[0])]
 
+        # For subsequent lines, indent to align with first line's content
+        if len(message_lines) > 1:
+            indent = ' ' * len(prefix)
+            formatted_lines.extend("{indent}{line}".format(indent=indent, line=line.strip()) for line in message_lines[1:])
+
+        # Join all lines with newlines
+        return '\n'.join(formatted_lines)
 
     def formatException(self, exec_info):
         """
@@ -149,9 +179,9 @@ class SICLogFormatter(logging.Formatter):
         return text
 
 
-def get_sic_logger(name="", redis=None, log_level=logging.DEBUG):
+def get_sic_logger(name="", redis=None, log_level=DEBUG):
     """
-    Set up logging to the log output channel to be able to report messages to users. Also logs to the terminal.
+    Set up logging to the log output channel to be able to report messages to users.
 
     :param redis: The SICRedis object
     :param name: A readable and identifiable name to indicate to the user where the log originated
@@ -159,35 +189,39 @@ def get_sic_logger(name="", redis=None, log_level=logging.DEBUG):
     """
     # logging initialisation
     logger = logging.Logger(name)
-    logger.setLevel(log_level)
 
-    # debug stream sends messages to redis
-    debug_stream = SICLogStream(redis, get_log_channel())
+    logger.setLevel(log_level)
 
     log_format = SICLogFormatter()
 
-    handler_redis = logging.StreamHandler(debug_stream)
-    handler_redis.setFormatter(log_format)
-    logger.addHandler(handler_redis)
+    if redis:
+        # if redis is provided, this is a remote device and we use the remote stream which sends log messages to Redis
+        remote_stream = SICRedisLogStream(redis, get_log_channel())
+        handler_redis = logging.StreamHandler(remote_stream)
+        handler_redis.setFormatter(log_format)
+        logger.addHandler(handler_redis)
+    else:
+        # if there is no redis instance, this is a local device
+        # make sure the SICCommonLog is subscribed to the Redis log channel so all log messages are written to the logfile
+        SIC_COMMON_LOG.subscribe_to_redis_log()
 
-    if not redis:
-        # log to the terminal only if there is not an associated redis instance
+        # For local logging, create a custom handler that uses SICCommonLog's file
+        class SICFileHandler(logging.Handler):
+            def emit(self, record):
+                SIC_COMMON_LOG._write_to_logfile(self.format(record))
+
+        # log to the terminal
         handler_terminal = logging.StreamHandler()
         handler_terminal.setFormatter(log_format)
         logger.addHandler(handler_terminal)
 
+        # write to the logfile
+        handler_file = SICFileHandler()
+        handler_file.setFormatter(log_format)
+        logger.addHandler(handler_file)
+
     return logger
 
-
-# loglevel interpretation, mostly follows python's defaults
-
-CRITICAL = 50
-ERROR = 40
-WARNING = 30
-INFO = 20  # service dependent sparse information
-DEBUG = 10  # service dependent verbose information
-NOTSET = 0
-
 # pseudo singleton object. Does nothing when this file is executed during the import, but can subscribe to the log
-# channel for the user with subscribe_to_log_channel_once
-SIC_LOG_SUBSCRIBER = SICLogSubscriber()
+# channel for the user with subscribe_to_redis_log once
+SIC_COMMON_LOG = SICCommonLog()

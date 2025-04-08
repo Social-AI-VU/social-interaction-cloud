@@ -58,6 +58,8 @@ class Naoqi(SICDevice):
         device_path,
         dev_test=False,
         test_device_path="",
+        test_repo=None,
+        bypass_install=False,
         top_camera_conf=None,
         bottom_camera_conf=None,
         mic_conf=None,
@@ -91,13 +93,14 @@ class Naoqi(SICDevice):
 
         self.robot_type = robot_type
         self.dev_test = dev_test
+        self.test_repo = test_repo
+        self.bypass_install = bypass_install
 
         assert robot_type in [
             "nao",
             "pepper",
         ], "Robot type must be either 'nao' or 'pepper'"
 
-        # self.auto_install()
         
         redis_hostname, _ = sic_redis.get_redis_db_ip_password()
 
@@ -140,12 +143,27 @@ class Naoqi(SICDevice):
         )
 
         # stop SIC
-        self.ssh.exec_command(self.stop_cmd)
+        self.ssh_command(self.stop_cmd)
         time.sleep(0.1)
 
         self.logger.info("Checking to see if SIC is installed on remote device...")
         # make sure SIC is installed
-        self.verify_sic()
+
+        if self.dev_test:
+            self.create_test_environment()
+        elif self.bypass_install or self.check_sic_install():
+            self.logger.info(
+                "SIC is already installed on Naoqi device {}! starting SIC...".format(
+                    self.ip
+                )
+            )
+        else:
+            self.logger.info(
+                "SIC is not installed on Naoqi device {}, installing now".format(
+                    self.ip
+                )
+            )
+            self.sic_install()
 
         # start SIC
         self.logger.info(
@@ -155,24 +173,6 @@ class Naoqi(SICDevice):
         )
         self.run_sic()
 
-    def verify_sic(self):
-        """
-        Checks if SIC is installed on the device. installs SIC if not.
-        """
-        if not self.check_sic_install():
-            # TODO: change to log statements
-            self.logger.info(
-                "SIC is not installed on Naoqi device {}, installing now".format(
-                    self.ip
-                )
-            )
-            self.sic_install()
-        else:
-            self.logger.info(
-                "SIC is already installed on Naoqi device {}! starting SIC...".format(
-                    self.ip
-                )
-            )
 
     @abstractmethod
     def check_sic_install():
@@ -192,25 +192,9 @@ class Naoqi(SICDevice):
         """
         Starts SIC on the device.
         """
-        stdin, stdout, _ = self.ssh.exec_command(self.start_cmd, get_pty=False)
-        # merge stderr to stdout to simplify (and prevent potential deadlock as stderr is not read)
-        stdout.channel.set_combine_stderr(True)
+        self.ssh_command(self.start_cmd, create_thread=True, get_pty=False)
 
-        # Set up error monitoring
-        self.stopping = False
-
-        def check_if_exit():
-            # wait for the process to exit
-            status = stdout.channel.recv_exit_status()
-            # if remote threads exits before local main thread, report to user.
-            if threading.main_thread().is_alive() and not self.stopping:
-                raise RuntimeError(
-                    "Remote SIC program has stopped unexpectedly.\nSee sic.log for details"
-                )
-
-        thread = threading.Thread(target=check_if_exit)
-        thread.name = "remote_SIC_process_monitor"
-        thread.start()
+        self.logger.debug("Attempting to ping remote ComponentManager to see if it has started")
 
         # try to ping remote ComponentManager to see if it has started
         ping_tries = 3
@@ -234,9 +218,9 @@ class Naoqi(SICDevice):
     def stop(self):
         for connector in self.connectors.values():
             connector.stop()
-
-        self.stopping = True
-        self.ssh.exec_command(self.stop_cmd)
+ 
+        self.stop_event.set()
+        self.ssh_command(self.stop_cmd)
 
     @property
     def top_camera(self):

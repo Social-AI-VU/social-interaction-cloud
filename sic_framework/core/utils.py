@@ -3,6 +3,7 @@ import getpass
 import os
 import socket
 import sys
+import shutil
 
 import six
 
@@ -117,6 +118,41 @@ def type_equal_sic(a, b):
     :return:
     """
     return type(a).__name__ == type(b).__name__
+
+
+def zip_directory(path):
+    """
+    Creates a zip directory from the given directory path.
+    
+    Args:
+        path (str): Path to the directory to be zipped
+        
+    Returns:
+        str: Path to the created zip file
+        
+    Raises:
+        FileNotFoundError: If the path doesn't exist
+    """
+
+    # check if the path exists
+    if not os.path.exists(path):
+        raise FileNotFoundError("Path {path} does not exist".format(path=path))
+    
+    # Get the directory and name
+    directory = os.path.dirname(path)
+    name = os.path.basename(path)
+    
+    # Create base name for the zip (without .zip extension)
+    base_name = os.path.join(directory, name)
+    
+    try:
+        # make_archive automatically adds .zip extension
+        zip_filepath = shutil.make_archive(base_name, 'zip', directory, name)
+        return zip_filepath
+            
+    except Exception as e:
+        raise IOError("Error while zipping: {}".format(str(e)))
+
 
 
 if __name__ == "__main__":
