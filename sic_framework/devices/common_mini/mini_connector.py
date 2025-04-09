@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 
 import mini.mini_sdk as MiniSdk
 from mini.dns.dns_browser import WiFiDevice
@@ -15,8 +14,8 @@ class CouldNotConnectToMiniException(Exception):
 
 class MiniConnector:
 
-    def __init__(self):
-        self.mini_id = os.environ.get("ALPHAMINI_ID")
+    def __init__(self, mini_id):
+        self.mini_id = mini_id
 
     def connect(self):
         MiniSdk.set_log_level(logging.INFO)
