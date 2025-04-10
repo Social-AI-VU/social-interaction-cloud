@@ -12,6 +12,12 @@ from sic_framework.devices.common_naoqi.pepper_tablet import (
     NaoqiTablet,
     NaoqiTabletComponent,
 )
+from sic_framework.devices.common_naoqi.pepper_motion_streamer import (
+    PepperMotionStreamer,
+)
+from sic_framework.devices.common_naoqi.pepper_top_tactile_sensor import (
+    PepperTopTactile,
+)
 from sic_framework.devices.naoqi_shared import *
 from sic_framework.devices.device import SICLibrary
 
@@ -265,6 +271,14 @@ class Pepper(Naoqi):
     @property
     def tablet_display_url(self):
         return self._get_connector(NaoqiTablet)
+    
+    @property
+    def motion_streaming(self):
+        return self._get_connector(PepperMotionStreamer)
+    
+    @property
+    def tactile_sensor(self):
+        return self._get_connector(PepperTopTactile)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -280,6 +294,8 @@ if __name__ == "__main__":
         NaoqiTabletComponent,
         DepthPepperCameraSensor,
         StereoPepperCameraSensor,
+        PepperMotionStreamer,
+        PepperTopTactile,
     ]
 
     SICComponentManager(pepper_components)

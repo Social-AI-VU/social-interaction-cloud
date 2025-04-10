@@ -232,6 +232,9 @@ class Nao(Naoqi):
             self.logger.error("Activating test environment on Nao resulted in unknown exit status: {}".format(exit_status))
             raise RuntimeError("Unknown error occurred while creating test environment on Nao")
       
+    @property
+    def motion_streaming(self):
+        return self._get_connector(NaoqiMotionStreamer) 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
