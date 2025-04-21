@@ -95,6 +95,11 @@ class SICRedis:
         self.stopping = False
         self._running_callbacks = []
 
+        # hash map of data streams
+        self.data_stream_map = "cache:data_streams"
+
+        # hash map of component reservations
+        self.reservation_map = "cache:reservations"
 
         # we assume that a password is required
         host, password = get_redis_db_ip_password()
@@ -357,7 +362,53 @@ class SICRedis:
             return message
 
         return None
+    
+    def get_data_stream_map(self):
+        """
+        Get the data stream map from redis.
 
+        Returns a dictionary of data stream id to data stream information.
+        """
+        return self._redis.hgetall(self.data_stream_map)
+    
+    def get_reservation_map(self):
+        """
+        Get the reservation map from redis.
+
+        Returns a dictionary of component id to client id.
+        """
+        return self._redis.hgetall(self.reservation_map)
+    
+    def get_data_stream(self, data_stream_id):
+        """
+        Get a specific data stream from redis.
+
+        Returns the data stream as a dictionary.
+        """
+        return self._redis.hget(self.data_stream_map, data_stream_id)
+    
+    def get_reservation(self, component_id):
+        """
+        Get a specific reservation from redis.
+
+        Returns the reservation as a dictionary.
+        """
+        return self._redis.hget(self.reservation_map, component_id)
+    
+    def set_data_stream(self, data_stream_id, data_stream):
+        """
+        Add a data stream in redis.
+        """
+        return self._redis.hset(self.data_stream_map, data_stream_id, data_stream)
+    
+    def set_reservation(self, component_id, client_id):
+        """
+        Add a reservation in redis.
+        """
+        reservation = {
+            component_id: client_id
+        }
+        return self._redis.hset(self.reservation_map, reservation)
 
 if __name__ == "__main__":
 
