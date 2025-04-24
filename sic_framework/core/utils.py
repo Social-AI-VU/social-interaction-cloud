@@ -4,7 +4,8 @@ import os
 import socket
 import sys
 import shutil
-
+import hashlib
+import base64
 import six
 
 PYTHON_VERSION_IS_2 = sys.version_info[0] < 3
@@ -153,6 +154,24 @@ def zip_directory(path):
     except Exception as e:
         raise IOError("Error while zipping: {}".format(str(e)))
 
+
+def create_data_stream_id(component_name: str, component_ip: str, input_stream: str, length: int = 16) -> str:
+    """
+    Hashes component info into a short, random-looking string.
+
+    Args:
+        name (str): Component name (e.g., "NaoMicrophone").
+        ip (str): Component IP address (e.g., "198.0.0.122").
+        extra (str): Additional identifier or hash.
+        length (int): Length of the resulting string (default 16).
+
+    Returns:
+        str: A base64-encoded truncated hash string.
+    """
+    combined = "{name}|{ip}|{input_stream}".format(name=component_name, ip=component_ip, input_stream=input_stream)
+    sha256_hash = hashlib.sha256(combined.encode('utf-8')).digest()
+    encoded = base64.urlsafe_b64encode(sha256_hash).decode('utf-8')
+    return encoded[:length]
 
 
 if __name__ == "__main__":

@@ -163,13 +163,30 @@ class SICConnector(object):
         # possible solution: do redis.time, and use a custom get time functions that is aware of the offset
         return time.time()
 
-    def connect(self, component):
+    def connect(self, component, input_stream=""):
         """
         Connect the output of a component to the input of this component.
         :param component: The component connector providing the input to this component
         :type component: SICConnector
         :return:
         """
+
+        input_stream_info = self._redis.get_data_stream(input_stream)
+
+        # define an output channel for this input
+        data_stream_id = utils.create_data_stream_id(
+            component_name=component.component_class.get_component_name(),
+            component_ip=component.ip,
+            input_stream=input_stream
+        )
+
+        data_stream_info = {
+            "component_name": component.component_class.get_component_name(),
+            "component_ip": component.ip,
+            "input_stream": input_stream
+        }
+
+        self._redis.set_data_stream(data_stream_id, data_stream_info)
 
         assert isinstance(
             component, SICConnector
