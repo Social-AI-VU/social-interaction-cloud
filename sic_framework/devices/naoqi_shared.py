@@ -18,7 +18,7 @@ from sic_framework.devices.common_naoqi.naoqi_lookat import (
 from sic_framework.devices.common_naoqi.naoqi_microphone import *
 from sic_framework.devices.common_naoqi.naoqi_motion import *
 from sic_framework.devices.common_naoqi.naoqi_motion_recorder import *
-from sic_framework.devices.common_naoqi.naoqi_motion_streamer import *
+from sic_framework.devices.common_naoqi.nao_motion_streamer import *
 from sic_framework.devices.common_naoqi.naoqi_speakers import *
 from sic_framework.devices.common_naoqi.naoqi_stiffness import *
 from sic_framework.devices.common_naoqi.naoqi_text_to_speech import *
@@ -36,7 +36,6 @@ shared_naoqi_components = [
     NaoqiMotionActuator,
     NaoqiTextToSpeechActuator,
     NaoqiMotionRecorderActuator,
-    NaoqiMotionStreamerService,
     NaoqiStiffnessActuator,
     NaoqiAutonomousActuator,
     NaoqiLEDsActuator,

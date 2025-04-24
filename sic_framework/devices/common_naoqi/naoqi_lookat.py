@@ -10,7 +10,7 @@ from sic_framework.core.message_python2 import (
     SICMessage,
 )
 from sic_framework.core.sensor_python2 import SICSensor
-from sic_framework.devices.common_naoqi.naoqi_motion_streamer import NaoJointAngles
+from sic_framework.devices.common_naoqi.nao_motion_streamer import NaoJointAngles
 from sic_framework.core import sic_logging
 
 if utils.PYTHON_VERSION_IS_2:

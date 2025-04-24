@@ -14,9 +14,10 @@ from sic_framework.devices.common_naoqi.pepper_tablet import (
 )
 from sic_framework.devices.common_naoqi.pepper_motion_streamer import (
     PepperMotionStreamer,
+    PepperMotionStreamerService,
 )
 from sic_framework.devices.common_naoqi.pepper_top_tactile_sensor import (
-    PepperTopTactile,
+    PepperTopTactileSensor, PepperTopTactile
 )
 from sic_framework.devices.naoqi_shared import *
 from sic_framework.devices.device import SICLibrary
@@ -206,10 +207,14 @@ class Pepper(Naoqi):
 
             # zip up dev repo and scp over
             self.logger.info("Zipping up dev repo")
-            zipped_path = utils.zip_directory(self.test_repo)
+            # zipped_path = utils.zip_directory(self.test_repo)
+            zipped_path = self.test_repo + ".zip"
+            self.logger.info("Zipped path: {}".format(zipped_path))
 
             # get the basename of the repo
             repo_name = os.path.basename(self.test_repo)
+
+            self.logger.info("Removing old sic_in_test folder on Pepper")
 
             # create the sic_in_test folder on Nao
             _, stdout, _, exit_status = self.ssh_command(
@@ -221,15 +226,23 @@ class Pepper(Naoqi):
             )            
             
             self.logger.info("Transferring zip file over to Pepper")
-
-            # scp transfer file over
-            with self.SCPClient(self.ssh.get_transport()) as scp:
-                scp.put(
-                    zipped_path,
-                    "/home/nao/sic_in_test/"
-                )
+            def progress4_callback(filename, size, sent, peername):
+                print(f"\r({peername[0]}:{peername[1]}) {filename.decode('utf-8')} progress: {round(float(sent)/float(size)*100, 2)}%", end="")
+            #
+            #  scp transfer file over
+            with self.SCPClient(self.ssh.get_transport(), progress4=progress4_callback) as scp:
+                try:
+                    scp.put(
+                        zipped_path,
+                        "/home/nao/sic_in_test/"
+                    )
+                except Exception as e:
+                    self.logger.error("Error transferring zip file over to Pepper: {}".format(e))
+                    raise e
 
             self.logger.info("Unzipping repo and installing on Pepper")
+
+            
             _, stdout, _, exit_status = self.ssh_command(
                 """
                 cd ~/sic_in_test;
@@ -294,8 +307,8 @@ if __name__ == "__main__":
         NaoqiTabletComponent,
         DepthPepperCameraSensor,
         StereoPepperCameraSensor,
-        PepperMotionStreamer,
-        PepperTopTactile,
+        PepperMotionStreamerService,
+        PepperTopTactileSensor,
     ]
 
     SICComponentManager(pepper_components)

@@ -5,7 +5,7 @@ import os
 
 from sic_framework.core.component_manager_python2 import SICComponentManager
 from sic_framework.devices.naoqi_shared import *
-
+from sic_framework.devices.common_naoqi.nao_motion_streamer import NaoqiMotionStreamerService, NaoqiMotionStreamer
 
 class Nao(Naoqi):
     """
@@ -250,7 +250,7 @@ if __name__ == "__main__":
         os.environ["DB_PASS"] = args.redis_pass
 
     nao_components = shared_naoqi_components + [
-        # todo,
+        NaoqiMotionStreamerService
     ]
 
     SICComponentManager(nao_components)
