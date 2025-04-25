@@ -69,8 +69,9 @@ class MiniMicrophoneSensor(SICSensor):
 
         # Start android com.example.micarraytest app
         self.logger.info("Checking if Android app is running...")
-        self.start_app("com.example.micarraytest", ".MainActivity")
-
+        # self.start_app("com.example.micarraytest", ".MainActivity")
+        # self.start_app("com.example.micarraytest", ".MainActivity")
+        self.start_app("com.ubtrobot.mini.sdkdemo", ".MainActivity")
         # pyaudio setup for debug playback
         # self.audio = pyaudio.PyAudio()
         # self.stream = self.audio.open(
@@ -112,7 +113,8 @@ class MiniMicrophoneSensor(SICSensor):
                     current_time = time.time()
                     if current_time - self.last_connection_time > 5:
                         self.logger.warning("Lost connection for 5 seconds, restarting app...")
-                        self.start_app("com.example.micarraytest", ".MainActivity")
+                        # self.start_app("com.example.micarraytest", ".MainActivity")
+                        self.start_app("com.ubtrobot.mini.sdkdemo", ".MainActivity")
                         self.last_connection_time = current_time
                     return AudioMessage(b"\x00", sample_rate=self.sample_rate)
 

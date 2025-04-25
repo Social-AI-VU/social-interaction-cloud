@@ -16,7 +16,7 @@ class MiniActionRequest(SICRequest):
     TODO: add more documentation
     """
 
-    def __init__(self, name, mini_id):
+    def __init__(self, name):
         super(MiniActionRequest, self).__init__()
         self.name = name
 
