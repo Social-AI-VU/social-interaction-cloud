@@ -22,14 +22,17 @@ from .sic_redis import SICRedis
 
 
 class ConnectRequest(SICControlRequest):
-    def __init__(self, channel):
+    def __init__(self, input_channel, output_channel):
         """
-        A request for this component to start listening to the output of another component. The provided channel should
-        be the output channel of the component that serves as input to this component.
-        :param channel: the channel
+        A request for the component to start listening to the channel of another component (input channel).
+        And to send message corresponding to that channel on the specified output channel.
+
+        :param input_channel: the channel of the component that serves as input to this component.
+        :param output_channel: the name of the output channel of this component specific to the input channel.
         """
         super(ConnectRequest, self).__init__()
-        self.channel = channel  # str
+        self.input_channel = input_channel  # str
+        self.output_channel = output_channel  # str
 
 
 class SICComponent:
@@ -53,6 +56,7 @@ class SICComponent:
         self._stop_event = stop_event if stop_event else threading.Event()
 
         self._input_channels = []
+        self.channel_map = {}
         self._output_channel = self.get_output_channel(self._ip)
 
         self.params = None
@@ -110,17 +114,20 @@ class SICComponent:
         :type connection_request: ConnectRequest
         :return:
         """
-        channel = connection_request.channel
-        if channel in self._input_channels:
+        input_channel, output_channel = connection_request.input_channel, connection_request.output_channel
+
+        
+        if input_channel in self.channel_map:
             self.logger.debug(
-                "Channel {} is already connected to this component".format(channel)
+                "Channel {} is already connected to this input channel".format(input_channel)
             )
             return
-        self._input_channels.append(channel)
-        self._redis.register_message_handler(channel, self._handle_message)
+        
+        self.channel_map[input_channel] = output_channel
+        self._redis.register_message_handler(input_channel, self._handle_message(output_channel=output_channel))
 
-    def _handle_message(self, message):
-        return self.on_message(message)
+    def _handle_message(self, output_channel="", message=""):
+        return self.on_message(output_channel=output_channel, message=message)
 
     def _handle_request(self, request):
         """
@@ -197,7 +204,7 @@ class SICComponent:
         """
         raise NotImplementedError("You need to define a request handler.")
 
-    def on_message(self, message):
+    def on_message(self, output_channel, message):
         """
         Define the handler for input messages.
         :param message: The request for this component.
@@ -206,13 +213,13 @@ class SICComponent:
         """
         raise NotImplementedError("You need to define a message handler.")
 
-    def output_message(self, message):
+    def output_message(self, output_channel, message):
         """
         Send a message on the output channel of this component.
         :param message:
         """
         message._previous_component_name = self.get_component_name()
-        self._redis.send_message(self._output_channel, message)
+        self._redis.send_message(output_channel, message)
 
     @staticmethod
     @abstractmethod

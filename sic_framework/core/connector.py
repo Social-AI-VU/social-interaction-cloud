@@ -38,12 +38,14 @@ class SICConnector(object):
 
         assert isinstance(ip, str), "IP must be string"
 
-        # default ip adress is local ip adress (the actual inet, not localhost or 127.0.0.1)
-
+        # if the component is running on the same machine
         if ip in ["localhost", "127.0.0.1"]:
+            # get the ip address of the machine on the network
             ip = utils.get_ip_adress()
 
-        self._ip = ip
+        self.component_ip = ip
+        self.client_id = utils.get_ip_adress()
+        self.component_name = self.component_class.get_component_name()
 
         self._callback_threads = []
 
@@ -54,17 +56,28 @@ class SICConnector(object):
         self.logger = self.get_connector_logger()
         self._redis.parent_logger = self.logger
 
-        self.output_channel = self.component_class.get_output_channel(self._ip)
-
         # if we cannot ping the component, request it to be started from the ComponentManager
         if not self._ping():
             self._start_component()
 
+        # ? is this needed ?
         # subscribe the component to a channel that the user is able to send a message on if needed
         self.input_channel = "{}:input:{}".format(
-            self.component_class.get_component_name(), self._ip
+            self.component_class.get_component_name(), self.component_ip
         )
         self.request(ConnectRequest(self.input_channel), timeout=self._PING_TIMEOUT)
+
+        # if the component is a sensor, we need to reserve it and return the output channel
+        if issubclass(self.component_class, SICSensor):
+            # component_id is the component name and its ip address
+            component_id = self.component_class.get_component_name() + "_" + self.component_ip
+            # client IP is the IP of whatever machine is running this connector
+            self._redis.set_reservation(component_id, self.client_id)
+            self.output_channel = self.define_output_channel(self.component_name, self.component_ip, self.client_id)
+            return self.output_channel
+        else:
+            # ? maybe we want to keep a general purpose output channel?
+            return self.component_class.get_output_channel(self.component_ip)
 
     def _ping(self):
         try:
@@ -98,7 +111,7 @@ class SICConnector(object):
         self.logger.info(
             "Component is not already alive, requesting {} from manager {}".format(
                 self.component_class.get_component_name(),
-                self._ip,
+                self.component_ip,
             ),
         )
 
@@ -117,9 +130,8 @@ class SICConnector(object):
         # factory returns a SICStartedComponentInformation
 
         try:
-
             component_info = self._redis.request(
-                self._ip,
+                self.component_ip,
                 component_request,
                 timeout=self.component_class.COMPONENT_STARTUP_TIMEOUT,
             )
@@ -134,7 +146,7 @@ class SICConnector(object):
             six.raise_from(
                 TimeoutError(
                     "Could not connect to {}. Is SIC running on the device (ip:{})?".format(
-                        self.component_class.get_component_name(), self._ip
+                        self.component_class.get_component_name(), self.component_ip
                     )
                 ),
                 None,
@@ -142,13 +154,13 @@ class SICConnector(object):
         except Exception as e:
             logging.error("Unknown exception occured while trying to start {name} component: {e}".format(name=self.component_class.get_component_name(), e=e))
 
-    def register_callback(self, callback):
+    def register_callback(self, output_channel, callback):
         """
         Subscribe a callback to be called when there is new data available.
         :param callback: the function to execute.
         """
 
-        ct = self._redis.register_message_handler(self.output_channel, callback)
+        ct = self._redis.register_message_handler(output_channel, callback)
 
         self._callback_threads.append(ct)
 
@@ -163,7 +175,7 @@ class SICConnector(object):
         # possible solution: do redis.time, and use a custom get time functions that is aware of the offset
         return time.time()
 
-    def connect(self, component, input_stream=""):
+    def connect(self, component, input_channel=""):
         """
         Connect the output of a component to the input of this component.
         :param component: The component connector providing the input to this component
@@ -171,22 +183,7 @@ class SICConnector(object):
         :return:
         """
 
-        input_stream_info = self._redis.get_data_stream(input_stream)
-
-        # define an output channel for this input
-        data_stream_id = utils.create_data_stream_id(
-            component_name=component.component_class.get_component_name(),
-            component_ip=component.ip,
-            input_stream=input_stream
-        )
-
-        data_stream_info = {
-            "component_name": component.component_class.get_component_name(),
-            "component_ip": component.ip,
-            "input_stream": input_stream
-        }
-
-        self._redis.set_data_stream(data_stream_id, data_stream_info)
+        output_channel = self.define_output_channel(component, input_channel)
 
         assert isinstance(
             component, SICConnector
@@ -194,7 +191,7 @@ class SICConnector(object):
             type(component)
         )
 
-        request = ConnectRequest(component.output_channel)
+        request = ConnectRequest(input_channel, output_channel)
         self._redis.request(self._request_reply_channel, request)
 
     def request(self, request, timeout=100.0, block=True):
@@ -247,6 +244,26 @@ class SICConnector(object):
         logger = sic_logging.get_sic_logger(name=name, redis=self._redis, log_level=log_level)
 
         return logger
+    
+    def define_output_channel(self, component, input_stream):
+        """
+        Define output stream for the component.
+        """
+        # define an output channel for this input
+        data_stream_id = utils.create_data_stream_id(
+            component_name=component.component_class.get_component_name(),
+            component_ip=component.ip,
+            input_stream=input_stream
+        )
+
+        data_stream_info = {
+            "component_name": component.component_class.get_component_name(),
+            "component_ip": component.ip,
+            "input_stream": input_stream
+        }
+
+        self._redis.set_data_stream(data_stream_id, data_stream_info)
+        return data_stream_id   
 
     # TODO: maybe put this in constructor to do a graceful exit on crash?
     # register cleanup to disconnect redis if an exception occurs anywhere during exection
