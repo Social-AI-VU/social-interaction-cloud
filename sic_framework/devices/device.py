@@ -71,7 +71,6 @@ class SICDevice(object):
         self.stop_event = threading.Event()
         
         self.SCPClient = None
-        
         try:
             self.SCPClient = SCPClient
         except:

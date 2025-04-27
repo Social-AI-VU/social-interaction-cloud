@@ -23,6 +23,7 @@ class Text2SpeechConf(SICConfMessage):
         language_code: str = "en-US",
         ssml_gender: int = tts.SsmlVoiceGender.NEUTRAL,
         voice_name: str = "",
+        speaking_rate: float = 1.0
     ):
         """
         Configuration message for Text2Speech SICAction.
@@ -31,6 +32,7 @@ class Text2SpeechConf(SICConfMessage):
         :param language_code: code to determine the language, as per Google's docs
         :param ssml_gender: code to determine the voice's gender, per Google's docs
         :param voice_name: string that corresponds to one of Google's voice options
+        :param speaking_rate: float that sets the speaking rate of the voice (e.g. 1.0 is normal, 0.5 is slow, 2.0 is fast)
         """
         super(Text2SpeechConf, self).__init__()
 
@@ -38,6 +40,7 @@ class Text2SpeechConf(SICConfMessage):
         self.language_code = language_code
         self.ssml_gender = ssml_gender
         self.voice_name = voice_name
+        self.speaking_rate = speaking_rate
 
 
 class GetSpeechRequest(SICRequest):
@@ -47,13 +50,14 @@ class GetSpeechRequest(SICRequest):
     """
 
     def __init__(
-        self, text: str, language_code=None, voice_name=None, ssml_gender=None
+        self, text: str, language_code=None, voice_name=None, ssml_gender=None, speaking_rate=None
     ):
         """
         :param text: the text to synthesize
         :param language_code: see Text2SpeechConf
         :param voice_name: see Text2SpeechConf
         :param ssml_gender: see Text2SpeechConf
+        :param speaking_rate: see Text2SpeechConf
         """
         super(GetSpeechRequest, self).__init__()
 
@@ -61,6 +65,7 @@ class GetSpeechRequest(SICRequest):
         self.language_code = language_code
         self.voice_name = voice_name
         self.ssml_gender = ssml_gender
+        self.speaking_rate = speaking_rate
 
 
 class SpeechResult(AudioMessage):
@@ -98,9 +103,6 @@ class Text2SpeechService(SICActuator):
         # Instantiates a client
         credentials = Credentials.from_service_account_file(self.params.keyfile)
         self.client = tts.TextToSpeechClient(credentials=credentials)
-
-        # Select the type of audio file you want returned
-        self.audio_config = tts.AudioConfig(audio_encoding=tts.AudioEncoding.LINEAR16)
 
     @staticmethod
     def get_inputs():
@@ -141,9 +143,19 @@ class Text2SpeechService(SICActuator):
             language_code=lang_code, name=voice_name, ssml_gender=ssml_gender
         )
 
+        speaking_rate = (
+            request.speaking_rate if request.speaking_rate else self.params.speaking_rate
+        )
+
+        # Select the type of audio file you want returned
+        audio_config = tts.AudioConfig(
+            audio_encoding=tts.AudioEncoding.LINEAR16,
+            speaking_rate=speaking_rate
+        )
+
         # Perform the text-to-speech request
         response = self.client.synthesize_speech(
-            input=synthesis_input, voice=voice, audio_config=self.audio_config
+            input=synthesis_input, voice=voice, audio_config=audio_config
         )
 
         return SpeechResult(wav_audio=response.audio_content)

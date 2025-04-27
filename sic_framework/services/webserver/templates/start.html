@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+	<head>
+        <meta charset="utf-8"/>
+
+        <title>Project Conversational Agents - Start</title>
+
+        <!-- Suppress favicon.ico request; https://www.reddit.com/r/flask/comments/aucgy9/template_rendering/ -->
+        <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+        
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="static/css/bootstrap.min.css">
+
+        <!-- Bootstrap JS Bundle -->
+        <script src="static/js/bootstrap.bundle.min.js"></script>
+
+        <!-- jQuery from a CDN -->
+        <script src="static/js/jquery-3.7.1.min.js"></script>
+        
+        <!-- Socket.IO JS Bundle -->
+        <script src="static/js/socket.io.min.js"></script>
+
+        <!-- JS for Project Conversational Agents (feel free to add and/or edit) -->
+        <script src="static/js/pca.js" defer></script>
+    </head>    
+	<body>
+        <div id="main">
+            <main class="container-fluid" style="width:100vw; height:60vh">
+                <img class="bg-image" style="width: 100%; height: 100vh; position: fixed; top: 0; left: 0; z-index: -1;" src="https://images.pexels.com/photos/349609/pexels-photo-349609.jpeg" alt="Can not show this image">
+                <div class="jumbotron" style="background: none">
+                    <h1 class="text-center">Please read this first:</h1>
+                </div>
+                <div class="jumbotron mx-auto" style="width: 70%; background-color:#deb887;">
+                    <h5>
+                        <center>
+                            You are about to interact with <b>Cookpanion</b>.<br>
+                            It can recommend and help you find recipes to your taste.<br><hr>
+                            <h4>Instructions</h4>
+                            On the pages that follow, push the microphone button 
+                            <img class="img-fluid" style="width:1.5rem;" src="static/images/mic_out.png" alt="Can not show this image">
+                            to talk to the agent when it is your turn to talk (when the agent is not talking). When you see
+                            <img class="img-fluid" style="width:1.5rem;" src="static/images/mic_on.png" alt="Can not show this image">
+                            the agent is listening to you.
+                        </center>
+                    </h5>
+                </div>
+                <div class="jumbotron text-center" style="background: none">
+                    <h3>Done reading? Then please press start to begin</h3>
+                    <button class="btn btn-lg btn-info" id="start">
+                        <b>Start</b>
+                    </button>
+                </div>
+            </main>
+        </div>
+    </body>
+</html>
