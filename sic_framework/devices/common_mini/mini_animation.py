@@ -5,6 +5,10 @@ from sic_framework.core.actuator_python2 import SICActuator
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import SICConfMessage, SICMessage, SICRequest
 from sic_framework.devices.common_mini.mini_connector import MiniConnector
+import mini.mini_sdk as MiniSdk
+from mini.dns.dns_browser import WiFiDevice
+from mini.apis.api_expression import PlayExpression, PlayExpressionResponse
+
 
 from mini.apis.api_action import PlayAction, PlayActionResponse
 
@@ -15,18 +19,31 @@ class MiniActionRequest(SICRequest):
     TODO: add more documentation
     """
 
-    def __init__(self, name, mini_id):
+    def __init__(self, name, movement="action", mini_id="00199"):
         super(MiniActionRequest, self).__init__()
         self.mini_id = mini_id
         self.name = name
-        self.alphamini = MiniConnector(mini_id=self.mini_id)
-        self.alphamini.connect()
-        async def _run_sdk_action():
+        asyncio.run(self.main(movement))
+
+    async def main(self, movement):
+        device: WiFiDevice = await self.test_get_device_by_name()
+        if device:
+            await MiniSdk.connect(device)
+            await self._run_sdk_action(movement)
+            await MiniSdk.quit_program() 
+            await MiniSdk.release() 
+
+    async def test_get_device_by_name(self):
+        result: WiFiDevice = await MiniSdk.get_device_by_name(self.mini_id, 10)
+        return result
+
+    async def _run_sdk_action(self, movement):
+        if movement != "expression":
             sdk_action_block: PlayAction = PlayAction(action_name=self.name)
             await sdk_action_block.execute()
-
-        asyncio.run(_run_sdk_action())
-
+        else:
+            sdk_expression_block: PlayExpression = PlayExpression(express_name=self.name)
+            await sdk_expression_block.execute()
 
 
 
