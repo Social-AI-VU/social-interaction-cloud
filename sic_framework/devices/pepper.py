@@ -207,7 +207,7 @@ class Pepper(Naoqi):
 
             # zip up dev repo and scp over
             self.logger.info("Zipping up dev repo")
-            # zipped_path = utils.zip_directory(self.test_repo)
+            zipped_path = utils.zip_directory(self.test_repo)
             zipped_path = self.test_repo + ".zip"
             self.logger.info("Zipped path: {}".format(zipped_path))
 
