@@ -1,5 +1,4 @@
 import asyncio
-from time import sleep
 
 from sic_framework import SICComponentManager, SICService, utils
 from sic_framework.core.actuator_python2 import SICActuator
@@ -16,30 +15,19 @@ class MiniActionRequest(SICRequest):
     TODO: add more documentation
     """
 
-    def __init__(self, name):
+    def __init__(self, name, mini_id):
         super(MiniActionRequest, self).__init__()
-        self.name = name
-
-
-class MiniConnectRequest(SICRequest):
-    """
-    Connect to mini api to be able to run the pre-installed actions, behaviors, and expressions.
-    :param mini_id: the last 5 digits of mini's serial number.
-    TODO: connecting is not working, probably because of a conflict with android apps.
-    """
-
-    def __init__(self, mini_id):
-        super(MiniConnectRequest, self).__init__()
         self.mini_id = mini_id
+        self.name = name
+        self.alphamini = MiniConnector(mini_id=self.mini_id)
+        self.alphamini.connect()
+        async def _run_sdk_action():
+            sdk_action_block: PlayAction = PlayAction(action_name=self.name)
+            await sdk_action_block.execute()
+
+        asyncio.run(_run_sdk_action())
 
 
-class MiniDisconnectRequest(SICRequest):
-    """
-    Disconnect from mini api.
-    """
-
-    def __init__(self):
-        super(MiniDisconnectRequest, self).__init__()
 
 
 class MiniAnimationActuator(SICActuator):
@@ -47,14 +35,11 @@ class MiniAnimationActuator(SICActuator):
 
     def __init__(self, *args, **kwargs):
         SICActuator.__init__(self, *args, **kwargs)
-        self.alphamini = None
 
     @staticmethod
     def get_inputs():
         return [
             MiniActionRequest,
-            MiniConnectRequest,
-            MiniDisconnectRequest,
         ]
 
     @staticmethod
@@ -64,8 +49,7 @@ class MiniAnimationActuator(SICActuator):
     def execute(self, request):
         if request == MiniActionRequest:
             asyncio.run(self.action(request))
-        elif request == MiniConnectRequest:
-            self.connect(request)
+
         return SICMessage()
 
     async def action(self, request):
@@ -75,17 +59,6 @@ class MiniAnimationActuator(SICActuator):
 
         self.logger.info(f'Mini action {request.name} was {resultType}:{response}')
 
-    def connect(self, request):
-        self.logger.info(f'Connecting to alphamini python API for {request.mini_id}')
-        self.alphamini = MiniConnector(request.mini_id)
-        self.alphamini.connect()
-        sleep(1)
-        self.logger.info(f'Connected')
-
-    def disconnect(self):
-        if self.alphamini:
-            self.alphamini.disconnect()
-            self.logger.info(f'Disconnecting from alphamini python API')
 
 class MiniAnimation(SICConnector):
     component_class = MiniAnimationActuator
