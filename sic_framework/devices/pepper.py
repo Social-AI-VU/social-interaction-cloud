@@ -227,8 +227,8 @@ class Pepper(Naoqi):
             
             self.logger.info("Transferring zip file over to Pepper")
             def progress4_callback(filename, size, sent, peername):
-                # print(f"\r({peername[0]}:{peername[1]}) {filename.decode('utf-8')} progress: {round(float(sent)/float(size)*100, 2)}%", end="")
                 print("\r({}:{}) {} progress: {:.2f}%".format(peername[0], peername[1], filename.decode('utf-8'), (float(sent) / float(size)) * 100), end="")
+
             #  scp transfer file over
             with self.SCPClient(self.ssh.get_transport(), progress4=progress4_callback) as scp:
                 try:
