@@ -62,7 +62,7 @@ class Pepper(Naoqi):
     Wrapper for Pepper device to easily access its components (connectors)
     """
 
-    def __init__(self, ip, stereo_camera_conf=None, depth_camera_conf=None, **kwargs):
+    def __init__(self, ip, stereo_camera_conf=None, depth_camera_conf=None, pepper_motion_conf=None, **kwargs):
         super().__init__(
             ip,
             robot_type="pepper",
@@ -77,6 +77,7 @@ class Pepper(Naoqi):
 
         self.configs[StereoPepperCamera] = stereo_camera_conf
         self.configs[DepthPepperCamera] = depth_camera_conf
+        self.configs[PepperMotionStreamer] = pepper_motion_conf
 
     def check_sic_install(self):
         """
