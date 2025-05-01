@@ -60,7 +60,7 @@ class NaoqiStiffnessActuator(SICActuator, NaoqiMotionTools):
         return SICMessage
 
     def execute(self, request):
-        if self.enable_joint_list_generation:
+        if request.enable_joint_list_generation:
             joints = self.generate_joint_list(request.joints)
         else:
             joints = request.joints
