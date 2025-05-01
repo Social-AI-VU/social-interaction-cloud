@@ -75,6 +75,16 @@ class NaoWakeUpRequest(SICRequest):
 
     pass
 
+class NaoSetAutonomousLifeRequest(SICRequest):
+    """
+    Set limited state changes in AutonomousLife. For futher details, see: http://doc.aldebaran.com/2-5/ref/life/state_machine_management.html#autonomouslife-states.
+    state - string to set the state of the robot. Options: "solitary", "interactive", "safeguard", "disabled"
+    """
+
+    def __init__(self, state="solitary"):
+        super(NaoSetAutonomousLifeRequest, self).__init__()
+        self.state = state
+
 
 class NaoBasicAwarenessRequest(SICRequest):
     """
@@ -151,6 +161,8 @@ class NaoqiAutonomousActuator(SICActuator):
             self.speaking_movement.setEnabled(message.value)
             if message.mode:
                 self.speaking_movement.setMode(message.mode)
+        elif message == NaoSetAutonomousLifeRequest:
+            self.autonomous_life.setState(message.state)
         elif message == NaoBasicAwarenessRequest:
             self.basic_awareness.setEnabled(message.value)
             for name, val in message.stimulus_detection:
