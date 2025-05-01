@@ -42,7 +42,7 @@ class PepperMotionStream(SICMessage):
         self.velocity = velocity
 
 
-class NaoMotionStreamerConf(SICConfMessage):
+class PepperMotionStreamerConf(SICConfMessage):
     def __init__(
         self,
         stiffness=0.6,
@@ -93,7 +93,7 @@ class PepperMotionStreamerService(SICComponent, NaoqiMotionTools):
 
     @staticmethod
     def get_conf():
-        return NaoMotionStreamerConf()
+        return PepperMotionStreamerConf()
 
     @staticmethod
     def get_inputs():
