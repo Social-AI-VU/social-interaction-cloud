@@ -221,7 +221,12 @@ class SICRedis:
             message, SICMessage
         ), "Message must inherit from SICMessage (got {})".format(type(message))
 
-        return self._redis.publish(channel, message.serialize())
+        # Let's check if we should serialize; we don't if the message is from EISComponent and needs to be sent to an
+        # agent alien to SIC (who presumably does not understand Pickle objects)...
+        if message.get_previous_component_name() == "EISComponent":
+            return self._redis.publish(channel, message.text)
+        else:
+            return self._redis.publish(channel, message.serialize())
 
     def _reply(self, channel, request, reply):
         """

@@ -120,7 +120,6 @@ class QueryResult(SICMessage):
         webhook_status {
         }
 
-
         """
         # the raw dialogflow response
         self.response = response
@@ -296,7 +295,7 @@ class DialogflowComponent(SICComponent):
         session_path = self.session_client.session_path(
             self.params.project_id, input.session_id
         )
-        self.logger.debug(
+        self.logger.info(
             "Executing dialogflow request with session id {}".format(input.session_id)
         )
 
@@ -321,18 +320,18 @@ class DialogflowComponent(SICComponent):
 
         for response in responses:
             if response.recognition_result:
-                print(
-                    "\r recognition_result:",
-                    response.recognition_result.transcript,
+                self.logger.debug(
+                    "Recognition_result: " + response.recognition_result.transcript
                 )
                 self._redis.send_message(
                     self._output_channel, RecognitionResult(response)
                 )
             if response.query_result:
-                print("query_result: ", response.query_result)
+                self.logger.info("Received intent: " + response.query_result.action)
+                self.logger.info("Received transcript: " + response.query_result.query_text)
                 return QueryResult(response)
             if response.recognition_result.is_final:
-                print("----- FINAL -----")
+                self.logger.info("----- FINAL -----")
                 # Stop sending audio to dialogflow as it detected the person stopped speaking, but continue this loop
                 # to receive the query result
                 self.message_was_final.set()

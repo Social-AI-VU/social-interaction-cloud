@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+	<head>
+        <meta charset="utf-8"/>
+
+        <title>Project Conversational Agents - Welcome</title>
+
+        <!-- Suppress favicon.ico request; https://www.reddit.com/r/flask/comments/aucgy9/template_rendering/ -->
+        <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="static/css/bootstrap.min.css">
+
+        <!-- Bootstrap JS Bundle -->
+        <script src="static/js/bootstrap.bundle.min.js"></script>
+
+         <!-- jQuery from a CDN -->
+         <script src="static/js/jquery-3.7.1.min.js"></script>
+
+        <!-- Socket.IO JS Bundle -->
+        <script src="static/js/socket.io.min.js"></script>
+
+        <!-- JS for Project Conversational Agents (feel free to add and/or edit) -->
+        <script src="static/js/pca.js" defer></script>
+	</head>
+	<body>
+        <div id="main">
+            </div><nav class="navbar mb-1" style="position: static">
+                <button class="btn" id="mic">
+                    <img class="img-fluid" style="width:1.5rem;" id="micimg" src="static/images/mic_out.png" alt="Can not show this image">
+                </button>
+            </nav>
+            <main class="container-fluid" style="width:100vw; height:60vh">
+                <img class="bg-image" style="width: 100%; height: 100vh; position: fixed; top: 0; left: 0; z-index: -1;" src="https://images.pexels.com/photos/349609/pexels-photo-349609.jpeg" alt="Can not show this image">
+                <br>
+                <center>
+                    <h2>WELCOME, my name is Cookpanion</h2>
+                </center>
+            </main>
+            <!-- Footer is used to show transcripts received from ASR -->
+            <footer class="fixed-bottom">
+                <p class="lead mb-0 bg-light text-center" style="min-height:0rem" id="transcript"></p>
+            </footer>
+        </div>
+    </body>
+</html>

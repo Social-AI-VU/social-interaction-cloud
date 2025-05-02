@@ -92,7 +92,7 @@ class SICConnector(object):
         log_level allows the user to control the verbosity of the connected component.
 
         :param component: The component we request to be started
-        :param device_id: The id of the device we wat to start a component on
+        :param device_id: The id of the device we want to start a component on
 
         """
         self.logger.info(

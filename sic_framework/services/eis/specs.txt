@@ -1,0 +1,68 @@
+TODO's for PCA course:
+EISComponent:
+- Clean up events such as "event('ListeningStarted;1;48000')"
+
+MARBEL AGENT:
+- ISSUE: Handshake does not always succeed, looks like a racing condition...
+- DONE: Set MarbelConnector channel during handshake with SIC dynamically.
+- Enable MARBELConnector (Java) to send init params for the EISComponent/EISConnector (SIC Framework),
+    i.e using espeak or not, or the location of the key file on the computer, etc. Implement EISConf object.
+    FOR NOW, by making some mostly simple assumptions, we can avoid this for the moment.
+
+WEBSERVER (and webpages):
+- DONE: Add logic for displaying transcript on webpage.
+- DONE: Add logic for clicking on microphone on and off;
+    turning the mic on now also initiates a request to Dialogflow to start listening and getting an intent
+
+DIALOGFLOW:
+- Implement sending the intent and other parameters (key, value pairs from the query object output_contexts.parameters,
+    need to loop through all the these and add them to entities variable; See line 237 of EISComponent)
+
+OTHER:
+- TIMEOUT has been set to 10 seconds (this is long but seems reasonable for now...)
+
+----------------------------------------------------------------------------
+QUESTIONS:
+
+
+----------------------------------------------------------------------------
+ACTIONS:: MARBEL will sent actions on EISComponent:input:<ip>
+Actions:
+- say(<String>)
+    Semantics: say string, to be executed by text to speech (tts) service,
+- startListening(<Seconds>>)
+    Semantics: start listening for <Seconds> seconds (stop when intent is received)
+    [Currently used version in MARBEL agent has TWO arguments...: startListening(15, '')]
+- stopListening
+    Semantics: stop listening (close the microphone and force NLU component to return an intent, even if it did not
+    finish and did not yet identify an intent label.
+- renderPage(<HtmlPage>)
+    Semantics: render the <HtmlPage>, to be executed by a webserver component
+
+-----------------------------------------------------------------------------
+PERCEPTS:: MARBEL expects percepts on MARBELConnector:input:<ip>
+Percepts:
+- answer/1: answer(<ButtonName>)
+    Semantics: a button on an HTML page named 'ButtonName' is pressed by a user
+    Example: "answer('mic')", which informs the agent that an HTML button named 'mic' was pressed by a user;
+    Additional explanation: in the PCA agent a user needs to press a microphone button to indicate they want to talk
+- event/1: event(<EventLabel>)
+    // Events related to speaking (tts)
+    Event: event('TextStarted')
+    Semantics: SIC tells MARBEL that it started tts (talking)
+	Event: event('TextDone')
+	Semantics: SIC tells MARBEL that it is done with tts (talking)
+    // Events related to Dialogflow / transcribing / intent classification
+    Event: event('ListeningStarted;1;48000')
+    Semantics: SIC tells MARBEL that listening (to the mic) has started, i.e. mic is open (e.g., Dialogflow is listening)
+    Event: event('ListeningDone')
+    Semantics: SIC tells MARBEL that listening is done, i.e. mic is closed (e.g. Dialogflow stopped listening)
+- intent/5: intent(<Intent>, <Entities>, <Confidence>, <Txt>, <Source>)
+    Semantics: an intent named Intent was received from Dialogflow (or some alternative NLU component) with a (possibly
+        empty) list of entities (key=value pairs), with a recognition confidence parameter Confidence, using a string
+        Txt as input for the intent classifier, and Source indicating whether the intent was received from speech or
+        a chatbox.
+    Example: intent(recipeRequest, [recipe='butter chicken'], 0.79, "Can I try the butter chicken", speech)
+- transcript/1: transcript(<String>)
+    Semantics: a transcript "String" was received from Dialogflow (or some alternative NLU component)
+    Example: transcript("Hello, how are you?")

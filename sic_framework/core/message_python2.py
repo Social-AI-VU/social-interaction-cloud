@@ -89,6 +89,9 @@ class SICMessage(object):
         """
         return cls.__name__
 
+    def get_previous_component_name(self):
+        return self._previous_component_name
+
     @staticmethod
     def _np2base(inp):
         """
@@ -173,6 +176,29 @@ class SICMessage(object):
         :return:
         """
 
+        # Not everything is a pickle object...
+        # If byte_string starts with 'text:<channel_name>' some alien (non-SIC) agent is trying to tell us something...
+        # Otherwise, the EISComponent has been doing the talking (sending messages of the form 'text:' and the logger
+        # is listening to this talk too...
+        try:
+            # If decoding works, we have a string that was sent by someone...
+            message = byte_string.decode("utf-8")
+            if message.startswith("text:"):
+                print("Communication with agent alien to SIC: sending or receiving message " + message)
+                # We need to accommodate SIC and turn a string into a SIC message. So, let's give SIC what it needs...
+                # If message was received from an alien agent on a reqreply channel, create a TextRequest object
+                if message.startswith("text:reqreply:"):
+                    byte_string = TextRequest(byte_string.decode("utf-8")).serialize()
+                else:
+                    # Whether the message was sent by a SIC component or received from an agent alien to SIC, create a
+                    # TextMessage object
+                    byte_string = TextMessage(byte_string.decode("utf-8")).serialize()
+
+        except UnicodeError as e:
+            # Pickle serialised objects will give a decoding exception; in that case we silently fail and assume we
+            # have a Pickle object we need to deal with...
+            pass
+
         try:
             if utils.PYTHON_VERSION_IS_2:
                 byte_string = utils.ensure_binary(byte_string)
@@ -181,6 +207,7 @@ class SICMessage(object):
                 return pickle.loads(byte_string, encoding="latin1")
 
         except pickle.UnpicklingError as e:
+            print(byte_string)
             raise pickle.UnpicklingError(
                 "Byte string is likely not a SICMessage ({})".format(e)
             )
