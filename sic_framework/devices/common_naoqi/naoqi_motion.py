@@ -207,7 +207,7 @@ class NaoqiMotionActuator(SICActuator):
         elif request == NaoqiSmartStiffnessRequest:
             self.motion.setSmartStiffnessEnabled(request.enable)
             # sometimes it doesn't work in the first try, so doueble check
-            if self.motion.getSmartStiffnessEnabled != request.enable:
+            if self.motion.getSmartStiffnessEnabled() != request.enable:
                 self.motion.setSmartStiffnessEnabled(request.enable)
         elif request == NaoqiMoveRequest:
             self.move(request)
