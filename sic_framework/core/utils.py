@@ -168,9 +168,15 @@ def create_data_stream_id(component_name: str, component_ip: str, input_stream: 
     Returns:
         str: A base64-encoded truncated hash string.
     """
-    combined = "{name}|{ip}|{input_stream}".format(name=component_name, ip=component_ip, input_stream=input_stream)
-    sha256_hash = hashlib.sha256(combined.encode('utf-8')).digest()
-    encoded = base64.urlsafe_b64encode(sha256_hash).decode('utf-8')
+    # print("Creating data stream id for \ncomponent_name: {}\ncomponent_ip: {}\ninput_stream: {}".format(component_name, component_ip, input_stream))
+    try:
+        combined = "{name}|{ip}|{input_stream}".format(name=component_name, ip=component_ip, input_stream=input_stream)
+        sha256_hash = hashlib.sha256(combined.encode('utf-8')).digest()
+        encoded = base64.urlsafe_b64encode(sha256_hash).decode('utf-8')
+        # print("Data stream id created: {}".format(encoded))
+    except Exception as e:
+        # print("Error creating data stream id: {}".format(e))
+        raise e
     return encoded[:length]
 
 

@@ -35,7 +35,6 @@ class SICConnector(object):
         :param conf: Optional SICConfMessage to set component parameters.
         """
         self._redis = SICRedis()
-
         assert isinstance(ip, str), "IP must be string"
 
         # if the component is running on the same machine
@@ -44,18 +43,30 @@ class SICConnector(object):
             ip = utils.get_ip_adress()
 
         self.component_ip = ip
+        # client ID is the IP of whatever machine is running this connector
         self.client_id = utils.get_ip_adress()
         self.component_name = self.component_class.get_component_name()
-        self.general_output_channel = self.component_class.get_general_output_channel(ip)
-
         self._callback_threads = []
-
+        # TODO: define client-specific request-reply channels
         self._request_reply_channel = self.component_class.get_request_reply_channel(ip)
         self._log_level = log_level
         self._conf = conf
 
         self.logger = self.get_connector_logger()
         self._redis.parent_logger = self.logger
+
+        # if the component is a sensor, we need to first reserve it.
+        if issubclass(self.component_class, SICSensor):
+            # component_id is the component name and its ip address
+            component_id = self.component_class.get_component_name() + ":" + self.component_ip
+            self.logger.debug("Setting reservation for {}".format(component_id))
+            self._redis.set_reservation(component_id, self.client_id)
+            self.logger.debug("Defining output channel")
+            self.output_channel = self.define_output_channel(self.component_name, self.component_ip, input_stream=self.client_id)
+            self.logger.debug("Output channel defined: {}".format(self.output_channel))
+        else:
+            # ? Keep a general output channel for non-sensors
+            self.general_output_channel = self.component_class.get_general_output_channel(ip)
 
         # if we cannot ping the component, request it to be started from the ComponentManager
         if not self._ping():
@@ -67,25 +78,16 @@ class SICConnector(object):
                 self.logger.error(e)
                 raise RuntimeError(e)
 
-        # ? is this needed ?
-        # subscribe the component to a channel that the user is able to send a message on if needed
-        self.input_channel = "{}:input:{}".format(
-            self.component_class.get_component_name(), self.component_ip
-        )
-        self.logger.debug("Creating input channel for {}".format(self.input_channel))
-        self.request(ConnectRequest(self.input_channel, self.general_output_channel), timeout=self._PING_TIMEOUT)
-        self.logger.debug("Connected to {}".format(self.input_channel))
-
-        # if the component is a sensor, we need to reserve it and return the output channel
-        if issubclass(self.component_class, SICSensor):
-            # component_id is the component name and its ip address
-            component_id = self.component_class.get_component_name() + "_" + self.component_ip
-            # client IP is the IP of whatever machine is running this connector
-            self._redis.set_reservation(component_id, self.client_id)
-            self.output_channel = self.define_output_channel(self.component_name, self.component_ip, self.client_id)
-            return self.output_channel
-        else:
-            return self.general_output_channel
+        # if the component is not a sensor, we subscribe it to the general input channel
+        # ? what are the use cases of this ?
+        if not issubclass(self.component_class, SICSensor):
+            self.input_channel = "{}:input:{}".format(
+                self.component_class.get_component_name(), self.component_ip
+            )
+            self.logger.debug("Creating input channel for {}".format(self.input_channel))
+            self.request(ConnectRequest(self.input_channel, self.general_output_channel), timeout=self._PING_TIMEOUT)
+            self.logger.debug("Connected to {}".format(self.input_channel))
+            self.output_channel = self.general_output_channel
 
     def _ping(self):
         try:
@@ -170,7 +172,11 @@ class SICConnector(object):
         :param callback: the function to execute.
         """
 
-        ct = self._redis.register_message_handler(output_channel, callback)
+        try:
+            ct = self._redis.register_message_handler(output_channel, callback)
+        except Exception as e:
+            self.logger.error("Error registering callback: {}".format(e))
+            raise e
 
         self._callback_threads.append(ct)
 
@@ -185,24 +191,25 @@ class SICConnector(object):
         # possible solution: do redis.time, and use a custom get time functions that is aware of the offset
         return time.time()
 
-    def connect(self, component, input_channel=""):
+    def connect(self, input_channel=""):
         """
         Connect the output of a component to the input of this component.
-        :param component: The component connector providing the input to this component
-        :type component: SICConnector
+        :param input_channel: The input channel to connect to
+        :type input_channel: str
         :return:
         """
 
-        output_channel = self.define_output_channel(component, input_channel)
+        input_channel_info = self._redis.get_data_stream(input_channel)
+        if input_channel_info is None:
+            raise ValueError("Input channel {} not found".format(input_channel))
 
-        assert isinstance(
-            component, SICConnector
-        ), "Component connector is not a SICConnector " "(type:{})".format(
-            type(component)
-        )
+        self.logger.debug("Defining output channel for {}".format(input_channel))
+        output_channel = self.define_output_channel(self.component_name, self.component_ip, input_channel)
+        self.logger.debug("Output channel defined: {}".format(output_channel))
 
         request = ConnectRequest(input_channel, output_channel)
         self._redis.request(self._request_reply_channel, request)
+        return output_channel
 
     def request(self, request, timeout=100.0, block=True):
         """
@@ -239,7 +246,7 @@ class SICConnector(object):
         """
         Stop the component and disconnect the callback.
         """
-
+        self.logger.debug("Sending StopRequest to component")
         self._redis.send_message(self._request_reply_channel, SICStopRequest())
         if hasattr(self, "_redis"):
             self._redis.close()
@@ -257,25 +264,31 @@ class SICConnector(object):
 
         return logger
     
-    def define_output_channel(self, component, input_stream):
+    def define_output_channel(self, component_name, component_ip, input_stream):
         """
         Define output stream for the component.
         """
         # define an output channel for this input
         data_stream_id = utils.create_data_stream_id(
-            component_name=component.component_class.get_component_name(),
-            component_ip=component.ip,
+            component_name=component_name,
+            component_ip=component_ip,
             input_stream=input_stream
         )
 
         data_stream_info = {
-            "component_name": component.component_class.get_component_name(),
-            "component_ip": component.ip,
+            "component_name": component_name,
+            "component_ip": component_ip,
             "input_stream": input_stream
         }
 
-        self._redis.set_data_stream(data_stream_id, data_stream_info)
-        return data_stream_id   
+        self.logger.debug("Setting data stream for {}".format(data_stream_id))
+        try:
+            self._redis.set_data_stream(data_stream_id, data_stream_info)
+            self.logger.debug("Data stream set for {}".format(data_stream_id))
+            return data_stream_id
+        except Exception as e:
+            self.logger.error("Error setting data stream: {}".format(e))
+            raise e
 
     # TODO: maybe put this in constructor to do a graceful exit on crash?
     # register cleanup to disconnect redis if an exception occurs anywhere during exection

@@ -202,7 +202,7 @@ class SICComponentManager(object):
                 log_level=request.log_level,
                 conf=request.conf,
             )
-            self.logger.debug("Component {} created".format(component.id))
+            self.logger.debug("Component {} created".format(component.component_id))
             self.active_components.append(component)
 
             # TODO daemon=False could be set to true, but then the component cannot clean up properly
@@ -223,15 +223,15 @@ class SICComponentManager(object):
                 )
                 # Todo do something!
 
-            self.logger.debug("Component {} started successfully".format(component.id))
+            self.logger.debug("Component {} started successfully".format(component.component_id))
             # inform the user their component has started
             reply = SICSuccessMessage()
 
             return reply
 
         except Exception as e:
-            self.logger.exception(
-                e
+            self.logger.error(
+                "Error starting component: {}".format(e)
             )  # maybe not needed if already sending back a not started message
             if component is not None:
                 component.stop()

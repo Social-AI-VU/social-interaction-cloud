@@ -56,28 +56,23 @@ class SICComponent:
             self.logger = self._get_logger(log_level)
             self._redis.parent_logger = self.logger
         except Exception as e:
-            print("Error initializing Redis and logger: {}".format(e))
+            self.logger.debug("Error initializing Redis and logger: {}".format(e))
             raise e
 
-        print("Getting IP address")
         self._ip = utils.get_ip_adress()
-        self.id = self.get_component_name() + ":" + self._ip
+        self.component_id = self.get_component_name() + ":" + self._ip
 
-        print("Initializing events")
         # the events to control this service running in the thread created by the factory
         self._ready_event = ready_event if ready_event else threading.Event()
         self._stop_event = stop_event if stop_event else threading.Event()
 
-        print("Initializing channels")
         self._input_channels = []
         self.channel_map = {}
         self._general_output_channel = self.get_general_output_channel(self._ip)
 
-        print("Initializing config")
         self.params = None
         # load config if set by user
         self.set_config(conf)
-        print("Component initialized")
 
     def _get_logger(self, log_level):
         """
@@ -105,7 +100,6 @@ class SICComponent:
         has started successfully.
         """
         self.logger.debug("Registering request handler")
-        print("Registering request handler")
 
         # register a request handler to handle control requests, e.g. ConnectRequest
         self._redis.register_request_handler(
@@ -114,9 +108,7 @@ class SICComponent:
 
         # communicate the service is set up and listening to its inputs
         self._ready_event.set()
-
-        self.logger.debug("Registered request handler")
-        print("Registered request handler")
+        
     def _connect(self, connection_request):
         """
         Connect the output of a component to the input of this component, by registering the output channel
@@ -125,7 +117,7 @@ class SICComponent:
         :type connection_request: ConnectRequest
         :return:
         """
-        print("Connecting")
+        self.logger.debug("Handling connection request")
         input_channel, output_channel = connection_request.input_channel, connection_request.output_channel
 
         
@@ -137,14 +129,18 @@ class SICComponent:
         
         self.channel_map[input_channel] = output_channel
         try:
-            self._redis.register_message_handler(input_channel, self._handle_message(output_channel=output_channel))
-            print("Connected")
+            # Create a closure that captures the output_channel
+            def message_handler(message):
+                return self.on_message(output_channel=output_channel, message=message)
+            
+            self._redis.register_message_handler(input_channel, message_handler)
+            self.logger.debug("Connected to channel {}".format(input_channel))
         except Exception as e:
-            print("Error connecting: {}".format(e))
+            self.logger.debug("Error connecting: {}".format(e))
             raise e
     
-    def _handle_message(self, output_channel="", message=""):
-        return self.on_message(output_channel=output_channel, message=message)
+    # def _handle_message(self, output_channel, message):
+    #     return self.on_message(output_channel=output_channel, message=message)
 
     def _handle_request(self, request):
         """
@@ -157,7 +153,6 @@ class SICComponent:
         self.logger.debug(
             "Handling request {}".format(request.get_message_name())
         )
-        print("Handling request {}".format(request.get_message_name()))
 
         if is_sic_instance(request, SICPingRequest):
             return SICPongMessage()

@@ -34,6 +34,7 @@ import time
 
 import redis
 import six
+import json
 from six.moves import queue
 
 from sic_framework.core import utils
@@ -390,21 +391,27 @@ class SICRedis:
 
         Returns the data stream as a dictionary.
         """
-        return self._redis.hget(self.data_stream_map, data_stream_id)
+        # Since the data stream is stored as a string in redis, we need to convert it back to a dictionary
+        raw_data_stream = self._redis.hget(self.data_stream_map, key=data_stream_id)
+        return json.loads(raw_data_stream)
     
     def get_reservation(self, component_id):
         """
         Get a specific reservation from redis.
 
-        Returns the reservation as a dictionary.
+        Returns the client id that has reserved the component.
         """
-        return self._redis.hget(self.reservation_map, component_id)
+        return utils.str_if_bytes(self._redis.hget(self.reservation_map, key=component_id))
     
     def set_data_stream(self, data_stream_id, data_stream):
         """
         Add a data stream in redis.
         """
-        return self._redis.hset(self.data_stream_map, data_stream_id, data_stream)
+        # Redis hashes are flat (only key-value pairs), so we need to convert the data stream to a string
+        data_stream_info = {
+            data_stream_id: json.dumps(data_stream)
+        }
+        return self._redis.hset(self.data_stream_map, mapping=data_stream_info)
     
     def set_reservation(self, component_id, client_id):
         """
@@ -413,7 +420,14 @@ class SICRedis:
         reservation = {
             component_id: client_id
         }
-        return self._redis.hset(self.reservation_map, reservation)
+        try:
+            reservation_result = self._redis.hset(self.reservation_map, mapping=reservation)
+            print("Reservation set: {}".format(reservation_result))
+            return reservation_result
+        except Exception as e:
+            print("Error setting reservation: {}".format(e))
+            raise e
+        
 
 if __name__ == "__main__":
 

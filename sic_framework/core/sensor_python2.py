@@ -4,6 +4,7 @@ from sic_framework.core.component_python2 import SICComponent
 
 from .message_python2 import SICMessage
 
+from sic_framework.core import utils
 
 class SICSensor(SICComponent):
     """
@@ -12,6 +13,12 @@ class SICSensor(SICComponent):
 
     def __init__(self, *args, **kwargs):
         super(SICSensor, self).__init__(*args, **kwargs)
+        self.client_id = self._redis.get_reservation(self.component_id)
+        self.output_channel = utils.create_data_stream_id(
+            component_name=self.get_component_name(),
+            component_ip=self._ip,
+            input_stream=self.client_id
+        )
 
     def start(self):
         """
@@ -38,8 +45,8 @@ class SICSensor(SICComponent):
 
             output._timestamp = self._get_timestamp()
 
-            self.output_message(output)
+            self.output_message(self.output_channel, output)
 
-            self.logger.debug("Outputting message {}".format(output))
+            # self.logger.debug("Outputting message {}".format(output))
 
         self.logger.debug("Stopped producing")
