@@ -149,8 +149,8 @@ class SICComponentManager(object):
         # reply to the request if the component manager can start the component
         if request.component_name in self.component_classes:
             self.logger.info(
-                "{} handling request to start component {}".format(
-                    self.__class__.__name__, request.component_name
+                "Handling request to start component {}".format(
+                    request.component_name
                 )
             )
 
@@ -187,16 +187,22 @@ class SICComponentManager(object):
 
         component_class = self.component_classes[request.component_name]  # SICComponent
 
+        self.logger.debug("Starting component {}".format(component_class.get_component_name()))
+
         component = None
         try:
+            self.logger.debug("Creating threads for {}".format(component_class.get_component_name()))
+            
             stop_event = threading.Event()
             ready_event = threading.Event()
+            self.logger.debug("Creating component {}".format(component_class.get_component_name()))
             component = component_class(
                 stop_event=stop_event,
                 ready_event=ready_event,
                 log_level=request.log_level,
                 conf=request.conf,
             )
+            self.logger.debug("Component {} created".format(component.id))
             self.active_components.append(component)
 
             # TODO daemon=False could be set to true, but then the component cannot clean up properly
@@ -217,6 +223,7 @@ class SICComponentManager(object):
                 )
                 # Todo do something!
 
+            self.logger.debug("Component {} started successfully".format(component.id))
             # inform the user their component has started
             reply = SICSuccessMessage()
 

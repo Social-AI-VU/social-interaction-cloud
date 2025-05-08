@@ -46,6 +46,7 @@ class SICConnector(object):
         self.component_ip = ip
         self.client_id = utils.get_ip_adress()
         self.component_name = self.component_class.get_component_name()
+        self.general_output_channel = self.component_class.get_general_output_channel(ip)
 
         self._callback_threads = []
 
@@ -58,14 +59,22 @@ class SICConnector(object):
 
         # if we cannot ping the component, request it to be started from the ComponentManager
         if not self._ping():
-            self._start_component()
+            try:
+                self._start_component()
+                self.logger.debug("Component started")
+                assert self._ping()
+            except Exception as e:
+                self.logger.error(e)
+                raise RuntimeError(e)
 
         # ? is this needed ?
         # subscribe the component to a channel that the user is able to send a message on if needed
         self.input_channel = "{}:input:{}".format(
             self.component_class.get_component_name(), self.component_ip
         )
-        self.request(ConnectRequest(self.input_channel), timeout=self._PING_TIMEOUT)
+        self.logger.debug("Creating input channel for {}".format(self.input_channel))
+        self.request(ConnectRequest(self.input_channel, self.general_output_channel), timeout=self._PING_TIMEOUT)
+        self.logger.debug("Connected to {}".format(self.input_channel))
 
         # if the component is a sensor, we need to reserve it and return the output channel
         if issubclass(self.component_class, SICSensor):
@@ -76,15 +85,16 @@ class SICConnector(object):
             self.output_channel = self.define_output_channel(self.component_name, self.component_ip, self.client_id)
             return self.output_channel
         else:
-            # ? maybe we want to keep a general purpose output channel?
-            return self.component_class.get_output_channel(self.component_ip)
+            return self.general_output_channel
 
     def _ping(self):
         try:
             self.request(SICPingRequest(), timeout=self._PING_TIMEOUT)
+            self.logger.debug("RECEIVED PING RESPONSE")
             return True
 
         except TimeoutError:
+            self.logger.error("Timeout error when trying to ping component {}".format(self.component_class.get_component_name()))
             return False
 
     @property
@@ -206,6 +216,8 @@ class SICConnector(object):
         :return: the SICMessage reply from the device, or none if blocking=False
         :rtype: SICMessage | None
         """
+        self.logger.debug("Sending request: {} over channel: {}".format(request, self._request_reply_channel))
+
         if isinstance(request, type):
             self.logger.error(
                 "You probably forgot to initiate the class. For example, use NaoRestRequest() instead of NaoRestRequest."

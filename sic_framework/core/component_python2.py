@@ -49,27 +49,35 @@ class SICComponent:
     def __init__(
         self, ready_event=None, stop_event=None, log_level=sic_logging.INFO, conf=None
     ):
-        self._ip = utils.get_ip_adress()
+        print("Initializing component {}".format(self.get_component_name()))
+        # Redis and logger initialization
+        try:
+            self._redis = SICRedis(parent_name=self.get_component_name())
+            self.logger = self._get_logger(log_level)
+            self._redis.parent_logger = self.logger
+        except Exception as e:
+            print("Error initializing Redis and logger: {}".format(e))
+            raise e
 
+        print("Getting IP address")
+        self._ip = utils.get_ip_adress()
+        self.id = self.get_component_name() + ":" + self._ip
+
+        print("Initializing events")
         # the events to control this service running in the thread created by the factory
         self._ready_event = ready_event if ready_event else threading.Event()
         self._stop_event = stop_event if stop_event else threading.Event()
 
+        print("Initializing channels")
         self._input_channels = []
         self.channel_map = {}
-        self._output_channel = self.get_output_channel(self._ip)
+        self._general_output_channel = self.get_general_output_channel(self._ip)
 
+        print("Initializing config")
         self.params = None
-
-        # Redis initialization
-        self._redis = SICRedis(parent_name=self.get_component_name())
-
-        # Initialize logging and enable redis to log any exeptions as well
-        self.logger = self._get_logger(log_level)
-        self._redis.parent_logger = self.logger
-
         # load config if set by user
         self.set_config(conf)
+        print("Component initialized")
 
     def _get_logger(self, log_level):
         """
@@ -96,6 +104,9 @@ class SICComponent:
         Start the service. Should be called by overriding functions to communicate the service
         has started successfully.
         """
+        self.logger.debug("Registering request handler")
+        print("Registering request handler")
+
         # register a request handler to handle control requests, e.g. ConnectRequest
         self._redis.register_request_handler(
             self.get_request_reply_channel(self._ip), self._handle_request
@@ -104,8 +115,8 @@ class SICComponent:
         # communicate the service is set up and listening to its inputs
         self._ready_event.set()
 
-        self.logger.info("Started component {}".format(self.get_component_name()))
-
+        self.logger.debug("Registered request handler")
+        print("Registered request handler")
     def _connect(self, connection_request):
         """
         Connect the output of a component to the input of this component, by registering the output channel
@@ -114,6 +125,7 @@ class SICComponent:
         :type connection_request: ConnectRequest
         :return:
         """
+        print("Connecting")
         input_channel, output_channel = connection_request.input_channel, connection_request.output_channel
 
         
@@ -124,8 +136,13 @@ class SICComponent:
             return
         
         self.channel_map[input_channel] = output_channel
-        self._redis.register_message_handler(input_channel, self._handle_message(output_channel=output_channel))
-
+        try:
+            self._redis.register_message_handler(input_channel, self._handle_message(output_channel=output_channel))
+            print("Connected")
+        except Exception as e:
+            print("Error connecting: {}".format(e))
+            raise e
+    
     def _handle_message(self, output_channel="", message=""):
         return self.on_message(output_channel=output_channel, message=message)
 
@@ -140,6 +157,7 @@ class SICComponent:
         self.logger.debug(
             "Handling request {}".format(request.get_message_name())
         )
+        print("Handling request {}".format(request.get_message_name()))
 
         if is_sic_instance(request, SICPingRequest):
             return SICPongMessage()
@@ -165,9 +183,9 @@ class SICComponent:
         return cls.__name__
 
     @classmethod
-    def get_output_channel(cls, ip):
+    def get_general_output_channel(cls, ip):
         """
-        Get the output channel for this component.
+        Get the general output channel for this component.
         TODO what place is best to put this method
         TODO maybe explain why this is deterministic?
         :return: channel name
