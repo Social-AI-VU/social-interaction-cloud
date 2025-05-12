@@ -18,7 +18,7 @@ class PepperTactileSensorMessage(SICMessage):
 
 class PepperTopTactileSensor(SICComponent):
     """
-    NaoqiButtonSensor is a sensor that reads the robot's physical button and touch values from the ALMemory module.
+    PepperTopTactileSensor is a sensor that reads the robot's physical button and touch values from the ALMemory module.
     """
 
     def __init__(self, *args, **kwargs):
