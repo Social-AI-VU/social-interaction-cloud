@@ -89,6 +89,7 @@ class PlayRecording(SICRequest):
             self.motion_recording_message.recorded_times = recorded_times.tolist()
 
 
+
 class NaoqiMotionRecorderConf(SICConfMessage):
     def __init__(
         self,
@@ -230,8 +231,7 @@ class NaoqiMotionRecorderActuator(SICActuator, NaoqiMotionTools):
         times = message.recorded_times
 
         if self.params.use_interpolation:
-            times = np.array(times) + self.params.setup_time
-            times = times.tolist()
+            times = [(np.array(t) + self.params.setup_time).tolist() for t in times]
 
             self.motion.angleInterpolation(
                 joints, angles, times, True
