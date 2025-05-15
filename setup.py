@@ -11,6 +11,7 @@ requirements = [
     "pyspacemouse",
     "redis",
     "scp",
+    "setuptools",
     "six",
 ]
 
@@ -27,7 +28,7 @@ extras_require = {
         "google-cloud-dialogflow",
     ],
     "google-tts": [
-      "google-cloud-texttospeech",
+        "google-cloud-texttospeech",
     ],
     "face-detection-dnn": [
         "matplotlib",
@@ -94,7 +95,7 @@ setup(
             "run-gpt=sic_framework.services.openai_gpt:main",
             "run-whisper=sic_framework.services.openai_whisper_speech_to_text:main",
             "run-webserver=sic_framework.services.webserver.webserver_component:main",
-            "run-google-tts=sic_framework.services.text2speech.text2speech_service:main"
+            "run-google-tts=sic_framework.services.text2speech.text2speech_service:main",
         ],
     },
 )
