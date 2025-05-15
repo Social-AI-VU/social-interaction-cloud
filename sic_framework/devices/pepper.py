@@ -122,6 +122,9 @@ class Pepper(Naoqi):
             try:
                 cur_version = get_distribution("social-interaction-cloud").version
             except DistributionNotFound:
+                self.logger.error(
+                    "Failed to find the 'social-interaction-cloud' package locally. Ensure it is installed using pip."
+                )
                 raise RuntimeError(
                     "Package 'social-interaction-cloud' is not installed locally. Please install it using pip."
                 )
