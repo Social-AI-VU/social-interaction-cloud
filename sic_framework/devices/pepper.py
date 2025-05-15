@@ -3,6 +3,9 @@ from __future__ import print_function
 import argparse
 import os
 import subprocess
+
+from pkg_resources import DistributionNotFound, get_distribution
+
 from sic_framework.core.component_manager_python2 import SICComponentManager
 from sic_framework.devices.common_naoqi.naoqi_camera import (
     DepthPepperCamera,
@@ -10,19 +13,20 @@ from sic_framework.devices.common_naoqi.naoqi_camera import (
     StereoPepperCamera,
     StereoPepperCameraSensor,
 )
-from sic_framework.devices.common_naoqi.pepper_tablet import (
-    NaoqiTablet,
-    NaoqiTabletComponent,
-)
 from sic_framework.devices.common_naoqi.pepper_motion_streamer import (
     PepperMotionStreamer,
     PepperMotionStreamerService,
 )
-from sic_framework.devices.common_naoqi.pepper_top_tactile_sensor import (
-    PepperTopTactileSensor, PepperTopTactile
+from sic_framework.devices.common_naoqi.pepper_tablet import (
+    NaoqiTablet,
+    NaoqiTabletComponent,
 )
-from sic_framework.devices.naoqi_shared import *
+from sic_framework.devices.common_naoqi.pepper_top_tactile_sensor import (
+    PepperTopTactile,
+    PepperTopTactileSensor,
+)
 from sic_framework.devices.device import SICLibrary
+from sic_framework.devices.naoqi_shared import *
 
 # this is where dependency binaries are downloaded to on the Pepper machine
 _LIB_DIRECTORY = "/home/nao/sic_framework_2/social-interaction-cloud-main/lib"
@@ -31,7 +35,7 @@ _LIBS_TO_INSTALL = [
     SICLibrary(
         "redis",
         lib_path="/home/nao/sic_framework_2/social-interaction-cloud-main/lib/redis",
-        lib_install_cmd="pip install --user redis-3.5.3-py2.py3-none-any.whl"
+        lib_install_cmd="pip install --user redis-3.5.3-py2.py3-none-any.whl",
     ),
     SICLibrary(
         "PyTurboJPEG",
@@ -59,12 +63,20 @@ _LIBS_TO_INSTALL = [
     ),
 ]
 
+
 class Pepper(Naoqi):
     """
     Wrapper for Pepper device to easily access its components (connectors)
     """
 
-    def __init__(self, ip, stereo_camera_conf=None, depth_camera_conf=None, pepper_motion_conf=None, **kwargs):
+    def __init__(
+        self,
+        ip,
+        stereo_camera_conf=None,
+        depth_camera_conf=None,
+        pepper_motion_conf=None,
+        **kwargs
+    ):
         super().__init__(
             ip,
             robot_type="pepper",
@@ -99,25 +111,28 @@ class Pepper(Naoqi):
             return False
         elif "sic_in_test" in remote_stdout:
             # test version of SIC is installed
-            self.logger.info("Test version of SIC is installed, uninstalling and reinstalling latest version")
+            self.logger.info(
+                "Test version of SIC is installed, uninstalling and reinstalling latest version"
+            )
             return False
         else:
             self.logger.info("SIC is already installed, checking versions")
-            
-            # this command gets the version of SIC that is currently installed on the local machine
-            cur_version_cmd = """pip list | grep 'social-interaction-cloud' | awk '{gsub(/[()]/, "", $2); print $2}'"""
+
+            # this command should get the version of SIC currently installed on the local machine, on all OSes including Windows
             try:
-                cur_version = subprocess.check_output(cur_version_cmd, shell=True, text=True).strip()
-            except subprocess.CalledProcessError as e:
-                self.logger.error("Exception encountered while grabbing current SIC version:", e)
+                cur_version = get_distribution("social-interaction-cloud").version
+            except DistributionNotFound:
+                raise RuntimeError(
+                    "Package 'social-interaction-cloud' is not installed locally. Please install it using pip."
+                )
 
             # get the version of SIC installed on Pepper
             pepper_version = ""
 
             for line in remote_stdout.splitlines():
                 print(line)
-                if line.startswith('Version:'):
-                    pepper_version = line.split(':')[1].strip()
+                if line.startswith("Version:"):
+                    pepper_version = line.split(":")[1].strip()
                     break
 
             self.logger.info("SIC version on Pepper: {}".format(pepper_version))
@@ -127,8 +142,12 @@ class Pepper(Naoqi):
                 self.logger.info("SIC already installed on Pepper and versions match")
                 return True
             else:
-                self.logger.warning("SIC is installed on Pepper but does not match the local version! Reinstalling SIC on Pepper")
-                self.logger.warning("(Check to make sure you also have the latest version of SIC installed!)")
+                self.logger.warning(
+                    "SIC is installed on Pepper but does not match the local version! Reinstalling SIC on Pepper"
+                )
+                self.logger.warning(
+                    "(Check to make sure you also have the latest version of SIC installed!)"
+                )
                 return False
 
     def sic_install(self):
@@ -176,7 +195,9 @@ class Pepper(Naoqi):
         for lib in _LIBS_TO_INSTALL:
             self.logger.info("Checking if library {} is installed...".format(lib.name))
             if not self.check_if_lib_installed(installed_libs, lib):
-                self.logger.info("Library {} is NOT installed, installing now...".format(lib.name))
+                self.logger.info(
+                    "Library {} is NOT installed, installing now...".format(lib.name)
+                )
                 self.install_lib(lib)
 
     def create_test_environment(self):
@@ -189,7 +210,7 @@ class Pepper(Naoqi):
 
         If you do not pass in a repo, it will assume the repo to test is already installed in a test environment on the Pepper.
 
-        Instead of creating a virtual environment, we will just copy the repo over to the test directory    
+        Instead of creating a virtual environment, we will just copy the repo over to the test directory
         and install from there.
         """
 
@@ -225,34 +246,47 @@ class Pepper(Naoqi):
                 cd ~;
                 rm -rf sic_in_test;
                 mkdir sic_in_test;
-                """.format(repo_name=repo_name)
-            )            
-            
+                """.format(
+                    repo_name=repo_name
+                )
+            )
+
             self.logger.info("Transferring zip file over to Pepper")
+
             def progress4_callback(filename, size, sent, peername):
-                print("\r({}:{}) {} progress: {:.2f}%".format(peername[0], peername[1], filename.decode('utf-8'), (float(sent) / float(size)) * 100), end="")
+                print(
+                    "\r({}:{}) {} progress: {:.2f}%".format(
+                        peername[0],
+                        peername[1],
+                        filename.decode("utf-8"),
+                        (float(sent) / float(size)) * 100,
+                    ),
+                    end="",
+                )
 
             #  scp transfer file over
-            with self.SCPClient(self.ssh.get_transport(), progress4=progress4_callback) as scp:
+            with self.SCPClient(
+                self.ssh.get_transport(), progress4=progress4_callback
+            ) as scp:
                 try:
-                    scp.put(
-                        zipped_path,
-                        "/home/nao/sic_in_test/"
-                    )
+                    scp.put(zipped_path, "/home/nao/sic_in_test/")
                 except Exception as e:
-                    self.logger.error("Error transferring zip file over to Pepper: {}".format(e))
+                    self.logger.error(
+                        "Error transferring zip file over to Pepper: {}".format(e)
+                    )
                     raise e
 
             self.logger.info("Unzipping repo and installing on Pepper")
 
-            
             _, stdout, _, exit_status = self.ssh_command(
                 """
                 cd ~/sic_in_test;
                 unzip {repo_name};
                 cd {repo_name};
                 pip install --user -e . --no-deps;
-                """.format(repo_name=repo_name)
+                """.format(
+                    repo_name=repo_name
+                )
             )
 
             # check to see if the repo was installed successfully
@@ -265,16 +299,18 @@ class Pepper(Naoqi):
             if exit_status != 0:
                 raise RuntimeError("Failed to install social-interaction-cloud")
 
-
         if self.test_repo:
             self.logger.info("Installing test repo on Pepper")
-            self.logger.warning("This process may take a minute or two... Please hold tight!")
+            self.logger.warning(
+                "This process may take a minute or two... Please hold tight!"
+            )
             uninstall_old_repo()
             install_new_repo()
         else:
-            self.logger.info("No test repo provided, assuming test repo is already installed")
+            self.logger.info(
+                "No test repo provided, assuming test repo is already installed"
+            )
             return True
-
 
     @property
     def stereo_camera(self):
@@ -287,14 +323,15 @@ class Pepper(Naoqi):
     @property
     def tablet_display_url(self):
         return self._get_connector(NaoqiTablet)
-    
+
     @property
     def motion_streaming(self):
         return self._get_connector(PepperMotionStreamer)
-    
+
     @property
     def tactile_sensor(self):
         return self._get_connector(PepperTopTactile)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
