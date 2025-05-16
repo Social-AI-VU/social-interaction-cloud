@@ -49,14 +49,13 @@ class SICComponent:
     def __init__(
         self, ready_event=None, stop_event=None, log_level=sic_logging.INFO, conf=None
     ):
-        print("Initializing component {}".format(self.get_component_name()))
         # Redis and logger initialization
         try:
             self._redis = SICRedis(parent_name=self.get_component_name())
             self.logger = self._get_logger(log_level)
             self._redis.parent_logger = self.logger
+            self.logger.debug("Initialized Redis and logger")
         except Exception as e:
-            self.logger.debug("Error initializing Redis and logger: {}".format(e))
             raise e
 
         self._ip = utils.get_ip_adress()
@@ -127,12 +126,12 @@ class SICComponent:
             )
             return
         
-        # TODO: the value should be a dictionary including the output channel as a key, with any other client-specific information
         client_info = {
             "output_channel": output_channel,
         }
 
         # Check if component has setup_client method and call it if present
+        # Setup client is a method that can be used to define any client-specific information (such as models, session keys, etc.)
         if hasattr(self, 'setup_client'):
             client_info = self.setup_client(input_channel, output_channel)
             self.channel_map[input_channel] = client_info

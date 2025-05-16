@@ -42,10 +42,11 @@ class SICConnector(object):
             # get the ip address of the machine on the network
             ip = utils.get_ip_adress()
 
+        self.component_name = self.component_class.get_component_name()
         self.component_ip = ip
+        self.component_id = self.component_name + ":" + self.component_ip
         # client ID is the IP of whatever machine is running this connector
         self.client_id = utils.get_ip_adress()
-        self.component_name = self.component_class.get_component_name()
         self._callback_threads = []
         # TODO: define client-specific request-reply channels
         self._request_reply_channel = self.component_class.get_request_reply_channel(ip)
@@ -57,12 +58,10 @@ class SICConnector(object):
 
         # if the component is a sensor, we need to first reserve it.
         if issubclass(self.component_class, SICSensor):
-            # component_id is the component name and its ip address
-            component_id = self.component_class.get_component_name() + ":" + self.component_ip
-            self.logger.debug("Setting reservation for {}".format(component_id))
-            self._redis.set_reservation(component_id, self.client_id)
+            self.logger.debug("Setting reservation for {}".format(self.component_id))
+            self._redis.set_reservation(self.component_id, self.client_id)
             self.logger.debug("Defining output channel")
-            self.output_channel = self.define_output_channel(self.component_name, self.component_ip, input_stream=self.client_id)
+            self.output_channel = self.define_output_channel(self.component_id, input_stream=self.client_id)
             self.logger.debug("Output channel defined: {}".format(self.output_channel))
         else:
             # ? Keep a general output channel for non-sensors
@@ -204,7 +203,7 @@ class SICConnector(object):
             raise ValueError("Input channel {} not found".format(input_channel))
 
         self.logger.debug("Defining output channel for {}".format(input_channel))
-        output_channel = self.define_output_channel(self.component_name, self.component_ip, input_channel)
+        output_channel = self.define_output_channel(self.component_id, input_channel)
         self.logger.debug("Output channel defined: {}".format(output_channel))
 
         request = ConnectRequest(input_channel, output_channel)
@@ -264,20 +263,18 @@ class SICConnector(object):
 
         return logger
     
-    def define_output_channel(self, component_name, component_ip, input_stream):
+    def define_output_channel(self, component_id, input_stream):
         """
         Define output stream for the component.
         """
         # define an output channel for this input
         data_stream_id = utils.create_data_stream_id(
-            component_name=component_name,
-            component_ip=component_ip,
+            component_id=component_id,
             input_stream=input_stream
         )
 
         data_stream_info = {
-            "component_name": component_name,
-            "component_ip": component_ip,
+            "component_id": component_id,
             "input_stream": input_stream
         }
 

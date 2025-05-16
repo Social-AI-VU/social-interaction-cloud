@@ -15,8 +15,7 @@ class SICSensor(SICComponent):
         super(SICSensor, self).__init__(*args, **kwargs)
         self.client_id = self._redis.get_reservation(self.component_id)
         self.output_channel = utils.create_data_stream_id(
-            component_name=self.get_component_name(),
-            component_ip=self._ip,
+            component_id=self.component_id,
             input_stream=self.client_id
         )
 
