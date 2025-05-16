@@ -4,8 +4,6 @@ import argparse
 import os
 import subprocess
 
-from pkg_resources import DistributionNotFound, get_distribution
-
 from sic_framework.core.component_manager_python2 import SICComponentManager
 from sic_framework.devices.common_naoqi.naoqi_camera import (
     DepthPepperCamera,
@@ -120,6 +118,8 @@ class Pepper(Naoqi):
 
             # this command should get the version of SIC currently installed on the local machine, on all OSes including Windows
             try:
+                from pkg_resources import DistributionNotFound, get_distribution
+
                 cur_version = get_distribution("social-interaction-cloud").version
             except DistributionNotFound:
                 self.logger.error(
