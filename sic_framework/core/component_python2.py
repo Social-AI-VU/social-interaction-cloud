@@ -127,11 +127,22 @@ class SICComponent:
             )
             return
         
-        self.channel_map[input_channel] = output_channel
+        # TODO: the value should be a dictionary including the output channel as a key, with any other client-specific information
+        client_info = {
+            "output_channel": output_channel,
+        }
+
+        # Check if component has setup_client method and call it if present
+        if hasattr(self, 'setup_client'):
+            client_info = self.setup_client(input_channel, output_channel)
+            self.channel_map[input_channel] = client_info
+        else:
+            self.channel_map[input_channel] = client_info
+
         try:
             # Create a closure that captures the output_channel
             def message_handler(message):
-                return self.on_message(output_channel=output_channel, message=message)
+                return self.on_message(client_info=client_info, message=message)
             
             self._redis.register_message_handler(input_channel, message_handler)
             self.logger.debug("Connected to channel {}".format(input_channel))
@@ -217,7 +228,7 @@ class SICComponent:
         """
         raise NotImplementedError("You need to define a request handler.")
 
-    def on_message(self, output_channel, message):
+    def on_message(self, client_info=dict(), message=""):
         """
         Define the handler for input messages.
         :param message: The request for this component.
