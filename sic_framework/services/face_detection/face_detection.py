@@ -77,7 +77,7 @@ class FaceDetectionComponent(SICComponent):
 
         return BoundingBoxesMessage(faces)
 
-    def setup_client(self, input_channel, output_channel):
+    def setup_client(self, input_channel, output_channel, conf=None):
         self.logger.info(f"Defining model for client {input_channel}")
         # define a new model instance for the client
         self.client_models[input_channel] = cv2.CascadeClassifier(self.cascadePath)

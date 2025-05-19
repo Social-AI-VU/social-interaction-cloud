@@ -73,9 +73,7 @@ class SICComponent:
 
         self.params = None
 
-        if conf:
-            # load config if set by user
-            self.set_config(conf)
+        self.set_config(conf)
 
     def _get_logger(self, log_level):
         """
