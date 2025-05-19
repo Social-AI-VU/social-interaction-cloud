@@ -22,18 +22,20 @@ from .sic_redis import SICRedis
 
 
 class ConnectRequest(SICControlRequest):
-    def __init__(self, input_channel, output_channel):
+    def __init__(self, input_channel, output_channel, conf=None):
         """
         A request for the component to start listening to the channel of another component (input channel).
         And to send message corresponding to that channel on the specified output channel.
+        Config is optional and can be used to pass any client-specific information (such as models, session keys, etc.)
 
         :param input_channel: the channel of the component that serves as input to this component.
         :param output_channel: the name of the output channel of this component specific to the input channel.
+        :param conf: a SICConfMessage with the parameters as fields
         """
         super(ConnectRequest, self).__init__()
         self.input_channel = input_channel  # str
         self.output_channel = output_channel  # str
-
+        self.conf = conf  # SICConfMessage
 
 class SICComponent:
     """
@@ -70,8 +72,10 @@ class SICComponent:
         self._general_output_channel = self.get_general_output_channel(self._ip)
 
         self.params = None
-        # load config if set by user
-        self.set_config(conf)
+
+        if conf:
+            # load config if set by user
+            self.set_config(conf)
 
     def _get_logger(self, log_level):
         """
@@ -117,7 +121,7 @@ class SICComponent:
         :return:
         """
         self.logger.debug("Handling connection request")
-        input_channel, output_channel = connection_request.input_channel, connection_request.output_channel
+        input_channel, output_channel, conf = connection_request.input_channel, connection_request.output_channel, connection_request.conf
 
         
         if input_channel in self.channel_map:
@@ -133,7 +137,7 @@ class SICComponent:
         # Check if component has setup_client method and call it if present
         # Setup client is a method that can be used to define any client-specific information (such as models, session keys, etc.)
         if hasattr(self, 'setup_client'):
-            client_info = self.setup_client(input_channel, output_channel)
+            client_info = self.setup_client(input_channel, output_channel, conf)
             self.channel_map[input_channel] = client_info
         else:
             self.channel_map[input_channel] = client_info
@@ -144,6 +148,14 @@ class SICComponent:
                 return self.on_message(client_info=client_info, message=message)
             
             self._redis.register_message_handler(input_channel, message_handler)
+
+            # Client-specific request handler (not control requests)
+            def request_handler(request):
+                return self.on_request(request, client_info=client_info)
+
+            # register request handler for the input channel
+            self._redis.register_request_handler(input_channel + ":request_reply", request_handler)
+
             self.logger.debug("Connected to channel {}".format(input_channel))
         except Exception as e:
             self.logger.debug("Error connecting: {}".format(e))
@@ -218,7 +230,7 @@ class SICComponent:
 
         self._parse_conf(conf)
 
-    def on_request(self, request):
+    def on_request(self, request, client_info=dict()):
         """
         Define the handler for requests. Must return a SICMessage as a reply to the request.
         :param request: The request for this component.

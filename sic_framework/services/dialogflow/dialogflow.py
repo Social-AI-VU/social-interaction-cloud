@@ -180,90 +180,105 @@ class DialogflowComponent(SICComponent):
     """
 
     def __init__(self, *args, **kwargs):
-        self.responses = None
         super().__init__(*args, **kwargs)
+        self.client_sessions = {}
 
-        self.dialogflow_is_init = False
-        self.init_dialogflow()
-
-    def init_dialogflow(self):
+    def init_dialogflow(self, conf):
         # Setup session client
-        credentials = Credentials.from_service_account_info(self.params.keyfile_json)
-        self.session_client = dialogflow.SessionsClient(credentials=credentials)
+        credentials = Credentials.from_service_account_info(conf.keyfile_json)
+        session_client = dialogflow.SessionsClient(credentials=credentials)
+        project_id = conf.project_id
 
         # Set default audio parameters
-        self.dialogflow_audio_config = dialogflow.InputAudioConfig(
-            audio_encoding=self.params.audio_encoding,
-            language_code=self.params.language_code,
-            sample_rate_hertz=self.params.sample_rate_hertz,
+        dialogflow_audio_config = dialogflow.InputAudioConfig(
+            audio_encoding=conf.audio_encoding,
+            language_code=conf.language_code,
+            sample_rate_hertz=conf.sample_rate_hertz,
         )
 
         # TODO for text to speech, add this to the first StreamingDetectIntentRequest call
         synt_conf = dialogflow.SynthesizeSpeechConfig(
             effects_profile_id="en-US-Neural2-F"
         )
-        self.output_audio_config = dialogflow.OutputAudioConfig(
+        output_audio_config = dialogflow.OutputAudioConfig(
             audio_encoding=dialogflow.OutputAudioEncoding.OUTPUT_AUDIO_ENCODING_MP3,
             sample_rate_hertz=44100,
             synthesize_speech_config=synt_conf,
         )
 
-        self.query_input = dialogflow.QueryInput(
-            audio_config=self.dialogflow_audio_config
+        query_input = dialogflow.QueryInput(
+            audio_config=dialogflow_audio_config
         )
-        self.message_was_final = threading.Event()
-        self.audio_buffer = queue.Queue(maxsize=1)
-        self.dialogflow_is_init = True
+        message_was_final = threading.Event()
+        audio_buffer = queue.Queue(maxsize=1)
 
         # Initialize a collection of contexts to be activated before this query is executed.
         # See more details at https://cloud.google.com/python/docs/reference/dialogflow/latest/google.cloud.dialogflow_v2.types.Context.
-        self.dialogflow_context = []
+        dialogflow_context = []
 
-    def on_message(self, message):
+        return {
+            "session_client": session_client,
+            "dialogflow_audio_config": dialogflow_audio_config,
+            "output_audio_config": output_audio_config,
+            "query_input": query_input,
+            "message_was_final": message_was_final,
+            "audio_buffer": audio_buffer,
+            "dialogflow_context": dialogflow_context,
+            "project_id": project_id,
+        }
+    
+
+    def on_message(self, message, client_info=dict()):
+        client_session = self.client_sessions[client_info["input_channel"]]
+
         if is_sic_instance(message, AudioMessage):
             self.logger.debug("Received audio message")
             # update the audio message in the queue
             try:
-                self.audio_buffer.put_nowait(message.waveform)
+                client_session["audio_buffer"].put_nowait(message.waveform)
             except queue.Full:
-                self.audio_buffer.get_nowait()
-                self.audio_buffer.put_nowait(message.waveform)
-
+                client_session["audio_buffer"].get_nowait()
+                client_session["audio_buffer"].put_nowait(message.waveform)
+    
         if is_sic_instance(message, StopListeningMessage):
             # force the request generator to break, which indicates to dialogflow we want an intent for the
             # audio sent so far.
-            self.message_was_final.set()
+            client_session["message_was_final"].set()
             # time.sleep(1)
             try:
-                del self.session_client
+                del client_session["session_client"]
             except AttributeError:
                 pass
-            self.dialogflow_is_init = False
+            client_session["dialogflow_is_init"] = False
 
-    def on_request(self, request):
-        if not self.dialogflow_is_init:
-            self.init_dialogflow()
+    def on_request(self, request, client_info=dict()):
+        client_session = self.client_sessions[client_info["input_channel"]]
+
+        if not client_session["dialogflow_is_init"]:
+            raise ValueError("Dialogflow for this client is not initialized")
 
         if is_sic_instance(request, GetIntentRequest):
-            reply = self.get_intent(request)
+            reply = self.get_intent(request, client_info=client_info)
             return reply
 
         raise NotImplementedError("Unknown request type {}".format(type(request)))
 
-    def request_generator(self, session_path, query_params):
+    def request_generator(self, session_path, query_params, client_info=dict()):
+        client_session = self.client_sessions[client_info["input_channel"]]
+
         try:
             # first request to Dialogflow needs to be a setup request with the session parameters
             # optional: output_audio_config=self.output_audio_config
             yield dialogflow.StreamingDetectIntentRequest(
                 session=session_path,
-                query_input=self.query_input,
+                query_input=client_session["query_input"],
                 query_params=query_params,
             )
 
             start_time = time.time()
 
-            while not self.message_was_final.is_set():
-                chunk = self.audio_buffer.get()
+            while not client_session["message_was_final"].is_set():
+                chunk = client_session["audio_buffer"].get()
 
                 if isinstance(chunk, bytearray):
                     chunk = bytes(chunk)
@@ -271,7 +286,7 @@ class DialogflowComponent(SICComponent):
                 yield dialogflow.StreamingDetectIntentRequest(input_audio=chunk)
 
             # unset flag for next loop
-            self.message_was_final.clear()
+            client_session["message_was_final"].clear()
         except Exception as e:
             # log the message instead of gRPC hiding the error, but do crash
             self.logger.exception("Exception in request iterator")
@@ -289,32 +304,34 @@ class DialogflowComponent(SICComponent):
     def get_output():
         return QueryResult
 
-    def get_intent(self, input):
-        self.message_was_final.clear()  # unset final message flag
+    def get_intent(self, input, client_info=dict()):
+        client_session = self.client_sessions[client_info["input_channel"]]
 
-        session_path = self.session_client.session_path(
-            self.params.project_id, input.session_id
+        client_session["message_was_final"].clear()  # unset final message flag
+
+        session_path = client_session["session_client"].session_path(
+            client_session["project_id"], input.session_id
         )
         self.logger.info(
             "Executing dialogflow request with session id {}".format(input.session_id)
         )
 
         for context_name, lifespan in input.contexts_dict.items():
-            context_id = f"projects/{self.params.project_id}/agent/sessions/{input.session_id}/contexts/{context_name}"
-            self.dialogflow_context.append(
+            context_id = f"projects/{client_session["project_id"]}/agent/sessions/{input.session_id}/contexts/{context_name}"
+            client_session["dialogflow_context"].append(
                 dialogflow.Context(name=context_id, lifespan_count=lifespan)
             )
 
         # add parameters for this request
-        query_params = dialogflow.QueryParameters(contexts=self.dialogflow_context)
+        query_params = dialogflow.QueryParameters(contexts=client_session["dialogflow_context"])
         requests = self.request_generator(
-            session_path, query_params
+            session_path, query_params, client_info=client_info
         )  # get bi-directional request iterator
 
         # responses is a bidirectional iterator object, providing after
         # consuming each yielded request in the requests generator
         try:
-            responses = self.session_client.streaming_detect_intent(requests)
+            responses = client_session["session_client"].streaming_detect_intent(requests)
         except google.api_core.exceptions.InvalidArgument as e:
             return QueryResult(dict())
 
@@ -324,7 +341,7 @@ class DialogflowComponent(SICComponent):
                     "Recognition_result: " + response.recognition_result.transcript
                 )
                 self._redis.send_message(
-                    self._general_output_channel, RecognitionResult(response)
+                    client_info["output_channel"], RecognitionResult(response)
                 )
             if response.query_result:
                 self.logger.info("Received intent: " + response.query_result.action)
@@ -334,11 +351,20 @@ class DialogflowComponent(SICComponent):
                 self.logger.info("----- FINAL -----")
                 # Stop sending audio to dialogflow as it detected the person stopped speaking, but continue this loop
                 # to receive the query result
-                self.message_was_final.set()
+                client_session["message_was_final"].set()
 
         return QueryResult(dict())
+    
+    def setup_client(self, input_channel, output_channel, conf):
+        self.logger.info(f"Defining model for client {input_channel}")
+        # define a new model instance for the client
 
+        self.client_sessions[input_channel] = self.init_dialogflow(conf)
 
+        return {
+            "input_channel": input_channel,
+            "output_channel": output_channel,
+        }
 class Dialogflow(SICConnector):
     component_class = DialogflowComponent
 

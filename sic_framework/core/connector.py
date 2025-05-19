@@ -190,7 +190,7 @@ class SICConnector(object):
         # possible solution: do redis.time, and use a custom get time functions that is aware of the offset
         return time.time()
 
-    def connect(self, input_channel=""):
+    def connect(self, input_channel="", conf=None):
         """
         Connect the output of a component to the input of this component.
         :param input_channel: The input channel to connect to
@@ -206,23 +206,31 @@ class SICConnector(object):
         output_channel = self.define_output_channel(self.component_id, input_channel)
         self.logger.debug("Output channel defined: {}".format(output_channel))
 
-        request = ConnectRequest(input_channel, output_channel)
+        request = ConnectRequest(input_channel, output_channel, conf)
         self._redis.request(self._request_reply_channel, request)
         return output_channel
 
-    def request(self, request, timeout=100.0, block=True):
+    def request(self, request=None, input_channel=None, timeout=100.0, block=True):
         """
         Request data from a device. Waits until the reply is received. If the reply takes longer than
         `timeout` seconds to arrive, a TimeoutError is raised. If block is set to false, the reply is
         ignored and the function returns immediately.
         :param request: The request to the device
         :type request: SICRequest
+        :param input_channel: The input channel to send the request to
+        :type input_channel: str
         :param timeout: A timeout in case the action takes too long. Only works when blocking=True.
         :param block: If false, immediately returns None after sending the request.
         :return: the SICMessage reply from the device, or none if blocking=False
         :rtype: SICMessage | None
         """
+        if input_channel is None:
+            request_reply_channel = self._request_reply_channel
+        else:
+            request_reply_channel = input_channel + ":request_reply"
+
         self.logger.debug("Sending request: {} over channel: {}".format(request, self._request_reply_channel))
+
 
         if isinstance(request, type):
             self.logger.error(
@@ -238,7 +246,7 @@ class SICConnector(object):
         request._timestamp = self._get_timestamp()
 
         return self._redis.request(
-            self._request_reply_channel, request, timeout=timeout, block=block
+            request_reply_channel, request, timeout=timeout, block=block
         )
 
     def stop(self):
