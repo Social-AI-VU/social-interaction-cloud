@@ -3,7 +3,9 @@ from __future__ import print_function
 from abc import ABCMeta, abstractmethod
 
 from sic_framework.core import sic_redis, utils
+from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage
 from sic_framework.core.utils import MAGIC_STARTED_COMPONENT_MANAGER_TEXT
+from sic_framework.devices.common_naoqi.nao_motion_streamer import *
 from sic_framework.devices.common_naoqi.naoqi_autonomous import *
 from sic_framework.devices.common_naoqi.naoqi_button import (
     NaoqiButton,
@@ -18,7 +20,6 @@ from sic_framework.devices.common_naoqi.naoqi_lookat import (
 from sic_framework.devices.common_naoqi.naoqi_microphone import *
 from sic_framework.devices.common_naoqi.naoqi_motion import *
 from sic_framework.devices.common_naoqi.naoqi_motion_recorder import *
-from sic_framework.devices.common_naoqi.nao_motion_streamer import *
 from sic_framework.devices.common_naoqi.naoqi_speakers import *
 from sic_framework.devices.common_naoqi.naoqi_stiffness import *
 from sic_framework.devices.common_naoqi.naoqi_text_to_speech import *
@@ -27,7 +28,6 @@ from sic_framework.devices.common_naoqi.naoqi_tracker import (
     NaoqiTrackerActuator,
 )
 from sic_framework.devices.device import SICDevice
-from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage
 
 shared_naoqi_components = [
     NaoqiTopCameraSensor,
@@ -55,6 +55,7 @@ class Naoqi(SICDevice):
         robot_type,
         venv,
         device_path,
+        sic_version=None,
         dev_test=False,
         test_device_path="",
         test_repo=None,
@@ -74,6 +75,7 @@ class Naoqi(SICDevice):
     ):
         super().__init__(
             ip,
+            sic_version=sic_version,
             username=username,
             passwords=passwords,
         )
@@ -100,7 +102,6 @@ class Naoqi(SICDevice):
             "pepper",
         ], "Robot type must be either 'nao' or 'pepper'"
 
-        
         redis_hostname, _ = sic_redis.get_redis_db_ip_password()
 
         if redis_hostname == "127.0.0.1" or redis_hostname == "localhost":
@@ -112,7 +113,7 @@ class Naoqi(SICDevice):
             robot_wrapper_file = test_device_path + "/" + robot_type
         else:
             robot_wrapper_file = device_path + "/" + robot_type
-    
+
         self.start_cmd = """            
             # export environment variables so that it can find the naoqi library
             export PYTHONPATH=/opt/aldebaran/lib/python2.7/site-packages;
@@ -125,14 +126,19 @@ class Naoqi(SICDevice):
 
         # if this robot is expected to have a virtual environment, activate it
         if dev_test and venv:
-            self.start_cmd = """
+            self.start_cmd = (
+                """
             source ~/.test_venv/bin/activate;
-        """ + self.start_cmd            
+        """
+                + self.start_cmd
+            )
         elif venv:
-            self.start_cmd = """
+            self.start_cmd = (
+                """
             source ~/.venv_sic/bin/activate;
-        """ + self.start_cmd
-        
+        """
+                + self.start_cmd
+            )
 
         self.stop_cmd = """
             echo 'Killing all previous robot wrapper processes';
@@ -172,7 +178,6 @@ class Naoqi(SICDevice):
         )
         self.run_sic()
 
-
     @abstractmethod
     def check_sic_install():
         """
@@ -193,7 +198,9 @@ class Naoqi(SICDevice):
         """
         self.ssh_command(self.start_cmd, create_thread=True, get_pty=False)
 
-        self.logger.debug("Attempting to ping remote ComponentManager to see if it has started")
+        self.logger.debug(
+            "Attempting to ping remote ComponentManager to see if it has started"
+        )
 
         # try to ping remote ComponentManager to see if it has started
         ping_tries = 3
@@ -205,19 +212,22 @@ class Naoqi(SICDevice):
                 if response == SICPongMessage():
                     break
             except TimeoutError:
-                self.logger.debug("ComponentManager on ip {} hasn't started yet... retrying ping {} more times".format(self.ip, ping_tries - 1 - i))
+                self.logger.debug(
+                    "ComponentManager on ip {} hasn't started yet... retrying ping {} more times".format(
+                        self.ip, ping_tries - 1 - i
+                    )
+                )
         else:
             raise RuntimeError(
                 "Could not start SIC on remote device\nSee sic.log for details"
             )
-        
-        self.logger.debug("ComponentManager on ip {} has started!".format(self.ip))
 
+        self.logger.debug("ComponentManager on ip {} has started!".format(self.ip))
 
     def stop(self):
         for connector in self.connectors.values():
             connector.stop()
- 
+
         self.stop_event.set()
         self.ssh_command(self.stop_cmd)
 
