@@ -11,7 +11,6 @@ requirements = [
     "pyspacemouse",
     "redis",
     "scp",
-    "setuptools",
     "six",
 ]
 
