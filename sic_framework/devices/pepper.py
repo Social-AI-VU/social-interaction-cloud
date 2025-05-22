@@ -70,6 +70,7 @@ class Pepper(Naoqi):
     def __init__(
         self,
         ip,
+        sic_version=None,
         stereo_camera_conf=None,
         depth_camera_conf=None,
         pepper_motion_conf=None,
@@ -84,6 +85,7 @@ class Pepper(Naoqi):
             # device path is where this script is located on the actual Pepper machine
             device_path="/home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework/devices",
             test_device_path="/home/nao/sic_in_test/social-interaction-cloud/sic_framework/devices",
+            sic_version=sic_version,
             **kwargs
         )
 
@@ -116,19 +118,6 @@ class Pepper(Naoqi):
         else:
             self.logger.info("SIC is already installed, checking versions")
 
-            # this command should get the version of SIC currently installed on the local machine, on all OSes including Windows
-            try:
-                from pkg_resources import DistributionNotFound, get_distribution
-
-                cur_version = get_distribution("social-interaction-cloud").version
-            except DistributionNotFound:
-                self.logger.error(
-                    "Failed to find the 'social-interaction-cloud' package locally. Ensure it is installed using pip."
-                )
-                raise RuntimeError(
-                    "Package 'social-interaction-cloud' is not installed locally. Please install it using pip."
-                )
-
             # get the version of SIC installed on Pepper
             pepper_version = ""
 
@@ -139,9 +128,10 @@ class Pepper(Naoqi):
                     break
 
             self.logger.info("SIC version on Pepper: {}".format(pepper_version))
-            self.logger.info("SIC local version: {}".format(cur_version))
+            # if you don't pass sic_version, it will grab your local version
+            self.logger.info("SIC local version: {}".format(self.sic_version))
 
-            if pepper_version == cur_version:
+            if pepper_version == self.sic_version:
                 self.logger.info("SIC already installed on Pepper and versions match")
                 return True
             else:
@@ -172,15 +162,18 @@ class Pepper(Naoqi):
 
                     mkdir /home/nao/sic_framework_2;
                     cd /home/nao/sic_framework_2;
-                    curl -L -o sic_repo.zip https://github.com/Social-AI-VU/social-interaction-cloud/archive/refs/heads/main.zip;
+                    curl -L -o sic_repo.zip https://github.com/Social-AI-VU/social-interaction-cloud/archive/refs/tags/v{version}.zip;
                     unzip sic_repo.zip;
-                    cd /home/nao/sic_framework_2/social-interaction-cloud-main;
+                    mv social-interaction-cloud-{version} social-interaction-cloud-main;
+                    cd social-interaction-cloud-main;
                     pip install --user -e . --no-deps;
                                         
                     if pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ; then
                         echo "SIC successfully installed"
                     fi;
-                    """
+                    """.format(
+                version=self.sic_version
+            )
         )
 
         if not "SIC successfully installed" in stdout.read().decode():
