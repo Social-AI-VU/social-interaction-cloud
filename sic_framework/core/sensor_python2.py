@@ -44,8 +44,6 @@ class SICSensor(SICComponent):
 
             output._timestamp = self._get_timestamp()
 
-            self.output_message(self.output_channel, output)
-
-            # self.logger.debug("Outputting message {}".format(output))
+            self.output_message(output)
 
         self.logger.debug("Stopped producing")

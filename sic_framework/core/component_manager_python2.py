@@ -8,6 +8,7 @@ import sic_framework.core.sic_logging
 from sic_framework.core.utils import (
     MAGIC_STARTED_COMPONENT_MANAGER_TEXT,
     is_sic_instance,
+    create_data_stream_id
 )
 
 from . import sic_logging, utils
@@ -20,6 +21,7 @@ from .message_python2 import (
     SICPingRequest,
     SICPongMessage
 )
+
 from .sic_redis import SICRedis
 
 
@@ -29,10 +31,11 @@ class SICStartComponentRequest(SICRequest):
     will be providing some type of capability from this device.
     """
 
-    def __init__(self, component_name, log_level, conf=None):
+    def __init__(self, component_type, log_level, input_channel, conf=None):
         super(SICStartComponentRequest, self).__init__()
-        self.component_name = component_name  # str
+        self.component_type = component_type  # str
         self.log_level = log_level  # logging.LOGLEVEL
+        self.input_channel = input_channel
         self.conf = conf  # SICConfMessage
 
 
@@ -40,6 +43,10 @@ class SICNotStartedMessage(SICMessage):
     def __init__(self, message):
         self.message = message
 
+class SICComponentStartedMessage(SICMessage):
+    def __init__(self, output_channel, request_reply_channel):
+        self.output_channel = output_channel
+        self.request_reply_channel = request_reply_channel
 
 class SICComponentManager(object):
     # The maximum error between the redis server and this device's clocks in seconds
@@ -132,8 +139,7 @@ class SICComponentManager(object):
     def _handle_request(self, request):
         """
         Start a component on this device as requested by a user. A thread is started to run the component, and component
-        threads are restarted/reused when a user re-requests the component. Separated such that SICSingletonFactory can
-        override this method.
+        threads are restarted/reused when a user re-requests the component.
         :param request: The SICStartServiceRequest request
         """
 
@@ -147,10 +153,10 @@ class SICComponentManager(object):
             return SICSuccessMessage()
         
         # reply to the request if the component manager can start the component
-        if request.component_name in self.component_classes:
+        if request.component_type in self.component_classes:
             self.logger.info(
                 "Handling request to start component {}".format(
-                    request.component_name
+                    request.component_type
                 )
             )
 
@@ -158,24 +164,10 @@ class SICComponentManager(object):
         else:
             self.logger.warning(
                 "{} ignored request {}".format(
-                    self.__class__.__name__, request.component_name
+                    self.__class__.__name__, request.component_type
                 )
             )
             return SICIgnoreRequestMessage()
-
-    def get_manager_logger(self, log_level=sic_logging.DEBUG):
-        """
-        Create a logger to inform the user during the setup of the component by the manager.
-        :param log_level: DEBUG, INFO, WARNING, ERROR, CRITICAL
-        :type log_level: string
-        :return: Logger
-        """
-        name = "{manager}".format(manager=self.__class__.__name__)
-
-        logger = sic_logging.get_sic_logger(name=name, redis=self.redis, log_level=log_level)
-        logger.info("Manager on device {} starting".format(self.ip))
-
-        return logger
 
     def start_component(self, request):
         """
@@ -185,22 +177,35 @@ class SICComponentManager(object):
         :return: the SICStartedServiceInformation with the information to connect to the started component.
         """
 
-        component_class = self.component_classes[request.component_name]  # SICComponent
+        # extract component information from the request
+        component_type = request.component_type
+        component_id = component_type + ":" + self.ip
+        input_channel = request.input_channel
+        output_channel = create_data_stream_id(component_id, input_channel)
+        request_reply_channel = output_channel + ":request_reply"
+        log_level = request.log_level
+        conf = request.conf
 
-        self.logger.debug("Starting component {}".format(component_class.get_component_name()))
+        component_class = self.component_classes[component_type]  # SICComponent object
+
+        self.logger.debug("Starting component {}".format(component_type))
 
         component = None
+
         try:
-            self.logger.debug("Creating threads for {}".format(component_class.get_component_name()))
+            self.logger.debug("Creating threads for {}".format(component_type))
             
             stop_event = threading.Event()
             ready_event = threading.Event()
-            self.logger.debug("Creating component {}".format(component_class.get_component_name()))
+            self.logger.debug("Creating component {}".format(component_type))
             component = component_class(
                 stop_event=stop_event,
                 ready_event=ready_event,
-                log_level=request.log_level,
-                conf=request.conf,
+                log_level=log_level,
+                conf=conf,
+                input_channel=input_channel,
+                output_channel=output_channel,
+                req_reply_channel=request_reply_channel,
             )
             self.logger.debug("Component {} created".format(component.component_id))
             self.active_components.append(component)
@@ -221,21 +226,45 @@ class SICComponentManager(object):
                         component.COMPONENT_STARTUP_TIMEOUT,
                     )
                 )
-                # Todo do something!
 
             self.logger.debug("Component {} started successfully".format(component.component_id))
             # inform the user their component has started
-            reply = SICSuccessMessage()
+            reply = SICComponentStartedMessage(output_channel, request_reply_channel)
 
             return reply
 
         except Exception as e:
             self.logger.error(
                 "Error starting component: {}".format(e)
-            )  # maybe not needed if already sending back a not started message
+            ) 
             if component is not None:
                 component.stop()
             return SICNotStartedMessage(e)
+
+
+    def connect(self, request):
+        """
+        Connect a component to an input channel.
+        :param request: The ConnectRequest request
+        :return: The SICSuccessMessage
+        """
+        return SICSuccessMessage()
+
+
+    def get_manager_logger(self, log_level=sic_logging.DEBUG):
+        """
+        Create a logger to inform the user during the setup of the component by the manager.
+        :param log_level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+        :type log_level: string
+        :return: Logger
+        """
+        name = "{manager}".format(manager=self.__class__.__name__)
+
+        logger = sic_logging.get_sic_logger(name=name, redis=self.redis, log_level=log_level)
+        logger.info("Manager on device {} starting".format(self.ip))
+
+        return logger
+    
 
     def stop(self, *args):
         self.stop_event.set()

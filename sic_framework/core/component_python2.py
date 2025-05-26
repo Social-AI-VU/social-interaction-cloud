@@ -49,8 +49,10 @@ class SICComponent:
     COMPONENT_STARTUP_TIMEOUT = 30
 
     def __init__(
-        self, ready_event=None, stop_event=None, log_level=sic_logging.INFO, conf=None
+        self, ready_event=None, stop_event=None, log_level=sic_logging.DEBUG, conf=None, input_channel=None, output_channel=None, req_reply_channel=None
     ):
+        log_level = sic_logging.DEBUG
+
         # Redis and logger initialization
         try:
             self._redis = SICRedis(parent_name=self.get_component_name())
@@ -67,9 +69,10 @@ class SICComponent:
         self._ready_event = ready_event if ready_event else threading.Event()
         self._stop_event = stop_event if stop_event else threading.Event()
 
-        self._input_channels = []
-        self.channel_map = {}
-        self._general_output_channel = self.get_general_output_channel(self._ip)
+        # Components constrained to one input, request_reply, output channel
+        self.input_channel = input_channel
+        self.output_channel = output_channel
+        self.request_reply_channel = req_reply_channel
 
         self.params = None
 
@@ -102,65 +105,28 @@ class SICComponent:
         """
         self.logger.debug("Registering request handler")
 
-        # register a request handler to handle control requests, e.g. ConnectRequest
+        # register a request handler to handle requests
         self._redis.register_request_handler(
-            self.get_request_reply_channel(self._ip), self._handle_request
+            self.request_reply_channel, self._handle_request
         )
+
+        self.logger.debug("Request handler registered")
+
+        self.logger.debug("Registering message handler for input channel {}".format(self.input_channel))
+
+        # Create a closure that captures the output_channel
+        def message_handler(message):
+            return self.on_message(message=message)
+        
+        self._redis.register_message_handler(
+            self.input_channel, message_handler
+        )
+        
+        self.logger.debug("Message handler registered")
 
         # communicate the service is set up and listening to its inputs
         self._ready_event.set()
-        
-    def _connect(self, connection_request):
-        """
-        Connect the output of a component to the input of this component, by registering the output channel
-        to the on_message handler.
-        :param connection_request: The component serving as an input to this component.
-        :type connection_request: ConnectRequest
-        :return:
-        """
-        self.logger.debug("Handling connection request")
-        input_channel, output_channel, conf = connection_request.input_channel, connection_request.output_channel, connection_request.conf
 
-        
-        if input_channel in self.channel_map:
-            self.logger.debug(
-                "Channel {} is already connected to this input channel".format(input_channel)
-            )
-            return
-        
-        client_info = {
-            "output_channel": output_channel,
-        }
-
-        # Check if component has setup_client method and call it if present
-        # Setup client is a method that can be used to define any client-specific information (such as models, session keys, etc.)
-        if hasattr(self, 'setup_client'):
-            client_info = self.setup_client(input_channel, output_channel, conf)
-            self.channel_map[input_channel] = client_info
-        else:
-            self.channel_map[input_channel] = client_info
-
-        try:
-            # Create a closure that captures the output_channel
-            def message_handler(message):
-                return self.on_message(client_info=client_info, message=message)
-            
-            self._redis.register_message_handler(input_channel, message_handler)
-
-            # Client-specific request handler (not control requests)
-            def request_handler(request):
-                return self.on_request(request, client_info=client_info)
-
-            # register request handler for the input channel
-            self._redis.register_request_handler(input_channel + ":request_reply", request_handler)
-
-            self.logger.debug("Connected to channel {}".format(input_channel))
-        except Exception as e:
-            self.logger.debug("Error connecting: {}".format(e))
-            raise e
-    
-    # def _handle_message(self, output_channel, message):
-    #     return self.on_message(output_channel=output_channel, message=message)
 
     def _handle_request(self, request):
         """
@@ -179,10 +145,6 @@ class SICComponent:
 
         if is_sic_instance(request, SICStopRequest):
             self.stop()
-            return SICSuccessMessage()
-
-        if is_sic_instance(request, ConnectRequest):
-            self._connect(request)
             return SICSuccessMessage()
 
         if not is_sic_instance(request, SICControlRequest):
@@ -246,13 +208,13 @@ class SICComponent:
         """
         raise NotImplementedError("You need to define a message handler.")
 
-    def output_message(self, output_channel, message):
+    def output_message(self, message):
         """
         Send a message on the output channel of this component.
         :param message:
         """
         message._previous_component_name = self.get_component_name()
-        self._redis.send_message(output_channel, message)
+        self._redis.send_message(self.output_channel, message)
 
     @staticmethod
     @abstractmethod

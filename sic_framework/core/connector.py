@@ -25,7 +25,7 @@ class SICConnector(object):
     # define how long an "instant" reply should take at most (ping sometimes takes more than 150ms)
     _PING_TIMEOUT = 1
 
-    def __init__(self, ip="localhost", log_level=logging.INFO, conf=None):
+    def __init__(self, ip="localhost", log_level=logging.INFO, input_channel=None, conf=None):
         """
         A proxy that enables communication with a component that has been started. We can send messages to, and receive
         from the component that is running on potentially another computer.
@@ -45,13 +45,22 @@ class SICConnector(object):
         self.component_name = self.component_class.get_component_name()
         self.component_ip = ip
         self.component_id = self.component_name + ":" + self.component_ip
+
+        # if the input channel is not provided, assume the client ID (IP address) is the input channel (i.e. Component is a Sensor)
+        if input_channel is None:
+            self._input_channel = ip
+        else:
+            self._input_channel = input_channel
+
         # client ID is the IP of whatever machine is running this connector
         self.client_id = utils.get_ip_adress()
         self._callback_threads = []
-        # TODO: define client-specific request-reply channels
-        self._request_reply_channel = self.component_class.get_request_reply_channel(ip)
         self._log_level = log_level
         self._conf = conf
+
+        # these are once the component manager has started the component
+        self._request_reply_channel = None
+        self._output_channel = None
 
         self.logger = self.get_connector_logger()
         self._redis.parent_logger = self.logger
@@ -61,32 +70,19 @@ class SICConnector(object):
             self.logger.debug("Setting reservation for {}".format(self.component_id))
             self._redis.set_reservation(self.component_id, self.client_id)
             self.logger.debug("Defining output channel")
-            self.output_channel = self.define_output_channel(self.component_id, input_stream=self.client_id)
-            self.logger.debug("Output channel defined: {}".format(self.output_channel))
-        else:
-            # ? Keep a general output channel for non-sensors
-            self.general_output_channel = self.component_class.get_general_output_channel(ip)
+            self._output_channel = self.define_output_channel(self.component_id, input_stream=self.client_id)
+            self.logger.debug("Output channel defined: {}".format(self._output_channel))
 
         # if we cannot ping the component, request it to be started from the ComponentManager
-        if not self._ping():
-            try:
-                self._start_component()
-                self.logger.debug("Component started")
-                assert self._ping()
-            except Exception as e:
-                self.logger.error(e)
-                raise RuntimeError(e)
+        try:
+            self._start_component()
+            self.logger.debug("Component started")
+            assert self._ping()
+        except Exception as e:
+            self.logger.error(e)
+            raise RuntimeError(e)
 
-        # if the component is not a sensor, we subscribe it to the general input channel
-        # ? what are the use cases of this ?
-        if not issubclass(self.component_class, SICSensor):
-            self.input_channel = "{}:input:{}".format(
-                self.component_class.get_component_name(), self.component_ip
-            )
-            self.logger.debug("Creating input channel for {}".format(self.input_channel))
-            self.request(ConnectRequest(self.input_channel, self.general_output_channel), timeout=self._PING_TIMEOUT)
-            self.logger.debug("Connected to {}".format(self.input_channel))
-            self.output_channel = self.general_output_channel
+        self.logger.debug("Component initialization complete")
 
     def _ping(self):
         try:
@@ -126,34 +122,31 @@ class SICConnector(object):
             ),
         )
 
-        if issubclass(self.component_class, SICSensor) and self._conf:
-            self.logger.warning(
-                "Setting configuration for SICSensors only works the first time connecting (sensor "
-                "component instances are reused for now)"
-            )
-
         component_request = SICStartComponentRequest(
-            component_name=self.component_class.get_component_name(),
+            component_type=self.component_class.get_component_name(),
             log_level=self._log_level,
+            input_channel=self._input_channel,
             conf=self._conf,
         )
 
-        # factory returns a SICStartedComponentInformation
-
         try:
-            component_info = self._redis.request(
+            return_message = self._redis.request(
                 self.component_ip,
                 component_request,
                 timeout=self.component_class.COMPONENT_STARTUP_TIMEOUT,
             )
-            if is_sic_instance(component_info, SICNotStartedMessage):
+            if is_sic_instance(return_message, SICNotStartedMessage):
                 raise ComponentNotStartedError(
                     "\n\nComponent did not start, error should be logged above. ({})".format(
-                        component_info.message
+                        return_message.message
                     )
                 )
+            else:
+                self._output_channel = return_message.output_channel
+                self._request_reply_channel = return_message.request_reply_channel
 
         except TimeoutError as e:
+            # ? Why use six.raise_from?
             six.raise_from(
                 TimeoutError(
                     "Could not connect to {}. Is SIC running on the device (ip:{})?".format(
@@ -162,8 +155,10 @@ class SICConnector(object):
                 ),
                 None,
             )
+
         except Exception as e:
             logging.error("Unknown exception occured while trying to start {name} component: {e}".format(name=self.component_class.get_component_name(), e=e))
+
 
     def register_callback(self, output_channel, callback):
         """
@@ -182,7 +177,7 @@ class SICConnector(object):
     def send_message(self, message):
         # Update the timestamp, as it should be set by the device of origin
         message._timestamp = self._get_timestamp()
-        self._redis.send_message(self.input_channel, message)
+        self._redis.send_message(self._input_channel, message)
 
     def _get_timestamp(self):
         # TODO this needs to be synchronized with all devices, because if a nao is off by a second or two
@@ -207,10 +202,10 @@ class SICConnector(object):
         self.logger.debug("Output channel defined: {}".format(output_channel))
 
         request = ConnectRequest(input_channel, output_channel, conf)
-        self._redis.request(self._request_reply_channel, request)
+        self._redis.request(self.component_ip, request)
         return output_channel
 
-    def request(self, request=None, input_channel=None, timeout=100.0, block=True):
+    def request(self, request, timeout=100.0, block=True):
         """
         Request data from a device. Waits until the reply is received. If the reply takes longer than
         `timeout` seconds to arrive, a TimeoutError is raised. If block is set to false, the reply is
@@ -224,10 +219,6 @@ class SICConnector(object):
         :return: the SICMessage reply from the device, or none if blocking=False
         :rtype: SICMessage | None
         """
-        if input_channel is None:
-            request_reply_channel = self._request_reply_channel
-        else:
-            request_reply_channel = input_channel + ":request_reply"
 
         self.logger.debug("Sending request: {} over channel: {}".format(request, self._request_reply_channel))
 
@@ -246,7 +237,7 @@ class SICConnector(object):
         request._timestamp = self._get_timestamp()
 
         return self._redis.request(
-            request_reply_channel, request, timeout=timeout, block=block
+            self._request_reply_channel, request, timeout=timeout, block=block
         )
 
     def stop(self):
@@ -270,6 +261,18 @@ class SICConnector(object):
         logger = sic_logging.get_sic_logger(name=name, redis=self._redis, log_level=log_level)
 
         return logger
+    
+    def get_input_channel(self):
+        """
+        Get the input channel of the component.
+        """
+        return self._input_channel
+    
+    def get_output_channel(self):
+        """
+        Get the output channel of the component.
+        """
+        return self._output_channel
     
     def define_output_channel(self, component_id, input_stream):
         """

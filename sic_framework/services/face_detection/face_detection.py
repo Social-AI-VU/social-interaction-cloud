@@ -35,10 +35,9 @@ class FaceDetectionConf(SICConfMessage):
 class FaceDetectionComponent(SICComponent):
     def __init__(self, *args, **kwargs):
         super(FaceDetectionComponent, self).__init__(*args, **kwargs)
-        self.script_dir = Path(__file__).parent.resolve()
-        self.cascadePath = str(self.script_dir / "haarcascade_frontalface_default.xml")
-        self.client_models = {}
-        # self.faceCascade = cv2.CascadeClassifier(cascadePath)
+        script_dir = Path(__file__).parent.resolve()
+        cascadePath = str(script_dir / "haarcascade_frontalface_default.xml")
+        self.faceCascade = cv2.CascadeClassifier(cascadePath)
 
     @staticmethod
     def get_inputs():
@@ -52,21 +51,19 @@ class FaceDetectionComponent(SICComponent):
     def get_output():
         return BoundingBoxesMessage
 
-    def on_message(self, client_info=dict(), message=""):
-        self.logger.info(f"Using model for client {client_info['input_channel']}")
-        model = self.client_models[client_info["input_channel"]]
-        bboxes = self.detect(message.image, model)
-        self.output_message(output_channel=client_info["output_channel"], message=bboxes)
+    def on_message(self, message):
+        bboxes = self.detect(message.image)
+        self.output_message(bboxes)
 
     def on_request(self, request):
         return self.detect(request.image)
 
-    def detect(self, image, model=None):
+    def detect(self, image):
         img = array(image).astype(np.uint8)
 
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-        faces = model.detectMultiScale(
+        faces = self.faceCascade.detectMultiScale(
             gray,
             scaleFactor=1.2,
             minNeighbors=5,
@@ -76,16 +73,6 @@ class FaceDetectionComponent(SICComponent):
         faces = [BoundingBox(x, y, w, h) for (x, y, w, h) in faces]
 
         return BoundingBoxesMessage(faces)
-
-    def setup_client(self, input_channel, output_channel, conf=None):
-        self.logger.info(f"Defining model for client {input_channel}")
-        # define a new model instance for the client
-        self.client_models[input_channel] = cv2.CascadeClassifier(self.cascadePath)
-
-        return {
-            "input_channel": input_channel,
-            "output_channel": output_channel,
-        }
 
 
 class FaceDetection(SICConnector):
