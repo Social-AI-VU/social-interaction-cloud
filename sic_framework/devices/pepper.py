@@ -136,7 +136,7 @@ class Pepper(Naoqi):
                 return True
             else:
                 self.logger.warning(
-                    "SIC is installed on Pepper but does not match the local version! Reinstalling SIC on Pepper"
+                    "SIC is installed on Pepper but does not match the local version or the version you passed! Reinstalling SIC on Pepper"
                 )
                 self.logger.warning(
                     "(Check to make sure you also have the latest version of SIC installed!)"
