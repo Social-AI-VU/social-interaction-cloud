@@ -142,6 +142,20 @@ class NaoqiAnimationRequest(SICRequest):
         self.animation_path = animation_path
 
 
+class NaoqiSmartStiffnessRequest(SICRequest):
+    """
+    Enable or Disable the smart stiffness reflex for all the joints (True by default).
+    see: http://doc.aldebaran.com/2-4/naoqi/motion/reflexes-smart-stiffness.html
+    """
+    def __init__(self, enable=True):
+        """
+        :param enable: True or False
+        :type enable: bool
+        """
+        super(NaoqiSmartStiffnessRequest, self).__init__()
+        self.enable = enable
+
+
 class PepperPostureRequest(SICRequest):
     """
     Make the robot go to a predefined posture.
@@ -190,6 +204,11 @@ class NaoqiMotionActuator(SICActuator):
             self.motion.setIdlePostureEnabled(request.joints, request.value)
         elif request == NaoqiBreathingRequest:
             self.motion.setBreathEnabled(request.joints, request.value)
+        elif request == NaoqiSmartStiffnessRequest:
+            self.motion.setSmartStiffnessEnabled(request.enable)
+            # sometimes it doesn't work in the first try, so doueble check
+            if self.motion.getSmartStiffnessEnabled() != request.enable:
+                self.motion.setSmartStiffnessEnabled(request.enable)
         elif request == NaoqiMoveRequest:
             self.move(request)
         elif request == NaoqiMoveToRequest:
