@@ -126,6 +126,7 @@ class SICConnector(object):
             component_type=self.component_class.get_component_name(),
             log_level=self._log_level,
             input_channel=self._input_channel,
+            client_id=self.client_id,
             conf=self._conf,
         )
 
@@ -258,7 +259,7 @@ class SICConnector(object):
         """
         name = "{connector}Connector".format(connector=self.__class__.__name__)
 
-        logger = sic_logging.get_sic_logger(name=name, redis=self._redis, log_level=log_level)
+        logger = sic_logging.get_sic_logger(name=name, client_id=self.client_id, redis=self._redis, log_level=log_level)
 
         return logger
     

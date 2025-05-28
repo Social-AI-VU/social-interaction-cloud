@@ -49,14 +49,23 @@ class SICComponent:
     COMPONENT_STARTUP_TIMEOUT = 30
 
     def __init__(
-        self, ready_event=None, stop_event=None, log_level=sic_logging.DEBUG, conf=None, input_channel=None, output_channel=None, req_reply_channel=None
+        self, 
+        ready_event=None, 
+        stop_event=None, 
+        log_level=sic_logging.DEBUG, 
+        conf=None, 
+        input_channel=None, 
+        output_channel=None, 
+        req_reply_channel=None,
+        client_id=""
     ):
-        log_level = sic_logging.DEBUG
+        self.log_level = log_level
+        self.client_id = client_id
 
         # Redis and logger initialization
         try:
             self._redis = SICRedis(parent_name=self.get_component_name())
-            self.logger = self._get_logger(log_level)
+            self.logger = self._get_logger()
             self._redis.parent_logger = self.logger
             self.logger.debug("Initialized Redis and logger")
         except Exception as e:
@@ -78,7 +87,7 @@ class SICComponent:
 
         self.set_config(conf)
 
-    def _get_logger(self, log_level):
+    def _get_logger(self):
         """
         Create a logger for the component to use to send messages to the user during its lifetime.
         :param log_level: The logging verbosity level, such as DEBUG, INFO, etc.
@@ -86,7 +95,7 @@ class SICComponent:
         """
         # create logger for the component
         name = self.get_component_name()
-        return sic_logging.get_sic_logger(name=name, redis=self._redis, log_level=log_level)
+        return sic_logging.get_sic_logger(name=name, client_id=self.client_id, redis=self._redis, log_level=self.log_level)
 
     def _start(self):
         """
@@ -158,29 +167,7 @@ class SICComponent:
         The display name of this component.
         """
         return cls.__name__
-
-    @classmethod
-    def get_general_output_channel(cls, ip):
-        """
-        Get the general output channel for this component.
-        TODO what place is best to put this method
-        TODO maybe explain why this is deterministic?
-        :return: channel name
-        :rtype: str
-        """
-        return "{name}:{ip}".format(name=cls.get_component_name(), ip=ip)
-
-    @classmethod
-    def get_request_reply_channel(cls, ip):
-        """
-        Get the channel name to communicate with request-replies with this component
-        :return: channel name
-        :rtype: str
-        """
-
-        name = cls.get_component_name()
-        return "{name}:reqreply:{ip}".format(name=name, ip=ip)
-
+    
     def set_config(self, new=None):
         # Service parameter configuration
         if new:

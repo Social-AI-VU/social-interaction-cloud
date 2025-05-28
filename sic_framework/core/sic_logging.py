@@ -21,12 +21,11 @@ DEBUG = 10  # service dependent verbose information
 NOTSET = 0
 
 
-def get_log_channel():
+def get_log_channel(client_id=""):
     """
     Get the global log channel. All components on any device should log to this channel.
     """
-    # TODO: add ID so each client/applications gets its own separate log channel
-    return "sic:logging"
+    return "sic:logging:{client_id}".format(client_id=client_id)
 
 
 class SICLogMessage(SICMessage):
@@ -57,7 +56,7 @@ class SICCommonLog(object):
         
         self.lock = threading.Lock()
 
-    def subscribe_to_redis_log(self):
+    def subscribe_to_redis_log(self, client_id=""):
         """
         Subscribe to the Redis log channel and display any messages on the terminal. 
         This function may be called multiple times but will only subscribe once.
@@ -68,7 +67,7 @@ class SICCommonLog(object):
                 self.running = True
                 self.redis = SICRedis(parent_name="SICCommonLog")
                 self.redis.register_message_handler(
-                    get_log_channel(), self._handle_redis_log_message
+                    get_log_channel(client_id), self._handle_redis_log_message
                 )
 
     def _handle_redis_log_message(self, message):
@@ -120,11 +119,16 @@ class SICRedisLogStream(io.TextIOBase):
     def writable(self):
         return True
 
-    def write(self, msg):
+    def write(self, msg, client_id=""):
+        if client_id:
+            log_channel = get_log_channel(client_id)
+        else:
+            log_channel = self.logging_channel
+
         # only send logs to redis if a redis instance is associated with this logger
         if self.redis != None:
             message = SICLogMessage(msg)
-            self.redis.send_message(self.logging_channel, message)
+            self.redis.send_message(log_channel, message)
 
     def flush(self):
         return
@@ -179,7 +183,7 @@ class SICLogFormatter(logging.Formatter):
         return text
 
 
-def get_sic_logger(name="", redis=None, log_level=DEBUG):
+def get_sic_logger(name="", client_id="", redis=None, log_level=DEBUG):
     """
     Set up logging to the log output channel to be able to report messages to users.
 
@@ -196,14 +200,14 @@ def get_sic_logger(name="", redis=None, log_level=DEBUG):
 
     if redis:
         # if redis is provided, this is a remote device and we use the remote stream which sends log messages to Redis
-        remote_stream = SICRedisLogStream(redis, get_log_channel())
+        remote_stream = SICRedisLogStream(redis, get_log_channel(client_id))
         handler_redis = logging.StreamHandler(remote_stream)
         handler_redis.setFormatter(log_format)
         logger.addHandler(handler_redis)
     else:
         # if there is no redis instance, this is a local device
         # make sure the SICCommonLog is subscribed to the Redis log channel so all log messages are written to the logfile
-        SIC_COMMON_LOG.subscribe_to_redis_log()
+        SIC_COMMON_LOG.subscribe_to_redis_log(client_id)
 
         # For local logging, create a custom handler that uses SICCommonLog's file
         class SICFileHandler(logging.Handler):

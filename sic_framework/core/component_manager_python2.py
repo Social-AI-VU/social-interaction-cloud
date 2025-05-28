@@ -31,13 +31,13 @@ class SICStartComponentRequest(SICRequest):
     will be providing some type of capability from this device.
     """
 
-    def __init__(self, component_type, log_level, input_channel, conf=None):
+    def __init__(self, component_type, log_level, input_channel, client_id, conf=None):
         super(SICStartComponentRequest, self).__init__()
         self.component_type = component_type  # str
         self.log_level = log_level  # logging.LOGLEVEL
         self.input_channel = input_channel
+        self.client_id = client_id
         self.conf = conf  # SICConfMessage
-
 
 class SICNotStartedMessage(SICMessage):
     def __init__(self, message):
@@ -143,6 +143,8 @@ class SICComponentManager(object):
         :param request: The SICStartServiceRequest request
         """
 
+        client_id = request.client_id if request.client_id else ""
+
         if is_sic_instance(request, SICPingRequest):
             # this request is sent to see if the ComponentManager has started
             return SICPongMessage()
@@ -157,7 +159,8 @@ class SICComponentManager(object):
             self.logger.info(
                 "Handling request to start component {}".format(
                     request.component_type
-                )
+                ),
+                extra={"client_id": client_id}
             )
 
             return self.start_component(request)
@@ -165,7 +168,8 @@ class SICComponentManager(object):
             self.logger.warning(
                 "{} ignored request {}".format(
                     self.__class__.__name__, request.component_type
-                )
+                ),
+                extra={"client_id": client_id}
             )
             return SICIgnoreRequestMessage()
 
@@ -181,6 +185,7 @@ class SICComponentManager(object):
         component_type = request.component_type
         component_id = component_type + ":" + self.ip
         input_channel = request.input_channel
+        client_id = request.client_id
         output_channel = create_data_stream_id(component_id, input_channel)
         request_reply_channel = output_channel + ":request_reply"
         log_level = request.log_level
@@ -188,16 +193,16 @@ class SICComponentManager(object):
 
         component_class = self.component_classes[component_type]  # SICComponent object
 
-        self.logger.debug("Starting component {}".format(component_type))
+        self.logger.debug("Starting component {}".format(component_type), extra={"client_id": client_id})
 
         component = None
 
         try:
-            self.logger.debug("Creating threads for {}".format(component_type))
+            self.logger.debug("Creating threads for {}".format(component_type), extra={"client_id": client_id})
             
             stop_event = threading.Event()
             ready_event = threading.Event()
-            self.logger.debug("Creating component {}".format(component_type))
+            self.logger.debug("Creating component {}".format(component_type), extra={"client_id": client_id})
             component = component_class(
                 stop_event=stop_event,
                 ready_event=ready_event,
@@ -206,8 +211,9 @@ class SICComponentManager(object):
                 input_channel=input_channel,
                 output_channel=output_channel,
                 req_reply_channel=request_reply_channel,
+                client_id=client_id
             )
-            self.logger.debug("Component {} created".format(component.component_id))
+            self.logger.debug("Component {} created".format(component.component_id), extra={"client_id": client_id})
             self.active_components.append(component)
 
             # TODO daemon=False could be set to true, but then the component cannot clean up properly
@@ -224,10 +230,11 @@ class SICComponentManager(object):
                     "Component {} refused to start within {} seconds!".format(
                         component.get_component_name(),
                         component.COMPONENT_STARTUP_TIMEOUT,
-                    )
+                    ), 
+                    extra={"client_id": client_id}
                 )
 
-            self.logger.debug("Component {} started successfully".format(component.component_id))
+            self.logger.debug("Component {} started successfully".format(component.component_id), extra={"client_id": client_id})
             # inform the user their component has started
             reply = SICComponentStartedMessage(output_channel, request_reply_channel)
 
@@ -235,7 +242,8 @@ class SICComponentManager(object):
 
         except Exception as e:
             self.logger.error(
-                "Error starting component: {}".format(e)
+                "Error starting component: {}".format(e),
+                extra={"client_id": client_id}
             ) 
             if component is not None:
                 component.stop()
