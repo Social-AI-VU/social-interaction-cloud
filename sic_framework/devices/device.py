@@ -70,6 +70,7 @@ class SICDevice(object):
         self.configs = dict()
         self.ip = ip
         self.port = port
+        self._client_id = utils.get_ip_adress()
         self._redis = SICRedis()
         self._PING_TIMEOUT = 3
         self.sic_version = sic_version
@@ -88,7 +89,7 @@ class SICDevice(object):
             pass
 
         self.logger = sic_logging.get_sic_logger(
-            name="{}DeviceManager".format(self.__class__.__name__)
+            name="{}DeviceManager".format(self.__class__.__name__), client_id=self._client_id
         )
 
         self.logger.info("Initializing device with ip: {ip}".format(ip=ip))
