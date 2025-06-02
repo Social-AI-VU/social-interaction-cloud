@@ -220,7 +220,6 @@ class SICConnector(object):
 
         self.logger.debug("Sending request: {} over channel: {}".format(request, self._request_reply_channel))
 
-
         if isinstance(request, type):
             self.logger.error(
                 "You probably forgot to initiate the class. For example, use NaoRestRequest() instead of NaoRestRequest."

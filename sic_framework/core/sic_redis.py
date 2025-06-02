@@ -425,10 +425,8 @@ class SICRedis:
         }
         try:
             reservation_result = self._redis.hset(self.reservation_map, mapping=reservation)
-            print("Reservation set: {}".format(reservation_result))
             return reservation_result
         except Exception as e:
-            print("Error setting reservation: {}".format(e))
             raise e
         
 
