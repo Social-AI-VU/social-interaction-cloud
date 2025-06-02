@@ -57,14 +57,15 @@ class SICComponent:
         input_channel=None, 
         output_channel=None, 
         req_reply_channel=None,
-        client_id=""
+        client_id="",
+        redis=None
     ):
         self.log_level = log_level
         self.client_id = client_id
 
         # Redis and logger initialization
         try:
-            self._redis = SICRedis(parent_name=self.get_component_name())
+            self._redis = redis
             self.logger = self._get_logger()
             self._redis.parent_logger = self.logger
             self.logger.debug("Initialized Redis and logger")

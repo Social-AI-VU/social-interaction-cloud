@@ -208,7 +208,8 @@ class SICComponentManager(object):
                 input_channel=input_channel,
                 output_channel=output_channel,
                 req_reply_channel=request_reply_channel,
-                client_id=client_id
+                client_id=client_id,
+                redis=self.redis
             )
             self.logger.debug("Component {} created".format(component.component_id), extra={"client_id": client_id})
             self.active_components.append(component)
