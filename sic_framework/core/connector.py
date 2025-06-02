@@ -34,12 +34,14 @@ class SICConnector(object):
         :param log_level: Controls the verbosity of the connected component logging.
         :param conf: Optional SICConfMessage to set component parameters.
         """
-        self._redis = SICRedis()
         assert isinstance(ip, str), "IP must be string"
 
-        # if the component is running on the same machine
+        # connect to Redis
+        self._redis = SICRedis()
+
+        # if the component is running on the same machine as the Connector
         if ip in ["localhost", "127.0.0.1"]:
-            # get the ip address of the machine on the network
+            # get the ip address of the current machine on the network
             ip = utils.get_ip_adress()
 
         self.component_name = self.component_class.get_component_name()
@@ -58,22 +60,14 @@ class SICConnector(object):
         self._log_level = log_level
         self._conf = conf
 
-        # these are once the component manager has started the component
+        # these are set once the component manager has started the component
         self._request_reply_channel = None
         self._output_channel = None
 
         self.logger = self.get_connector_logger()
         self._redis.parent_logger = self.logger
 
-        # if the component is a sensor, we need to first reserve it.
-        if issubclass(self.component_class, SICSensor):
-            self.logger.debug("Setting reservation for {}".format(self.component_id))
-            self._redis.set_reservation(self.component_id, self.client_id)
-            self.logger.debug("Defining output channel")
-            self._output_channel = self.define_output_channel(self.component_id, input_stream=self.client_id)
-            self.logger.debug("Output channel defined: {}".format(self._output_channel))
-
-        # if we cannot ping the component, request it to be started from the ComponentManager
+        # make sure we can start the component and ping it
         try:
             self._start_component()
             self.logger.debug("Component started")
@@ -131,6 +125,8 @@ class SICConnector(object):
         )
 
         try:
+            # if successful, the component manager will send a SICComponentStartedMessage,
+            # which contains the ID of the output and req/reply channel
             return_message = self._redis.request(
                 self.component_ip,
                 component_request,
@@ -143,6 +139,7 @@ class SICConnector(object):
                     )
                 )
             else:
+                # set the output and request/reply channels
                 self._output_channel = return_message.output_channel
                 self._request_reply_channel = return_message.request_reply_channel
 
@@ -274,40 +271,6 @@ class SICConnector(object):
         Get the output channel of the component.
         """
         return self._output_channel
-    
-    def define_output_channel(self, component_id, input_stream):
-        """
-        Define output stream for the component.
-        """
-        # define an output channel for this input
-        data_stream_id = utils.create_data_stream_id(
-            component_id=component_id,
-            input_stream=input_stream
-        )
-
-        data_stream_info = {
-            "component_id": component_id,
-            "input_stream": input_stream
-        }
-
-        self.logger.debug("Setting data stream for {}".format(data_stream_id))
-        try:
-            self._redis.set_data_stream(data_stream_id, data_stream_info)
-            self.logger.debug("Data stream set for {}".format(data_stream_id))
-            return data_stream_id
-        except Exception as e:
-            self.logger.error("Error setting data stream: {}".format(e))
-            raise e
-
-    # TODO: maybe put this in constructor to do a graceful exit on crash?
-    # register cleanup to disconnect redis if an exception occurs anywhere during exection
-    # TODO FIX cannot register multiple exepthooks
-    # sys.excepthook = self.cleanup_after_except
-    # #
-    # def cleanup_after_except(self, *args):
-    #     self.stop()
-    #     # call original except hook after stopping
-    #     sys.__excepthook__(*args)
 
     # TODO: maybe also helps for a graceful exit?
     def __del__(self):

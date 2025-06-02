@@ -232,7 +232,27 @@ class SICComponentManager(object):
                     extra={"client_id": client_id}
                 )
 
+            # register the datastreams for the component
+            try:
+                self.logger.debug("Setting data stream for component {}".format(component.component_id), extra={"client_id": client_id})
+
+                data_stream_info = {
+                    "component_id": component_id,
+                    "input_channel": input_channel,
+                    "client_id": client_id
+                }
+                                
+                self.redis.set_data_stream(output_channel, data_stream_info)
+
+                self.logger.debug("Data stream set for component {}".format(component.component_id), extra={"client_id": client_id})
+            except Exception as e:
+                self.logger.error(
+                    "Error setting data stream for component {}: {}".format(component.component_id, e),
+                    extra={"client_id": client_id}
+                )
+
             self.logger.debug("Component {} started successfully".format(component.component_id), extra={"client_id": client_id})
+            
             # inform the user their component has started
             reply = SICComponentStartedMessage(output_channel, request_reply_channel)
 

@@ -403,13 +403,16 @@ class SICRedis:
         """
         return utils.str_if_bytes(self._redis.hget(self.reservation_map, key=component_id))
     
-    def set_data_stream(self, data_stream_id, data_stream):
+    def set_data_stream(self, data_stream_id, data_stream_info):
         """
         Add a data stream in redis.
+
+        :param data_stream_id: The id of the data stream
+        :param data_stream_info: A dictionary containing the component id, input channel, and the client id its associated with
         """
         # Redis hashes are flat (only key-value pairs), so we need to convert the data stream to a string
         data_stream_info = {
-            data_stream_id: json.dumps(data_stream)
+            data_stream_id: json.dumps(data_stream_info)
         }
         return self._redis.hset(self.data_stream_map, mapping=data_stream_info)
     
