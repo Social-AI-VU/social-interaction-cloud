@@ -14,7 +14,9 @@ class SICSensor(SICComponent):
     def __init__(self, *args, **kwargs):
         super(SICSensor, self).__init__(*args, **kwargs)
         self.logger.debug("Setting reservation for {}".format(self.component_id))
-        self._redis.set_reservation(self.component_id, self.client_id)
+        # set_reservation returns the number of keys set, if it is less than 1, then the reservation failed (i.e. already reserved)
+        if self._redis.set_reservation(self.component_id, self.client_id) < 1:
+            raise Exception("Failed to set reservation for {}, Sensor already in use".format(self.component_id))
 
     def start(self):
         """

@@ -429,6 +429,16 @@ class SICRedis:
         except Exception as e:
             raise e
         
+    def unset_reservation(self, component_id):
+        """
+        Remove a reservation in redis.
+        """
+        try:
+            reservation_result = self._redis.hdel(self.reservation_map, component_id)
+            return reservation_result
+        except Exception as e:
+            raise e
+        
 
 if __name__ == "__main__":
 

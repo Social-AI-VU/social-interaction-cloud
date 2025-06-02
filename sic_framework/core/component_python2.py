@@ -260,6 +260,16 @@ class SICComponent:
             "Trying to exit {} gracefully...".format(self.get_component_name())
         )
         try:
+            # if the component is reserved, remove the reservation
+            self.logger.debug("Removing reservation for {}".format(self.component_id))
+
+            reservation_result = self._redis.unset_reservation(self.component_id)
+
+            if reservation_result == 1:
+                self.logger.debug("Reservation for {} removed".format(self.component_id))
+            else:
+                self.logger.debug("Reservation for {} not found".format(self.component_id))
+
             self._redis.close()
             self._stop_event.set()
             self.logger.debug("Graceful exit was successful")

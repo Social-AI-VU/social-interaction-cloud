@@ -9,7 +9,13 @@ class SICActuator(SICComponent):
     """
     Actuators are components that do not send messages.
     """
-
+    def __init__(self, *args, **kwargs):
+        super(SICActuator, self).__init__(*args, **kwargs)
+        self.logger.debug("Setting reservation for {}".format(self.component_id))
+        # set_reservation returns the number of keys set, if it is less than 1, then the reservation failed (i.e. already reserved)
+        if self._redis.set_reservation(self.component_id, self.client_id) < 1:
+            raise Exception("Failed to set reservation for {}, Actuator already in use".format(self.component_id))
+        
     @abstractmethod
     def execute(self, request):
         """
