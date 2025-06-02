@@ -416,28 +416,30 @@ class SICRedis:
         }
         return self._redis.hset(self.data_stream_map, mapping=data_stream_info)
     
+    def unset_data_stream(self, data_stream_id):
+        """
+        Remove a data stream in redis.
+
+        :param data_stream_id: The id of the data stream
+        """
+        return self._redis.hdel(self.data_stream_map, data_stream_id)
+    
     def set_reservation(self, component_id, client_id):
         """
-        Add a reservation in redis.
+        Add a reservation for a component in redis.
         """
         reservation = {
             component_id: client_id
         }
-        try:
-            reservation_result = self._redis.hset(self.reservation_map, mapping=reservation)
-            return reservation_result
-        except Exception as e:
-            raise e
+        return self._redis.hset(self.reservation_map, mapping=reservation)
+
         
     def unset_reservation(self, component_id):
         """
-        Remove a reservation in redis.
+        Remove a reservation for a component in redis.
         """
-        try:
-            reservation_result = self._redis.hdel(self.reservation_map, component_id)
-            return reservation_result
-        except Exception as e:
-            raise e
+        return self._redis.hdel(self.reservation_map, component_id)
+
         
 
 if __name__ == "__main__":

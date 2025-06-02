@@ -270,6 +270,15 @@ class SICComponent:
             else:
                 self.logger.debug("Reservation for {} not found".format(self.component_id))
 
+            # remove the data stream
+            self.logger.debug("Removing data stream for {}".format(self.component_id))
+            data_stream_result = self._redis.unset_data_stream(self.output_channel)
+
+            if data_stream_result == 1:
+                self.logger.debug("Data stream for {} removed".format(self.component_id))
+            else:
+                self.logger.debug("Data stream for {} not found".format(self.component_id))
+
             self._redis.close()
             self._stop_event.set()
             self.logger.debug("Graceful exit was successful")
