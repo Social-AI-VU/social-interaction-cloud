@@ -25,7 +25,7 @@ class SICConnector(object):
     # define how long an "instant" reply should take at most (ping sometimes takes more than 150ms)
     _PING_TIMEOUT = 1
 
-    def __init__(self, ip="localhost", log_level=logging.INFO, input_channel=None, conf=None):
+    def __init__(self, ip="localhost", log_level=logging.DEBUG, input_channel=None, conf=None):
         """
         A proxy that enables communication with a component that has been started. We can send messages to, and receive
         from the component that is running on potentially another computer.
@@ -81,7 +81,7 @@ class SICConnector(object):
     def _ping(self):
         try:
             self.request(SICPingRequest(), timeout=self._PING_TIMEOUT)
-            self.logger.debug("RECEIVED PING RESPONSE")
+            self.logger.debug("Received ping response")
             return True
 
         except TimeoutError:

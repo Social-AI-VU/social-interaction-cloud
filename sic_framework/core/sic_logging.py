@@ -35,7 +35,7 @@ class SICLogMessage(SICMessage):
         :param msg: The log message to send to the user
         """
         self.msg = msg
-        self.client_id = client_id
+        self.client_id = None
         super(SICLogMessage, self).__init__()
 
 
@@ -121,15 +121,16 @@ class SICRedisHandler(logging.Handler):
             
             # Create the log message with client_id if it exists
             log_message = SICLogMessage(msg)
+
+            # If additional client id is provided (as with the ComponentManager), use it to send the log message to the correct channel
             if hasattr(record, 'client_id'):
                 log_message.client_id = record.client_id
+                log_channel = get_log_channel(log_message.client_id)
+            else:
+                log_channel = self.logging_channel
 
-            # Determine the channel
-            log_channel = get_log_channel(log_message.client_id)
-
-            # Send to redis if available
-            if self.redis is not None:
-                self.redis.send_message(log_channel, log_message)
+            # Send over Redis
+            self.redis.send_message(log_channel, log_message)
         except Exception:
             self.handleError(record)
 
