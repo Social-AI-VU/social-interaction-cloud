@@ -145,6 +145,7 @@ class DialogflowConf(SICConfMessage):
         sample_rate_hertz: int = 44100,
         audio_encoding=dialogflow.AudioEncoding.AUDIO_ENCODING_LINEAR_16,
         language: str = "en-US",
+        timeout: float | None = None,
     ):
         """
         :param keyfile_json         Dict of google service account json key file, which has access to your dialogflow
@@ -152,6 +153,8 @@ class DialogflowConf(SICConfMessage):
         :param sample_rate_hertz    44100Hz by default. Use 16000 for a Nao/Pepper robot.
         :param audio_encoding       encoding for the audio
         :param language             the language of the Dialogflow agent
+        :param timeout              the maximum time in seconds to wait for a response from Dialogflow. Default is None, which means no timeout,
+                                    and it will listen indefinitely until it thinks the user is done talking.
         """
         SICConfMessage.__init__(self)
 
@@ -161,6 +164,7 @@ class DialogflowConf(SICConfMessage):
         self.keyfile_json = keyfile_json
         self.sample_rate_hertz = sample_rate_hertz
         self.audio_encoding = audio_encoding
+        self.timeout = timeout
 
 
 class DialogflowComponent(SICComponent):
@@ -263,6 +267,16 @@ class DialogflowComponent(SICComponent):
             start_time = time.time()
 
             while not self.message_was_final.is_set():
+                if self.params.timeout != None:
+                    if time.time() - start_time > self.params.timeout:
+                        self.logger.warning(
+                            "Request is longer than {timeout} seconds, stopping dialogflow request".format(
+                                timeout=self.params.timeout
+                            )
+                        )
+                        self.message_was_final.set()
+                        break
+
                 chunk = self.audio_buffer.get()
 
                 if isinstance(chunk, bytearray):
@@ -328,7 +342,9 @@ class DialogflowComponent(SICComponent):
                 )
             if response.query_result:
                 self.logger.info("Received intent: " + response.query_result.action)
-                self.logger.info("Received transcript: " + response.query_result.query_text)
+                self.logger.info(
+                    "Received transcript: " + response.query_result.query_text
+                )
                 return QueryResult(response)
             if response.recognition_result.is_final:
                 self.logger.info("----- FINAL -----")
