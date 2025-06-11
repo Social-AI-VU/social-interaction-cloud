@@ -3,6 +3,7 @@ import time
 from abc import ABCMeta
 
 import six
+import sys
 
 from sic_framework.core.component_python2 import ConnectRequest
 from sic_framework.core.sensor_python2 import SICSensor
@@ -25,7 +26,7 @@ class SICConnector(object):
     # define how long an "instant" reply should take at most (ping sometimes takes more than 150ms)
     _PING_TIMEOUT = 1
 
-    def __init__(self, ip="localhost", log_level=logging.DEBUG, input_channel=None, conf=None):
+    def __init__(self, ip="localhost", log_level=logging.DEBUG, input_source=None, conf=None):
         """
         A proxy that enables communication with a component that has been started. We can send messages to, and receive
         from the component that is running on potentially another computer.
@@ -39,6 +40,13 @@ class SICConnector(object):
         # connect to Redis
         self._redis = SICRedis()
 
+        # client ID is the IP of whatever machine is running this connector
+        self.client_id = utils.get_ip_adress()
+        self._log_level = log_level
+
+        self.logger = self.get_connector_logger()
+        self._redis.parent_logger = self.logger
+
         # if the component is running on the same machine as the Connector
         if ip in ["localhost", "127.0.0.1"]:
             # get the ip address of the current machine on the network
@@ -49,23 +57,20 @@ class SICConnector(object):
         self.component_id = self.component_name + ":" + self.component_ip
 
         # if the input channel is not provided, assume the client ID (IP address) is the input channel (i.e. Component is a Sensor)
-        if input_channel is None:
+        if input_source is None:
             self._input_channel = ip
         else:
-            self._input_channel = input_channel
+            if not isinstance(input_source, SICConnector):
+                self.logger.error("Input source must be a SICConnector")
+                sys.exit(1)
+            self._input_channel = input_source.get_output_channel()
 
-        # client ID is the IP of whatever machine is running this connector
-        self.client_id = utils.get_ip_adress()
         self._callback_threads = []
-        self._log_level = log_level
         self._conf = conf
 
         # these are set once the component manager has started the component
         self._request_reply_channel = None
         self._output_channel = None
-
-        self.logger = self.get_connector_logger()
-        self._redis.parent_logger = self.logger
 
         # make sure we can start the component and ping it
         try:
@@ -158,14 +163,14 @@ class SICConnector(object):
             logging.error("Unknown exception occured while trying to start {name} component: {e}".format(name=self.component_class.get_component_name(), e=e))
 
 
-    def register_callback(self, output_channel, callback):
+    def register_callback(self, callback):
         """
         Subscribe a callback to be called when there is new data available.
         :param callback: the function to execute.
         """
 
         try:
-            ct = self._redis.register_message_handler(output_channel, callback)
+            ct = self._redis.register_message_handler(self.get_output_channel(), callback)
         except Exception as e:
             self.logger.error("Error registering callback: {}".format(e))
             raise e
