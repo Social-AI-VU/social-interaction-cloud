@@ -221,7 +221,6 @@ class DialogflowComponent(SICComponent):
 
     def on_message(self, message):
         if is_sic_instance(message, AudioMessage):
-            self.logger.debug("Received audio message")
             # update the audio message in the queue
             try:
                 self.audio_buffer.put_nowait(message.waveform)

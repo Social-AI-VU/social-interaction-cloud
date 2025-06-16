@@ -78,7 +78,6 @@ class WebserverComponent(SICComponent):
 
         if is_sic_instance(message, HtmlMessage):
             self.logger.info("receiving text...")
-            self.logger.info("receiving text...")
             self.input_text = message.text
 
         if is_sic_instance(message, TranscriptMessage):

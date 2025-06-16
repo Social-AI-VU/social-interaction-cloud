@@ -42,7 +42,6 @@ class DesktopMicrophoneSensor(SICSensor):
         return AudioMessage
 
     def execute(self):
-        self.logger.debug("Reading audio")
         # read 250ms chunks
         data = self.stream.read(int(self.params.sample_rate // 4))
         return AudioMessage(data, sample_rate=self.params.sample_rate)
