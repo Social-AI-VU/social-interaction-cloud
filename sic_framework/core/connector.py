@@ -1,6 +1,8 @@
 import logging
 import time
 from abc import ABCMeta
+import sys
+import signal
 
 import six
 import sys
@@ -37,16 +39,6 @@ class SICConnector(object):
         """
         assert isinstance(ip, str), "IP must be string"
 
-        # connect to Redis
-        self._redis = SICRedis()
-
-        # client ID is the IP of whatever machine is running this connector
-        self.client_id = utils.get_ip_adress()
-        self._log_level = log_level
-
-        self.logger = self.get_connector_logger()
-        self._redis.parent_logger = self.logger
-
         # if the component is running on the same machine as the Connector
         if ip in ["localhost", "127.0.0.1"]:
             # get the ip address of the current machine on the network
@@ -56,13 +48,23 @@ class SICConnector(object):
         self.component_ip = ip
         self.component_id = self.component_name + ":" + self.component_ip
 
+        # connect to Redis
+        self._redis = SICRedis(nickname="connector_{}".format(self.component_id))
+
+        # client ID is the IP of whatever machine is running this connector
+        self.client_id = utils.get_ip_adress()
+        self._log_level = log_level
+
+        self.logger = self.get_connector_logger()
+        self._redis.parent_logger = self.logger
+
         # if the input channel is not provided, assume the client ID (IP address) is the input channel (i.e. Component is a Sensor)
         if input_source is None:
             self._input_channel = ip
         else:
             if not isinstance(input_source, SICConnector):
                 self.logger.error("Input source must be a SICConnector")
-                sys.exit(1)
+                raise ValueError("Input source must be a SICConnector")
             self._input_channel = input_source.get_output_channel()
 
         self._callback_threads = []
@@ -72,13 +74,15 @@ class SICConnector(object):
         self._request_reply_channel = None
         self._output_channel = None
 
+        self.logger.debug("Attempting to start component: {}".format(self.component_id))
+
         # make sure we can start the component and ping it
         try:
             self._start_component()
             self.logger.debug("Component started")
             assert self._ping()
         except Exception as e:
-            self.logger.error(e)
+            self.logger.error("Could not start component, got error: {}".format(e))
             raise RuntimeError(e)
 
         self.logger.debug("Component initialization complete")
@@ -131,6 +135,8 @@ class SICConnector(object):
 
         try:
             # if successful, the component manager will send a SICComponentStartedMessage,
+            self.logger.info("Requesting component to start on ip: {}".format(self.component_ip))
+
             # which contains the ID of the output and req/reply channel
             return_message = self._redis.request(
                 self.component_ip,
@@ -246,10 +252,19 @@ class SICConnector(object):
         """
         Stop the component and disconnect the callback.
         """
-        self.logger.debug("Sending StopRequest to component")
-        self._redis.send_message(self._request_reply_channel, SICStopRequest())
-        if hasattr(self, "_redis"):
-            self._redis.close()
+        # Check if Python is shutting down to avoid ImportError
+        if sys.meta_path is None:
+            return
+            
+        try:
+            self.logger.debug("Sending StopRequest to component")
+            self._redis.send_message(self._request_reply_channel, SICStopRequest())
+        except Exception as e:
+            # Don't log during shutdown as it can cause more errors
+            pass
+        finally:
+            if hasattr(self, "_redis"):
+                self._redis.close()
 
     def get_connector_logger(self, log_level=sic_logging.DEBUG):
         """
@@ -275,10 +290,3 @@ class SICConnector(object):
         Get the output channel of the component.
         """
         return self._output_channel
-
-    # TODO: maybe also helps for a graceful exit?
-    def __del__(self):
-        try:
-            self.stop()
-        except Exception as e:
-            self.logger.error("Error in clean shutdown: {}".format(e))

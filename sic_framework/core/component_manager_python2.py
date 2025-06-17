@@ -52,17 +52,18 @@ class SICComponentManager(object):
     # The maximum error between the redis server and this device's clocks in seconds
     MAX_REDIS_SERVER_TIME_DIFFERENCE = 2
 
-    # Number of seconds we wait at most for a component to start
-    COMPONENT_START_TIMEOUT = 10
-
     def __init__(self, component_classes, auto_serve=True):
         """
         A component manager to start components when requested by users.
         :param component_classes: List of SICService components to be started
         """
 
+        self.stop_event = threading.Event()
+        self.ready_event = threading.Event()
+        self._stopping = False  # Guard to prevent multiple stop calls
+
         # Redis initialization
-        self.redis = SICRedis()
+        self.redis = SICRedis(nickname="component_manager", stop_event=self.stop_event)
         self.ip = utils.get_ip_adress()
 
         self.active_components = []
@@ -70,9 +71,6 @@ class SICComponentManager(object):
             cls.get_component_name(): cls for cls in component_classes
         }
         self.component_counter = 0
-
-        self.stop_event = threading.Event()
-        self.ready_event = threading.Event()
 
         self.logger = self.get_manager_logger()
         self.redis.parent_logger = self.logger
@@ -197,12 +195,12 @@ class SICComponentManager(object):
         try:
             self.logger.debug("Creating threads for {}".format(component_type), extra={"client_id": client_id})
             
-            stop_event = threading.Event()
-            ready_event = threading.Event()
+            component_stop_event = threading.Event()
+            component_ready_event = threading.Event()
             self.logger.debug("Creating component {}".format(component_type), extra={"client_id": client_id})
             component = component_class(
-                stop_event=stop_event,
-                ready_event=ready_event,
+                stop_event=component_stop_event,
+                ready_event=component_ready_event,
                 log_level=log_level,
                 conf=conf,
                 input_channel=input_channel,
@@ -293,13 +291,42 @@ class SICComponentManager(object):
     
 
     def stop(self, *args):
-        self.stop_event.set()
+        print("Stopping component manager")
+        # import traceback
+        # print("CALL STACK:")
+        # traceback.print_stack()
+        print("Stop event set")
         self.logger.info("Trying to exit manager gracefully...")
         try:
-            self.redis.close()
+            # Stop all components first
             for component in self.active_components:
+                print("Stopping component {}".format(component.component_id))
                 component.stop()
-                # component._stop_event.set()
+            
+            # Wait for component threads to complete (with timeout)
+            timeout = 5.0  # 5 second timeout
+            start_time = time.time()
+            
+            # Get all component threads
+            component_threads = []
+            for thread in threading.enumerate():
+                if thread.name in [cls.get_component_name() for cls in self.component_classes.values()]:
+                    component_threads.append(thread)
+            
+            # Wait for component threads to finish
+            for thread in component_threads:
+                if thread.is_alive():
+                    remaining_time = timeout - (time.time() - start_time)
+                    if remaining_time > 0:
+                        thread.join(timeout=remaining_time)
+                    else:
+                        break  # Timeout reached
+            
+            # Close Redis last (this will wait for Redis threads to complete)
+            self.redis.close()
+
+            # print("LEFT OVER THREADS: ", threading.enumerate())
+            
             self.logger.info("Graceful exit was successful")
         except Exception as err:
             self.logger.error("Graceful exit has failed: {}".format(err))

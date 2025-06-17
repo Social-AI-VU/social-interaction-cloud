@@ -32,17 +32,28 @@ class SICSensor(SICComponent):
     def execute(self):
         """
         Main function of the sensor
-        :return: A SICMessage
-        :rtype: SICMessage
+        :return: A SICMessage or None if no data available
+        :rtype: SICMessage or None
         """
         raise NotImplementedError("You need to define sensor execution.")
 
     def _produce(self):
         while not self._stop_event.is_set():
-            output = self.execute()
+            try:    
+                output = self.execute()
 
-            output._timestamp = self._get_timestamp()
+                # If execute returns None, it means no data is available
+                if output is None and self._stop_event.is_set():
+                    break
+                elif output is None:
+                    self.logger.warning("No data available for sensor {}".format(self.component_id))
+                    continue
+                    
+                output._timestamp = self._get_timestamp()
+                self.output_message(output)
+                
+            except Exception as e:
+                self.logger.warning(f"Error in sensor execute: {e}")
 
-            self.output_message(output)
 
         self.logger.debug("Stopped producing")
