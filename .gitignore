@@ -23,5 +23,4 @@ social_interaction_cloud.egg-info/
 sic_framework/services/face_recognition_dnn/resnet50_ft_weight_old.pt
 
 # Ignore build folder
-build
-
+build/
