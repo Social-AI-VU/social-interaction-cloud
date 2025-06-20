@@ -3,6 +3,7 @@
 *.p
 *.pyc
 *.log
+*.DS_Store
 
 # Keep some folders
 !.keepme
