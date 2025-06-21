@@ -40,7 +40,10 @@ For detailed examples and tutorials, see the :ref:`api` section.
    :maxdepth: 2
    :caption: Contents:
 
+   tutorials
+   sic_101
    api
+   faq
 
 Indices and tables
 ==================
