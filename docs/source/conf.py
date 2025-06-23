@@ -24,7 +24,10 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',  # For Google/NumPy style docstrings
+    'sphinx_togglebutton',
 ]
+
+togglebutton_hint = ""
 
 templates_path = ['_templates']
 exclude_patterns = []

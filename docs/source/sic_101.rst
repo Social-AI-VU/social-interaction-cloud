@@ -1,5 +1,7 @@
 SIC 101
-============
+========
+
+Fundamentals of the Social Interaction Cloud framework.
 
 This section contains higher-level information on the architecture of the Social Interaction Cloud framework.
 
