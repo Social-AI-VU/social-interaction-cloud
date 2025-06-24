@@ -5,7 +5,7 @@ Frequently Asked Questions about the Social Interaction Cloud framework.
 
 This section contains a FAQ and solutions for common problems and questions.
 
-If your question is not answered here, feel free to post to the forum at https://github.com/social-interaction-cloud/social-interaction-cloud/discussions.
+If your question is not answered here, feel free to post to the `troubleshooting forum <https://github.com/Social-AI-VU/social-interaction-cloud/discussions/64>`_
 
 FAQ 1: Address already in use
 --------------

@@ -40,6 +40,21 @@ language = 'en'
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
+# Logo and favicon configuration
+html_logo = '_static/sic_mini_logo.svg'
+html_favicon = '_static/sic_mini_logo.svg'
+
+# Theme options to show logo and project name
+html_theme_options = {
+    'logo_only': False,
+    'display_version': True,
+}
+
+# Custom CSS to make the logo smaller
+html_css_files = [
+    'custom.css',
+]
+
 # -- Autodoc configuration ---------------------------------------------------
 autodoc_default_options = {
     'members': True,

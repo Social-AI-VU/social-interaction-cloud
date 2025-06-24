@@ -17,18 +17,19 @@ Tutorial 1: Installation and Setup
 Tutorial 2: Creating a Simple Application
 -----------------------------------------
 
-📄 This tutorial covers the basics of building your first SIC app.
+🧐 This tutorial covers the basics of building your first SIC app.
 
 .. toctree::
    :maxdepth: 2
 
    tutorials/2_intro_to_sic
 
-Tutorial 3: Dialogflow Service
---------------
+Tutorial 3: Application with a Service
+-------------------------------------
+
+🧐 This tutorial covers the basics of building an application with a service.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Tutorials:
 
    tutorials/3_dialogflow 

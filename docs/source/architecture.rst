@@ -1,28 +1,28 @@
-SIC 101
+SIC Architecture
 ========
 
 Fundamentals of the Social Interaction Cloud framework.
 
 This section contains higher-level information on the architecture of the Social Interaction Cloud framework.
 
-Building Blocks
+SIC 101: Building Blocks
 --------------
 
 .. toctree::
    :maxdepth: 2
 
-   sic_101/building_blocks
+   architecture/building_blocks
 
 Messaging System
 --------------
 
 .. toctree::
 
-   sic_101/message_system
+   architecture/message_system
 
 Processes and Threads
 --------------
 
 .. toctree::
 
-   sic_101/processes_and_threads
+   architecture/processes_and_threads

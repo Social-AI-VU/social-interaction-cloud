@@ -113,6 +113,24 @@ Use the following commands within a shell to install the Social Interaction Clou
 
       pip install -U git+https://github.com/lilohuang/PyTurboJPEG.git
 
+**Running your first application**
+~~~~~~~~~~
+
+Running any application consists of two (or three) steps:
+
+1. Start Redis
+
+2. (Optional) If required, start a service, such as face detection
+
+3. Run your program
+
+We will cover two examples: running an application without a service (step 1 and 3) and with a service (step 1, 2, and 3).
+
+**Running an application without a service**
+~~~~~~~~~~
+
+
+
 
 📹: Video Tutorial (Windows)
 ----------------------------

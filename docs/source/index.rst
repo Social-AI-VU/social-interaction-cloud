@@ -41,9 +41,10 @@ For detailed examples and tutorials, see the :ref:`api` section.
    :caption: Contents:
 
    tutorials
-   sic_101
+   architecture
    api
    faq
+   feature_requests
 
 Indices and tables
 ==================
