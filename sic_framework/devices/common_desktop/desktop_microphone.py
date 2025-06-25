@@ -27,6 +27,7 @@ class DesktopMicrophoneSensor(SICSensor):
             rate=self.params.sample_rate,
             input=True,
             output=False,
+            frames_per_buffer=int(self.params.sample_rate // 4),  # 250ms chunks
         )
 
     @staticmethod
@@ -42,14 +43,23 @@ class DesktopMicrophoneSensor(SICSensor):
         return AudioMessage
 
     def execute(self):
-        # read 250ms chunks
-        data = self.stream.read(int(self.params.sample_rate // 4))
-        return AudioMessage(data, sample_rate=self.params.sample_rate)
+        try:
+            # read without exception on overflow to prevent the stream from closing
+            # if Redis is non-local, delays in network communication can cause overflows
+            # this is a workaround to keep the stream alive
+            data = self.stream.read(int(self.params.sample_rate // 4), exception_on_overflow=False)
+            return AudioMessage(data, sample_rate=self.params.sample_rate)
+        except Exception as e:
+            self.logger.error(f"Error reading audio data: {e}")
+            # Return empty audio data to keep the stream alive
+            empty_data = b'\x00' * int(self.params.sample_rate // 4) * 2  # 16-bit samples
+            return AudioMessage(empty_data, sample_rate=self.params.sample_rate)
 
     def stop(self, *args):
         super(DesktopMicrophoneSensor, self).stop(*args)
         self.logger.info("Stopped microphone")
         self.stream.close()
+        self.device.terminate()
 
 
 class DesktopMicrophone(SICConnector):

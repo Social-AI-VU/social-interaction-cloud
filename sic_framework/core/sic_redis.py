@@ -107,10 +107,23 @@ class SICRedis:
 
         # Let's try to connect first without TLS / working without TLS facilitates simple use of redis-cli
         try:
-            self._redis = redis.Redis(host=host, ssl=False, password=password)
+            self._redis = redis.Redis(
+                host=host, 
+                ssl=False, 
+                password=password,
+                socket_timeout=1.0,  # 1 second timeout for socket operations
+                socket_connect_timeout=5.0,  # 5 second timeout for connection
+                retry_on_timeout=True  # Retry on timeout errors
+            )
         except redis.exceptions.AuthenticationError:
             # redis is running without a password, do not supply it.
-            self._redis = redis.Redis(host=host, ssl=False)
+            self._redis = redis.Redis(
+                host=host, 
+                ssl=False,
+                socket_timeout=1.0,
+                socket_connect_timeout=5.0,
+                retry_on_timeout=True
+            )
         except redis.exceptions.ConnectionError as e:
             # Must be a connection error; so now let's try to connect with TLS
             ssl_ca_certs = os.path.join(os.path.dirname(__file__), "cert.pem")
@@ -120,7 +133,13 @@ class SICRedis:
                 "(Source error {})".format(e),
             )
             self._redis = redis.Redis(
-                host=host, ssl=True, ssl_ca_certs=ssl_ca_certs, password=password
+                host=host, 
+                ssl=True, 
+                ssl_ca_certs=ssl_ca_certs, 
+                password=password,
+                socket_timeout=1.0,
+                socket_connect_timeout=5.0,
+                retry_on_timeout=True
             )
 
         try:
@@ -227,12 +246,23 @@ class SICRedis:
             message, SICMessage
         ), "Message must inherit from SICMessage (got {})".format(type(message))
 
-        # Let's check if we should serialize; we don't if the message is from EISComponent and needs to be sent to an
-        # agent alien to SIC (who presumably does not understand Pickle objects)...
-        if message.get_previous_component_name() == "EISComponent":
-            return self._redis.publish(channel, message.text)
-        else:
-            return self._redis.publish(channel, message.serialize())
+        try:
+            # Let's check if we should serialize; we don't if the message is from EISComponent and needs to be sent to an
+            # agent alien to SIC (who presumably does not understand Pickle objects)...
+            if message.get_previous_component_name() == "EISComponent":
+                return self._redis.publish(channel, message.text)
+            else:
+                return self._redis.publish(channel, message.serialize())
+        except redis.exceptions.TimeoutError as e:
+            # Log timeout but don't crash the audio stream
+            if self.parent_logger:
+                self.parent_logger.warning(f"Redis publish timeout for channel {channel}: {e}")
+            return 0
+        except Exception as e:
+            # Log other errors but don't crash the audio stream
+            if self.parent_logger:
+                self.parent_logger.error(f"Redis publish error for channel {channel}: {e}")
+            return 0
 
     def _reply(self, channel, request, reply):
         """

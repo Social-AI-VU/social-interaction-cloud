@@ -16,6 +16,7 @@ class SICSensor(SICComponent):
         self.logger.debug("Setting reservation for {}".format(self.component_id))
         # set_reservation returns the number of keys set, if it is less than 1, then the reservation failed (i.e. already reserved)
         if self._redis.set_reservation(self.component_id, self.client_id) < 1:
+            self.logger.error("Failed to set reservation for {}, Sensor already in use".format(self.component_id))
             raise Exception("Failed to set reservation for {}, Sensor already in use".format(self.component_id))
 
     def start(self):
@@ -38,6 +39,7 @@ class SICSensor(SICComponent):
         raise NotImplementedError("You need to define sensor execution.")
 
     def _produce(self):
+        self.logger.info("Starting to produce")
         while not self._stop_event.is_set():
             output = self.execute()
 
@@ -45,4 +47,4 @@ class SICSensor(SICComponent):
 
             self.output_message(output)
 
-        self.logger.debug("Stopped producing")
+        self.logger.info("Stopped producing")
