@@ -31,7 +31,6 @@ import atexit
 import os
 import threading
 import time
-import multiprocessing
 
 import redis
 import six
@@ -57,15 +56,15 @@ def cleanup_on_exit():
     from sic_framework.core import sic_logging
     logger = sic_logging.get_sic_logger("SICRedis")
 
+    for s in _sic_redis_instances:
+        s.close()
+
     time.sleep(0.2)
     if len([x.is_alive() for x in threading.enumerate()]) > 1:
         logger.warning("Left over threads:")
         for thread in threading.enumerate():
             if thread.is_alive() and thread.name != "SICRedisCleanup":
                 logger.warning(thread.name, " is still alive")
-                
-    for s in _sic_redis_instances:
-        s.close()
 
 
 atexit.register(cleanup_on_exit)
@@ -87,46 +86,15 @@ class SICRedis:
 
     Redis pubsub API can also be quite fickle due to not-so-useful subscriber messages and blocking behaviour, and
     this is ignored by this extension. Using any other redis functions 'as is' is discouraged.
-
-    This class implements a singleton pattern per process, meaning only one instance will be created per process.
-    Components can still use normal instantiation (SICRedis(nickname="component_name")) and will automatically
-    get the singleton instance for their process.
     """
 
-    # Class-level dictionary to store instances per process ID
-    _instances = {}
-    _lock = threading.Lock()
-
-    def __new__(cls, nickname=None, stop_event=None):
+    def __init__(self, parent_name=None):
         """
-        Implement singleton pattern per process. Returns existing instance if one exists for the current process,
-        otherwise creates a new one.
+        :param parent_name: The name of the module that uses this redis connection, for easier debugging
         """
-        process_id = os.getpid()
-        
-        with cls._lock:
-            if process_id not in cls._instances:
-                print("creating new SICRedis instance for: {} with process id: {}".format(nickname, process_id))
-                instance = super(SICRedis, cls).__new__(cls)
-                cls._instances[process_id] = instance
-            return cls._instances[process_id]
-
-    def __init__(self, nickname=None, stop_event=None):
-        """
-        :param nickname: The name of the module that uses this redis connection, for easier debugging
-        :param stop_event: Optional threading.Event to coordinate shutdown with other components
-        """
-        # Skip initialization if this instance is already initialized
-        if hasattr(self, '_initialized'):
-            return
-
-        print("INSTANTIATING SICREDIS FOR: ", nickname)
 
         self.stopping = False
         self._running_callbacks = []
-        self._stop_event = stop_event  # Store the stop event for coordination
-        self._closing = False  # Guard to prevent multiple close calls
-        self._initialized = True  # Mark this instance as initialized
 
         # hash map of data streams
         self.data_stream_map = "cache:data_streams"
@@ -170,10 +138,9 @@ class SICRedis:
         self.parent_logger = None
 
         # service name (assigned to thread to help debugging)
-        self.nickname = nickname
+        self.service_name = parent_name
 
         _sic_redis_instances.append(self)
-        print("TOTAL INSTANCES: ", len(_sic_redis_instances))
 
     def register_message_handler(self, channels, callback, ignore_requests=True):
         """
@@ -230,8 +197,8 @@ class SICRedis:
             # python2 does not support exception handler, but it's not as important to provide a clean exit on the robots
             thread = pubsub.run_in_thread(sleep_time=0.1, daemon=False)
 
-        if self.nickname:
-            thread.name = "{}_callback_thread".format(self.nickname)
+        if self.service_name:
+            thread.name = "{}_callback_thread".format(self.service_name)
 
         c = CallbackThread(callback, pubsub=pubsub, thread=thread)
         self._running_callbacks.append(c)
@@ -371,54 +338,17 @@ class SICRedis:
         """
         Cleanup function to stop listening to all callback channels and disconnect redis.
         """
-        print("CLOSING SICREDIS FOR: ", self.nickname)
-        # Guard against multiple close calls
-        if self._closing:
-            return
-        
-        self._closing = True
         self.stopping = True
-        
-        # Stop all callback threads
         for c in self._running_callbacks:
             c.pubsub.unsubscribe()
             c.thread.stop()
-        
-        # Wait for threads to complete cleanup (with timeout)
-        timeout = 5.0  # 5 second timeout
-        start_time = time.time()
-        
-        for c in self._running_callbacks:
-            if c.thread.is_alive():
-                # Wait for thread to finish, but with timeout
-                remaining_time = timeout - (time.time() - start_time)
-                if remaining_time > 0:
-                    c.thread.join(timeout=remaining_time)
-                else:
-                    break  # Timeout reached
-        
-        # Close the Redis connection
         self._redis.close()
-        
-        # Remove this SICRedis instance from the instances dictionary
-        process_id = os.getpid()
-        with self._lock:
-            if process_id in self._instances:
-                del self._instances[process_id]
-        
-        print("CLOSED SICREDIS FOR: ", self.nickname)
 
     def __del__(self):
         # we can no longer unregister_message_handler as python is shutting down, but we can still stop
         # any remaining threads
         for c in self._running_callbacks:
             c.thread.stop()
-        
-        # Clean up the instance from the instances dictionary
-        process_id = os.getpid()
-        with self._lock:
-            if process_id in self._instances:
-                del self._instances[process_id]
 
     @staticmethod
     def parse_pubsub_message(pubsub_msg):
@@ -509,3 +439,83 @@ class SICRedis:
         Remove a reservation for a component in redis.
         """
         return self._redis.hdel(self.reservation_map, component_id)
+
+        
+
+if __name__ == "__main__":
+
+    class NamedMessage(SICMessage):
+        def __init__(self, name):
+            self.name = name
+
+    class NamedRequest(NamedMessage, SICRequest):
+        pass
+
+    r = SICRedis()
+
+    def do(channel, message):
+        print("do", message.name)
+
+    # print("Message callback:")
+    # r.register_message_handler("service", do, )
+    # r.send_message("service", NamedMessage("abc"))
+    #
+    #
+    # def do_reply(channel, message):
+    #     print("do_reply", message.name)
+    #     return NamedMessage("reply" + message.name)
+    #
+    #
+    # print("\n\nRequest handling")
+    #
+    # r.register_request_handler("device", do_reply)
+    # reply = r.request("device", NamedRequest("req_handling"), timeout=5)
+    # print("reply:", reply.name)
+    #
+    # print("\n\nincorrect handler: ", )
+    # try:
+    #     r.register_message_handler("a", do_reply)
+    #     reply = r.request("a", NamedRequest("req_incorrect_handler"), timeout=1)
+    #     print("reply:", reply.name)
+    # except TimeoutError as e:
+    #     print("success")
+    #
+    # print("\n\nduplicate handler")
+    # r.register_request_handler("b", do_reply)
+    # r.register_message_handler("b", do)
+    # reply = r.request("b", NamedRequest("req_duplicate_handler"), timeout=5)
+    # print("reply:", reply.name)
+    #
+    # print("\n\ncallbacks")
+    # for k in r._running_callbacks:
+    #     print(k.function)
+    #
+    # print("\n\nSpeed:")
+    #
+    # r.register_request_handler("c", lambda *args: SICMessage())
+    # start = time.time()
+    # for i in range(100):
+    #     reply = r.request("c", NamedRequest("req_duplicate_handler"), timeout=5)
+    # print("100 request took", time.time() - start)
+    #
+    # start = time.time()
+    # for i in range(100):
+    #     r.send_message("d", SICMessage())
+    # print("100 send_message took", time.time() - start)
+
+    # print("Test callback blocking behaviour")
+    #
+    #
+    # def do_reply_slow(channel, message):
+    #     print("do_reply", message.name)
+    #     time.sleep(5)
+    #     return NamedMessage("reply " + message.name)
+    #
+    #
+    # r.register_request_handler("f", do_reply_slow)
+    #
+    # for i in range(5):
+    #     reply = r.request("f", NamedRequest(f"fast{i}"), timeout=6)
+    #     print(reply.name)
+    #
+    # r.close()

@@ -61,7 +61,7 @@ class SICDevice(object):
 
     def __init__(self, ip, sic_version=None, username=None, passwords=None, port=22):
         """
-        Connect to the device and ensure an up-to-date version of the framework is installed
+        Connect to the device and ensure an up to date version of the framework is installed
         :param ip: the ip adress of the device
         :param username: the ssh login name
         :param passwords: the (list) of passwords to use
@@ -71,7 +71,7 @@ class SICDevice(object):
         self.ip = ip
         self.port = port
         self._client_id = utils.get_ip_adress()
-        self._redis = SICRedis(nickname="DeviceManager")
+        self._redis = SICRedis()
         self._PING_TIMEOUT = 3
         self.sic_version = sic_version
         self.stop_event = threading.Event()

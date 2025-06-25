@@ -257,11 +257,9 @@ class SICComponent:
 
     def stop(self, *args):
         self.logger.debug(
-            "Trying to exit component {} gracefully...".format(self.component_id)
+            "Trying to exit {} gracefully...".format(self.get_component_name())
         )
         try:
-            self._stop_event.set()
-
             # if the component is reserved, remove the reservation
             self.logger.debug("Removing reservation for {}".format(self.component_id))
 
@@ -281,7 +279,8 @@ class SICComponent:
             else:
                 self.logger.debug("Data stream for {} not found".format(self.component_id))
 
-            self.logger.debug("Graceful exit for component {} was successful".format(self.get_component_name()))
-            # Note: Don't close Redis here as it's shared with the component manager
+            self._redis.close()
+            self._stop_event.set()
+            self.logger.debug("Graceful exit was successful")
         except Exception as err:
-            self.logger.error("Graceful exit for component {} has failed: {}".format(self.get_component_name(), err.message))
+            self.logger.error("Graceful exit has failed: {}".format(err.message))

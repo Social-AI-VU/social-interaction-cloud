@@ -66,7 +66,7 @@ class SICCommonLog(object):
         with self.lock:  # Ensure thread-safe access
             if not self.running:
                 self.running = True
-                self.redis = SICRedis(nickname="SICCommonLog")
+                self.redis = SICRedis(parent_name="SICCommonLog")
                 self.redis.register_message_handler(
                     get_log_channel(client_id), self._handle_redis_log_message
                 )
@@ -102,7 +102,7 @@ class SICCommonLog(object):
         with self.lock:  # Ensure thread-safe access
             if self.running:
                 self.running = False
-                # self.redis.close()
+                self.redis.close()
 
 
 class SICRedisHandler(logging.Handler):
