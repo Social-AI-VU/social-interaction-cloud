@@ -50,7 +50,7 @@ class DesktopMicrophoneSensor(SICSensor):
             data = self.stream.read(int(self.params.sample_rate // 4), exception_on_overflow=False)
             return AudioMessage(data, sample_rate=self.params.sample_rate)
         except Exception as e:
-            self.logger.error(f"Error reading audio data: {e}")
+            self.logger.error("Error reading audio data: {e}".format(e=e))
             # Return empty audio data to keep the stream alive
             empty_data = b'\x00' * int(self.params.sample_rate // 4) * 2  # 16-bit samples
             return AudioMessage(empty_data, sample_rate=self.params.sample_rate)

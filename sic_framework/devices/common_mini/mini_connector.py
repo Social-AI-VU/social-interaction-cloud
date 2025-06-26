@@ -31,7 +31,7 @@ class MiniConnector:
         if device:
             return await MiniSdk.connect(device)
         else:
-            raise CouldNotConnectToMiniException(f"Could not connect to mini with id {self.mini_id}")
+            raise CouldNotConnectToMiniException("Could not connect to mini with id {mini_id}".format(mini_id=self.mini_id))
 
     async def _disconnect_to_mini(self):
         await MiniSdk.quit_program()

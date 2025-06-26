@@ -155,14 +155,13 @@ def zip_directory(path):
         raise IOError("Error while zipping: {}".format(str(e)))
 
 
-def create_data_stream_id(component_id: str, input_stream: str, length: int = 16) -> str:
+def create_data_stream_id(component_id, input_stream, length=16):
     """
     Hashes component info into a short, random-looking string.
 
     Args:
-        name (str): Component name (e.g., "NaoMicrophone").
-        ip (str): Component IP address (e.g., "198.0.0.122").
-        extra (str): Additional identifier or hash.
+        component_id (str): Component identifier.
+        input_stream (str): Input stream name.
         length (int): Length of the resulting string (default 16).
 
     Returns:

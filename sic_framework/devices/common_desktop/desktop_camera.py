@@ -65,7 +65,7 @@ class DesktopCameraSensor(SICSensor):
         try:
             frame = cv2.resize(frame, (0, 0), fx=self.params.fx, fy=self.params.fy)
         except cv2.error as e:
-            self.logger.warning(f"OpenCV resize error: {e}")
+            self.logger.warning("OpenCV resize error: {e}".format(e=e))
             return None
 
         # Optionally flip image
@@ -73,7 +73,7 @@ class DesktopCameraSensor(SICSensor):
             try:
                 frame = cv2.flip(frame, self.params.flip)
             except cv2.error as e:
-                self.logger.warning(f"OpenCV flip error: {e}")
+                self.logger.warning("OpenCV flip error: {e}".format(e=e))
                 return None
 
         return CompressedImageMessage(frame)

@@ -139,8 +139,7 @@ class SICComponentManager(object):
         threads are restarted/reused when a user re-requests the component.
         :param request: The SICStartServiceRequest request
         """
-
-        client_id = request.client_id if request.client_id else ""
+        client_id = getattr(request, "client_id", "")
 
         if is_sic_instance(request, SICPingRequest):
             # this request is sent to see if the ComponentManager has started

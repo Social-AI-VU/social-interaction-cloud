@@ -256,12 +256,12 @@ class SICRedis:
         except redis.exceptions.TimeoutError as e:
             # Log timeout but don't crash the audio stream
             if self.parent_logger:
-                self.parent_logger.warning(f"Redis publish timeout for channel {channel}: {e}")
+                self.parent_logger.warning("Redis publish timeout for channel {channel}: {e}".format(channel=channel, e=e))
             return 0
         except Exception as e:
             # Log other errors but don't crash the audio stream
             if self.parent_logger:
-                self.parent_logger.error(f"Redis publish error for channel {channel}: {e}")
+                self.parent_logger.error("Redis publish error for channel {channel}: {e}".format(channel=channel, e=e))
             return 0
 
     def _reply(self, channel, request, reply):

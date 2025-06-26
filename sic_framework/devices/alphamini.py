@@ -85,7 +85,7 @@ class Alphamini(SICDevice):
             port=port,
             sic_version=sic_version,
         )
-        self.logger.info(f"SIC version on your local machine: {self.sic_version}")
+        self.logger.info("SIC version on your local machine: {version}".format(version=self.sic_version))
         self.configs[MiniMicrophone] = mic_conf
         self.configs[MiniSpeaker] = speaker_conf
 
@@ -238,7 +238,7 @@ class Alphamini(SICDevice):
         )
         _, stdout, _, exit_status = self.ssh_command(pkg_install_cmd)
         if "installed" in stdout.read().decode():
-            self.logger.info(f"{pkg_name} is already installed")
+            self.logger.info("{pkg_name} is already installed".format(pkg_name=pkg_name))
             return True
         else:
             return False
@@ -251,8 +251,8 @@ class Alphamini(SICDevice):
         packages = ["portaudio", "python-numpy", "python-pillow", "git"]
         for pkg in packages:
             if not self.is_system_package_installed(pkg):
-                self.logger.info("Installing package: ", pkg)
-                _, stdout, _, exit_status = self.ssh_command(f"pkg install -y {pkg}")
+                self.logger.info("Installing package: {pkg}".format(pkg=pkg))
+                _, stdout, _, exit_status = self.ssh_command("pkg install -y {pkg}".format(pkg=pkg))
                 self.logger.info(stdout.read().decode())
 
         self.logger.info("Installing SIC on the Alphamini...")
