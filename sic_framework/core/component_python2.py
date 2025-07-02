@@ -1,12 +1,16 @@
+"""
+component_python2.py
+
+This module contains the SICComponent class, which is the base class for all components in the Social Interaction Cloud.
+"""
+
 import threading
 import time
 from abc import ABCMeta, abstractmethod
 
 import six
 
-import sic_framework.core.sic_logging
 from sic_framework.core.utils import is_sic_instance
-
 from . import sic_logging, utils
 from .message_python2 import (
     SICConfMessage,
@@ -24,9 +28,15 @@ from .sic_redis import SICRedis
 class ConnectRequest(SICControlRequest):
     def __init__(self, channel):
         """
-        A request for this component to start listening to the output of another component. The provided channel should
-        be the output channel of the component that serves as input to this component.
-        :param channel: the channel
+        A request for this component to establish a connection with another component's output channel.
+        
+        This allows components to be chained together, where the output of one component becomes
+        the input for another. For example, a speech recognition component could feed its text output
+        into a natural language processing component.
+
+        :param channel: The Redis channel name that the other component publishes its output to.
+                       This component will subscribe to and receive messages from this channel.
+        :type channel: str
         """
         super(ConnectRequest, self).__init__()
         self.channel = channel  # str
@@ -48,10 +58,10 @@ class SICComponent:
 
     # 1. Class constants
 
+    # Make SICComponent an abstract class in Python 2. 
+    # Ensures any subclass must implement all abstract methods denoted by @abstractmethod
     __metaclass__ = ABCMeta
 
-    # This parameter controls how long a SICConnector should wait when requesting the service
-    # For example, when the robot has to stand up or model parameters need to load to GPU this might be set higher
     COMPONENT_STARTUP_TIMEOUT = 30
     """
     Timeout in seconds for component startup.
@@ -59,8 +69,6 @@ class SICComponent:
     This controls how long a SICConnector should wait when requesting a component to start.
     Increase this value for components that need more time to initialize (e.g., robots 
     that need to stand up or models that need to load to GPU).
-    
-    :type: int
     """
 
     # 2. Special methods
@@ -71,22 +79,12 @@ class SICComponent:
         log_level=sic_logging.INFO, 
         conf=None
     ):
-        """
-        Initialize the component.
 
-        :param ready_event: Threading event to signal when the component is ready. If None, creates a new Event.
-        :type ready_event: threading.Event, optional
-        :param stop_event: Threading event to signal when the component should stop. If None, creates a new Event.
-        :type stop_event: threading.Event, optional
-        :param log_level: The logging verbosity level (e.g., DEBUG, INFO, WARNING, ERROR).
-        :type log_level: int, optional
-        :param conf: Configuration parameters for the component. If None, uses default configuration.
-        :type conf: dict, optional
-        """
         self._ip = utils.get_ip_adress()
 
-        # the events to control this service running in the thread created by the factory
+        # _ready_event is set once the component has started, signals to the component manager that the component is ready.
         self._ready_event = ready_event if ready_event else threading.Event()
+        # _stop_event is set when the component should stop
         self._stop_event = stop_event if stop_event else threading.Event()
 
         self._input_channels = []
@@ -110,7 +108,7 @@ class SICComponent:
         """
         Get the display name of this component.
 
-        Returns the name of the subclass that implements this class.
+        Returns the name of the subclass that implements this class (e.g. "DesktopCameraSensor")
         
         :return: The component's display name (typically the class name)
         :rtype: str

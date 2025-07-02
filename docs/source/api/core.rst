@@ -11,7 +11,7 @@ Core Components
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: sic_framework.core.component_manager_python2
+.. automodule:: sic_framework.core.sensor_python2
    :members:
    :undoc-members:
    :show-inheritance:
@@ -21,18 +21,32 @@ Core Components
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: sic_framework.core.sensor_python2
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: sic_framework.core.service_python2
    :members:
    :undoc-members:
    :show-inheritance:
 
+
+Supporting Elements
+-------------------
+
+.. automodule:: sic_framework.core.component_manager_python2
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: sic_framework.core.connector
+   :members:
+   :undoc-members:
+   :show-inheritance: 
+
 Message System
 --------------
+
+.. automodule:: sic_framework.core.sic_redis
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 .. automodule:: sic_framework.core.message_python2
    :members:
@@ -61,13 +75,3 @@ Utilities
    :members:
    :undoc-members:
    :show-inheritance:
-
-.. automodule:: sic_framework.core.sic_redis
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: sic_framework.core.connector
-   :members:
-   :undoc-members:
-   :show-inheritance: 
