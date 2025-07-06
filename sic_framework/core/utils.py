@@ -1,3 +1,9 @@
+"""
+utils.py
+
+This module contains utility functions for the SIC framework.
+"""
+
 import binascii
 import getpass
 import os
@@ -14,9 +20,10 @@ MAGIC_STARTED_COMPONENT_MANAGER_TEXT = "Started component manager"
 
 def get_ip_adress():
     """
-    This is harder than you think!
-    https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
-    :return:
+    Get the IP address of the device.
+
+    :return: The IP address of the device.
+    :rtype: str
     """
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.settimeout(0)
@@ -30,12 +37,19 @@ def get_ip_adress():
         s.close()
     return IP
 
-
-import socket
-
-
 def ping_server(server, port, timeout=3):
-    """ping server"""
+    """
+    Ping a server to check if it is reachable.
+
+    :param server: The server to ping.
+    :type server: str
+    :param port: The port to ping.
+    :type port: int
+    :param timeout: The timeout in seconds.
+    :type timeout: float
+    :return: True if the server is reachable, False otherwise.
+    :rtype: bool
+    """
     try:
         # print("attempting to connect to device at server: {} and port: {}".format(server, port))
         socket.setdefaulttimeout(timeout)
@@ -52,6 +66,12 @@ def ping_server(server, port, timeout=3):
 
 
 def get_username_hostname_ip():
+    """
+    Get the username, hostname and IP address of the device.
+
+    :return: The username, hostname and IP address of the device.
+    :rtype: str
+    """
     return getpass.getuser() + "_" + socket.gethostname() + "_" + get_ip_adress()
 
 
@@ -67,6 +87,15 @@ def ensure_binary(s, encoding="utf-8", errors="strict"):
     For Python 3:
       - `str` -> encoded to `bytes`
       - `bytes` -> `bytes`
+
+    :param s: The string to convert.
+    :type s: str
+    :param encoding: The encoding to use.
+    :type encoding: str
+    :param errors: The error handling strategy.
+    :type errors: str
+    :return: The converted string.
+    :rtype: str
     """
     if isinstance(s, six.binary_type):
         return s
@@ -79,8 +108,11 @@ def str_if_bytes(data):
     """
     Compatibility for the channel names between python2 and python3
     a redis channel b'name' differes from "name"
-    :param data: str or bytes
-    :return: str
+
+    :param data: The data to convert.
+    :type data: str or bytes
+    :return: The converted string.
+    :rtype: str
     """
     if isinstance(data, bytes):
         return data.decode("utf-8", errors="replace")
@@ -88,6 +120,14 @@ def str_if_bytes(data):
 
 
 def random_hex(nbytes=8):
+    """
+    Generate a random hex string.
+
+    :param nbytes: The number of bytes to generate.
+    :type nbytes: int
+    :return: The random hex string.
+    :rtype: str
+    """
     return binascii.b2a_hex(os.urandom(nbytes))
 
 
@@ -112,9 +152,14 @@ def is_sic_instance(obj, cls):
 
 def type_equal_sic(a, b):
     """
-    type(a) == type(b), but with support for objects transported across the nework with pickle.
-    :param a: object
-    :param b: object
+    Check if two objects are of the same type.
+
+    type(a) == type(b), but with support for objects transported across the network with pickle.
+
+    :param a: The first object.
+    :type a: object
+    :param b: The second object.
+    :type b: object
     :return:
     """
     return type(a).__name__ == type(b).__name__
@@ -122,16 +167,13 @@ def type_equal_sic(a, b):
 
 def zip_directory(path):
     """
-    Creates a zip directory from the given directory path.
+    Create a compressed zip file from the given directory path.
     
-    Args:
-        path (str): Path to the directory to be zipped
-        
-    Returns:
-        str: Path to the created zip file
-        
-    Raises:
-        FileNotFoundError: If the path doesn't exist
+    :param path: The path to the directory to be zipped.
+    :type path: str
+    :return: The path to the created zip file.
+    :rtype: str
+    :raises: FileNotFoundError: If the path doesn't exist
     """
 
     # check if the path exists
@@ -152,8 +194,3 @@ def zip_directory(path):
             
     except Exception as e:
         raise IOError("Error while zipping: {}".format(str(e)))
-
-
-
-if __name__ == "__main__":
-    pass

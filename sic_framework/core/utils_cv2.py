@@ -1,3 +1,9 @@
+"""
+utils_cv2.py
+
+This module contains utility functions for working with OpenCV.
+"""
+
 import cv2
 
 
