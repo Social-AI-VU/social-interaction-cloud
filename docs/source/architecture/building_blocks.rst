@@ -69,10 +69,49 @@ Pictured below are some example setups of SIC Components:
 Supporting Elements: ComponentManager, Connector, and Redis
 ----------
 
-In reality, SIC is a lot more than just the components. There are other elements of SIC that are used to support the components and are not directly used by the user.
+In reality, SIC is a lot more than just Components. There are other elements that are used to support Components, namely:
 
-**ComponentManager** is responsible for starting and stopping components.
+.. figure:: ../_static/ComponentManager.svg
+   :alt: ComponentManager
+   :align: center
+   :width: 25%
 
-**Connector** behave as remote controls for the components. They are the interface for the user to interact with the components.
+   **ComponentManagers** are responsible for starting and stopping Components on hosts/devices.
 
-**Redis** is the message broker that is used to communicate between the components.
+.. figure:: ../_static/Connector.svg
+   :alt: Connector
+   :align: center
+   :width: 25%
+
+   **Connectors** behave as remote controls and are the actual interface the user uses to interact with the Components.
+
+.. figure:: ../_static/Device.svg
+   :alt: Device
+   :align: center
+   :width: 25%
+
+   **Devices** are the physical devices where the Components run.
+
+.. figure:: ../_static/Redis.svg
+   :alt: Redis
+   :align: center
+   :width: 15%
+
+   **Redis** is the message broker that is used to communicate between the Components.
+
+.. figure:: ../_static/Application.svg
+   :alt: Application
+   :align: center
+   :width: 25%
+
+   The **SIC Application** is the script the user writes that connects the Components together.
+
+Example Application Diagrams
+----------
+
+.. figure:: ../_static/DialogflowAppSimple.svg
+   :alt: Redis
+   :align: center
+   :width: 80%
+
+   High-level diagram for a simple Dialogflow application.
