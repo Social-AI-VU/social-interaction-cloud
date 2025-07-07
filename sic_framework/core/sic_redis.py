@@ -457,6 +457,10 @@ class SICRedis:
     def set_reservation(self, component_id, client_id):
         """
         Add a reservation for a component in redis.
+
+        :param component_id: The id of the component
+        :param client_id: The id of the client reserving the component
+        :return: The number of keys set
         """
         reservation = {
             component_id: client_id
@@ -469,8 +473,43 @@ class SICRedis:
         Remove a reservation for a component in redis.
         """
         return self._redis.hdel(self.reservation_map, component_id)
+    
+    def remove_client(self, client_id):
+        """
+        Remove a client's reservations and data streams from redis.
 
+        Used if a client disconnects from the SIC server and their reservations and data streams are not removed properly.
+
+        :param client_id: The id of the client
+        """
+        # delete all the reservations for the client
+        reservations = self.get_reservation_map()
+        for cur_component_id, cur_client_id in reservations.items():
+            if cur_client_id == client_id:
+                self.unset_reservation(cur_component_id)
         
+        # delete all the data streams for the client
+        data_streams = self.get_data_stream_map()
+        for data_stream_id in data_streams.keys():
+            data_stream_info = self.get_data_stream(data_stream_id)
+            if data_stream_info["client_id"] == client_id:
+                self.unset_data_stream(data_stream_id)
+        
+        return True
+    
+    def ping_client(self, client_id):
+        """
+        Ping a client to see if they are still connected.
+
+        :param client_id: The id of the client
+        :return: True if the client is connected, False otherwise
+        """
+        # get list of all clients connected to the SIC server
+        client_list = self._redis.execute_command("CLIENT", "LIST")
+        if client_id in client_list:
+            return True
+        else:
+            return False
 
 if __name__ == "__main__":
 

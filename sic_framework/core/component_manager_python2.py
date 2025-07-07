@@ -189,6 +189,12 @@ class SICComponentManager(object):
 
         component_class = self.component_classes[component_type]  # SICComponent object
 
+        # first, try to reserve the component if necessary
+        if getattr(component_class, 'requires_reservation', False):
+            if not self.reserve_component(component_id, client_id):
+                self.logger.error("Component {} is reserved by another client".format(component_id), extra={"client_id": client_id})
+                return SICNotStartedMessage("Component is reserved by another client")
+
         self.logger.debug("Starting component {}".format(component_type), extra={"client_id": client_id})
 
         component = None
@@ -266,6 +272,45 @@ class SICComponentManager(object):
                 component.stop()
             return SICNotStartedMessage(e)
 
+    def reserve_component(self, component_id, client_id):
+        """
+        Reserve a component for a client.
+
+        If the component is already reserved by another client, check to make sure the client
+        is still connected. If not, release the component and reserve it for the new client.
+
+        :param component_id: The id of the component to reserve
+        :param client_id: The id of the client reserving the component
+        :return: True if the component was reserved, False otherwise
+        """
+        self.logger.info("Attempting to reserve component {} for client {}".format(component_id, client_id), extra={"client_id": client_id})
+        try:
+            if self.redis.set_reservation(component_id, client_id) < 1:
+                self.logger.warning("Component {} is already reserved by another client".format(component_id), extra={"client_id": client_id})
+                self.logger.info("Checking if the other client is still connected...".format(component_id), extra={"client_id": client_id})
+
+                # get the client ID of the other client
+                other_client_id = self.redis.get_reservation(component_id)
+
+                # check if the other client is still connected
+                if self.redis.ping_client(other_client_id) is False:
+                    self.logger.info("The other client is not connected, releasing the component".format(component_id), extra={"client_id": client_id})
+                    self.redis.remove_client(other_client_id)
+                else:
+                    self.logger.info("The other client is still connected, cannot reserve component".format(component_id), extra={"client_id": client_id})
+                    return False
+
+                self.logger.info("Reserving component {} for client {}".format(component_id, client_id), extra={"client_id": client_id})
+                if self.reserve_component(component_id, client_id) < 1:
+                    self.logger.error("Component {} could not be reserved by {}".format(component_id, client_id))
+                    return False
+                else:
+                    return True
+            else:
+                return True
+        except Exception as e:
+            self.logger.error("Error reserving component {}: {}".format(component_id, e))
+            return False
 
     def connect(self, request):
         """
