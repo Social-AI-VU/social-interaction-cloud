@@ -6,11 +6,12 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+
 project = 'Social Interaction Cloud'
 copyright = '2025, Koen Hindriks'
 author = 'Koen Hindriks'
-version = '2.0.37'
-release = '2.0.37'
+version = '2.0.38'
+release = '2.0.38'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
