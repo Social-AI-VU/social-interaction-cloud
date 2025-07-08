@@ -27,14 +27,9 @@ The Social Interaction Cloud framework is designed to facilitate the development
 Quick Start
 -----------
 
-To get started with the Social Interaction Cloud framework:
+To get started with the Social Interaction Cloud framework, follow the :doc:`tutorials/1_installation` tutorial.
 
-1. Install the framework: ``pip install social-interaction-cloud``
-2. Import the core components: ``from sic_framework.core import *``
-3. Create your first application by connecting components together
-4. Deploy and run your application
-
-For detailed examples and tutorials, see the :ref:`api` section.
+For detailed examples and tutorials, see the demos in the `sic_applications repository <https://github.com/Social-AI-VU/sic_applications>`_ and the :ref:`tutorials` section.
 
 .. toctree::
    :maxdepth: 2

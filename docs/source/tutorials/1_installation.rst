@@ -126,10 +126,10 @@ Running any application consists of two (or three) steps:
 
 We will cover two examples: running an application without a service (step 1 and 3) and with a service (step 1, 2, and 3).
 
-**Running an application without a service**
+**Running Applications**
 ~~~~~~~~~~
 
-
+See the second half of the `Getting Started Tutorial <https://socialrobotics.atlassian.net/wiki/spaces/CBSR/pages/2180415493/Getting+started>`_ .
 
 
 📹: Video Tutorial (Windows)
