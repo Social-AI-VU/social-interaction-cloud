@@ -1,4 +1,9 @@
-# import dataclasses
+"""
+message_python2.py
+
+This module contains the SICMessage class, which is the base class for all messages in the SIC framework.
+"""
+
 import io
 import os
 import random
@@ -54,7 +59,15 @@ class SICMessage(object):
     """
     The abstract message structure to pass messages around the SIC framework. Supports python types, numpy arrays
     and JPEG compression using libturbo-jpeg.
-    _compress_images=True allow arrays of WxHx3 to be jpeg compressed for higher transfer speed.
+
+    :param _compress_images: Whether to compress images.
+    :type _compress_images: bool
+    :param _request_id: The request id of the message.
+    :type _request_id: int
+    :param _timestamp: The timestamp of the message.
+    :type _timestamp: float
+    :param _previous_component_name: The name of the previous component that created the message.
+    :type _previous_component_name: str
     """
 
     # timestamp of the creation date of the data at its origin, e.g. camera, but not face detection (as it uses the
@@ -69,34 +82,60 @@ class SICMessage(object):
     # this request id must be set when the message is sent as a reply to a SICRequest
     _request_id = None
 
-    def __eq__(self, other):
-        """
-        Loose check to compare if messages are the same type. type(a) == type(b) might not work because the messages
-        might have been created on different machines.
-        :param other:
-        :return:
-        """
-        if hasattr(other, "get_message_name"):
-            return self.get_message_name() == other.get_message_name()
-        else:
-            return False
-
     @classmethod
     def get_message_name(cls):
         """
-        The pretty name of this service.
-        :return:
+        The pretty name of this message class.
+
+        :return: The name of the message class.
+        :rtype: str
         """
         return cls.__name__
 
-    def get_previous_component_name(self):
-        return self._previous_component_name
+    @classmethod
+    def deserialize(cls, byte_string):
+        """
+        Convert object from its bytes representation, compatible between python2 and python3 and
+        with support for numpy arrays.
+
+        :param byte_string: The byte string to deserialize.
+        :type byte_string: bytes
+        :return: The deserialized object.
+        :rtype: object
+        """
+        # Read pickle object
+        obj = cls._pickle_load(byte_string)
+
+        # Decompress SICMessage bytes to SICMessage
+        for field in obj.__SIC_MESSAGES:
+            field_val = getattr(obj, field)
+            if not isinstance(field_val, bytes):
+                field_val = field_val.encode("latin1")
+            setattr(obj, field, SICMessage.deserialize(field_val))
+
+        # Decompress numpy bytes to numpy arrays
+        for field in obj.__NP_VALUES:
+            field_val = getattr(obj, field)
+            if not isinstance(field_val, bytes):
+                field_val = field_val.encode("latin1")
+            setattr(obj, field, obj._base2np(field_val))
+
+        # Decompress JPEG images to numpy arrays
+        for field in obj.__JPEG_VALUES:
+            field_val = getattr(obj, field)
+            if not isinstance(field_val, bytes):
+                field_val = field_val.encode("latin1")
+            setattr(obj, field, obj.jpeg2np(field_val))
+
+        return obj
 
     @staticmethod
     def _np2base(inp):
         """
         Convert numpy arrays to byte arrays.
+
         :param inp: a numpy array
+        :type inp: np.ndarray
         :return: the byte string
         """
         mem_stream = io.BytesIO()
@@ -107,7 +146,9 @@ class SICMessage(object):
     def _base2np(inp):
         """
         Convert back from byte arrays to numpy arrays.
+
         :param inp: a byte string
+        :type inp: bytes
         :return: the numpy array
         """
         memfile = io.BytesIO()
@@ -117,10 +158,24 @@ class SICMessage(object):
 
     @staticmethod
     def np2jpeg(inp):
+        """
+        Convert numpy array to JPEG bytes.
+
+        :param inp: a numpy array
+        :type inp: np.ndarray
+        :return: the JPEG bytes
+        """
         return turbojpeg.encode(inp)
 
     @staticmethod
     def jpeg2np(inp):
+        """
+        Convert JPEG bytes to numpy array.
+
+        :param inp: a JPEG bytes
+        :type inp: bytes
+        :return: the numpy array
+        """
         # takes about 15 ms for 1280x960px
         img = turbojpeg.decode(inp)
 
@@ -135,11 +190,23 @@ class SICMessage(object):
 
         return img
 
+    def get_previous_component_name(self):
+        """
+        Get the name of the previous component that created the message.
+
+        :return: The name of the previous component.
+        :rtype: str
+        """
+        return self._previous_component_name
+
+
     def serialize(self):
         """
-        Convert object to its bytes representation, compatible between python2 and python3 and
+        Convert this object to its bytes representation, compatible between python2 and python3 and
         with support for numpy arrays.
+
         :return: 'bytes' in python3, 'str' in python2 (which are roughly the same)
+        :rtype: bytes or str
         """
         self.__NP_VALUES = []
         self.__JPEG_VALUES = []
@@ -170,10 +237,15 @@ class SICMessage(object):
     @staticmethod
     def _pickle_load(byte_string):
         """
+        Load a pickle object from a byte string.
+
         The pickle loads call is different between python versions. To reduce code duplication, this
         function is created to contain only the difference.
-        :param byte_string:
-        :return:
+
+        :param byte_string: The byte string to load.
+        :type byte_string: bytes
+        :return: The loaded object.
+        :rtype: object
         """
 
         # Not everything is a pickle object...
@@ -225,40 +297,28 @@ class SICMessage(object):
                 )
             )
 
-    @classmethod
-    def deserialize(cls, byte_string):
+    def __eq__(self, other):
         """
-        Convert object from its bytes representation, compatible between python2 and python3 and
-        with support for numpy arrays.
-        :return: a SICMessage subclass
+        Loose check to compare if messages are the same type. type(a) == type(b) might not work because the messages
+        might have been created on different machines.
+
+        :param other: The other message to compare to.
+        :type other: SICMessage
+        :return: Whether the messages are the same type.
+        :rtype: bool
         """
-        # Read pickle object
-        obj = cls._pickle_load(byte_string)
-
-        # Decompress SICMessage bytes to SICMessage
-        for field in obj.__SIC_MESSAGES:
-            field_val = getattr(obj, field)
-            if not isinstance(field_val, bytes):
-                field_val = field_val.encode("latin1")
-            setattr(obj, field, SICMessage.deserialize(field_val))
-
-        # Decompress numpy bytes to numpy arrays
-        for field in obj.__NP_VALUES:
-            field_val = getattr(obj, field)
-            if not isinstance(field_val, bytes):
-                field_val = field_val.encode("latin1")
-            setattr(obj, field, obj._base2np(field_val))
-
-        # Decompress JPEG images to numpy arrays
-        for field in obj.__JPEG_VALUES:
-            field_val = getattr(obj, field)
-            if not isinstance(field_val, bytes):
-                field_val = field_val.encode("latin1")
-            setattr(obj, field, obj.jpeg2np(field_val))
-
-        return obj
+        if hasattr(other, "get_message_name"):
+            return self.get_message_name() == other.get_message_name()
+        else:
+            return False
 
     def __repr__(self):
+        """
+        Get a string representation of this message.
+
+        :return: The string representation of this message.
+        :rtype: str
+        """
         max_len = 20
         out = str(self.__class__.__name__) + "\n"
 
@@ -405,14 +465,14 @@ class UncompressedImageMessage(SICMessage):
 
 class Audio(object):
     """
-    A message that should contain _byte representation_ of pulse-code modulated (PCM) 16-bit signed little endian
-    integer waveform audio data. The integers are represented as a python byte array because this is the expected and
-    provided data format of common hardware audio hardware and libraries. For compatibility with other services ensure
-    that your data follows EXACTLY this data type. This should be the most common format, but please check your data
-    format.
+    A message that containes a _byte representation_ of pulse-code modulated (PCM) 16-bit signed little endian
+    integer waveform audio data. 
+    
+    Integers are represented as a python byte array because this is the expected and provided data format of 
+    common hardware audio hardware and libraries. For compatibility with other services ensure that your data follows 
+    EXACTLY this data type. This should be the most common format, but please check your data format.
 
-    You can convert to and from .wav files using the built-in module
-    https://docs.python.org/2/library/wave.html
+    You can convert to and from .wav files using the built-in module https://docs.python.org/2/library/wave.html
     """
 
     def __init__(self, waveform, sample_rate):
@@ -425,7 +485,7 @@ class Audio(object):
 
 class AudioMessage(Audio, SICMessage):
     """
-    See Audio
+    Message class to send audio data.
     """
 
     def __init__(self, *args, **kwargs):
@@ -435,7 +495,7 @@ class AudioMessage(Audio, SICMessage):
 
 class AudioRequest(Audio, SICRequest):
     """
-    See Audio
+    Request class to send audio data.
     """
 
     def __init__(self, *args, **kwargs):
@@ -454,7 +514,7 @@ class Text(object):
 
 class TextMessage(Text, SICMessage):
     """
-    See Text
+    Message class to send text data.
     """
 
     def __init__(self, *args, **kwargs):
@@ -464,7 +524,7 @@ class TextMessage(Text, SICMessage):
 
 class TextRequest(Text, SICRequest):
     """
-    See Text
+    Request class to send text data.
     """
 
     def __init__(self, *args, **kwargs):
@@ -474,11 +534,11 @@ class TextRequest(Text, SICRequest):
 
 class BoundingBox(object):
     """
-    A generic class representing a single bounding box with optional identifier of the object.
+    Bounding box for identifying an object in an image.
+    
     (x,y) represents the top-left pixel of the bounding box, and (w,h) indicates the width and height.
-    Identifier can be used implementation specific to for example indicate a specific object type or
-    detected person.
-    Confidence indicates can be used to indicate the confidence of the detection mechanism.
+    Identifier can be used implementation specific to for example indicate a specific object type or detected person.
+    Confidence indicates the confidence of the detection mechanism.
     """
 
     def __init__(self, x, y, w, h, identifier=None, confidence=None):
@@ -492,11 +552,19 @@ class BoundingBox(object):
     def xywh(self):
         """
         Get the coordinates as a numpy array.
-        :return:
+        
+        :return: The coordinates as a numpy array.
+        :rtype: np.ndarray
         """
         return np.array([self.x, self.y, self.w, self.h])
 
     def __str__(self):
+        """
+        Get a string representation of this bounding box.
+        
+        :return: The string representation of this bounding box.
+        :rtype: str
+        """
         return "BoundingBox\nxywh: {}\nidentifier: {}\nconfidence: {}".format(
             self.xywh(), self.identifier, self.confidence
         )
@@ -504,8 +572,8 @@ class BoundingBox(object):
 
 class BoundingBoxesMessage(SICMessage):
     """
-    A generic class containing multiple bounding boxes as a list of BoundingBox objects.
+    Message class to send multiple bounding boxes.
     """
 
     def __init__(self, bboxes):
-        self.bboxes = bboxes  # List[BoundingBox]
+        self.bboxes = bboxes

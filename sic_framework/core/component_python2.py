@@ -1,12 +1,16 @@
+"""
+component_python2.py
+
+This module contains the SICComponent class, which is the base class for all components in the Social Interaction Cloud.
+"""
+
 import threading
 import time
 from abc import ABCMeta, abstractmethod
 
 import six
 
-import sic_framework.core.sic_logging
 from sic_framework.core.utils import is_sic_instance
-
 from . import sic_logging, utils
 from .message_python2 import (
     SICConfMessage,
@@ -24,9 +28,15 @@ from .sic_redis import SICRedis
 class ConnectRequest(SICControlRequest):
     def __init__(self, channel):
         """
-        A request for this component to start listening to the output of another component. The provided channel should
-        be the output channel of the component that serves as input to this component.
-        :param channel: the channel
+        A request for this component to establish a connection with another component's output channel.
+        
+        This allows components to be chained together, where the output of one component becomes
+        the input for another. For example, a speech recognition component could feed its text output
+        into a natural language processing component.
+
+        :param channel: The Redis channel name that the other component publishes its output to.
+                       This component will subscribe to and receive messages from this channel.
+        :type channel: str
         """
         super(ConnectRequest, self).__init__()
         self.channel = channel  # str
@@ -34,22 +44,47 @@ class ConnectRequest(SICControlRequest):
 
 class SICComponent:
     """
-    Abstract class for services that provides functions for the Social Interaction Cloud.
+    Abstract class for Components that provide essential functions for Social Interaction Cloud applications.
+    
+    :param ready_event: Threading event to signal when the component is ready. If None, creates a new Event.
+    :type ready_event: threading.Event, optional
+    :param stop_event: Threading event to signal when the component should stop. If None, creates a new Event.
+    :type stop_event: threading.Event, optional
+    :param log_level: The logging verbosity level (e.g., DEBUG, INFO, WARNING, ERROR).
+    :type log_level: int, optional
+    :param conf: Configuration parameters for the component. If None, uses default configuration.
+    :type conf: dict, optional
     """
 
+    # 1. Class constants
+
+    # Make SICComponent an abstract class in Python 2. 
+    # Ensures any subclass must implement all abstract methods denoted by @abstractmethod
     __metaclass__ = ABCMeta
 
-    # This parameter controls how long a SICConnector should wait when requesting the service
-    # For example, when the robot has to stand up or model parameters need to load to GPU this might be set higher
     COMPONENT_STARTUP_TIMEOUT = 30
+    """
+    Timeout in seconds for component startup.
+    
+    This controls how long a SICConnector should wait when requesting a component to start.
+    Increase this value for components that need more time to initialize (e.g., robots 
+    that need to stand up or models that need to load to GPU).
+    """
 
+    # 2. Special methods
     def __init__(
-        self, ready_event=None, stop_event=None, log_level=sic_logging.INFO, conf=None
+        self, 
+        ready_event=None, 
+        stop_event=None, 
+        log_level=sic_logging.INFO, 
+        conf=None
     ):
+
         self._ip = utils.get_ip_adress()
 
-        # the events to control this service running in the thread created by the factory
+        # _ready_event is set once the component has started, signals to the component manager that the component is ready.
         self._ready_event = ready_event if ready_event else threading.Event()
+        # _stop_event is set when the component should stop
         self._stop_event = stop_event if stop_event else threading.Event()
 
         self._input_channels = []
@@ -67,32 +102,51 @@ class SICComponent:
         # load config if set by user
         self.set_config(conf)
 
-    def _get_logger(self, log_level):
+    # 3. Class methods
+    @classmethod
+    def get_component_name(cls):
         """
-        Create a logger for the component to use to send messages to the user during its lifetime.
-        :param log_level: The logging verbosity level, such as DEBUG, INFO, etc.
-        :return: Logger
-        """
-        # create logger for the component
-        name = self.get_component_name()
-        return sic_logging.get_sic_logger(name=name, redis=self._redis, log_level=log_level)
+        Get the display name of this component.
 
-    def _start(self):
+        Returns the name of the subclass that implements this class (e.g. "DesktopCameraSensor")
+        
+        :return: The component's display name (typically the class name)
+        :rtype: str
         """
-        Wrapper for actual user implemented start to enable logging to the user.
-        """
-        try:
-            self.start()
-        except Exception as e:
-            self.logger.exception(e)
-            raise e
+        return cls.__name__
 
+    @classmethod
+    def get_output_channel(cls, ip):
+        """
+        Get the output channel for this component.
+
+        :return: channel name
+        :rtype: str
+        """
+        return "{name}:{ip}".format(name=cls.get_component_name(), ip=ip)
+
+    @classmethod
+    def get_request_reply_channel(cls, ip):
+        """
+        Get the channel name to communicate request-replies with this component
+        
+        :return: channel name
+        :rtype: str
+        """
+
+        name = cls.get_component_name()
+        return "{name}:reqreply:{ip}".format(name=name, ip=ip)
+
+    # 4. Public instance methods
     def start(self):
         """
-        Start the service. Should be called by overriding functions to communicate the service
-        has started successfully.
+        Start the component. This method registers a request handler, signals the component is ready, 
+        and logs that the component has started.
+
+        Subclasses should call this method from their overridden start() 
+        method to get the framework's default startup behavior.
         """
-        # register a request handler to handle control requests, e.g. ConnectRequest
+        # register a request handler to handle control requests
         self._redis.register_request_handler(
             self.get_request_reply_channel(self._ip), self._handle_request
         )
@@ -102,13 +156,144 @@ class SICComponent:
 
         self.logger.info("Started component {}".format(self.get_component_name()))
 
+    def stop(self, *args):
+        """
+        Stop the component.
+
+        Closes the Redis connection and sets the stop event.
+        
+        :param args: Additional arguments (not used)
+        :type args: tuple
+        """
+        self.logger.debug(
+            "Trying to exit {} gracefully...".format(self.get_component_name())
+        )
+        try:
+            self._redis.close()
+            self._stop_event.set()
+            self.logger.debug("Graceful exit was successful")
+        except Exception as err:
+            self.logger.error("Graceful exit has failed: {}".format(err.message))
+
+    def set_config(self, new=None):
+        """
+        Set the configuration for this component.
+
+        Calls _parse_conf() to parse the configuration message.
+        
+        :param new: The new configuration. If None, uses the default configuration.
+        :type new: SICConfMessage, optional
+        """
+        if new:
+            conf = new
+        else:
+            conf = self.get_conf()
+
+        self._parse_conf(conf)
+
+    def on_request(self, request):
+        """
+        Define the handler for Component specific requests. Must return a SICMessage as a reply to the request.
+
+        :param request: The request for this component.
+        :type request: SICRequest
+        :return: The reply
+        :rtype: SICMessage
+        """
+        raise NotImplementedError("You need to define a request handler.")
+
+    def on_message(self, message):
+        """
+        Define the handler for input messages.
+
+        :param message: The message to handle.
+        :type message: SICMessage
+        :return: The reply
+        :rtype: SICMessage
+        """
+        raise NotImplementedError("You need to define a message handler.")
+
+    def output_message(self, message):
+        """
+        Send a message on the output channel of this component.
+
+        Stores the component name in the message to allow for debugging.
+
+        :param message: The message to send.
+        :type message: SICMessage
+        """
+        message._previous_component_name = self.get_component_name()
+        self._redis.send_message(self._output_channel, message)
+
+    @staticmethod
+    @abstractmethod
+    def get_inputs():
+        """
+        Define the input types the component needs as a list.
+
+        Must be implemented by the subclass.
+        
+        :return: list of SIC messages
+        :rtype: List[Type[SICMessage]]
+        """
+        raise NotImplementedError("You need to define service input.")
+
+    @staticmethod
+    @abstractmethod
+    def get_output():
+        """
+        Define the output type of the component.
+
+        Must be implemented by the subclass.
+        
+        :return: SIC message
+        :rtype: Type[SICMessage]
+        """
+        raise NotImplementedError("You need to define service output.")
+
+    @staticmethod
+    def get_conf():
+        """
+        Define the expected configuration of the component using SICConfMessage.
+        
+        :return: a SICConfMessage or None
+        :rtype: SICConfMessage
+        """
+        return SICConfMessage()
+
+    # 5. Protected methods
+    def _start(self):
+        """
+        Wrapper for the user-implemented start method that provides error handling and logging.
+        
+        This method calls the user's start() implementation and ensures any exceptions are 
+        properly logged before being re-raised to the caller.
+        """
+        try:
+            self.start()
+        except Exception as e:
+            self.logger.exception(e)
+            raise e
+
+    def _get_logger(self, log_level):
+        """
+        Create a logger for the component to use with its specific name.
+        
+        :param log_level: The logging verbosity level, such as DEBUG, INFO, etc.
+        :type log_level: int
+        :return: Logger
+        :rtype: logging.Logger
+        """
+        # create logger for the component
+        name = self.get_component_name()
+        return sic_logging.get_sic_logger(name=name, redis=self._redis, log_level=log_level)
+
     def _connect(self, connection_request):
         """
-        Connect the output of a component to the input of this component, by registering the output channel
-        to the on_message handler.
+        Register the message handler of this component to the output channel of another component.
+
         :param connection_request: The component serving as an input to this component.
         :type connection_request: ConnectRequest
-        :return:
         """
         channel = connection_request.channel
         if channel in self._input_channels:
@@ -120,14 +305,27 @@ class SICComponent:
         self._redis.register_message_handler(channel, self._handle_message)
 
     def _handle_message(self, message):
+        """
+        Handle incoming messages.
+        
+        Calls the user-implemented on_message method to process the message.
+
+        :param message: The message to handle.
+        :type message: SICMessage
+        :return: The reply to the message.
+        :rtype: SICMessage
+        """
         return self.on_message(message)
 
     def _handle_request(self, request):
         """
-        An handler for control requests such as ConnectRequest. Normal Requests are passed to the on_request handler.
-        Also logs the error to the remote log stream in case an exeption occured in the user-defined handler.
-        :param request:
-        :return:
+        Handle control requests such as SICPingRequests, SICStopRequest, and ConnectRequest by calling 
+        generic Component methods. Component specific requests are passed to the normal on_request handler.
+        
+        :param request: The request to handle.
+        :type request: SICRequest
+        :return: The reply to the request.
+        :rtype: SICMessage
         """
 
         self.logger.debug(
@@ -145,108 +343,19 @@ class SICComponent:
             self._connect(request)
             return SICSuccessMessage()
 
+        # If the request is not a control request, pass it to the user-implemented on_request handler.
         if not is_sic_instance(request, SICControlRequest):
             return self.on_request(request)
 
         raise TypeError("Unknown request type {}".format(type(request)))
 
-    @classmethod
-    def get_component_name(cls):
-        """
-        The display name of this component.
-        """
-        return cls.__name__
-
-    @classmethod
-    def get_output_channel(cls, ip):
-        """
-        Get the output channel for this component.
-        TODO what place is best to put this method
-        TODO maybe explain why this is deterministic?
-        :return: channel name
-        :rtype: str
-        """
-        return "{name}:{ip}".format(name=cls.get_component_name(), ip=ip)
-
-    @classmethod
-    def get_request_reply_channel(cls, ip):
-        """
-        Get the channel name to communicate with request-replies with this component
-        :return: channel name
-        :rtype: str
-        """
-
-        name = cls.get_component_name()
-        return "{name}:reqreply:{ip}".format(name=name, ip=ip)
-
-    def set_config(self, new=None):
-        # Service parameter configuration
-        if new:
-            conf = new
-        else:
-            conf = self.get_conf()
-
-        self._parse_conf(conf)
-
-    def on_request(self, request):
-        """
-        Define the handler for requests. Must return a SICMessage as a reply to the request.
-        :param request: The request for this component.
-        :return: The reply
-        :rtype: SICMessage
-        """
-        raise NotImplementedError("You need to define a request handler.")
-
-    def on_message(self, message):
-        """
-        Define the handler for input messages.
-        :param message: The request for this component.
-        :return: The reply
-        :rtype: SICMessage
-        """
-        raise NotImplementedError("You need to define a message handler.")
-
-    def output_message(self, message):
-        """
-        Send a message on the output channel of this component.
-        :param message:
-        """
-        message._previous_component_name = self.get_component_name()
-        self._redis.send_message(self._output_channel, message)
-
-    @staticmethod
-    @abstractmethod
-    def get_inputs():
-        """
-        Define the inputs the service needs as a list
-        :return: list of SIC messages
-        :rtype: List[Type[SICMessage]]
-        """
-        raise NotImplementedError("You need to define service input.")
-
-    @staticmethod
-    @abstractmethod
-    def get_output():
-        """
-        Define the output of the service
-        :return: SIC message
-        :rtype: Type[SICMessage]
-        """
-        raise NotImplementedError("You need to define service output.")
-
-    @staticmethod
-    def get_conf():
-        """
-        Define a possible configuration using SICConfMessage
-        :return: a SICConfMessage or None
-        :rtype: SICConfMessage
-        """
-        return SICConfMessage()
-
     def _parse_conf(self, conf):
         """
-        Helper function to parse configuration messages (SICConfMessage)
-        :param conf: a SICConfMessage with the parameters as fields
+        Parse configuration messages (SICConfMessage).
+        
+        This method is called by set_config() to parse the configuration message.
+        
+        :param conf: Configuration message to parse
         :type conf: SICConfMessage
         """
         assert is_sic_instance(conf, SICConfMessage), (
@@ -261,17 +370,10 @@ class SICComponent:
         self.params = conf
 
     def _get_timestamp(self):
-        # TODO this needs to be synchronized with all devices, because if a nao is off by a second or two
-        # its data will align wrong with other sources
-        return time.time()
-
-    def stop(self, *args):
-        self.logger.debug(
-            "Trying to exit {} gracefully...".format(self.get_component_name())
-        )
-        try:
-            self._redis.close()
-            self._stop_event.set()
-            self.logger.debug("Graceful exit was successful")
-        except Exception as err:
-            self.logger.error("Graceful exit has failed: {}".format(err.message))
+        """
+        Get the current timestamp.
+        
+        :return: The current timestamp
+        :rtype: float
+        """
+        return self._redis.time()

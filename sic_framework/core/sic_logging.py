@@ -1,3 +1,9 @@
+"""
+sic_logging.py
+
+This module contains the SICLogging class, which is used to log messages to the Redis log channel and a local logfile.
+"""
+
 from __future__ import print_function
 
 import io
@@ -45,7 +51,15 @@ class SICRemoteError(Exception):
 
 class SICCommonLog(object):
     """
-    A class to subscribe to the Redis log channel and write all log messages to a logfile.
+    A class to subscribe to a Redis log channel and write all log messages to a logfile.
+
+    Pseudo singleton object. Does nothing when this file is executed during the import, but can subscribe to the log
+    channel for the user with subscribe_to_redis_log once.
+
+    :param redis: The Redis instance to use for logging.
+    :type redis: SICRedis
+    :param logfile: The file path to write the log to.
+    :type logfile: str
     """
     def __init__(self):
         self.redis = None
@@ -61,7 +75,8 @@ class SICCommonLog(object):
         """
         Subscribe to the Redis log channel and display any messages on the terminal. 
         This function may be called multiple times but will only subscribe once.
-        :return:
+
+        :return: None
         """
         with self.lock:  # Ensure thread-safe access
             if not self.running:
@@ -74,7 +89,9 @@ class SICCommonLog(object):
     def _handle_redis_log_message(self, message):
         """
         Handle a message sent on a debug stream. Currently it's just printed to the terminal.
-        :param message: SICLogMessage
+
+        :param message: The message to handle.
+        :type message: SICLogMessage
         """
         # outputs to terminal
         print(message.msg, end="")
@@ -83,6 +100,12 @@ class SICCommonLog(object):
         self._write_to_logfile(message.msg)
     
     def _write_to_logfile(self, message):
+        """
+        Write a message to the logfile.
+
+        :param message: The message to write to the logfile.
+        :type message: str
+        """
         with self.lock:
             # strip ANSI codes before writing to logfile
             clean_message = ANSI_CODE_REGEX.sub("", message)
@@ -99,6 +122,9 @@ class SICCommonLog(object):
 
 
     def stop(self):
+        """
+        Stop the logging.
+        """
         with self.lock:  # Ensure thread-safe access
             if self.running:
                 self.running = False
@@ -107,30 +133,61 @@ class SICCommonLog(object):
 
 class SICRedisLogStream(io.TextIOBase):
     """
-    Facilities to log to redis as a file-like object, to integrate with standard python logging facilities.
-    """
+    Facilities to log to Redis as a file-like object, to integrate with standard python logging facilities.
 
+    :param redis: The Redis instance to use for logging.
+    :type redis: SICRedis
+    :param logging_channel: The Redis channel to log to.
+    :type logging_channel: str
+    """
     def __init__(self, redis, logging_channel):
+        """
+        Initialize the Redis log stream.
+        """
         self.redis = redis
         self.logging_channel = logging_channel
 
     def readable(self):
+        """
+        Check if the stream is readable.
+
+        :return: False
+        :rtype: bool
+        """
         return False
 
     def writable(self):
+        """
+        Check if the stream is writable.
+
+        :return: True
+        :rtype: bool
+        """
         return True
 
     def write(self, msg):
+        """
+        Write a message to the Redis log channel.
+
+        :param msg: The message to write to the Redis log channel.
+        :type msg: str
+        """
         # only send logs to redis if a redis instance is associated with this logger
         if self.redis != None:
             message = SICLogMessage(msg)
             self.redis.send_message(self.logging_channel, message)
 
     def flush(self):
+        """
+        Flush the stream.
+        """
         return
 
 
 class SICLogFormatter(logging.Formatter):
+    """
+    A formatter for SIC log messages.
+    """
     # Define ANSI escape codes for colors
     LOG_COLORS = {
         logging.DEBUG: "\033[92m",  # Green
@@ -142,6 +199,12 @@ class SICLogFormatter(logging.Formatter):
     RESET_COLOR = "\033[0m"  # Reset color
 
     def format(self, record):
+        """
+        Format a log message.
+
+        :param record: The log record to format.
+        :type record: logging.LogRecord
+        """
         # Get the color for the current log level
         color = self.LOG_COLORS.get(record.levelno, self.RESET_COLOR)
 
@@ -172,6 +235,11 @@ class SICLogFormatter(logging.Formatter):
     def formatException(self, exec_info):
         """
         Prepend every exception with a | to indicate it is not local.
+
+        :param exec_info: The exception information.
+        :type exec_info: tuple
+        :return: The formatted exception.
+        :rtype: str
         """
         text = super(SICLogFormatter, self).formatException(exec_info)
         text = "| " + text.replace("\n", "\n| ")
@@ -183,9 +251,14 @@ def get_sic_logger(name="", redis=None, log_level=DEBUG):
     """
     Set up logging to the log output channel to be able to report messages to users.
 
-    :param redis: The SICRedis object
     :param name: A readable and identifiable name to indicate to the user where the log originated
+    :type name: str
+    :param redis: The SICRedis object
+    :type redis: SICRedis
     :param log_level: The logger.LOGLEVEL verbosity level
+    :type log_level: int
+    :return: The logger.
+    :rtype: logging.Logger
     """
     # logging initialisation
     logger = logging.Logger(name)
