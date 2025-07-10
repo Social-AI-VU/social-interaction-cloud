@@ -1,3 +1,9 @@
+"""
+service_python2.py
+
+This module contains the SICService class, which is the base class for all services in the Social Interaction Cloud.
+"""
+
 import collections
 from abc import ABCMeta, abstractmethod
 from threading import Event
@@ -10,10 +16,14 @@ from .message_python2 import SICConfMessage, SICMessage
 
 
 class MessageQueue(collections.deque):
+    """
+    A message buffer, with logging to notify of excessive dropped messages.
+
+    :param logger: The logger to use for logging dropped messages.
+    :type logger: logging.Logger
+    """
+
     def __init__(self, logger):
-        """
-        A message buffer, with logging to notify of excessive dropped messages.
-        """
         self.logger = logger
         self.dropped_messages_counter = 0
         super(MessageQueue, self).__init__(maxlen=SICService.MAX_MESSAGE_BUFFER_SIZE)
@@ -47,27 +57,31 @@ class PopMessageException(ValueError):
     An exception to raise whenever the conditions to pop messages from the input message buffers were not met.
     """
 
-
 class SICMessageDictionary:
     """
-    A dictionary type container for messages, indexable by the message type and possibly an origin.
-
-    Example:
-        # in config: self.params.image_source_one = TopCameraSensor
-        img_msg1 = inputs.get(ImageMessage, self.params.image_source_one)
-        img_msg2 = inputs.get(ImageMessage, self.params.image_source_two)
-
-        audio_msg = inputs.get(AudioMessage)
+    A dictionary container for messages, indexable by the message type and possibly an origin.
     """
 
     def __init__(self):
         self.messages = collections.defaultdict(lambda: list())
 
     def set(self, message):
+        """
+        Add a message to the dictionary.
+
+        :param message: The message to add.
+        :type message: SICMessage
+        """
         self.messages[message.get_message_name()].append(message)
 
     def get(self, type, source_component=None):
+        """
+        Get a message from the dictionary.
 
+        :param type: The type of message to get.
+        :type type: SICMessage
+        :param source_component: The component that sent the message.
+        """
         if source_component is not None:
             try:
                 source_component_name = source_component.get_component_name()
@@ -99,7 +113,10 @@ class SICMessageDictionary:
 
 class SICService(SICComponent):
     """
-    Abstract class for services that provides data fusion based on the timestamp of the data origin.
+    Abstract class for Services that transform and perform operations on data.
+
+    Some Services take multiple inputs and must synchronize the data based on timestamp.
+    This class provides the logic to synchronize the data if multiple inputs are expected.
     """
 
     MAX_MESSAGE_BUFFER_SIZE = 10
@@ -119,7 +136,7 @@ class SICService(SICComponent):
 
     def start(self):
         """
-        Start the service. This method must be called by the user at the end of the constructor
+        Start the Service. Calls the _listen method to start listening for input messages.
         """
         super(SICService, self).start()
 
@@ -128,7 +145,10 @@ class SICService(SICComponent):
     @abstractmethod
     def execute(self, inputs):
         """
-        Main function of the service
+        Process the input messages and return a SICMessage.
+        
+        Main function of the Service. Must be implemented by the subclass.
+
         :param inputs: dict of input messages from other components
         :type inputs: SICMessageDictionary
         :return: A SICMessage or None
@@ -206,8 +226,12 @@ class SICService(SICComponent):
 
     def on_message(self, message):
         """
-        Collect an input message into the appropriate buffer.
-        :param data: the redis pubsub message
+        Collect an input message and put it into the appropriate buffer.
+
+        Sets the _new_data_event to signal that new data is available.
+
+        :param message: The message to collect.
+        :type message: SICMessage
         """
 
         # TODO support inheritance by indexing using the superclass that matches an input type
@@ -226,7 +250,7 @@ class SICService(SICComponent):
 
     def _listen(self):
         """
-        Wait for data and execute the service when possible.
+        Wait for new data and execute when possible.
         """
         while not self._stop_event.is_set():
             # wait for new data to be set by the _process_message callback, and check every .1 second to check if the

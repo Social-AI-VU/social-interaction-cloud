@@ -1,3 +1,10 @@
+"""
+connector.py
+
+This module contains the SICConnector class, the user interface to connect to components.
+"""
+
+
 import logging
 import time
 from abc import ABCMeta
@@ -5,7 +12,6 @@ from abc import ABCMeta
 import six
 import sys
 
-from sic_framework.core.component_python2 import ConnectRequest
 from sic_framework.core.sensor_python2 import SICSensor
 from sic_framework.core.utils import is_sic_instance
 
@@ -17,24 +23,36 @@ from .sic_redis import SICRedis
 
 
 class ComponentNotStartedError(Exception):
+    """
+    An exception to indicate that a component failed to start.
+    """
     pass
 
 
 class SICConnector(object):
+    """
+    The user interface to connect to components wherever they are running.
+
+    :param ip: The IP address of the component to connect to.
+    :type ip: str, optional
+    :param log_level: The logging level to use for the connector.
+    :type log_level: logging.LOGLEVEL, optional
+    :param conf: The configuration for the connector.
+    :type conf: SICConfMessage, optional
+    """
     __metaclass__ = ABCMeta
 
     # define how long an "instant" reply should take at most (ping sometimes takes more than 150ms)
     _PING_TIMEOUT = 1
 
-    def __init__(self, ip="localhost", log_level=logging.DEBUG, input_source=None, conf=None):
-        """
-        A proxy that enables communication with a component that has been started. We can send messages to, and receive
-        from the component that is running on potentially another computer.
+    def __init__(self, 
+                 ip="localhost", 
+                 log_level=logging.INFO, 
+                 conf=None,
+                 input_source=None):
 
-        :param ip: the ip adress of the device the service is running on
-        :param log_level: Controls the verbosity of the connected component logging.
-        :param conf: Optional SICConfMessage to set component parameters.
-        """
+        self._redis = SICRedis()
+
         assert isinstance(ip, str), "IP must be string"
 
         # connect to Redis
@@ -83,7 +101,123 @@ class SICConnector(object):
 
         self.logger.debug("Component initialization complete")
 
+    @property
+    def component_class(self):
+        """
+        The component class this connector is for.
+
+        :return: The component class this connector is for
+        :rtype: type[SICComponent]
+        """
+        raise NotImplementedError("Abstract member component_class not set.")
+
+    def send_message(self, message):
+        """
+        Send a message to the component.
+
+        :param message: The message to send.
+        :type message: SICMessage
+        """
+        # Update the timestamp, as it should be set by the device of origin
+        message._timestamp = self._get_timestamp()
+        self._redis.send_message(self.input_channel, message)
+
+    def register_callback(self, callback):
+        """
+        Subscribe a callback to be called when there is new data available.
+
+        :param callback: the function to execute.
+        :type callback: function
+        """
+
+        try:
+            ct = self._redis.register_message_handler(self.get_output_channel(), callback)
+        except Exception as e:
+            self.logger.error("Error registering callback: {}".format(e))
+            raise e
+
+        self._callback_threads.append(ct)
+
+    def request(self, request, timeout=100.0, block=True):
+        """
+        Send a request to the Component. 
+        
+        Waits until the reply is received. If the reply takes longer than `timeout` seconds to arrive, 
+        a TimeoutError is raised. If block is set to false, the reply is ignored and the function 
+        returns immediately.
+
+        :param request: The request to send to the component.
+        :type request: SICRequest
+        :param timeout: A timeout in case the action takes too long.
+        :type timeout: float
+        :param block: If false, immediately returns None after sending the request.
+        :type block: bool
+        :return: the SICMessage reply from the component, or None if blocking=False
+        :rtype: SICMessage | None
+        """
+
+        self.logger.debug("Sending request: {} over channel: {}".format(request, self._request_reply_channel))
+
+        if isinstance(request, type):
+            self.logger.error(
+                "You probably forgot to initiate the class. For example, use NaoRestRequest() instead of NaoRestRequest."
+            )
+
+        assert utils.is_sic_instance(request, SICRequest), (
+            "Cannot send requests that do not inherit from "
+            "SICRequest (type: {req})".format(req=type(request))
+        )
+
+        # Update the timestamp, as it is not yet set (normally be set by the device of origin, e.g a camera)
+        request._timestamp = self._get_timestamp()
+
+        return self._redis.request(
+            self._request_reply_channel, request, timeout=timeout, block=block
+        )
+
+    def stop(self):
+        """
+        Send a stop request to the component and close the redis connection.
+        """
+        self.logger.debug("Sending StopRequest to component")
+        self._redis.send_message(self._request_reply_channel, SICStopRequest())
+        if hasattr(self, "_redis"):
+            self._redis.close()
+
+    def get_connector_logger(self, log_level=sic_logging.DEBUG):
+        """
+        Create a logger with the name of the connector.
+
+        :param log_level: The logging level to use for the connector.
+        :type log_level: logging.LOGLEVEL
+        :return: The logger for the connector.
+        :rtype: logging.Logger
+        """
+        name = "{connector}Connector".format(connector=self.__class__.__name__)
+
+        logger = sic_logging.get_sic_logger(name=name, client_id=self.client_id, redis=self._redis, log_level=log_level)
+
+        return logger
+
+    def get_input_channel(self):
+        """
+        Get the input channel of the component.
+        """
+        return self._input_channel
+    
+    def get_output_channel(self):
+        """
+        Get the output channel of the component.
+        """
+        return self._output_channel
+
     def _ping(self):
+        """
+        Ping the component to check if it is alive.
+
+        :return: True if the component is alive, False otherwise.
+        :rtype: bool
+        """
         try:
             self.request(SICPingRequest(), timeout=self._PING_TIMEOUT)
             self.logger.debug("Received ping response")
@@ -92,27 +226,13 @@ class SICConnector(object):
         except TimeoutError:
             self.logger.error("Timeout error when trying to ping component {}".format(self.component_class.get_component_name()))
             return False
-
-    @property
-    def component_class(self):
-        """
-        This abstract property should be set by the subclass creating a connector for the specific component.
-        e.g.
-        component_class = NaoCamera
-        :return: The component class this connector is for
-        :rtype: type[SICComponent]
-        """
-        raise NotImplementedError("Abstract member component_class not set.")
-
+        
     def _start_component(self):
         """
-        Request the component to be started. This connector provides the input and output channels, as it determines which
-        components is connected to which other components.
-        log_level allows the user to control the verbosity of the connected component.
+        Request the component to be started.
 
-        :param component: The component we request to be started
-        :param device_id: The id of the device we want to start a component on
-
+        :return: The component we requested to be started
+        :rtype: SICComponent
         """
         self.logger.info(
             "Component is not already alive, requesting {} from manager {}".format(
@@ -162,122 +282,27 @@ class SICConnector(object):
         except Exception as e:
             logging.error("Unknown exception occured while trying to start {name} component: {e}".format(name=self.component_class.get_component_name(), e=e))
 
-
-    def register_callback(self, callback):
-        """
-        Subscribe a callback to be called when there is new data available.
-        :param callback: the function to execute.
-        """
-
-        try:
-            ct = self._redis.register_message_handler(self.get_output_channel(), callback)
-        except Exception as e:
-            self.logger.error("Error registering callback: {}".format(e))
-            raise e
-
-        self._callback_threads.append(ct)
-
-    def send_message(self, message):
-        # Update the timestamp, as it should be set by the device of origin
-        message._timestamp = self._get_timestamp()
-        self._redis.send_message(self._input_channel, message)
-
     def _get_timestamp(self):
         # TODO this needs to be synchronized with all devices, because if a nao is off by a second or two
         # its data will align wrong with other sources
         # possible solution: do redis.time, and use a custom get time functions that is aware of the offset
         return time.time()
 
-    def connect(self, input_channel="", conf=None):
-        """
-        Connect the output of a component to the input of this component.
-        :param input_channel: The input channel to connect to
-        :type input_channel: str
-        :return:
-        """
-
-        input_channel_info = self._redis.get_data_stream(input_channel)
-        if input_channel_info is None:
-            raise ValueError("Input channel {} not found".format(input_channel))
-
-        self.logger.debug("Defining output channel for {}".format(input_channel))
-        output_channel = self.define_output_channel(self.component_id, input_channel)
-        self.logger.debug("Output channel defined: {}".format(output_channel))
-
-        request = ConnectRequest(input_channel, output_channel, conf)
-        self._redis.request(self.component_ip, request)
-        return output_channel
-
-    def request(self, request, timeout=100.0, block=True):
-        """
-        Request data from a device. Waits until the reply is received. If the reply takes longer than
-        `timeout` seconds to arrive, a TimeoutError is raised. If block is set to false, the reply is
-        ignored and the function returns immediately.
-        :param request: The request to the device
-        :type request: SICRequest
-        :param input_channel: The input channel to send the request to
-        :type input_channel: str
-        :param timeout: A timeout in case the action takes too long. Only works when blocking=True.
-        :param block: If false, immediately returns None after sending the request.
-        :return: the SICMessage reply from the device, or none if blocking=False
-        :rtype: SICMessage | None
-        """
-
-        self.logger.debug("Sending request: {} over channel: {}".format(request, self._request_reply_channel))
-
-        if isinstance(request, type):
-            self.logger.error(
-                "You probably forgot to initiate the class. For example, use NaoRestRequest() instead of NaoRestRequest."
-            )
-
-        assert utils.is_sic_instance(request, SICRequest), (
-            "Cannot send requests that do not inherit from "
-            "SICRequest (type: {req})".format(req=type(request))
-        )
-
-        # Update the timestamp, as it is not yet set (normally be set by the device of origin, e.g a camera)
-        request._timestamp = self._get_timestamp()
-
-        return self._redis.request(
-            self._request_reply_channel, request, timeout=timeout, block=block
-        )
-
-    def stop(self):
-        """
-        Stop the component and disconnect the callback.
-        """
-        self.logger.debug("Sending StopRequest to component")
-        self._redis.send_message(self._request_reply_channel, SICStopRequest())
-        if hasattr(self, "_redis"):
-            self._redis.close()
-
-    def get_connector_logger(self, log_level=sic_logging.DEBUG):
-        """
-        Create a logger to inform the user during the setup of the component by the manager.
-        :param log_level: DEBUG, INFO, WARNING, ERROR, CRITICAL
-        :type log_level: string
-        :return: Logger
-        """
-        name = "{connector}Connector".format(connector=self.__class__.__name__)
-
-        logger = sic_logging.get_sic_logger(name=name, client_id=self.client_id, redis=self._redis, log_level=log_level)
-
-        return logger
-    
-    def get_input_channel(self):
-        """
-        Get the input channel of the component.
-        """
-        return self._input_channel
-    
-    def get_output_channel(self):
-        """
-        Get the output channel of the component.
-        """
-        return self._output_channel
+    # TODO: maybe put this in constructor to do a graceful exit on crash?
+    # register cleanup to disconnect redis if an exception occurs anywhere during exection
+    # TODO FIX cannot register multiple exepthooks
+    # sys.excepthook = self.cleanup_after_except
+    # #
+    # def cleanup_after_except(self, *args):
+    #     self.stop()
+    #     # call original except hook after stopping
+    #     sys.__excepthook__(*args)
 
     # TODO: maybe also helps for a graceful exit?
     def __del__(self):
+        """
+        Call stop() on the connector when it is deleted.
+        """
         try:
             self.stop()
         except Exception as e:

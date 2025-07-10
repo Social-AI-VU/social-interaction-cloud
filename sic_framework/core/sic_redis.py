@@ -1,9 +1,12 @@
 """
-A wrapper around redis to provide a simpler interface for sending SICMessages, using two different API's. The blocking
-API is used for devices, from which we expect a reply when the action is completed. The non-blocking API is used for
-services, which do not have to wait for a response as communication is one way only.
+sic_redis.py
 
-Non-blocking:
+A wrapper around Redis to provide a simpler interface for sending SICMessages, using two different APIs. 
+The non-blocking (asynchronous) API is used for messages which are simply broadcasted and do not require a reply.
+The blocking (synchronous) API is used for requests, from which a reply is expected when the action is completed.
+
+Example Usage:
+Non-blocking (asynchronous):
     ## DEVICE A
         r.register_message_handler("my_channel", do_something_fn)
 
@@ -11,7 +14,7 @@ Non-blocking:
         r.send_message("my_channel", SICMessage("abc"))
 
 
-Blocking:
+Blocking (synchronous):
     ## DEVICE A
         def do_reply(channel, request):
             return SICMessage()
@@ -20,11 +23,8 @@ Blocking:
 
     ## DEVICE B
         reply = r.request("my_channel", NamedRequest("req_handling"), timeout=5)
-
-Note: You can send a non-blocking request by sending with send_message("channel", SICRequest()), but this
-is somewhat discouraged as it may lead to harder to understand behaviour. The same goes for sending messages
-to request handlers with
-
+    
+    # here the reply is received and stored in the variable 'reply'.
 """
 
 import atexit
@@ -42,6 +42,17 @@ from sic_framework.core.message_python2 import SICMessage, SICRequest
 from sic_framework.core.utils import is_sic_instance
 
 class CallbackThread:
+    """
+    A thread that is used to listen to a channel and call a function when a message is received.
+
+    :param function: The function to call when a message is received.
+    :type function: function
+    :param pubsub: The pubsub object to listen to.
+    :type pubsub: redis.pubsub.PubSub
+    :param thread: The thread itself
+    :type thread: threading.Thread
+    """
+
     def __init__(self, function, pubsub, thread):
         self.function = function
         self.pubsub = pubsub
@@ -53,6 +64,9 @@ _sic_redis_instances = []
 
 
 def cleanup_on_exit():
+    """
+    Cleanup on exit. Close all Redis connections.
+    """
     from sic_framework.core import sic_logging
     logger = sic_logging.get_sic_logger("SICRedis")
 
@@ -72,7 +86,10 @@ atexit.register(cleanup_on_exit)
 
 def get_redis_db_ip_password():
     """
-    Get the redis db ip and password from environment variables. If not set, use default values.
+    Get the Redis database IP and password from environment variables. If not set, use default values.
+
+    :return: The Redis database IP and password.
+    :rtype: tuple[str, str]
     """
     host = os.getenv("DB_IP", "127.0.0.1")
     password = os.getenv("DB_PASS", "changemeplease")
@@ -81,17 +98,13 @@ def get_redis_db_ip_password():
 
 class SICRedis:
     """
-    A custom version of redis, that more transparently handles the type of communication necessary for SIC. The aim
-    is to mostly reduce code duplication, and provide a clear blocking and non-blocking API.
+    A custom version of Redis that provides a clear blocking and non-blocking API.
 
-    Redis pubsub API can also be quite fickle due to not-so-useful subscriber messages and blocking behaviour, and
-    this is ignored by this extension. Using any other redis functions 'as is' is discouraged.
+    :param parent_name: The name of the module that uses this Redis connection, for easier debugging.
+    :type parent_name: str
     """
 
     def __init__(self, parent_name=None):
-        """
-        :param parent_name: The name of the module that uses this redis connection, for easier debugging
-        """
 
         self.stopping = False
         self._running_callbacks = []
@@ -161,14 +174,41 @@ class SICRedis:
 
         _sic_redis_instances.append(self)
 
+    @staticmethod
+    def parse_pubsub_message(pubsub_msg):
+        """
+        Convert a Redis pub/sub message to a SICMessage (sub)class.
+
+        :param pubsub_msg: The Redis pubsub message to convert.
+        :type pubsub_msg: dict
+        :return: The SICMessage (sub)class.
+        :rtype: SICMessage
+        """
+        type_, channel, data = (
+            pubsub_msg["type"],
+            pubsub_msg["channel"],
+            pubsub_msg["data"],
+        )
+
+        if type_ == "message":
+            message = SICMessage.deserialize(data)
+            return message
+
+        return None
+
     def register_message_handler(self, channels, callback, ignore_requests=True):
         """
-        Subscribe a callback function to one or more channels, and also start a thread to monitor for new messages.
-        By default, ignores SICRequests.
+        Subscribe a callback function to one or more channels, start a thread to monitor for new messages.
+        
+        By default, ignores SICRequests. Registering request handlers calls this function but sets ignore_requests to False.
+
         :param callback: a function expecting a SICMessage and a channel argument to process the messages received on `channel`
-        :param channels: channel or channels to listen to
+        :type callback: function
+        :param channels: channel or channels to listen to.
+        :type channels: str or list[str]
         :param ignore_requests: Flag to control whether the message handler should also trigger the callback if the
                                 message is a SICRequest
+        :type ignore_requests: bool
         :return: The CallbackThread object containing the the thread that is listening to the channel.
         """
 
@@ -226,9 +266,11 @@ class SICRedis:
 
     def unregister_callback(self, callback_thread):
         """
-        Unhook a callback by unsubscribing from redis and stopping the thread. Will unregister all hooks if
+        Unhook a callback by unsubscribing from Redis and stopping the thread. Will unregister all hooks if
         multiple hooks are created.
-        :param callback_thread: The CallbackThread to unregister
+
+        :param callback_thread: The CallbackThread to unregister.
+        :type callback_thread: CallbackThread
         """
 
         callback_thread.pubsub.unsubscribe()
@@ -237,10 +279,14 @@ class SICRedis:
 
     def send_message(self, channel, message):
         """
-        Send a SICMessage to a service/device listening on the channel.
-        :param channel: The redis pubsub channel to communicate on.
-        :param message: The message
+        Send a SICMessage on the provided channel to any subscribers.
+
+        :param channel: The Redis pubsub channel to communicate on.
+        :type channel: str
+        :param message: The message to send.
+        :type message: SICMessage
         :return: The number of subscribers that received the message.
+        :rtype: int
         """
         assert isinstance(
             message, SICMessage
@@ -264,29 +310,20 @@ class SICRedis:
                 self.parent_logger.error("Redis publish error for channel {channel}: {e}".format(channel=channel, e=e))
             return 0
 
-    def _reply(self, channel, request, reply):
-        """
-        Send a reply to a specific request. This is done by sending a SICMessage to the same channel, where
-        the requesting thread/client is waiting for the reply.
-        :param channel: The redis pubsub channel to communicate on.
-        :param request: The SICRequest
-        :param reply: The SICMessage reply to send back to the requesting client.
-        """
-        # auto-reply to the request if the request id is not set. Used for example when a service manager
-        # does not want to reply to a request, so a reply is returned but its not a reply to the request
-        if reply._request_id is None:
-            reply._request_id = request._request_id
-        self.send_message(channel, reply)
-
     def request(self, channel, request, timeout=5, block=True):
         """
         Send a request, and wait for the reply on the same channel. If the reply takes longer than
         `timeout` seconds to arrive, a TimeoutError is raised. If block is set to false, the reply is
         ignored and the function returns immediately.
-        :param channel: The redis pubsub channel to communicate on.
+
+        :param channel: The Redis pubsub channel to communicate on.
+        :type channel: str
         :param request: The SICRequest
+        :type request: SICRequest
         :param timeout: Timeout in seconds in case the reply takes too long.
+        :type timeout: float
         :param block: If false, immediately returns None after sending the request.
+        :type block: bool
         :return: the SICMessage reply
         """
 
@@ -340,8 +377,11 @@ class SICRedis:
         """
         Register a function to listen to SICRequest's (and ignore SICMessages). Handler must return a SICMessage as a reply.
         Will block receiving new messages until the callback is finished.
-        :param channel: The redis pubsub channel to communicate on.
+
+        :param channel: The Redis pubsub channel to communicate on.
+        :type channel: str
         :param callback: function to run upon receiving a SICRequest. Must return a SICMessage reply
+        :type callback: function
         """
 
         def wrapped_callback(request):
@@ -362,11 +402,17 @@ class SICRedis:
         )
 
     def time(self):
+        """
+        Get the current time from the Redis server.
+
+        :return: The current time in seconds since the Unix epoch.
+        :rtype: tuple[int, int]
+        """
         return self._redis.time()
 
     def close(self):
         """
-        Cleanup function to stop listening to all callback channels and disconnect redis.
+        Cleanup function to stop listening to all callback channels and disconnect Redis.
         """
         self.stopping = True
         for c in self._running_callbacks:
@@ -374,9 +420,32 @@ class SICRedis:
             c.thread.stop()
         self._redis.close()
 
+    def _reply(self, channel, request, reply):
+        """
+        Send a reply to a specific request. This is done by sending a SICMessage to the same channel, where
+        the requesting thread/client is waiting for the reply.
+
+        Called by request handlers.
+
+        :param channel: The Redis pubsub channel to communicate on.
+        :type channel: str
+        :param request: The SICRequest
+        :type request: SICRequest
+        :param reply: The SICMessage reply to send back to the requesting client.
+        :type reply: SICMessage
+        """
+        # auto-reply to the request if the request id is not set. Used for example when a service manager
+        # does not want to reply to a request, so a reply is returned but its not a reply to the request
+        if reply._request_id is None:
+            reply._request_id = request._request_id
+        self.send_message(channel, reply)
+
     def __del__(self):
+        """
+        Cleanup function to stop listening to all callback channels and disconnect Redis.
+        """
         # we can no longer unregister_message_handler as python is shutting down, but we can still stop
-        # any remaining threads
+        # any remaining threads.
         for c in self._running_callbacks:
             c.thread.stop()
 
