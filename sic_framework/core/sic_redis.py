@@ -537,11 +537,11 @@ class SICRedis:
         return self._redis.hset(self.reservation_map, mapping=reservation)
 
         
-    def unset_reservation(self, component_id):
+    def unset_reservation(self, device_id):
         """
-        Remove a reservation for a component in redis.
+        Remove a reservation for a device in redis.
         """
-        return self._redis.hdel(self.reservation_map, component_id)
+        return self._redis.hdel(self.reservation_map, device_id)
     
     def remove_client(self, client_id):
         """
@@ -554,6 +554,8 @@ class SICRedis:
         # delete all the reservations for the client
         reservations = self.get_reservation_map()
         for cur_device_id, cur_client_id in reservations.items():
+            cur_device_id = utils.str_if_bytes(cur_device_id)
+            cur_client_id = utils.str_if_bytes(cur_client_id)
             if cur_client_id == client_id:
                 self.unset_reservation(cur_device_id)
         
@@ -573,14 +575,15 @@ class SICRedis:
         :param client_id: The id of the client
         :return: True if the client is connected, False otherwise
         """
-        keyword="sic:logging:{}".format(client_id)
+        keyphrase="sic:logging:{}".format(client_id)
         # get list of all clients connected to the SIC server
-        client_list = self._redis.execute_command("PUBSUB", "CHANNELS")
-        client_list = utils.str_if_bytes(client_list)
-        if keyword in client_list:
-            return True
-        else:
-            return False
+        all_channels = self._redis.execute_command("PUBSUB", "CHANNELS")
+
+        for channel in all_channels:
+            channel_name = utils.str_if_bytes(channel)
+            if keyphrase in channel_name:
+                return True
+        return False
 
 if __name__ == "__main__":
 
