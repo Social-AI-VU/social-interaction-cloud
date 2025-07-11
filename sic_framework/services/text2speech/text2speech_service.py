@@ -14,6 +14,7 @@ from sic_framework.core.message_python2 import (
     SICRequest,
     SICStopRequest,
 )
+from sic_framework.core.utils import is_sic_instance
 
 
 class Text2SpeechConf(SICConfMessage):
@@ -115,6 +116,12 @@ class Text2SpeechService(SICActuator):
     @staticmethod
     def get_conf():
         return Text2SpeechConf()
+    
+    def on_message(self, message):
+        if isinstance(message, GetSpeechRequest):
+            self.execute(message)
+        else:
+            pass
 
     def execute(self, request):
         """
