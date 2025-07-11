@@ -274,6 +274,7 @@ class SICComponentManager(object):
         self.logger.info("Trying to exit manager gracefully...")
         try:
             # remove the reservation for the device running this component manager
+            self.logger.info("Removing reservation for device {}".format(self.ip))
             self.redis.remove_client(self.ip)
             self.redis.close()
             for component in self.active_components:
