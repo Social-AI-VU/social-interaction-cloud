@@ -487,17 +487,17 @@ class Alphamini(SICDevice):
         for i in range(ping_tries):
             try:
                 response = self._redis.request(
-                    self.ip, SICPingRequest(), timeout=self._PING_TIMEOUT, block=True
+                    self.device_ip, SICPingRequest(), timeout=self._PING_TIMEOUT, block=True
                 )
                 if response == SICPongMessage():
                     self.logger.info(
-                        "ComponentManager on ip {} has started!".format(self.ip)
+                        "ComponentManager on ip {} has started!".format(self.device_ip)
                     )
                     break
             except TimeoutError:
                 self.logger.debug(
                     "ComponentManager on ip {} hasn't started yet... retrying ping {} more times".format(
-                        self.ip, ping_tries - 1 - i
+                        self.device_ip, ping_tries - 1 - i
                     )
                 )
         else:

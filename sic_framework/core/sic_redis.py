@@ -494,13 +494,13 @@ class SICRedis:
         raw_data_stream = self._redis.hget(self.data_stream_map, key=data_stream_id)
         return json.loads(raw_data_stream)
     
-    def get_reservation(self, component_id):
+    def get_reservation(self, device_id):
         """
         Get a specific reservation from redis.
 
-        Returns the client id that has reserved the component.
+        Returns the client id that has reserved the device.
         """
-        return utils.str_if_bytes(self._redis.hget(self.reservation_map, key=component_id))
+        return utils.str_if_bytes(self._redis.hget(self.reservation_map, key=device_id))
     
     def set_data_stream(self, data_stream_id, data_stream_info):
         """
@@ -523,16 +523,16 @@ class SICRedis:
         """
         return self._redis.hdel(self.data_stream_map, data_stream_id)
     
-    def set_reservation(self, component_id, client_id):
+    def set_reservation(self, device_id, client_id):
         """
         Add a reservation for a component in redis.
 
-        :param component_id: The id of the component
+        :param device_id: The id of the device
         :param client_id: The id of the client reserving the component
         :return: The number of keys set
         """
         reservation = {
-            component_id: client_id
+            device_id: client_id
         }
         return self._redis.hset(self.reservation_map, mapping=reservation)
 
@@ -553,9 +553,9 @@ class SICRedis:
         """
         # delete all the reservations for the client
         reservations = self.get_reservation_map()
-        for cur_component_id, cur_client_id in reservations.items():
+        for cur_device_id, cur_client_id in reservations.items():
             if cur_client_id == client_id:
-                self.unset_reservation(cur_component_id)
+                self.unset_reservation(cur_device_id)
         
         # delete all the data streams for the client
         data_streams = self.get_data_stream_map()
@@ -576,6 +576,7 @@ class SICRedis:
         keyword="addr={}".format(client_id)
         # get list of all clients connected to the SIC server
         client_list = self._redis.execute_command("CLIENT", "LIST")
+        client_list = utils.str_if_bytes(client_list)
         if keyword in client_list:
             return True
         else:

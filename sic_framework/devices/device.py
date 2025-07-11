@@ -66,12 +66,22 @@ class SICDevice(object):
         :param username: the ssh login name
         :param passwords: the (list) of passwords to use
         """
+        self._redis = SICRedis()
+        self.device_ip = ip
+        self._client_id = utils.get_ip_adress()
+        self.logger = sic_logging.get_sic_logger(
+            name="{}DeviceManager".format(self.__class__.__name__), client_id=self._client_id
+        )
+
+        try:
+            self.set_reservation()
+        except Exception as e:
+            self.logger.error("Error setting reservation: {}".format(e))
+            raise e
+
         self.connectors = dict()
         self.configs = dict()
-        self.ip = ip
         self.port = port
-        self._client_id = utils.get_ip_adress()
-        self._redis = SICRedis()
         self._PING_TIMEOUT = 3
         self.sic_version = sic_version
         self.stop_event = threading.Event()
@@ -88,9 +98,6 @@ class SICDevice(object):
         except:
             pass
 
-        self.logger = sic_logging.get_sic_logger(
-            name="{}DeviceManager".format(self.__class__.__name__), client_id=self._client_id
-        )
 
         self.logger.info("Initializing device with ip: {ip}".format(ip=ip))
 
@@ -99,10 +106,10 @@ class SICDevice(object):
             if not isinstance(passwords, list):
                 passwords = [passwords]
 
-            if not utils.ping_server(self.ip, port=self.port, timeout=3):
+            if not utils.ping_server(self.device_ip, port=self.port, timeout=3):
                 raise RuntimeError(
                     "Could not connect to device on ip {}. Please check if it is reachable.".format(
-                        self.ip
+                        self.device_ip
                     )
                 )
 
@@ -112,7 +119,7 @@ class SICDevice(object):
             for p in passwords:
                 try:
                     self.ssh.connect(
-                        self.ip,
+                        self.device_ip,
                         port=self.port,
                         username=username,
                         password=p,
@@ -132,6 +139,38 @@ class SICDevice(object):
                         username, passwords
                     )
                 )
+
+    def set_reservation(self):
+        """
+        Set a reservation for the device to prevent other users from using it.
+        """
+        self.logger.info("Attempting to reserve device {} for client {}".format(self.device_ip, self._client_id))
+        
+        # if the device is already reserved by another client, check if the other client is still connected
+        if self._redis.set_reservation(self.device_ip, self._client_id) < 1:
+            self.logger.warning("Device {} is already reserved by another client".format(self.device_ip))
+            self.logger.info("Checking if the other client is still connected...")
+
+            # get the client ID of the other client
+            other_client_id = self._redis.get_reservation(self.device_ip)
+
+            # check if the other client is still connected
+            if other_client_id == self._client_id:
+                self.logger.info("Device {} is already reserved by this client".format(self.device_ip))
+                return True
+            elif self._redis.ping_client(other_client_id) is False:
+                self.logger.info("The other client is not connected to SIC, releasing the device")
+                self._redis.remove_client(other_client_id)
+            else:
+                raise Exception("Device {} is already reserved by another client".format(self.device_ip))
+
+            self.logger.info("Reserving device {}".format(self.device_ip))
+            if self._redis.set_reservation(self.device_ip, self._client_id) < 1:
+                raise Exception("Reservation for device {} failed".format(self.device_ip))
+            else:
+                self.logger.info("Device {} has been reserved for this client".format(self.device_ip))
+        else:
+            self.logger.info("Device {} has been reserved for this client".format(self.device_ip))
 
     def get_last_modified(self, root, paths):
         last_modified = 0
@@ -427,13 +466,13 @@ class SICDevice(object):
 
             try:
                 self.connectors[component_connector] = component_connector(
-                    self.ip, conf=conf
+                    self.device_ip, conf=conf
                 )
             except TimeoutError as e:
                 raise TimeoutError(
                     "Could not connect to {} on device {}.".format(
                         component_connector.component_class.get_component_name(),
-                        self.ip,
+                        self.device_ip,
                     )
                 )
         return self.connectors[component_connector]
