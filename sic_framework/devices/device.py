@@ -146,16 +146,18 @@ class SICDevice(object):
         """
         self.logger.info("Attempting to reserve device {} for client {}".format(self.device_ip, self._client_id))
         
-        # if the device is already reserved by another client, check if the other client is still connected
-        if self._redis.set_reservation(self.device_ip, self._client_id) < 1:
+        existing_reservation = self._redis.get_reservation(self.device_ip)
+        if existing_reservation is not None:
             self.logger.warning("Device {} is already reserved by another client".format(self.device_ip))
             self.logger.info("Checking if the other client is still connected...")
 
-            # get the client ID of the other client
-            other_client_id = self._redis.get_reservation(self.device_ip)
+            # get the client ID who has reserved the device
+            other_client_id = existing_reservation
+            self.logger.debug("Other client ID: {}".format(other_client_id))
 
             # check if the other client is still connected
             if other_client_id == self._client_id:
+                # no need to reserve the device again
                 self.logger.info("Device {} is already reserved by this client".format(self.device_ip))
                 return True
             elif self._redis.ping_client(other_client_id) is False:
@@ -164,11 +166,10 @@ class SICDevice(object):
             else:
                 raise Exception("Device {} is already reserved by another client".format(self.device_ip))
 
-            self.logger.info("Reserving device {}".format(self.device_ip))
-            if self._redis.set_reservation(self.device_ip, self._client_id) < 1:
-                raise Exception("Reservation for device {} failed".format(self.device_ip))
-            else:
-                self.logger.info("Device {} has been reserved for this client".format(self.device_ip))
+        self.logger.info("Reserving device {}".format(self.device_ip))
+        reservation_result = self._redis.set_reservation(self.device_ip, self._client_id)
+        if reservation_result != 1:
+            raise Exception("Reservation for device {} failed: {}".format(self.device_ip, reservation_result))
         else:
             self.logger.info("Device {} has been reserved for this client".format(self.device_ip))
 
