@@ -573,9 +573,9 @@ class SICRedis:
         :param client_id: The id of the client
         :return: True if the client is connected, False otherwise
         """
-        keyword="addr={}".format(client_id)
+        keyword="sic:logging:{}".format(client_id)
         # get list of all clients connected to the SIC server
-        client_list = self._redis.execute_command("CLIENT", "LIST")
+        client_list = self._redis.execute_command("PUBSUB", "CHANNELS")
         client_list = utils.str_if_bytes(client_list)
         if keyword in client_list:
             return True
