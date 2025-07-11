@@ -145,6 +145,10 @@ class SICDevice(object):
         Set a reservation for the device to prevent other users from using it.
         """
         self.logger.info("Attempting to reserve device {} for client {}".format(self.device_ip, self._client_id))
+
+        # skip reservation for localhost
+        if self.device_ip == "localhost" or self.device_ip == "127.0.0.1":
+            return True
         
         existing_reservation = self._redis.get_reservation(self.device_ip)
         if existing_reservation is not None:
