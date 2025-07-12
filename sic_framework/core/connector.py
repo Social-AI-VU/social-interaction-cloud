@@ -13,6 +13,7 @@ import six
 import sys
 
 from sic_framework.core.sensor_python2 import SICSensor
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.utils import is_sic_instance
 
 from . import utils
@@ -75,7 +76,7 @@ class SICConnector(object):
         self.component_id = self.component_name + ":" + self.component_ip
 
         # if the input channel is not provided, assume the client ID (IP address) is the input channel (i.e. Component is a Sensor)
-        if input_source is None:
+        if input_source is None:    
             self._input_channel = ip
         else:
             if not isinstance(input_source, SICConnector):
@@ -120,7 +121,7 @@ class SICConnector(object):
         """
         # Update the timestamp, as it should be set by the device of origin
         message._timestamp = self._get_timestamp()
-        self._redis.send_message(self.input_channel, message)
+        self._redis.send_message(self._input_channel, message)
 
     def register_callback(self, callback):
         """
