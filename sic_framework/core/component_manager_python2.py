@@ -43,9 +43,9 @@ class SICStartComponentRequest(SICRequest):
     :type conf: SICConfMessage
     """
 
-    def __init__(self, component_type, log_level, input_channel, client_id, conf=None):
+    def __init__(self, component_name, log_level, input_channel, client_id, conf=None):
         super(SICStartComponentRequest, self).__init__()
-        self.component_type = component_type  # str
+        self.component_name = component_name  # str
         self.log_level = log_level  # logging.LOGLEVEL
         self.input_channel = input_channel
         self.client_id = client_id
@@ -158,8 +158,8 @@ class SICComponentManager(object):
         """
 
         # extract component information from the request
-        component_type = request.component_type
-        component_id = component_type + ":" + self.ip
+        component_name = request.component_name
+        component_id = component_name + ":" + self.ip
         input_channel = request.input_channel
         client_id = request.client_id
         output_channel = create_data_stream_id(component_id, input_channel)
@@ -167,18 +167,18 @@ class SICComponentManager(object):
         log_level = request.log_level
         conf = request.conf
 
-        component_class = self.component_classes[component_type]  # SICComponent object
+        component_class = self.component_classes[component_name]  # SICComponent object
 
-        self.logger.debug("Starting component {}".format(component_type), extra={"client_id": client_id})
+        self.logger.debug("Starting component {}".format(component_name), extra={"client_id": client_id})
 
         component = None
 
         try:
-            self.logger.debug("Creating threads for {}".format(component_type), extra={"client_id": client_id})
+            self.logger.debug("Creating threads for {}".format(component_name), extra={"client_id": client_id})
             
             stop_event = threading.Event()
             ready_event = threading.Event()
-            self.logger.debug("Creating component {}".format(component_type), extra={"client_id": client_id})
+            self.logger.debug("Creating component {}".format(component_name), extra={"client_id": client_id})
             component = component_class(
                 stop_event=stop_event,
                 ready_event=ready_event,
@@ -332,10 +332,10 @@ class SICComponentManager(object):
             return SICSuccessMessage()
         
         # reply to the request if the component manager can start the component
-        if request.component_type in self.component_classes:
+        if request.component_name in self.component_classes:
             self.logger.info(
                 "Handling request to start component {}".format(
-                    request.component_type
+                    request.component_name
                 ),
                 extra={"client_id": client_id}
             )
@@ -344,7 +344,7 @@ class SICComponentManager(object):
         else:
             self.logger.warning(
                 "Ignored request {}".format(
-                    request.component_type
+                    request.component_name
                 ),
                 extra={"client_id": client_id}
             )

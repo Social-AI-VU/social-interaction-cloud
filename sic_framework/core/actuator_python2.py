@@ -16,10 +16,6 @@ class SICActuator(SICComponent):
 
     Actuators must implement the execute method individually.
     """
-    
-    def __init__(self, *args, **kwargs):
-        super(SICActuator, self).__init__(*args, **kwargs)
-        self.requires_reservation = True
 
     def on_request(self, request):
         """

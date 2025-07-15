@@ -10,8 +10,6 @@ from sic_framework.core.component_python2 import SICComponent
 
 from .message_python2 import SICMessage
 
-from sic_framework.core import utils
-
 class SICSensor(SICComponent):
     """
     Abstract class for Sensors that provide data for the Social Interaction Cloud.
@@ -20,10 +18,6 @@ class SICSensor(SICComponent):
 
     Sensors must implement the execute method individually.
     """
-
-    def __init__(self, *args, **kwargs):
-        super(SICSensor, self).__init__(*args, **kwargs)
-        self.requires_reservation = True
 
     def start(self):
         """
@@ -53,7 +47,7 @@ class SICSensor(SICComponent):
 
         The output of the execute method is sent on the output channel.
         """
-        self.logger.info("Starting to produce")
+        self.logger.debug("Starting to produce")
         while not self._stop_event.is_set():
             output = self.execute()
 
@@ -61,4 +55,4 @@ class SICSensor(SICComponent):
 
             self.output_message(output)
 
-        self.logger.info("Stopped producing")
+        self.logger.debug("Stopped producing")

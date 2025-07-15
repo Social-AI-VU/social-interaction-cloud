@@ -243,7 +243,7 @@ class SICConnector(object):
         )
 
         component_request = SICStartComponentRequest(
-            component_type=self.component_class.get_component_name(),
+            component_name=self.component_class.get_component_name(),
             log_level=self._log_level,
             input_channel=self._input_channel,
             client_id=self.client_id,

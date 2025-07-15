@@ -178,16 +178,9 @@ class SICComponent:
             "Trying to exit {} gracefully...".format(self.get_component_name())
         )
         try:
-            # if the component is reserved, remove the reservation
-            self.logger.debug("Removing reservation for {}".format(self.component_id))
-
-            reservation_result = self._redis.unset_reservation(self.component_id)
-
-            if reservation_result == 1:
-                self.logger.debug("Reservation for {} removed".format(self.component_id))
-            else:
-                self.logger.debug("Reservation for {} not found".format(self.component_id))
-
+            # set stop event to signal the component to stop
+            self._stop_event.set()
+            
             # remove the data stream
             self.logger.debug("Removing data stream for {}".format(self.component_id))
             data_stream_result = self._redis.unset_data_stream(self.output_channel)
@@ -197,8 +190,6 @@ class SICComponent:
             else:
                 self.logger.debug("Data stream for {} not found".format(self.component_id))
 
-            self._redis.close()
-            self._stop_event.set()
             self.logger.debug("Graceful exit was successful")
         except Exception as err:
             self.logger.error("Graceful exit has failed: {}".format(err.message))
@@ -219,7 +210,7 @@ class SICComponent:
 
         self._parse_conf(conf)
 
-    def on_request(self, request, client_info=dict()):
+    def on_request(self, request):
         """
         Define the handler for Component specific requests. Must return a SICMessage as a reply to the request.
 
@@ -230,7 +221,7 @@ class SICComponent:
         """
         raise NotImplementedError("You need to define a request handler.")
 
-    def on_message(self, client_info=dict(), message=""):
+    def on_message(self, message=""):
         """
         Define the handler for input messages.
 
