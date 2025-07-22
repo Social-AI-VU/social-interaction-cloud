@@ -291,9 +291,8 @@ class Nao(Naoqi):
                 "Unknown error occurred while creating test environment on Nao"
             )
 
-    @property
-    def motion_streaming(self):
-        return self._get_connector(NaoqiMotionStreamer)
+    def motion_streaming(self, input_source=None):
+        return self._get_connector(NaoqiMotionStreamer, input_source=input_source)
 
 
 if __name__ == "__main__":

@@ -108,28 +108,6 @@ class SICComponent:
         """
         return cls.__name__
 
-    @classmethod
-    def get_output_channel(cls, ip):
-        """
-        Get the output channel for this component.
-
-        :return: channel name
-        :rtype: str
-        """
-        return "{name}:{ip}".format(name=cls.get_component_name(), ip=ip)
-
-    @classmethod
-    def get_request_reply_channel(cls, ip):
-        """
-        Get the channel name to communicate request-replies with this component
-        
-        :return: channel name
-        :rtype: str
-        """
-
-        name = cls.get_component_name()
-        return "{name}:reqreply:{ip}".format(name=name, ip=ip)
-
     # 4. Public instance methods
     def start(self):
         """

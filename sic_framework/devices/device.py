@@ -454,7 +454,7 @@ class SICDevice(object):
         else:
             self.logger.info("Successfully installed {} package".format(lib.name))
 
-    def _get_connector(self, component_connector):
+    def _get_connector(self, component_connector, **kwargs):
         """
         Get the active connection the component, or initialize it if it is not yet connected to.
 
@@ -471,7 +471,7 @@ class SICDevice(object):
 
             try:
                 self.connectors[component_connector] = component_connector(
-                    self.device_ip, conf=conf
+                    self.device_ip, conf=conf, **kwargs
                 )
             except TimeoutError as e:
                 raise TimeoutError(

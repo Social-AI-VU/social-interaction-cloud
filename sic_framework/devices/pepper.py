@@ -320,9 +320,8 @@ class Pepper(Naoqi):
     def tablet_display_url(self):
         return self._get_connector(NaoqiTablet)
 
-    @property
-    def motion_streaming(self):
-        return self._get_connector(PepperMotionStreamer)
+    def motion_streaming(self, input_source=None):
+        return self._get_connector(PepperMotionStreamer, input_source=input_source)
 
     @property
     def tactile_sensor(self):
