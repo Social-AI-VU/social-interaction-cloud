@@ -63,7 +63,10 @@ class SICConnector(object):
         self.client_id = utils.get_ip_adress()
         self._log_level = log_level
 
-        self.logger = self.get_connector_logger()
+        self.name = "{component}Connector".format(component=self.__class__.__name__)
+        self.logger = sic_logging.get_sic_logger(
+            name=self.name, client_id=self.client_id, redis=self._redis
+        )
         self._redis.parent_logger = self.logger
 
         # if the component is running on the same machine as the Connector
@@ -184,21 +187,6 @@ class SICConnector(object):
         self._redis.send_message(self._request_reply_channel, SICStopRequest())
         if hasattr(self, "_redis"):
             self._redis.close()
-
-    def get_connector_logger(self, log_level=sic_logging.DEBUG):
-        """
-        Create a logger with the name of the connector.
-
-        :param log_level: The logging level to use for the connector.
-        :type log_level: logging.LOGLEVEL
-        :return: The logger for the connector.
-        :rtype: logging.Logger
-        """
-        name = "{connector}Connector".format(connector=self.__class__.__name__)
-
-        logger = sic_logging.get_sic_logger(name=name, client_id=self.client_id, redis=self._redis, log_level=log_level)
-
-        return logger
 
     def get_input_channel(self):
         """

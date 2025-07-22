@@ -451,10 +451,11 @@ class Alphamini(SICDevice):
         time.sleep(1)
 
         self.start_cmd = """
-            python {alphamini_device} --redis_ip={redis_ip} --alphamini_id {mini_id};
+            python {alphamini_device} --redis_ip={redis_ip} --client_id {client_id} --alphamini_id {mini_id};
         """.format(
             alphamini_device=self.device_path,
             redis_ip=self.redis_ip,
+            client_id=self._client_id,
             mini_id=self.mini_id,
         )
 
@@ -541,6 +542,9 @@ if __name__ == "__main__":
         "--redis_ip", type=str, required=True, help="IP address where Redis is running"
     )
     parser.add_argument(
+        "--client_id", type=str, required=True, help="Client that is using this device"
+    )
+    parser.add_argument(
         "--alphamini_id",
         type=str,
         required=True,
@@ -550,4 +554,4 @@ if __name__ == "__main__":
 
     os.environ["DB_IP"] = args.redis_ip
     os.environ["ALPHAMINI_ID"] = args.alphamini_id
-    SICComponentManager(mini_component_list)
+    SICComponentManager(mini_component_list, client_id=args.client_id)

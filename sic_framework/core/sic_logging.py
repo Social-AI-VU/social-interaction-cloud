@@ -137,13 +137,14 @@ class SICRedisHandler(logging.Handler):
 
     :param redis: The Redis instance to use for logging.
     :type redis: SICRedis
-    :param logging_channel: The Redis channel to log to.
-    :type logging_channel: str
+    :param client_id: The client id of the device that is logging
+    :type client_id: str
     """
-    def __init__(self, redis, logging_channel):
+    def __init__(self, redis, client_id):
         super(SICRedisHandler, self).__init__()
         self.redis = redis
-        self.logging_channel = logging_channel
+        self.client_id = client_id
+        self.logging_channel = get_log_channel(client_id)
 
     def emit(self, record):
         """
@@ -160,7 +161,7 @@ class SICRedisHandler(logging.Handler):
             log_message = SICLogMessage(msg)
 
             # If additional client id is provided (as with the ComponentManager), use it to send the log message to the correct channel
-            if hasattr(record, 'client_id'):
+            if hasattr(record, 'client_id') and self.client_id == "":
                 log_message.client_id = record.client_id
                 log_channel = get_log_channel(log_message.client_id)
             else:
@@ -276,6 +277,8 @@ def get_sic_logger(name="", client_id="", redis=None, log_level=DEBUG):
 
     :param name: A readable and identifiable name to indicate to the user where the log originated
     :type name: str
+    :param client_id: The client id of the device that is logging
+    :type client_id: str
     :param redis: The SICRedis object
     :type redis: SICRedis
     :param log_level: The logger.LOGLEVEL verbosity level
@@ -290,7 +293,7 @@ def get_sic_logger(name="", client_id="", redis=None, log_level=DEBUG):
 
     if redis:
         # if redis is provided, use our custom handler
-        handler_redis = SICRedisHandler(redis, get_log_channel(client_id))
+        handler_redis = SICRedisHandler(redis, client_id)
         handler_redis.setFormatter(log_format)
         logger.addHandler(handler_redis)
     else:

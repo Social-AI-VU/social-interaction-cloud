@@ -72,8 +72,9 @@ class SICComponent:
         # Redis and logger initialization
         try:
             self._redis = redis
-            self.logger = self._get_logger(self.log_level)
-            self._redis.parent_logger = self.logger
+            self.logger = sic_logging.get_sic_logger(
+                name=self.get_component_name(), client_id=self.client_id, redis=self._redis
+                )
             self.logger.debug("Initialized Redis and logger")
         except Exception as e:
             raise e
@@ -271,19 +272,6 @@ class SICComponent:
         except Exception as e:
             self.logger.exception(e)
             raise e
-
-    def _get_logger(self, log_level):
-        """
-        Create a logger for the component to use with its specific name.
-        
-        :param log_level: The logging verbosity level, such as DEBUG, INFO, etc.
-        :type log_level: int
-        :return: Logger
-        :rtype: logging.Logger
-        """
-        # create logger for the component
-        name = self.get_component_name()
-        return sic_logging.get_sic_logger(name=name, client_id=self.client_id, redis=self._redis, log_level=self.log_level)
 
     def _handle_message(self, message):
         """

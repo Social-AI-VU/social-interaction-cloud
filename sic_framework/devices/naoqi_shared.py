@@ -119,9 +119,9 @@ class Naoqi(SICDevice):
             export PYTHONPATH=/opt/aldebaran/lib/python2.7/site-packages;
             export LD_LIBRARY_PATH=/opt/aldebaran/lib/naoqi;
 
-            python2 {robot_wrapper_file}.py --redis_ip={redis_host};
+            python2 {robot_wrapper_file}.py --redis_ip={redis_host} --client_id={client_id};
         """.format(
-            robot_wrapper_file=robot_wrapper_file, redis_host=redis_hostname
+            robot_wrapper_file=robot_wrapper_file, redis_host=redis_hostname, client_id=self._client_id
         )
 
         # if this robot is expected to have a virtual environment, activate it

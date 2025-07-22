@@ -333,6 +333,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--redis_ip", type=str, required=True, help="IP address where Redis is running"
     )
+    parser.add_argument(
+        "--client_id", type=str, required=True, help="Client that is using this device"
+    )
     args = parser.parse_args()
 
     os.environ["DB_IP"] = args.redis_ip
@@ -346,4 +349,4 @@ if __name__ == "__main__":
         PepperTopTactileSensor,
     ]
 
-    SICComponentManager(pepper_components)
+    SICComponentManager(pepper_components, client_id=args.client_id)

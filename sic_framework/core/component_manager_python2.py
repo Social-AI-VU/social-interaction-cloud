@@ -82,10 +82,11 @@ class SICComponentManager(object):
     # Number of seconds we wait at most for a component to start
     COMPONENT_START_TIMEOUT = 10
 
-    def __init__(self, component_classes, auto_serve=True):
+    def __init__(self, component_classes, client_id="", auto_serve=True):
         # Redis initialization
         self.redis = SICRedis()
         self.ip = utils.get_ip_adress()
+        self.client_id = client_id
 
         self.active_components = []
         self.component_classes = {
@@ -96,7 +97,8 @@ class SICComponentManager(object):
         self.stop_event = threading.Event()
         self.ready_event = threading.Event()
 
-        self.logger = self.get_manager_logger()
+        self.name = "{}ComponentManager".format(self.__class__.__name__)
+        self.logger = sic_logging.get_sic_logger(name=self.name, client_id=self.client_id, redis=self.redis)
         self.redis.parent_logger = self.logger
 
         # The _handle_request function is calls execute directly, as we must reply when execution done to allow the user
@@ -130,22 +132,6 @@ class SICComponentManager(object):
         self.stop()
         self.logger.info("Stopped component manager.")
         
-
-    def get_manager_logger(self, log_level=sic_logging.DEBUG):
-        """
-        Create a logger with the name of the component manager.
-
-        :param log_level: The logging level to use for the component manager.
-        :type log_level: logging.LOGLEVEL
-        :return: The logger for the component manager.
-        :rtype: logging.Logger
-        """
-        name = "{manager}".format(manager=self.__class__.__name__)
-
-        logger = sic_logging.get_sic_logger(name=name, redis=self.redis, log_level=log_level)
-        logger.info("Manager on device {} starting".format(self.ip))
-
-        return logger
 
     def start_component(self, request):
         """
@@ -245,20 +231,6 @@ class SICComponentManager(object):
             if component is not None:
                 component.stop()
             return SICNotStartedMessage(e)
-
-    def get_manager_logger(self, log_level=sic_logging.DEBUG):
-        """
-        Create a logger to inform the user during the setup of the component by the manager.
-        :param log_level: DEBUG, INFO, WARNING, ERROR, CRITICAL
-        :type log_level: string
-        :return: Logger
-        """
-        name = "{manager}".format(manager=self.__class__.__name__)
-
-        logger = sic_logging.get_sic_logger(name=name, redis=self.redis, log_level=log_level)
-        logger.info("Manager on device {} starting".format(self.ip))
-
-        return logger
     
 
     def stop(self, *args):
@@ -274,8 +246,9 @@ class SICComponentManager(object):
         self.logger.info("Trying to exit manager gracefully...")
         try:
             # remove the reservation for the device running this component manager
-            self.logger.info("Removing reservation for device {}".format(self.ip))
-            self.redis.remove_client(self.ip)
+            if self.client_id != "":
+                self.logger.info("Removing reservation for device {}".format(self.ip))
+                self.redis.unset_reservation(self.ip)
             self.redis.close()
             for component in self.active_components:
                 component.stop()
