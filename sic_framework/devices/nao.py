@@ -313,4 +313,4 @@ if __name__ == "__main__":
 
     nao_components = shared_naoqi_components + [NaoqiMotionStreamerService]
 
-    SICComponentManager(nao_components, client_id=args.client_id)
+    SICComponentManager(nao_components, client_id=args.client_id, name="Nao")

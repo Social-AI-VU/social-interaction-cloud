@@ -113,7 +113,7 @@ class Webserver(SICConnector):
 
 
 def main():
-    SICComponentManager([WebserverComponent])
+    SICComponentManager([WebserverComponent], name="Webserver")
 
 
 if __name__ == "__main__":

@@ -349,4 +349,4 @@ if __name__ == "__main__":
         PepperTopTactileSensor,
     ]
 
-    SICComponentManager(pepper_components, client_id=args.client_id)
+    SICComponentManager(pepper_components, client_id=args.client_id, name="Pepper")

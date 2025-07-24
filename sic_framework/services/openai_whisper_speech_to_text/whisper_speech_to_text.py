@@ -174,7 +174,7 @@ class SICWhisper(SICConnector):
 
 
 def main():
-    SICComponentManager([WhisperComponent])
+    SICComponentManager([WhisperComponent], name="Whisper")
 
 
 if __name__ == "__main__":

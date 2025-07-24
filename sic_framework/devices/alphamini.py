@@ -554,4 +554,4 @@ if __name__ == "__main__":
 
     os.environ["DB_IP"] = args.redis_ip
     os.environ["ALPHAMINI_ID"] = args.alphamini_id
-    SICComponentManager(mini_component_list, client_id=args.client_id)
+    SICComponentManager(mini_component_list, client_id=args.client_id, name="Alphamini")

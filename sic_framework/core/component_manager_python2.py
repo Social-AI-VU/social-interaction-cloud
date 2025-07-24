@@ -82,7 +82,7 @@ class SICComponentManager(object):
     # Number of seconds we wait at most for a component to start
     COMPONENT_START_TIMEOUT = 10
 
-    def __init__(self, component_classes, client_id="", auto_serve=True):
+    def __init__(self, component_classes, client_id="", auto_serve=True, name=""):
         # Redis initialization
         self.redis = SICRedis()
         self.ip = utils.get_ip_adress()
@@ -97,7 +97,7 @@ class SICComponentManager(object):
         self.stop_event = threading.Event()
         self.ready_event = threading.Event()
 
-        self.name = "{}ComponentManager".format(self.__class__.__name__)
+        self.name = "{}ComponentManager".format(name)
         self.logger = sic_logging.get_sic_logger(name=self.name, client_id=self.client_id, redis=self.redis)
         self.redis.parent_logger = self.logger
 
