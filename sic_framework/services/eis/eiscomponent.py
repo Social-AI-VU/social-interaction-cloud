@@ -369,4 +369,4 @@ class EISConnector(SICConnector):
 
 if __name__ == "__main__":
     # Request the service to start using the SICServiceManager on this device
-    SICComponentManager([EISComponent])
+    SICComponentManager([EISComponent], name="EIS")

@@ -65,7 +65,7 @@ class MiniMicrophoneSensor(SICSensor):
         self.client_conn = None
         self.last_connection_time = time.time()
 
-        self.logger.info(f"Listening for connections on {self.host}:{self.port}...")
+        self.logger.info("Listening for connections on {host}:{port}...".format(host=self.host, port=self.port))
 
         # Start android com.example.micarraytest app
         self.logger.info("Checking if Android app is running...")

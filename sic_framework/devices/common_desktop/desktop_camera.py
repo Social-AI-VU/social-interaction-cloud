@@ -50,21 +50,38 @@ class DesktopCameraSensor(SICSensor):
         return CompressedImageMessage
 
     def execute(self):
+        # Check if camera has been released
+        if not self.cam.isOpened():
+            self.logger.error("Camera has been released")
+            return None
+        
         ret, frame = self.cam.read()
-        frame = cv2.resize(frame, (0, 0), fx=self.params.fx, fy=self.params.fy)
+        
+        # Check if frame is valid before processing
+        if not ret or frame is None or frame.size == 0:
+            self.logger.warning("Failed to grab frame from video device")
+            return None
+            
+        try:
+            frame = cv2.resize(frame, (0, 0), fx=self.params.fx, fy=self.params.fy)
+        except cv2.error as e:
+            self.logger.warning("OpenCV resize error: {e}".format(e=e))
+            return None
 
         # Optionally flip image
         if self.params.flip is not None:
-            frame = cv2.flip(frame, self.params.flip)
-
-        if not ret:
-            self.logger.warning("Failed to grab frame from video device")
+            try:
+                frame = cv2.flip(frame, self.params.flip)
+            except cv2.error as e:
+                self.logger.warning("OpenCV flip error: {e}".format(e=e))
+                return None
 
         return CompressedImageMessage(frame)
 
     def stop(self, *args):
         super(DesktopCameraSensor, self).stop(*args)
-        self.cam.release()
+        if hasattr(self, 'cam') and self.cam is not None:
+            self.cam.release()
 
 
 class DesktopCamera(SICConnector):

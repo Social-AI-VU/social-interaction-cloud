@@ -34,6 +34,7 @@ import time
 
 import redis
 import six
+import json
 from six.moves import queue
 
 from sic_framework.core import utils
@@ -108,15 +109,34 @@ class SICRedis:
         self.stopping = False
         self._running_callbacks = []
 
+        # hash map of data streams
+        self.data_stream_map = "cache:data_streams"
+
+        # hash map of component reservations
+        self.reservation_map = "cache:reservations"
+
         # we assume that a password is required
         host, password = get_redis_db_ip_password()
 
         # Let's try to connect first without TLS / working without TLS facilitates simple use of redis-cli
         try:
-            self._redis = redis.Redis(host=host, ssl=False, password=password)
+            self._redis = redis.Redis(
+                host=host, 
+                ssl=False, 
+                password=password,
+                socket_timeout=1.0,  # 1 second timeout for socket operations
+                socket_connect_timeout=5.0,  # 5 second timeout for connection
+                retry_on_timeout=True  # Retry on timeout errors
+            )
         except redis.exceptions.AuthenticationError:
             # redis is running without a password, do not supply it.
-            self._redis = redis.Redis(host=host, ssl=False)
+            self._redis = redis.Redis(
+                host=host, 
+                ssl=False,
+                socket_timeout=1.0,
+                socket_connect_timeout=5.0,
+                retry_on_timeout=True
+            )
         except redis.exceptions.ConnectionError as e:
             # Must be a connection error; so now let's try to connect with TLS
             ssl_ca_certs = os.path.join(os.path.dirname(__file__), "cert.pem")
@@ -126,7 +146,13 @@ class SICRedis:
                 "(Source error {})".format(e),
             )
             self._redis = redis.Redis(
-                host=host, ssl=True, ssl_ca_certs=ssl_ca_certs, password=password
+                host=host, 
+                ssl=True, 
+                ssl_ca_certs=ssl_ca_certs, 
+                password=password,
+                socket_timeout=1.0,
+                socket_connect_timeout=5.0,
+                retry_on_timeout=True
             )
 
         try:
@@ -266,12 +292,23 @@ class SICRedis:
             message, SICMessage
         ), "Message must inherit from SICMessage (got {})".format(type(message))
 
-        # Let's check if we should serialize; we don't if the message is from EISComponent and needs to be sent to an
-        # agent alien to SIC (who presumably does not understand Pickle objects)...
-        if message.get_previous_component_name() == "EISComponent":
-            return self._redis.publish(channel, message.text)
-        else:
-            return self._redis.publish(channel, message.serialize())
+        try:
+            # Let's check if we should serialize; we don't if the message is from EISComponent and needs to be sent to an
+            # agent alien to SIC (who presumably does not understand Pickle objects)...
+            if message.get_previous_component_name() == "EISComponent":
+                return self._redis.publish(channel, message.text)
+            else:
+                return self._redis.publish(channel, message.serialize())
+        except redis.exceptions.TimeoutError as e:
+            # Log timeout but don't crash the audio stream
+            if self.parent_logger:
+                self.parent_logger.warning("Redis publish timeout for channel {channel}: {e}".format(channel=channel, e=e))
+            return 0
+        except Exception as e:
+            # Log other errors but don't crash the audio stream
+            if self.parent_logger:
+                self.parent_logger.error("Redis publish error for channel {channel}: {e}".format(channel=channel, e=e))
+            return 0
 
     def request(self, channel, request, timeout=5, block=True):
         """
@@ -412,6 +449,141 @@ class SICRedis:
         for c in self._running_callbacks:
             c.thread.stop()
 
+    @staticmethod
+    def parse_pubsub_message(pubsub_msg):
+        """
+        Convert a redis pub/sub message to a SICMessage (sub)class.
+        :param pubsub_msg:
+        :return:
+        """
+        type_, channel, data = (
+            pubsub_msg["type"],
+            pubsub_msg["channel"],
+            pubsub_msg["data"],
+        )
+
+        if type_ == "message":
+            message = SICMessage.deserialize(data)
+            return message
+
+        return None
+    
+    def get_data_stream_map(self):
+        """
+        Get the data stream map from redis.
+
+        Returns a dictionary of data stream id to data stream information.
+        """
+        return self._redis.hgetall(self.data_stream_map)
+    
+    def get_reservation_map(self):
+        """
+        Get the reservation map from redis.
+
+        Returns a dictionary of component id to client id.
+        """
+        return self._redis.hgetall(self.reservation_map)
+    
+    def get_data_stream(self, data_stream_id):
+        """
+        Get a specific data stream from redis.
+
+        Returns the data stream as a dictionary.
+        """
+        # Since the data stream is stored as a string in redis, we need to convert it back to a dictionary
+        raw_data_stream = self._redis.hget(self.data_stream_map, key=data_stream_id)
+        return json.loads(raw_data_stream)
+    
+    def get_reservation(self, device_id):
+        """
+        Get a specific reservation from redis.
+
+        Returns the client id that has reserved the device.
+        """
+        return utils.str_if_bytes(self._redis.hget(self.reservation_map, key=device_id))
+    
+    def set_data_stream(self, data_stream_id, data_stream_info):
+        """
+        Add a data stream in redis.
+
+        :param data_stream_id: The id of the data stream
+        :param data_stream_info: A dictionary containing the component id, input channel, and the client id its associated with
+        """
+        # Redis hashes are flat (only key-value pairs), so we need to convert the data stream to a string
+        data_stream_info = {
+            data_stream_id: json.dumps(data_stream_info)
+        }
+        return self._redis.hset(self.data_stream_map, mapping=data_stream_info)
+    
+    def unset_data_stream(self, data_stream_id):
+        """
+        Remove a data stream in redis.
+
+        :param data_stream_id: The id of the data stream
+        """
+        return self._redis.hdel(self.data_stream_map, data_stream_id)
+    
+    def set_reservation(self, device_id, client_id):
+        """
+        Add a reservation for a component in redis.
+
+        :param device_id: The id of the device
+        :param client_id: The id of the client reserving the component
+        :return: The number of keys set
+        """
+        reservation = {
+            device_id: client_id
+        }
+        return self._redis.hset(self.reservation_map, mapping=reservation)
+
+        
+    def unset_reservation(self, device_id):
+        """
+        Remove a reservation for a device in redis.
+        """
+        return self._redis.hdel(self.reservation_map, device_id)
+    
+    def remove_client(self, client_id):
+        """
+        Remove a client's reservations and data streams from redis.
+
+        Used if a client disconnects from the SIC server and their reservations and data streams are not removed properly.
+
+        :param client_id: The id of the client
+        """
+        # delete all the reservations for the client
+        reservations = self.get_reservation_map()
+        for cur_device_id, cur_client_id in reservations.items():
+            cur_device_id = utils.str_if_bytes(cur_device_id)
+            cur_client_id = utils.str_if_bytes(cur_client_id)
+            if cur_client_id == client_id:
+                self.unset_reservation(cur_device_id)
+        
+        # delete all the data streams for the client
+        data_streams = self.get_data_stream_map()
+        for data_stream_id in data_streams.keys():
+            data_stream_info = self.get_data_stream(data_stream_id)
+            if data_stream_info["client_id"] == client_id:
+                self.unset_data_stream(data_stream_id)
+        
+        return True
+    
+    def ping_client(self, client_id):
+        """
+        Ping a client to see if they are still connected.
+
+        :param client_id: The id of the client
+        :return: True if the client is connected, False otherwise
+        """
+        keyphrase="sic:logging:{}".format(client_id)
+        # get list of all clients connected to the SIC server
+        all_channels = self._redis.execute_command("PUBSUB", "CHANNELS")
+
+        for channel in all_channels:
+            channel_name = utils.str_if_bytes(channel)
+            if keyphrase in channel_name:
+                return True
+        return False
 
 if __name__ == "__main__":
 

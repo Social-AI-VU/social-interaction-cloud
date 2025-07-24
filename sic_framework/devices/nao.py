@@ -291,15 +291,17 @@ class Nao(Naoqi):
                 "Unknown error occurred while creating test environment on Nao"
             )
 
-    @property
-    def motion_streaming(self):
-        return self._get_connector(NaoqiMotionStreamer)
+    def motion_streaming(self, input_source=None):
+        return self._get_connector(NaoqiMotionStreamer, input_source=input_source)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--redis_ip", type=str, required=True, help="IP address where Redis is running"
+    )
+    parser.add_argument(
+        "--client_id", type=str, required=True, help="Client that is using this device"
     )
     parser.add_argument("--redis_pass", type=str, help="The redis password")
     args = parser.parse_args()
@@ -311,4 +313,4 @@ if __name__ == "__main__":
 
     nao_components = shared_naoqi_components + [NaoqiMotionStreamerService]
 
-    SICComponentManager(nao_components)
+    SICComponentManager(nao_components, client_id=args.client_id, name="Nao")

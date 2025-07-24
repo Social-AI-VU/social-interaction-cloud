@@ -24,24 +24,6 @@ from .message_python2 import (
 )
 from .sic_redis import SICRedis
 
-
-class ConnectRequest(SICControlRequest):
-    def __init__(self, channel):
-        """
-        A request for this component to establish a connection with another component's output channel.
-        
-        This allows components to be chained together, where the output of one component becomes
-        the input for another. For example, a speech recognition component could feed its text output
-        into a natural language processing component.
-
-        :param channel: The Redis channel name that the other component publishes its output to.
-                       This component will subscribe to and receive messages from this channel.
-        :type channel: str
-        """
-        super(ConnectRequest, self).__init__()
-        self.channel = channel  # str
-
-
 class SICComponent:
     """
     Abstract class for Components that provide essential functions for Social Interaction Cloud applications.
@@ -76,32 +58,44 @@ class SICComponent:
         self, 
         ready_event=None, 
         stop_event=None, 
-        log_level=sic_logging.INFO, 
-        conf=None
+        log_level=sic_logging.DEBUG, 
+        conf=None, 
+        input_channel=None, 
+        output_channel=None, 
+        req_reply_channel=None,
+        client_id="",
+        redis=None
     ):
+        self.log_level = log_level
+        self.client_id = client_id
+
+        # Redis and logger initialization
+        try:
+            self._redis = redis
+            self.logger = sic_logging.get_sic_logger(
+                name=self.get_component_name(), client_id=self.client_id, redis=self._redis
+                )
+            self.logger.debug("Initialized Redis and logger")
+        except Exception as e:
+            raise e
 
         self._ip = utils.get_ip_adress()
+        self.component_id = self.get_component_name() + ":" + self._ip
 
         # _ready_event is set once the component has started, signals to the component manager that the component is ready.
         self._ready_event = ready_event if ready_event else threading.Event()
         # _stop_event is set when the component should stop
         self._stop_event = stop_event if stop_event else threading.Event()
 
-        self._input_channels = []
-        self._output_channel = self.get_output_channel(self._ip)
+        # Components constrained to one input, request_reply, output channel
+        self.input_channel = input_channel
+        self.output_channel = output_channel
+        self.request_reply_channel = req_reply_channel
 
         self.params = None
 
-        # Redis initialization
-        self._redis = SICRedis(parent_name=self.get_component_name())
-
-        # Initialize logging and enable redis to log any exeptions as well
-        self.logger = self._get_logger(log_level)
-        self._redis.parent_logger = self.logger
-
-        # load config if set by user
         self.set_config(conf)
-
+    
     # 3. Class methods
     @classmethod
     def get_component_name(cls):
@@ -115,28 +109,6 @@ class SICComponent:
         """
         return cls.__name__
 
-    @classmethod
-    def get_output_channel(cls, ip):
-        """
-        Get the output channel for this component.
-
-        :return: channel name
-        :rtype: str
-        """
-        return "{name}:{ip}".format(name=cls.get_component_name(), ip=ip)
-
-    @classmethod
-    def get_request_reply_channel(cls, ip):
-        """
-        Get the channel name to communicate request-replies with this component
-        
-        :return: channel name
-        :rtype: str
-        """
-
-        name = cls.get_component_name()
-        return "{name}:reqreply:{ip}".format(name=name, ip=ip)
-
     # 4. Public instance methods
     def start(self):
         """
@@ -146,10 +118,26 @@ class SICComponent:
         Subclasses should call this method from their overridden start() 
         method to get the framework's default startup behavior.
         """
-        # register a request handler to handle control requests
+        self.logger.debug("Registering request handler")
+
+        # register a request handler to handle requests
         self._redis.register_request_handler(
-            self.get_request_reply_channel(self._ip), self._handle_request
+            self.request_reply_channel, self._handle_request
         )
+
+        self.logger.debug("Request handler registered")
+
+        self.logger.debug("Registering message handler for input channel {}".format(self.input_channel))
+
+        # Create a closure for the message handler to register on the channel
+        def message_handler(message):
+            return self.on_message(message=message)
+        
+        self._redis.register_message_handler(
+            self.input_channel, message_handler
+        )
+        
+        self.logger.debug("Message handler registered")
 
         # communicate the service is set up and listening to its inputs
         self._ready_event.set()
@@ -169,8 +157,18 @@ class SICComponent:
             "Trying to exit {} gracefully...".format(self.get_component_name())
         )
         try:
-            self._redis.close()
+            # set stop event to signal the component to stop
             self._stop_event.set()
+            
+            # remove the data stream
+            self.logger.debug("Removing data stream for {}".format(self.component_id))
+            data_stream_result = self._redis.unset_data_stream(self.output_channel)
+
+            if data_stream_result == 1:
+                self.logger.debug("Data stream for {} removed".format(self.component_id))
+            else:
+                self.logger.debug("Data stream for {} not found".format(self.component_id))
+
             self.logger.debug("Graceful exit was successful")
         except Exception as err:
             self.logger.error("Graceful exit has failed: {}".format(err.message))
@@ -202,7 +200,7 @@ class SICComponent:
         """
         raise NotImplementedError("You need to define a request handler.")
 
-    def on_message(self, message):
+    def on_message(self, message=""):
         """
         Define the handler for input messages.
 
@@ -223,7 +221,7 @@ class SICComponent:
         :type message: SICMessage
         """
         message._previous_component_name = self.get_component_name()
-        self._redis.send_message(self._output_channel, message)
+        self._redis.send_message(self.output_channel, message)
 
     @staticmethod
     @abstractmethod
@@ -275,35 +273,6 @@ class SICComponent:
             self.logger.exception(e)
             raise e
 
-    def _get_logger(self, log_level):
-        """
-        Create a logger for the component to use with its specific name.
-        
-        :param log_level: The logging verbosity level, such as DEBUG, INFO, etc.
-        :type log_level: int
-        :return: Logger
-        :rtype: logging.Logger
-        """
-        # create logger for the component
-        name = self.get_component_name()
-        return sic_logging.get_sic_logger(name=name, redis=self._redis, log_level=log_level)
-
-    def _connect(self, connection_request):
-        """
-        Register the message handler of this component to the output channel of another component.
-
-        :param connection_request: The component serving as an input to this component.
-        :type connection_request: ConnectRequest
-        """
-        channel = connection_request.channel
-        if channel in self._input_channels:
-            self.logger.debug(
-                "Channel {} is already connected to this component".format(channel)
-            )
-            return
-        self._input_channels.append(channel)
-        self._redis.register_message_handler(channel, self._handle_message)
-
     def _handle_message(self, message):
         """
         Handle incoming messages.
@@ -319,7 +288,7 @@ class SICComponent:
 
     def _handle_request(self, request):
         """
-        Handle control requests such as SICPingRequests, SICStopRequest, and ConnectRequest by calling 
+        Handle control requests such as SICPingRequests and SICStopRequest by calling 
         generic Component methods. Component specific requests are passed to the normal on_request handler.
         
         :param request: The request to handle.
@@ -339,11 +308,6 @@ class SICComponent:
             self.stop()
             return SICSuccessMessage()
 
-        if is_sic_instance(request, ConnectRequest):
-            self._connect(request)
-            return SICSuccessMessage()
-
-        # If the request is not a control request, pass it to the user-implemented on_request handler.
         if not is_sic_instance(request, SICControlRequest):
             return self.on_request(request)
 
@@ -371,7 +335,7 @@ class SICComponent:
 
     def _get_timestamp(self):
         """
-        Get the current timestamp.
+        Get the current timestamp from the Redis server.
         
         :return: The current timestamp
         :rtype: float

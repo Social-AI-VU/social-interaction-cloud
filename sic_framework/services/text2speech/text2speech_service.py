@@ -14,12 +14,13 @@ from sic_framework.core.message_python2 import (
     SICRequest,
     SICStopRequest,
 )
+from sic_framework.core.utils import is_sic_instance
 
 
 class Text2SpeechConf(SICConfMessage):
     def __init__(
         self,
-        keyfile: str,
+        keyfile_json: dict,
         language_code: str = "en-US",
         ssml_gender: int = tts.SsmlVoiceGender.NEUTRAL,
         voice_name: str = "",
@@ -36,7 +37,7 @@ class Text2SpeechConf(SICConfMessage):
         """
         super(Text2SpeechConf, self).__init__()
 
-        self.keyfile = keyfile
+        self.keyfile_json = keyfile_json
         self.language_code = language_code
         self.ssml_gender = ssml_gender
         self.voice_name = voice_name
@@ -101,7 +102,7 @@ class Text2SpeechService(SICActuator):
         super(Text2SpeechService, self).__init__(*args, **kwargs)
 
         # Instantiates a client
-        credentials = Credentials.from_service_account_file(self.params.keyfile)
+        credentials = Credentials.from_service_account_info(self.params.keyfile_json)
         self.client = tts.TextToSpeechClient(credentials=credentials)
 
     @staticmethod
@@ -115,6 +116,13 @@ class Text2SpeechService(SICActuator):
     @staticmethod
     def get_conf():
         return Text2SpeechConf()
+    
+    def on_message(self, message):
+        if isinstance(message, GetSpeechRequest):
+            self.execute(message)
+
+        else:
+            pass
 
     def execute(self, request):
         """

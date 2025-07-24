@@ -119,9 +119,9 @@ class Naoqi(SICDevice):
             export PYTHONPATH=/opt/aldebaran/lib/python2.7/site-packages;
             export LD_LIBRARY_PATH=/opt/aldebaran/lib/naoqi;
 
-            python2 {robot_wrapper_file}.py --redis_ip={redis_host};
+            python2 {robot_wrapper_file}.py --redis_ip={redis_host} --client_id={client_id};
         """.format(
-            robot_wrapper_file=robot_wrapper_file, redis_host=redis_hostname
+            robot_wrapper_file=robot_wrapper_file, redis_host=redis_hostname, client_id=self._client_id
         )
 
         # if this robot is expected to have a virtual environment, activate it
@@ -159,13 +159,13 @@ class Naoqi(SICDevice):
         elif self.bypass_install or self.check_sic_install():
             self.logger.info(
                 "SIC is already installed on Naoqi device {}! starting SIC...".format(
-                    self.ip
+                    self.device_ip
                 )
             )
         else:
             self.logger.info(
                 "SIC is not installed on Naoqi device {}, installing now".format(
-                    self.ip
+                    self.device_ip
                 )
             )
             self.sic_install()
@@ -207,14 +207,14 @@ class Naoqi(SICDevice):
         for i in range(ping_tries):
             try:
                 response = self._redis.request(
-                    self.ip, SICPingRequest(), timeout=self._PING_TIMEOUT, block=True
+                    self.device_ip, SICPingRequest(), timeout=self._PING_TIMEOUT, block=True
                 )
                 if response == SICPongMessage():
                     break
             except TimeoutError:
                 self.logger.debug(
                     "ComponentManager on ip {} hasn't started yet... retrying ping {} more times".format(
-                        self.ip, ping_tries - 1 - i
+                        self.device_ip, ping_tries - 1 - i
                     )
                 )
         else:
@@ -222,7 +222,7 @@ class Naoqi(SICDevice):
                 "Could not start SIC on remote device\nSee sic.log for details"
             )
 
-        self.logger.debug("ComponentManager on ip {} has started!".format(self.ip))
+        self.logger.debug("ComponentManager on ip {} has started!".format(self.device_ip))
 
     def stop(self):
         for connector in self.connectors.values():

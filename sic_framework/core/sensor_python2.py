@@ -19,9 +19,6 @@ class SICSensor(SICComponent):
     Sensors must implement the execute method individually.
     """
 
-    def __init__(self, *args, **kwargs):
-        super(SICSensor, self).__init__(*args, **kwargs)
-
     def start(self):
         """
         Start the Sensor. Calls the _produce method to start producing output.
@@ -50,13 +47,12 @@ class SICSensor(SICComponent):
 
         The output of the execute method is sent on the output channel.
         """
+        self.logger.debug("Starting to produce")
         while not self._stop_event.is_set():
             output = self.execute()
 
             output._timestamp = self._get_timestamp()
 
             self.output_message(output)
-
-            self.logger.debug("Outputting message {}".format(output))
 
         self.logger.debug("Stopped producing")

@@ -145,7 +145,7 @@ class GPT(SICConnector):
 
 
 def main():
-    SICComponentManager([GPTComponent])
+    SICComponentManager([GPTComponent], name="GPT")
 
 
 if __name__ == "__main__":

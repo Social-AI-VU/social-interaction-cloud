@@ -126,7 +126,7 @@ class SICService(SICComponent):
 
     def __init__(self, *args, **kwargs):
         super(SICService, self).__init__(*args, **kwargs)
-
+        
         # this event is set whenever a new message arrives.
         self._new_data_event = Event()
 

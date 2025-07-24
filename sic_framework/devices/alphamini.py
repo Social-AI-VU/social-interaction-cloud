@@ -85,7 +85,7 @@ class Alphamini(SICDevice):
             port=port,
             sic_version=sic_version,
         )
-        self.logger.info(f"SIC version on your local machine: {self.sic_version}")
+        self.logger.info("SIC version on your local machine: {version}".format(version=self.sic_version))
         self.configs[MiniMicrophone] = mic_conf
         self.configs[MiniSpeaker] = speaker_conf
 
@@ -238,7 +238,7 @@ class Alphamini(SICDevice):
         )
         _, stdout, _, exit_status = self.ssh_command(pkg_install_cmd)
         if "installed" in stdout.read().decode():
-            self.logger.info(f"{pkg_name} is already installed")
+            self.logger.info("{pkg_name} is already installed".format(pkg_name=pkg_name))
             return True
         else:
             return False
@@ -251,8 +251,8 @@ class Alphamini(SICDevice):
         packages = ["portaudio", "python-numpy", "python-pillow", "git"]
         for pkg in packages:
             if not self.is_system_package_installed(pkg):
-                self.logger.info("Installing package: ", pkg)
-                _, stdout, _, exit_status = self.ssh_command(f"pkg install -y {pkg}")
+                self.logger.info("Installing package: {pkg}".format(pkg=pkg))
+                _, stdout, _, exit_status = self.ssh_command("pkg install -y {pkg}".format(pkg=pkg))
                 self.logger.info(stdout.read().decode())
 
         self.logger.info("Installing SIC on the Alphamini...")
@@ -451,10 +451,11 @@ class Alphamini(SICDevice):
         time.sleep(1)
 
         self.start_cmd = """
-            python {alphamini_device} --redis_ip={redis_ip} --alphamini_id {mini_id};
+            python {alphamini_device} --redis_ip={redis_ip} --client_id {client_id} --alphamini_id {mini_id};
         """.format(
             alphamini_device=self.device_path,
             redis_ip=self.redis_ip,
+            client_id=self._client_id,
             mini_id=self.mini_id,
         )
 
@@ -487,17 +488,17 @@ class Alphamini(SICDevice):
         for i in range(ping_tries):
             try:
                 response = self._redis.request(
-                    self.ip, SICPingRequest(), timeout=self._PING_TIMEOUT, block=True
+                    self.device_ip, SICPingRequest(), timeout=self._PING_TIMEOUT, block=True
                 )
                 if response == SICPongMessage():
                     self.logger.info(
-                        "ComponentManager on ip {} has started!".format(self.ip)
+                        "ComponentManager on ip {} has started!".format(self.device_ip)
                     )
                     break
             except TimeoutError:
                 self.logger.debug(
                     "ComponentManager on ip {} hasn't started yet... retrying ping {} more times".format(
-                        self.ip, ping_tries - 1 - i
+                        self.device_ip, ping_tries - 1 - i
                     )
                 )
         else:
@@ -541,6 +542,9 @@ if __name__ == "__main__":
         "--redis_ip", type=str, required=True, help="IP address where Redis is running"
     )
     parser.add_argument(
+        "--client_id", type=str, required=True, help="Client that is using this device"
+    )
+    parser.add_argument(
         "--alphamini_id",
         type=str,
         required=True,
@@ -550,4 +554,4 @@ if __name__ == "__main__":
 
     os.environ["DB_IP"] = args.redis_ip
     os.environ["ALPHAMINI_ID"] = args.alphamini_id
-    SICComponentManager(mini_component_list)
+    SICComponentManager(mini_component_list, client_id=args.client_id, name="Alphamini")

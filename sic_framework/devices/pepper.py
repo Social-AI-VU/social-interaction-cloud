@@ -320,9 +320,8 @@ class Pepper(Naoqi):
     def tablet_display_url(self):
         return self._get_connector(NaoqiTablet)
 
-    @property
-    def motion_streaming(self):
-        return self._get_connector(PepperMotionStreamer)
+    def motion_streaming(self, input_source=None):
+        return self._get_connector(PepperMotionStreamer, input_source=input_source)
 
     @property
     def tactile_sensor(self):
@@ -333,6 +332,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--redis_ip", type=str, required=True, help="IP address where Redis is running"
+    )
+    parser.add_argument(
+        "--client_id", type=str, required=True, help="Client that is using this device"
     )
     args = parser.parse_args()
 
@@ -347,4 +349,4 @@ if __name__ == "__main__":
         PepperTopTactileSensor,
     ]
 
-    SICComponentManager(pepper_components)
+    SICComponentManager(pepper_components, client_id=args.client_id, name="Pepper")

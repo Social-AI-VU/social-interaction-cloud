@@ -3,7 +3,7 @@ import atexit
 import threading
 import time
 
-from sic_framework import SICComponentManager
+from sic_framework import SICComponentManager, utils
 from sic_framework.devices.common_desktop.desktop_camera import (
     DesktopCamera,
     DesktopCameraSensor,
@@ -26,7 +26,7 @@ desktop_active = False
 
 
 def start_desktop_components():
-    manager = SICComponentManager(desktop_component_list, auto_serve=False)
+    manager = SICComponentManager(desktop_component_list, client_id=utils.get_ip_adress(), auto_serve=False, name="Desktop")
 
     atexit.register(manager.stop)
 
@@ -84,4 +84,4 @@ desktop_component_list = [
 ]
 
 if __name__ == "__main__":
-    SICComponentManager(desktop_component_list)
+    SICComponentManager(desktop_component_list, name="Desktop")
