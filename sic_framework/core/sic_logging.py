@@ -11,6 +11,7 @@ import logging
 import re
 import threading
 from datetime import datetime
+import os
 
 from . import utils
 from .message_python2 import SICMessage
@@ -41,7 +42,8 @@ class SICLogMessage(SICMessage):
         :param msg: The log message to send to the user
         """
         self.msg = msg
-        self.client_id = None
+        self.client_id = client_id
+        self.level = None
         super(SICLogMessage, self).__init__()
 
 
@@ -64,12 +66,10 @@ class SICCommonLog(object):
     def __init__(self):
         self.redis = None
         self.running = False
-        
-        # Create log filename with current date
-        current_date = datetime.now().strftime("%Y-%m-%d")
-        self.logfile = open("sic_{date}.log".format(date=current_date), "a")
-        
+        self.logfile = None
+        self.log_dir = None
         self.lock = threading.Lock()
+        self.threshold = DEBUG
 
     def subscribe_to_redis_log(self, client_id=""):
         """
@@ -86,6 +86,34 @@ class SICCommonLog(object):
                     get_log_channel(client_id), self._handle_redis_log_message
                 )
 
+    def stop(self):
+        """
+        Stop the logging.
+        """
+        with self.lock:  # Ensure thread-safe access
+            if self.running:
+                self.running = False
+                self.redis.close()
+            if self.logfile:
+                self.logfile.close()
+                self.logfile = None
+
+    def set_log_file_path(self, path):
+        """
+        Set the path to the log file.
+
+        :param path: The path to the log file.
+        :type path: str
+        """
+        with self.lock:
+            self.log_dir = os.path.normpath(path)
+            if not os.path.exists(self.log_dir):
+                os.makedirs(self.log_dir)
+            if self.logfile is not None:
+                self.logfile.close()
+                self.logfile = None
+
+
     def _handle_redis_log_message(self, message):
         """
         Handle a message sent on a debug stream. Currently it's just printed to the terminal.
@@ -93,11 +121,12 @@ class SICCommonLog(object):
         :param message: The message to handle.
         :type message: SICLogMessage
         """
-        # outputs to terminal
-        print(message.msg, end="\n")
+        if message.level >= self.threshold:
+            # outputs to terminal
+            print(message.msg, end="\n")
 
-        # writes to logfile
-        self._write_to_logfile(message.msg)
+            # writes to logfile
+            self._write_to_logfile(message.msg)
     
     def _write_to_logfile(self, message):
         """
@@ -107,6 +136,16 @@ class SICCommonLog(object):
         :type message: str
         """
         with self.lock:
+            if self.log_dir is None:
+                # on remote devices the log_dir is set to None. We don't want to write to a logfile on remote devices
+                return
+            if self.logfile is None:
+                if not os.path.exists(self.log_dir):
+                    os.makedirs(self.log_dir)
+                current_date = datetime.now().strftime("%Y-%m-%d")
+                log_path = os.path.join(self.log_dir, f"sic_{current_date}.log")
+                self.logfile = open(log_path, "a")
+
             # strip ANSI codes before writing to logfile
             clean_message = ANSI_CODE_REGEX.sub("", message)
 
@@ -119,17 +158,6 @@ class SICCommonLog(object):
             # write to logfile
             self.logfile.write(clean_message)
             self.logfile.flush()
-
-
-    def stop(self):
-        """
-        Stop the logging.
-        """
-        with self.lock:  # Ensure thread-safe access
-            if self.running:
-                self.running = False
-                self.redis.close()
-
 
 class SICRedisHandler(logging.Handler):
     """
@@ -166,6 +194,8 @@ class SICRedisHandler(logging.Handler):
                 log_channel = get_log_channel(log_message.client_id)
             else:
                 log_channel = self.logging_channel
+
+            log_message.level = record.levelno
 
             # Send over Redis
             self.redis.send_message(log_channel, log_message)
@@ -271,7 +301,7 @@ class SICLogFormatter(logging.Formatter):
         return text
 
 
-def get_sic_logger(name="", client_id="", redis=None, log_level=DEBUG):
+def get_sic_logger(name="", client_id="", redis=None):
     """
     Set up logging to the log output channel to be able to report messages to users.
 
@@ -281,14 +311,12 @@ def get_sic_logger(name="", client_id="", redis=None, log_level=DEBUG):
     :type client_id: str
     :param redis: The SICRedis object
     :type redis: SICRedis
-    :param log_level: The logger.LOGLEVEL verbosity level
-    :type log_level: int
     :return: The logger.
     :rtype: logging.Logger
     """
     # logging initialisation
     logger = logging.Logger(name)
-    logger.setLevel(log_level)
+    logger.setLevel(DEBUG)
     log_format = SICLogFormatter()
 
     if redis:
@@ -302,12 +330,18 @@ def get_sic_logger(name="", client_id="", redis=None, log_level=DEBUG):
         SIC_COMMON_LOG.subscribe_to_redis_log(client_id)
 
         # For local logging, create a custom handler that uses SICCommonLog's file
+        class SICStreamHandler(logging.StreamHandler):
+            def emit(self, record):
+                if record.levelno >= SIC_COMMON_LOG.threshold:
+                    super(SICStreamHandler, self).emit(record)
+
         class SICFileHandler(logging.Handler):
             def emit(self, record):
-                SIC_COMMON_LOG._write_to_logfile(self.format(record))
+                if record.levelno >= SIC_COMMON_LOG.threshold:
+                    SIC_COMMON_LOG._write_to_logfile(self.format(record))
 
         # log to the terminal
-        handler_terminal = logging.StreamHandler()
+        handler_terminal = SICStreamHandler()
         handler_terminal.setFormatter(log_format)
         logger.addHandler(handler_terminal)
 
@@ -321,3 +355,9 @@ def get_sic_logger(name="", client_id="", redis=None, log_level=DEBUG):
 # pseudo singleton object. Does nothing when this file is executed during the import, but can subscribe to the log
 # channel for the user with subscribe_to_redis_log once
 SIC_COMMON_LOG = SICCommonLog()
+
+def set_log_level(level):
+    SIC_COMMON_LOG.threshold = level
+
+def set_log_file_path(path):
+    SIC_COMMON_LOG.set_log_file_path(path)

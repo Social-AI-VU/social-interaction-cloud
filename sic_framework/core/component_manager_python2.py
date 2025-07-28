@@ -37,16 +37,13 @@ class SICStartComponentRequest(SICRequest):
 
     :param component_name: The name of the component to start.
     :type component_name: str
-    :param log_level: The logging level to use for the component.
-    :type log_level: logging.LOGLEVEL
     :param conf: The configuration the component.
     :type conf: SICConfMessage
     """
 
-    def __init__(self, component_name, log_level, input_channel, client_id, conf=None):
+    def __init__(self, component_name, input_channel, client_id, conf=None):
         super(SICStartComponentRequest, self).__init__()
         self.component_name = component_name  # str
-        self.log_level = log_level  # logging.LOGLEVEL
         self.input_channel = input_channel
         self.client_id = client_id
         self.conf = conf  # SICConfMessage
@@ -150,7 +147,6 @@ class SICComponentManager(object):
         client_id = request.client_id
         output_channel = create_data_stream_id(component_id, input_channel)
         request_reply_channel = output_channel + ":request_reply"
-        log_level = request.log_level
         conf = request.conf
 
         component_class = self.component_classes[component_name]  # SICComponent object
@@ -168,7 +164,6 @@ class SICComponentManager(object):
             component = component_class(
                 stop_event=stop_event,
                 ready_event=ready_event,
-                log_level=log_level,
                 conf=conf,
                 input_channel=input_channel,
                 output_channel=output_channel,

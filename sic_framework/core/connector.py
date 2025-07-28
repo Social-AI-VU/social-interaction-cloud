@@ -36,8 +36,6 @@ class SICConnector(object):
 
     :param ip: The IP address of the component to connect to.
     :type ip: str, optional
-    :param log_level: The logging level to use for the connector.
-    :type log_level: logging.LOGLEVEL, optional
     :param conf: The configuration for the connector.
     :type conf: SICConfMessage, optional
     """
@@ -48,7 +46,6 @@ class SICConnector(object):
 
     def __init__(self, 
                  ip="localhost", 
-                 log_level=logging.INFO, 
                  conf=None,
                  input_source=None):
 
@@ -61,7 +58,6 @@ class SICConnector(object):
 
         # client ID is the IP of whatever machine is running this connector
         self.client_id = utils.get_ip_adress()
-        self._log_level = log_level
 
         self.name = "{component}Connector".format(component=self.__class__.__name__)
         self.logger = sic_logging.get_sic_logger(
@@ -232,7 +228,6 @@ class SICConnector(object):
 
         component_request = SICStartComponentRequest(
             component_name=self.component_class.get_component_name(),
-            log_level=self._log_level,
             input_channel=self._input_channel,
             client_id=self.client_id,
             conf=self._conf,

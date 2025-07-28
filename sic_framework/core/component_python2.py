@@ -32,8 +32,6 @@ class SICComponent:
     :type ready_event: threading.Event, optional
     :param stop_event: Threading event to signal when the component should stop. If None, creates a new Event.
     :type stop_event: threading.Event, optional
-    :param log_level: The logging verbosity level (e.g., DEBUG, INFO, WARNING, ERROR).
-    :type log_level: int, optional
     :param conf: Configuration parameters for the component. If None, uses default configuration.
     :type conf: dict, optional
     """
@@ -58,7 +56,6 @@ class SICComponent:
         self, 
         ready_event=None, 
         stop_event=None, 
-        log_level=sic_logging.DEBUG, 
         conf=None, 
         input_channel=None, 
         output_channel=None, 
@@ -66,7 +63,6 @@ class SICComponent:
         client_id="",
         redis=None
     ):
-        self.log_level = log_level
         self.client_id = client_id
 
         # Redis and logger initialization
