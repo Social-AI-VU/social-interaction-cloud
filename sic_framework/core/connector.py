@@ -137,8 +137,6 @@ class SICConnector(object):
         
         self._callback_threads.append(ct)
 
-        self._callback_threads.append(ct)
-
     def request(self, request, timeout=100.0, block=True):
         """
         Send a request to the Component. 
