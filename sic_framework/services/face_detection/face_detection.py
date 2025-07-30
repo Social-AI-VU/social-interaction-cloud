@@ -5,6 +5,7 @@ import numpy as np
 from numpy import array
 
 from sic_framework.core import sic_logging
+from sic_framework.core.utils_cv2 import draw_bbox_on_image
 from sic_framework.core.component_manager_python2 import SICComponentManager
 from sic_framework.core.component_python2 import SICComponent
 from sic_framework.core.connector import SICConnector
@@ -20,16 +21,26 @@ from sic_framework.core.service_python2 import SICService
 
 
 class FaceDetectionConf(SICConfMessage):
-    def __init__(self, minW=150, minH=150):
-        """
-        :param minW       Minimum possible face width in pixels. Setting this too low causes detection to be slow.
-        :param minH       Minimum possible face height in pixels.
-        """
+    """
+    Face detection configuration.
+
+    :param minW       Minimum possible face width in pixels. Setting this too low causes detection to be slow.
+    :type minW: int
+    :param minH       Minimum possible face height in pixels.
+    :type minH: int
+    :type minW: int
+    :param merge_image  Whether to merge the image with the bounding boxes.
+    :type merge_image: bool
+    """
+    def __init__(self, minW=150, minH=150, merge_image=False):
         SICConfMessage.__init__(self)
 
         # Define min window size to be recognized as a face_img
         self.minW = minW
         self.minH = minH
+
+        # Whether to merge the image with the bounding boxes.
+        self.merge_image = merge_image
 
 
 class FaceDetectionComponent(SICComponent):
@@ -49,7 +60,12 @@ class FaceDetectionComponent(SICComponent):
 
     @staticmethod
     def get_output():
-        return BoundingBoxesMessage
+        """
+        Will return either a BoundingBoxesMessage or a CompressedImageMessage, depending on the merge_image parameter.
+        If merge_image is False, the output channel will be a BoundingBoxesMessage.
+        If merge_image is True, the output channel will be a CompressedImageMessage.
+        """
+        return [BoundingBoxesMessage, CompressedImageMessage]
 
     def on_message(self, message):
         bboxes = self.detect(message.image)
@@ -72,7 +88,14 @@ class FaceDetectionComponent(SICComponent):
 
         faces = [BoundingBox(x, y, w, h) for (x, y, w, h) in faces]
 
-        return BoundingBoxesMessage(faces)
+        # if merge_image is True, return the image with the bounding boxes drawn on it
+        if self.params.merge_image:
+            for face in faces:
+                draw_bbox_on_image(face, img)
+            return CompressedImageMessage(img)
+        else:
+            # otherwise, return the bounding boxes only
+            return BoundingBoxesMessage(faces)
 
 
 class FaceDetection(SICConnector):
