@@ -247,7 +247,6 @@ class SICComponentManager(object):
             self.redis.close()
             for component in self.active_components:
                 component.stop()
-                # component._stop_event.set()
             self.logger.info("Graceful exit was successful")
         except Exception as err:
             self.logger.error("Graceful exit has failed: {}".format(err))

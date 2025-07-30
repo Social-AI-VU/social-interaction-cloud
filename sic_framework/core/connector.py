@@ -49,8 +49,6 @@ class SICConnector(object):
                  conf=None,
                  input_source=None):
 
-        self._redis = SICRedis()
-
         assert isinstance(ip, str), "IP must be string"
 
         # connect to Redis
@@ -98,6 +96,7 @@ class SICConnector(object):
             self.logger.error(e)
             raise RuntimeError(e)
 
+        self._callback_threads = []
         self.logger.debug("Component initialization complete")
 
     @property
@@ -134,6 +133,8 @@ class SICConnector(object):
         except Exception as e:
             self.logger.error("Error registering callback: {}".format(e))
             raise e
+        
+        self._callback_threads.append(ct)
 
     def request(self, request, timeout=100.0, block=True):
         """
