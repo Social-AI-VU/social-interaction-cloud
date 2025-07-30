@@ -68,8 +68,7 @@ class FaceDetectionComponent(SICComponent):
         return [BoundingBoxesMessage, CompressedImageMessage]
 
     def on_message(self, message):
-        bboxes = self.detect(message.image)
-        self.output_message(bboxes)
+        self.output_message(self.detect(message.image))
 
     def on_request(self, request):
         return self.detect(request.image)
