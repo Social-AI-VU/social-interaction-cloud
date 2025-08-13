@@ -21,6 +21,7 @@ from .component_manager_python2 import SICNotStartedMessage, SICStartComponentRe
 from .message_python2 import SICMessage, SICPingRequest, SICRequest, SICStopRequest
 from . import sic_logging
 from .sic_redis import SICRedis
+from sic_framework.core.sic_application import get_redis_instance
 
 
 class ComponentNotStartedError(Exception):
@@ -52,7 +53,7 @@ class SICConnector(object):
         assert isinstance(ip, str), "IP must be string"
 
         # connect to Redis
-        self._redis = SICRedis()
+        self._redis = get_redis_instance()
 
         # client ID is the IP of whatever machine is running this connector
         self.client_id = utils.get_ip_adress()
@@ -182,12 +183,10 @@ class SICConnector(object):
         self._redis.send_message(self._request_reply_channel, SICStopRequest())
 
         # close callback threads
+        self.logger.debug("Closing callback threads")
         for ct in self._callback_threads:
             ct.join()
 
-        # close redis connection
-        if hasattr(self, "_redis"):
-            self._redis.close()
 
     def get_input_channel(self):
         """
