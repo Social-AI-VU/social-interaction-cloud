@@ -81,6 +81,7 @@ class SICConnector(object):
                 sys.exit(1)
             self._input_channel = input_source.get_output_channel()
 
+        self._callback_threads = []
         self._conf = conf
 
         # these are set once the component manager has started the component
@@ -134,6 +135,8 @@ class SICConnector(object):
             self.logger.error("Error registering callback: {}".format(e))
             raise e
         
+        self._callback_threads.append(ct)
+
         self._callback_threads.append(ct)
 
     def request(self, request, timeout=100.0, block=True):
