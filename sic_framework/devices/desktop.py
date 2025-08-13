@@ -24,18 +24,6 @@ from sic_framework.devices.device import SICDevice
 
 desktop_active = False
 
-
-def start_desktop_components():
-    manager = SICComponentManager(desktop_component_list, client_id=utils.get_ip_adress(), auto_serve=False, name="Desktop")
-
-    atexit.register(manager.stop)
-
-    from contextlib import redirect_stderr
-
-    with redirect_stderr(None):
-        manager.serve()
-
-
 class Desktop(SICDevice):
     def __init__(
         self, camera_conf=None, mic_conf=None, speakers_conf=None, tts_conf=None
@@ -50,13 +38,33 @@ class Desktop(SICDevice):
         global desktop_active
 
         if not desktop_active:
-            # run the component manager in a thread
-            thread = threading.Thread(
-                target=start_desktop_components,
-                name="DesktopComponentManager-singelton",
+            # Create manager in main thread
+            self.manager = SICComponentManager(desktop_component_list, client_id=utils.get_ip_adress(), auto_serve=False, name="Desktop")
+            # Create shutdown event
+            self._shutdown_event = threading.Event()
+            
+            def managed_serve():
+                try:
+                    self.manager.serve()
+                finally:
+                    # Ensure cleanup happens even if serve exits unexpectedly
+                    self.manager.stop()
+            
+            # Run serve in non-daemon thread but with controlled shutdown
+            self.thread = threading.Thread(
+                target=managed_serve,
+                name="DesktopComponentManager-singleton"
             )
-            thread.start()
-
+            self.thread.start()
+            
+            # Register cleanup that coordinates shutdown
+            def desktop_cm_cleanup():
+                self.manager.stop_event.set()  # Signal serve loop to stop
+                self.thread.join(timeout=5)     # Wait for clean shutdown
+                if self.thread.is_alive():      # If still alive after timeout
+                    self.logger.warning("Desktop manager thread did not stop cleanly")
+            
+            atexit.register(desktop_cm_cleanup)
             desktop_active = True
 
     @property

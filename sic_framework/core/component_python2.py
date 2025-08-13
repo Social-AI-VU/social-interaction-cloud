@@ -89,6 +89,7 @@ class SICComponent:
         self.request_reply_channel = req_reply_channel
 
         self.params = None
+        self._threads = []
 
         self.set_config(conf)
     
@@ -117,9 +118,11 @@ class SICComponent:
         self.logger.debug("Registering request handler")
 
         # register a request handler to handle requests
-        self._redis.register_request_handler(
+        request_handler_thread = self._redis.register_request_handler(
             self.request_reply_channel, self._handle_request
         )
+
+        self._threads.append(request_handler_thread)
 
         self.logger.debug("Request handler registered")
 
@@ -129,16 +132,18 @@ class SICComponent:
         def message_handler(message):
             return self.on_message(message=message)
         
-        self._redis.register_message_handler(
+        message_handler_thread = self._redis.register_message_handler(
             self.input_channel, message_handler
         )
+
+        self._threads.append(message_handler_thread)
         
         self.logger.debug("Message handler registered")
 
         # communicate the service is set up and listening to its inputs
         self._ready_event.set()
 
-        self.logger.info("Started component {}".format(self.get_component_name()))
+        self.logger.info("Successfully started component {}".format(self.get_component_name()))
 
     def stop(self, *args):
         """
@@ -155,7 +160,13 @@ class SICComponent:
         try:
             # set stop event to signal the component to stop
             self._stop_event.set()
-            
+
+            # join all threads
+            for thread in self._threads:
+                thread.join(timeout=5)
+                if thread.is_alive():
+                    self.logger.warning("Thread {} did not stop cleanly".format(thread.name))
+                
             # remove the data stream
             self.logger.debug("Removing data stream for {}".format(self.component_id))
             data_stream_result = self._redis.unset_data_stream(self.output_channel)
