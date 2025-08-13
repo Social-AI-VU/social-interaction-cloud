@@ -9,6 +9,7 @@ import threading
 import time
 from signal import SIGINT, SIGTERM, signal
 from sys import exit
+import atexit
 
 import sic_framework.core.sic_logging
 from sic_framework.core.utils import (
@@ -110,6 +111,7 @@ class SICComponentManager(object):
             self.logger.info(" - {}".format(c.get_component_name()))
 
         self.ready_event.set()
+        atexit.register(self.stop)
         if auto_serve:
             self.serve()
 
@@ -237,19 +239,26 @@ class SICComponentManager(object):
         :param args: Additional arguments to pass to the stop method.
         :type args: tuple
         """
+        self.logger.info("Attempting to exit manager gracefully...")
         self.stop_event.set()
-        self.logger.info("Trying to exit manager gracefully...")
         try:
             # remove the reservation for the device running this component manager
             if self.client_id != "":
                 self.logger.info("Removing reservation for device {}".format(self.ip))
                 self.redis.unset_reservation(self.ip)
-            self.redis.close()
+
+            self.logger.info("Stopping all active components")
             for component in self.active_components:
                 component.stop()
+
+            self.logger.info("Closing Redis connection")
+            self.redis.close()
+
             self.logger.info("Graceful exit was successful")
+            exit(0)
         except Exception as err:
             self.logger.error("Graceful exit has failed: {}".format(err))
+            exit(1)
 
     def _sync_time(self):
         """

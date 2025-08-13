@@ -8,7 +8,7 @@ import time
 
 from sic_framework.core import sic_logging, utils
 from sic_framework.core.connector import SICConnector
-from sic_framework.core.sic_redis import SICRedis
+from sic_framework.core.sic_application import get_redis_instance
 
 
 class SICLibrary(object):
@@ -66,7 +66,7 @@ class SICDevice(object):
         :param username: the ssh login name
         :param passwords: the (list) of passwords to use
         """
-        self._redis = SICRedis()
+        self._redis = get_redis_instance()
         self.device_ip = ip
         self._client_id = utils.get_ip_adress()
         self.logger = sic_logging.get_sic_logger(
