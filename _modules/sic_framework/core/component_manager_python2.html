@@ -1,0 +1,480 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.core.component_manager_python2 &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=13237357" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=61708c92" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../_static/togglebutton.js?v=4a39c7ea"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">SIC Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../feature_requests.html">Feature Requests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.core.component_manager_python2</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.core.component_manager_python2</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">component_manager_python2.py</span>
+
+<span class="sd">This module contains the SICComponentManager class, used to start, stop, and manage components.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">SIGINT</span><span class="p">,</span> <span class="n">SIGTERM</span><span class="p">,</span> <span class="n">signal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sys</span><span class="w"> </span><span class="kn">import</span> <span class="n">exit</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">atexit</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">sic_framework.core.sic_logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MAGIC_STARTED_COMPONENT_MANAGER_TEXT</span><span class="p">,</span>
+    <span class="n">is_sic_instance</span><span class="p">,</span>
+    <span class="n">create_data_stream_id</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">sic_logging</span><span class="p">,</span> <span class="n">utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SICIgnoreRequestMessage</span><span class="p">,</span>
+    <span class="n">SICMessage</span><span class="p">,</span>
+    <span class="n">SICRequest</span><span class="p">,</span>
+    <span class="n">SICStopRequest</span><span class="p">,</span>
+    <span class="n">SICSuccessMessage</span><span class="p">,</span>
+    <span class="n">SICPingRequest</span><span class="p">,</span>
+    <span class="n">SICPongMessage</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.sic_redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICRedis</span>
+
+
+<div class="viewcode-block" id="SICStartComponentRequest">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.component_manager_python2.SICStartComponentRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICStartComponentRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A request from a user to start a component.</span>
+
+<span class="sd">    :param component_name: The name of the component to start.</span>
+<span class="sd">    :type component_name: str</span>
+<span class="sd">    :param conf: The configuration the component.</span>
+<span class="sd">    :type conf: SICConfMessage</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SICStartComponentRequest.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.component_manager_python2.SICStartComponentRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_name</span><span class="p">,</span> <span class="n">input_channel</span><span class="p">,</span> <span class="n">client_id</span><span class="p">,</span> <span class="n">conf</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SICStartComponentRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">component_name</span> <span class="o">=</span> <span class="n">component_name</span>  <span class="c1"># str</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_channel</span> <span class="o">=</span> <span class="n">input_channel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span> <span class="o">=</span> <span class="n">client_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conf</span> <span class="o">=</span> <span class="n">conf</span>  <span class="c1"># SICConfMessage</span></div>
+</div>
+
+
+<div class="viewcode-block" id="SICNotStartedMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.component_manager_python2.SICNotStartedMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICNotStartedMessage</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A message to indicate that a component failed to start.</span>
+
+<span class="sd">    :param message: The message to indicate the failure.</span>
+<span class="sd">    :type message: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="SICNotStartedMessage.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.component_manager_python2.SICNotStartedMessage.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span></div>
+</div>
+
+
+<div class="viewcode-block" id="SICComponentStartedMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.component_manager_python2.SICComponentStartedMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICComponentStartedMessage</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<div class="viewcode-block" id="SICComponentStartedMessage.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.component_manager_python2.SICComponentStartedMessage.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_channel</span><span class="p">,</span> <span class="n">request_reply_channel</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_channel</span> <span class="o">=</span> <span class="n">output_channel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">request_reply_channel</span> <span class="o">=</span> <span class="n">request_reply_channel</span></div>
+</div>
+
+
+<div class="viewcode-block" id="SICComponentManager">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.component_manager_python2.SICComponentManager">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICComponentManager</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A component manager to start, stop, and manage components.</span>
+
+<span class="sd">    :param component_classes: List of Components this manager can start.</span>
+<span class="sd">    :type component_classes: list</span>
+<span class="sd">    :param auto_serve: Whether to automatically start serving requests.</span>
+<span class="sd">    :type auto_serve: bool</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># The maximum error between the redis server and this device&#39;s clocks in seconds</span>
+    <span class="n">MAX_REDIS_SERVER_TIME_DIFFERENCE</span> <span class="o">=</span> <span class="mi">2</span>
+
+    <span class="c1"># Number of seconds we wait at most for a component to start</span>
+    <span class="n">COMPONENT_START_TIMEOUT</span> <span class="o">=</span> <span class="mi">10</span>
+
+<div class="viewcode-block" id="SICComponentManager.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.component_manager_python2.SICComponentManager.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_classes</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">auto_serve</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="c1"># Redis initialization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redis</span> <span class="o">=</span> <span class="n">SICRedis</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ip</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_ip_adress</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span> <span class="o">=</span> <span class="n">client_id</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">active_components</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">component_classes</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">get_component_name</span><span class="p">():</span> <span class="bp">cls</span> <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">component_classes</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">component_counter</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ready_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">ComponentManager&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">sic_logging</span><span class="o">.</span><span class="n">get_sic_logger</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">client_id</span><span class="p">,</span> <span class="n">redis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">parent_logger</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span>
+
+        <span class="c1"># The _handle_request function is calls execute directly, as we must reply when execution done to allow the user</span>
+        <span class="c1"># to wait for this. New messages will be buffered by redis. The component manager listens to</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">register_request_handler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ip</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_request</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="n">MAGIC_STARTED_COMPONENT_MANAGER_TEXT</span>
+            <span class="o">+</span> <span class="s1">&#39; on ip &quot;</span><span class="si">{}</span><span class="s1">&quot; with components:&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_classes</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot; - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">get_component_name</span><span class="p">()))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ready_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">auto_serve</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">serve</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SICComponentManager.serve">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.component_manager_python2.SICComponentManager.serve">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">serve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Listen for requests to start/stop components until signaled to stop running.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># wait for the signal to stop, loop is necessary for ctrl-c to work on python2</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stop_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+                    <span class="k">break</span>
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Stopped component manager.&quot;</span><span class="p">)</span></div>
+
+        
+
+<div class="viewcode-block" id="SICComponentManager.start_component">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.component_manager_python2.SICComponentManager.start_component">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Start a component on this host as requested by a user.</span>
+
+<span class="sd">        :param request: The request to start the component.</span>
+<span class="sd">        :type request: SICStartComponentRequest</span>
+<span class="sd">        :return: The reply to the request.</span>
+<span class="sd">        :rtype: SICMessage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># extract component information from the request</span>
+        <span class="n">component_name</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">component_name</span>
+        <span class="n">component_id</span> <span class="o">=</span> <span class="n">component_name</span> <span class="o">+</span> <span class="s2">&quot;:&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ip</span>
+        <span class="n">input_channel</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">input_channel</span>
+        <span class="n">client_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">client_id</span>
+        <span class="n">output_channel</span> <span class="o">=</span> <span class="n">create_data_stream_id</span><span class="p">(</span><span class="n">component_id</span><span class="p">,</span> <span class="n">input_channel</span><span class="p">)</span>
+        <span class="n">request_reply_channel</span> <span class="o">=</span> <span class="n">output_channel</span> <span class="o">+</span> <span class="s2">&quot;:request_reply&quot;</span>
+        <span class="n">conf</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">conf</span>
+
+        <span class="n">component_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_classes</span><span class="p">[</span><span class="n">component_name</span><span class="p">]</span>  <span class="c1"># SICComponent object</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Starting component </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">component_name</span><span class="p">),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">})</span>
+
+        <span class="n">component</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Creating threads for </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">component_name</span><span class="p">),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">})</span>
+            
+            <span class="n">stop_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+            <span class="n">ready_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Creating component </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">component_name</span><span class="p">),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">})</span>
+            <span class="n">component</span> <span class="o">=</span> <span class="n">component_class</span><span class="p">(</span>
+                <span class="n">stop_event</span><span class="o">=</span><span class="n">stop_event</span><span class="p">,</span>
+                <span class="n">ready_event</span><span class="o">=</span><span class="n">ready_event</span><span class="p">,</span>
+                <span class="n">conf</span><span class="o">=</span><span class="n">conf</span><span class="p">,</span>
+                <span class="n">input_channel</span><span class="o">=</span><span class="n">input_channel</span><span class="p">,</span>
+                <span class="n">output_channel</span><span class="o">=</span><span class="n">output_channel</span><span class="p">,</span>
+                <span class="n">req_reply_channel</span><span class="o">=</span><span class="n">request_reply_channel</span><span class="p">,</span>
+                <span class="n">client_id</span><span class="o">=</span><span class="n">client_id</span><span class="p">,</span>
+                <span class="n">redis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">redis</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Component </span><span class="si">{}</span><span class="s2"> created&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">component</span><span class="o">.</span><span class="n">component_id</span><span class="p">),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">active_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">component</span><span class="p">)</span>
+
+            <span class="c1"># TODO daemon=False could be set to true, but then the component cannot clean up properly</span>
+            <span class="c1"># but also not available in python2</span>
+            <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">component</span><span class="o">.</span><span class="n">_start</span><span class="p">)</span>
+            <span class="n">thread</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">component_class</span><span class="o">.</span><span class="n">get_component_name</span><span class="p">()</span>
+            <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+            <span class="c1"># wait till the component is ready to receive input</span>
+            <span class="n">component</span><span class="o">.</span><span class="n">_ready_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">component</span><span class="o">.</span><span class="n">COMPONENT_STARTUP_TIMEOUT</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">component</span><span class="o">.</span><span class="n">_ready_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Component </span><span class="si">{}</span><span class="s2"> refused to start within </span><span class="si">{}</span><span class="s2"> seconds!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">component</span><span class="o">.</span><span class="n">get_component_name</span><span class="p">(),</span>
+                        <span class="n">component</span><span class="o">.</span><span class="n">COMPONENT_STARTUP_TIMEOUT</span><span class="p">,</span>
+                    <span class="p">),</span> 
+                    <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">}</span>
+                <span class="p">)</span>
+
+            <span class="c1"># register the datastreams for the component</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Setting data stream for component </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">component</span><span class="o">.</span><span class="n">component_id</span><span class="p">),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">})</span>
+
+                <span class="n">data_stream_info</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;component_id&quot;</span><span class="p">:</span> <span class="n">component_id</span><span class="p">,</span>
+                    <span class="s2">&quot;input_channel&quot;</span><span class="p">:</span> <span class="n">input_channel</span><span class="p">,</span>
+                    <span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span>
+                <span class="p">}</span>
+                                
+                <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">set_data_stream</span><span class="p">(</span><span class="n">output_channel</span><span class="p">,</span> <span class="n">data_stream_info</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Data stream set for component </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">component</span><span class="o">.</span><span class="n">component_id</span><span class="p">),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">})</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Error setting data stream for component </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">component</span><span class="o">.</span><span class="n">component_id</span><span class="p">,</span> <span class="n">e</span><span class="p">),</span>
+                    <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">}</span>
+                <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Component </span><span class="si">{}</span><span class="s2"> started successfully&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">component</span><span class="o">.</span><span class="n">component_id</span><span class="p">),</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">})</span>
+            
+            <span class="c1"># inform the user their component has started</span>
+            <span class="n">reply</span> <span class="o">=</span> <span class="n">SICComponentStartedMessage</span><span class="p">(</span><span class="n">output_channel</span><span class="p">,</span> <span class="n">request_reply_channel</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">reply</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Error starting component: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">}</span>
+            <span class="p">)</span> 
+            <span class="k">if</span> <span class="n">component</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">component</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">SICNotStartedMessage</span><span class="p">(</span><span class="n">e</span><span class="p">)</span></div>
+
+    
+
+<div class="viewcode-block" id="SICComponentManager.stop">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.component_manager_python2.SICComponentManager.stop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stop the component manager.</span>
+
+<span class="sd">        Closes the redis connection and stops all active components.</span>
+
+<span class="sd">        :param args: Additional arguments to pass to the stop method.</span>
+<span class="sd">        :type args: tuple</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Attempting to exit manager gracefully...&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># remove the reservation for the device running this component manager</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Removing reservation for device </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ip</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">unset_reservation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ip</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Stopping all active components&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">active_components</span><span class="p">:</span>
+                <span class="n">component</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Closing Redis connection&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Graceful exit was successful&quot;</span><span class="p">)</span>
+            <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Graceful exit has failed: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">err</span><span class="p">))</span>
+            <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICComponentManager._sync_time">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.component_manager_python2.SICComponentManager._sync_time">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sync_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sync the time of components with the time of the redis server.</span>
+
+<span class="sd">        WORK IN PROGRESS: Does not work!</span>
+<span class="sd">        clock on devices is often not correct, so we need to correct for this</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if the time of this device is off, because that would interfere with sensor fusion across devices</span>
+        <span class="n">time_diff_seconds</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">.</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">time</span><span class="p">())))</span>
+        <span class="k">if</span> <span class="n">time_diff_seconds</span> <span class="o">&gt;</span> <span class="mf">0.1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Warning: device time difference to redis server is </span><span class="si">{}</span><span class="s2"> seconds&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">time_diff_seconds</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;This is allowed (max: </span><span class="si">{}</span><span class="s2">), but might cause data to fused incorrectly in components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">MAX_REDIS_SERVER_TIME_DIFFERENCE</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">time_diff_seconds</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAX_REDIS_SERVER_TIME_DIFFERENCE</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The time on this device differs by </span><span class="si">{}</span><span class="s2"> seconds from the redis server (max: </span><span class="si">{}</span><span class="s2">s)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">time_diff_seconds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAX_REDIS_SERVER_TIME_DIFFERENCE</span>
+                <span class="p">)</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICComponentManager._handle_request">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.component_manager_python2.SICComponentManager._handle_request">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Handle user requests such as starting/stopping components and pinging the component manager.</span>
+
+<span class="sd">        :param request: The request to handle.</span>
+<span class="sd">        :type request: SICRequest</span>
+<span class="sd">        :return: The reply to the request.</span>
+<span class="sd">        :rtype: SICMessage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">client_id</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="s2">&quot;client_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">is_sic_instance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">SICPingRequest</span><span class="p">):</span>
+            <span class="c1"># this request is sent to see if the ComponentManager has started</span>
+            <span class="k">return</span> <span class="n">SICPongMessage</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">is_sic_instance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">SICStopRequest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+            <span class="c1"># return an empty stop message as a request must always be replied to</span>
+            <span class="k">return</span> <span class="n">SICSuccessMessage</span><span class="p">()</span>
+        
+        <span class="c1"># reply to the request if the component manager can start the component</span>
+        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">component_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_classes</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Handling request to start component </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">request</span><span class="o">.</span><span class="n">component_name</span>
+                <span class="p">),</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">}</span>
+            <span class="p">)</span>
+
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_component</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Ignored request </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">request</span><span class="o">.</span><span class="n">component_name</span>
+                <span class="p">),</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">}</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">SICIgnoreRequestMessage</span><span class="p">()</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
