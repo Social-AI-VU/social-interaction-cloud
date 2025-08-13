@@ -416,9 +416,8 @@ class SICRedis:
         """
         self.stopping = True
         for c in self._running_callbacks:
-            if c.thread.is_alive():
-                c.pubsub.unsubscribe()
-                c.thread.stop()
+            c.pubsub.unsubscribe()
+            c.thread.stop()
         self._redis.close()
 
     def _reply(self, channel, request, reply):

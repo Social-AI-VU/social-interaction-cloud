@@ -93,6 +93,7 @@ class SICCommonLog(object):
         with self.lock:  # Ensure thread-safe access
             if self.running:
                 self.running = False
+                self.redis.close()
             if self.logfile:
                 self.logfile.close()
                 self.logfile = None

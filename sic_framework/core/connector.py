@@ -8,7 +8,7 @@ This module contains the SICConnector class, the user interface to connect to co
 import logging
 import time
 from abc import ABCMeta
-import atexit
+
 import six
 import sys
 
@@ -21,7 +21,6 @@ from .component_manager_python2 import SICNotStartedMessage, SICStartComponentRe
 from .message_python2 import SICMessage, SICPingRequest, SICRequest, SICStopRequest
 from . import sic_logging
 from .sic_redis import SICRedis
-from sic_framework.core.sic_application import get_redis_instance
 
 
 class ComponentNotStartedError(Exception):
@@ -53,7 +52,7 @@ class SICConnector(object):
         assert isinstance(ip, str), "IP must be string"
 
         # connect to Redis
-        self._redis = get_redis_instance()
+        self._redis = SICRedis()
 
         # client ID is the IP of whatever machine is running this connector
         self.client_id = utils.get_ip_adress()
@@ -82,6 +81,7 @@ class SICConnector(object):
                 sys.exit(1)
             self._input_channel = input_source.get_output_channel()
 
+        self._callback_threads = []
         self._conf = conf
 
         # these are set once the component manager has started the component
@@ -98,7 +98,6 @@ class SICConnector(object):
             raise RuntimeError(e)
 
         self._callback_threads = []
-        atexit.register(self.stop)
         self.logger.debug("Component initialization complete")
 
     @property
@@ -136,6 +135,8 @@ class SICConnector(object):
             self.logger.error("Error registering callback: {}".format(e))
             raise e
         
+        self._callback_threads.append(ct)
+
         self._callback_threads.append(ct)
 
     def request(self, request, timeout=100.0, block=True):
@@ -179,14 +180,10 @@ class SICConnector(object):
         """
         Send a stop request to the component and close the redis connection.
         """
-        self.logger.debug("Connector sending StopRequest to component")
+        self.logger.debug("Sending StopRequest to component")
         self._redis.send_message(self._request_reply_channel, SICStopRequest())
-
-        # close callback threads
-        self.logger.debug("Closing callback threads")
-        for ct in self._callback_threads:
-            ct.join()
-
+        if hasattr(self, "_redis"):
+            self._redis.close()
 
     def get_input_channel(self):
         """
