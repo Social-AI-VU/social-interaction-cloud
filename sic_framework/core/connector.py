@@ -8,7 +8,7 @@ This module contains the SICConnector class, the user interface to connect to co
 import logging
 import time
 from abc import ABCMeta
-import atexit
+
 import six
 import sys
 
@@ -97,7 +97,6 @@ class SICConnector(object):
             raise RuntimeError(e)
 
         self._callback_threads = []
-        atexit.register(self.stop)
         self.logger.debug("Component initialization complete")
 
     @property
@@ -178,14 +177,8 @@ class SICConnector(object):
         """
         Send a stop request to the component and close the redis connection.
         """
-        self.logger.debug("Connector sending StopRequest to component")
+        self.logger.debug("Sending StopRequest to component")
         self._redis.send_message(self._request_reply_channel, SICStopRequest())
-
-        # close callback threads
-        for ct in self._callback_threads:
-            ct.join()
-
-        # close redis connection
         if hasattr(self, "_redis"):
             self._redis.close()
 
