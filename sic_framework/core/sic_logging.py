@@ -16,6 +16,7 @@ import os
 from . import utils
 from .message_python2 import SICMessage
 from .sic_redis import SICRedis
+from sic_framework.core.sic_application import get_redis_instance
 
 ANSI_CODE_REGEX = re.compile(r'\033\[[0-9;]*m')
 
@@ -81,9 +82,9 @@ class SICCommonLog(object):
         with self.lock:  # Ensure thread-safe access
             if not self.running:
                 self.running = True
-                self.redis = SICRedis(parent_name="SICCommonLog")
+                self.redis = get_redis_instance()
                 self.redis.register_message_handler(
-                    get_log_channel(client_id), self._handle_redis_log_message
+                    get_log_channel(client_id), self._handle_redis_log_message, name="SICCommonLog"
                 )
 
     def stop(self):

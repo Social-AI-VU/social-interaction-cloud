@@ -132,7 +132,7 @@ class SICConnector(object):
         """
 
         try:
-            ct = self._redis.register_message_handler(self.get_output_channel(), callback)
+            ct = self._redis.register_message_handler(self.get_output_channel(), callback, name="{}_callback".format(self.component_id))
         except Exception as e:
             self.logger.error("Error registering callback: {}".format(e))
             raise e
@@ -178,7 +178,7 @@ class SICConnector(object):
 
     def stop(self):
         """
-        Send a stop request to the component and close the redis connection.
+        Send a stop request to the component and close the Redis connection.
         """
         self.logger.debug("Connector sending StopRequest to component")
         self._redis.send_message(self._request_reply_channel, SICStopRequest())
@@ -186,8 +186,9 @@ class SICConnector(object):
         # close callback threads
         self.logger.debug("Closing callback threads")
         for ct in self._callback_threads:
-            ct.join()
-
+            ct.join(timeout=5)
+            if ct.is_alive():
+                self.logger.warning("Callback thread {} did not stop cleanly".format(ct.name))
 
     def get_input_channel(self):
         """

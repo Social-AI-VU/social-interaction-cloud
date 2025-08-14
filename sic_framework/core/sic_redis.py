@@ -104,7 +104,7 @@ class SICRedis:
     :type parent_name: str
     """
 
-    def __init__(self, parent_name=None):
+    def __init__(self):
 
         self.stopping = False
         self._running_callbacks = []
@@ -169,9 +169,6 @@ class SICRedis:
         # To be set by any component that requires exceptions in the callback threads to be logged to somewhere
         self.parent_logger = None
 
-        # service name (assigned to thread to help debugging)
-        self.service_name = parent_name
-
         _sic_redis_instances.append(self)
 
     @staticmethod
@@ -196,7 +193,7 @@ class SICRedis:
 
         return None
 
-    def register_message_handler(self, channels, callback, ignore_requests=True):
+    def register_message_handler(self, channels, callback, name="", ignore_requests=True):
         """
         Subscribe a callback function to one or more channels, start a thread to monitor for new messages.
         
@@ -253,11 +250,10 @@ class SICRedis:
                 sleep_time=0.1, daemon=False, exception_handler=exception_handler
             )
         else:
-            # python2 does not support exception handler, but it's not as important to provide a clean exit on the robots
+            # python2 does not support the exception_handler parameter, but it's not as important to provide a clean exit on the robots
             thread = pubsub.run_in_thread(sleep_time=0.1, daemon=False)
 
-        if self.service_name:
-            thread.name = "{}_callback_thread".format(self.service_name)
+        thread.name = name
 
         c = CallbackThread(callback, pubsub=pubsub, thread=thread)
         self._running_callbacks.append(c)
@@ -350,7 +346,7 @@ class SICRedis:
                 done.set()
 
         if block:
-            callback_thread = self.register_message_handler(channel, await_reply)
+            callback_thread = self.register_message_handler(channel, await_reply, name="SICRedis_request_await_reply")
 
         self.send_message(channel, request)
 
@@ -373,7 +369,7 @@ class SICRedis:
 
             return q.get()
 
-    def register_request_handler(self, channel, callback):
+    def register_request_handler(self, channel, callback, name=""):
         """
         Register a function to listen to SICRequest's (and ignore SICMessages). Handler must return a SICMessage as a reply.
         Will block receiving new messages until the callback is finished.
@@ -398,7 +394,7 @@ class SICRedis:
                 self._reply(channel, request, reply)
 
         return self.register_message_handler(
-            channel, wrapped_callback, ignore_requests=False
+            channel, wrapped_callback, name=name, ignore_requests=False
         )
 
     def time(self):
@@ -587,79 +583,4 @@ class SICRedis:
         return False
 
 if __name__ == "__main__":
-
-    class NamedMessage(SICMessage):
-        def __init__(self, name):
-            self.name = name
-
-    class NamedRequest(NamedMessage, SICRequest):
-        pass
-
-    r = SICRedis()
-
-    def do(channel, message):
-        print("do", message.name)
-
-    # print("Message callback:")
-    # r.register_message_handler("service", do, )
-    # r.send_message("service", NamedMessage("abc"))
-    #
-    #
-    # def do_reply(channel, message):
-    #     print("do_reply", message.name)
-    #     return NamedMessage("reply" + message.name)
-    #
-    #
-    # print("\n\nRequest handling")
-    #
-    # r.register_request_handler("device", do_reply)
-    # reply = r.request("device", NamedRequest("req_handling"), timeout=5)
-    # print("reply:", reply.name)
-    #
-    # print("\n\nincorrect handler: ", )
-    # try:
-    #     r.register_message_handler("a", do_reply)
-    #     reply = r.request("a", NamedRequest("req_incorrect_handler"), timeout=1)
-    #     print("reply:", reply.name)
-    # except TimeoutError as e:
-    #     print("success")
-    #
-    # print("\n\nduplicate handler")
-    # r.register_request_handler("b", do_reply)
-    # r.register_message_handler("b", do)
-    # reply = r.request("b", NamedRequest("req_duplicate_handler"), timeout=5)
-    # print("reply:", reply.name)
-    #
-    # print("\n\ncallbacks")
-    # for k in r._running_callbacks:
-    #     print(k.function)
-    #
-    # print("\n\nSpeed:")
-    #
-    # r.register_request_handler("c", lambda *args: SICMessage())
-    # start = time.time()
-    # for i in range(100):
-    #     reply = r.request("c", NamedRequest("req_duplicate_handler"), timeout=5)
-    # print("100 request took", time.time() - start)
-    #
-    # start = time.time()
-    # for i in range(100):
-    #     r.send_message("d", SICMessage())
-    # print("100 send_message took", time.time() - start)
-
-    # print("Test callback blocking behaviour")
-    #
-    #
-    # def do_reply_slow(channel, message):
-    #     print("do_reply", message.name)
-    #     time.sleep(5)
-    #     return NamedMessage("reply " + message.name)
-    #
-    #
-    # r.register_request_handler("f", do_reply_slow)
-    #
-    # for i in range(5):
-    #     reply = r.request("f", NamedRequest(f"fast{i}"), timeout=6)
-    #     print(reply.name)
-    #
-    # r.close()
+    pass

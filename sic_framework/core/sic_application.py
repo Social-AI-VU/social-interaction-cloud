@@ -22,17 +22,17 @@ os.makedirs(LOG_PATH, exist_ok=True)
 # sic logging will automatically create the log directory if it doesn't exist
 sic_logging.set_log_file_path(LOG_PATH)
 
-# Create the process-wide Redis instance
-_process_redis = None
+# Create the application-wide Redis instance
+_app_redis = None
 
-def get_redis_instance(parent_name=None):
+def get_redis_instance():
     """
-    Get or create the process-wide Redis instance.
+    Get or create the application-wide Redis instance.
     """
-    global _process_redis
-    if _process_redis is None:
-        _process_redis = SICRedis(parent_name=parent_name)
-    return _process_redis
+    global _app_redis
+    if _app_redis is None:
+        _app_redis = SICRedis()
+    return _app_redis
 
 # load in any environment variables from the .env file
 load_dotenv("../.env")
@@ -40,9 +40,9 @@ load_dotenv("../.env")
 # register cleanup and signal handler
 def cleanup():
     print("Running atexit cleanup, closing Redis connection...")
-    if _process_redis is not None:
-        _process_redis.close()
-        _process_redis = None
+    if _app_redis is not None:
+        _app_redis.close()
+        _app_redis = None
 
 def handler(signum, frame):
     print("SIGINT received!")

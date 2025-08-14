@@ -119,7 +119,7 @@ class SICComponent:
 
         # register a request handler to handle requests
         request_handler_thread = self._redis.register_request_handler(
-            self.request_reply_channel, self._handle_request
+            self.request_reply_channel, self._handle_request, name="{}_request_handler".format(self.component_id)
         )
 
         self._threads.append(request_handler_thread)
@@ -133,7 +133,7 @@ class SICComponent:
             return self.on_message(message=message)
         
         message_handler_thread = self._redis.register_message_handler(
-            self.input_channel, message_handler
+            self.input_channel, message_handler, name="{}_message_handler".format(self.component_id)
         )
 
         self._threads.append(message_handler_thread)
