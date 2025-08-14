@@ -25,31 +25,13 @@ from .message_python2 import (
     SICStopRequest,
     SICSuccessMessage,
     SICPingRequest,
-    SICPongMessage
+    SICPongMessage,
+    SICComponentStartedMessage,
+    SICStartComponentRequest
 )
 
 from .sic_redis import SICRedis
 
-
-class SICStartComponentRequest(SICRequest):
-    """
-    A request from a user to start a component.
-
-    :param component_name: The name of the component to start.
-    :type component_name: str
-    :param log_level: The logging level to use for the component.
-    :type log_level: logging.LOGLEVEL
-    :param conf: The configuration the component.
-    :type conf: SICConfMessage
-    """
-
-    def __init__(self, component_name, log_level, input_channel, client_id, conf=None):
-        super(SICStartComponentRequest, self).__init__()
-        self.component_name = component_name  # str
-        self.log_level = log_level  # logging.LOGLEVEL
-        self.input_channel = input_channel
-        self.client_id = client_id
-        self.conf = conf  # SICConfMessage
 
 class SICNotStartedMessage(SICMessage):
     """
@@ -60,11 +42,6 @@ class SICNotStartedMessage(SICMessage):
     """
     def __init__(self, message):
         self.message = message
-
-class SICComponentStartedMessage(SICMessage):
-    def __init__(self, output_channel, request_reply_channel):
-        self.output_channel = output_channel
-        self.request_reply_channel = request_reply_channel
 
 class SICComponentManager(object):
     """
@@ -165,6 +142,7 @@ class SICComponentManager(object):
             stop_event = threading.Event()
             ready_event = threading.Event()
             self.logger.debug("Creating component {}".format(component_name), extra={"client_id": client_id})
+
             component = component_class(
                 stop_event=stop_event,
                 ready_event=ready_event,

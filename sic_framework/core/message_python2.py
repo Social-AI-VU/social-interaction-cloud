@@ -13,6 +13,14 @@ import numpy as np
 import six
 
 from . import utils
+from google.protobuf.json_format import ParseDict, MessageToDict
+from .protobuf import sic_pb2
+import json
+import importlib
+
+from turbojpeg import TurboJPEG
+jpeg = TurboJPEG()
+
 
 if not six.PY3:
     import cPickle as pickle
@@ -54,6 +62,30 @@ except (RuntimeError, ImportError):
 
     turbojpeg = FakeTurboJpeg()
 
+def dynamic_import(full_path):
+    """Load a symbol dynamically from a string like 'google.cloud.dialogflow_v2.types.AudioEncoding'"""
+    module_path, _, attr_path = full_path.rpartition('.')
+    module = importlib.import_module(module_path)
+    return getattr(module, attr_path)
+
+# Registry and decorator to map protobuf field names to python classes
+# Usage: @register_message_type("field_name") above a class to store it in MESSAGE_TYPE_REGISTRY
+MESSAGE_TYPE_REGISTRY = {}
+
+def register_message_type(proto_field_name):
+    def decorator(cls):
+        cls._proto_field_name = proto_field_name
+        MESSAGE_TYPE_REGISTRY[proto_field_name] = cls
+        return cls
+    return decorator
+
+
+CONFIG_CLASS_REGISTRY = {}
+def register_conf_class(cls):
+    CONFIG_CLASS_REGISTRY[cls.__name__] = cls
+    return cls
+
+
 
 class SICMessage(object):
     """
@@ -81,6 +113,44 @@ class SICMessage(object):
     _compress_images = False
     # this request id must be set when the message is sent as a reply to a SICRequest
     _request_id = None
+    _proto_cls = None
+
+    def to_proto(self):
+        if not self._proto_cls:
+            raise NotImplementedError("Subclasses must define _proto_cls")
+
+        pb_msg = self._proto_cls()
+        
+        for field_descriptor in pb_msg.DESCRIPTOR.fields:
+            field_name = field_descriptor.name
+            value = getattr(self, field_name, None)
+            if value is None:
+                continue
+
+            if field_descriptor.message_type:
+                # nested proto message
+                if isinstance(value, SICMessage):
+                    nested_proto = value.to_proto()
+                    # copying the nested_proto into the contents of pb_msg.field_name
+                    getattr(pb_msg, field_name).CopyFrom(nested_proto)
+                else:
+                    # maybe value is a dict?
+                    # parses a python dictionary (or JSON-like dict) and populates a protobuf message instance with its contents.
+                    ParseDict(value, getattr(pb_msg, field_name))
+            else:
+                setattr(pb_msg, field_name, value)
+        return pb_msg
+
+    # converts a protobuf message to a dict, including nested fields
+    @classmethod
+    def proto_to_kwargs(self, proto_msg):
+        return MessageToDict(proto_msg, preserving_proto_field_name=True)
+
+    # construct an instance of the message class from a protobuf message
+    @classmethod
+    def from_proto(cls, proto_msg):
+        kwargs = cls.proto_to_kwargs(proto_msg)
+        return cls(**kwargs)
 
     @classmethod
     def get_message_name(cls):
@@ -92,41 +162,86 @@ class SICMessage(object):
         """
         return cls.__name__
 
+    def serialize(self):
+        """
+        Serialize this object into a protobuf message.
+
+        The resulting protobuf message includes the payload field and common metadata
+        such as timestamp, previous component name, and request ID.
+
+        Raises:
+            ValueError: If the object does not define a `_proto_field_name`.
+
+        Returns:
+            bytes: The serialized protobuf message.
+        """
+        pb_msg = sic_pb2.SICMessageProto()
+
+        if hasattr(self, "_proto_field_name"):
+            payload_field = self._proto_field_name
+            payload_msg = self.to_proto()
+            getattr(pb_msg, payload_field).CopyFrom(payload_msg)
+        else:
+            raise ValueError(f"Object {self} has no _proto_field_name")
+        
+        # fill the rest of the fields that are common to all messages
+        if self._timestamp is None:
+            pb_msg.timestamp = 0
+        elif isinstance(self._timestamp, tuple):
+            seconds, micros = self._timestamp
+            pb_msg.timestamp = seconds  # or int(seconds + micros / 1e6), depending on your timestamp field type
+        else:
+            pb_msg.timestamp = int(self._timestamp)
+
+        pb_msg.previous_component_name = getattr(self, "_previous_component_name", "")
+
+        if hasattr(self, "_request_id") and self._request_id is not None:
+            pb_msg.request_id = self._request_id
+
+        return pb_msg.SerializeToString()
+    
+
     @classmethod
-    def deserialize(cls, byte_string):
+    def deserialize(cls, data: bytes):
         """
-        Convert object from its bytes representation, compatible between python2 and python3 and
-        with support for numpy arrays.
+        Deserialize a protobuf byte string into a SICMessage object (or subclass).
 
-        :param byte_string: The byte string to deserialize.
-        :type byte_string: bytes
-        :return: The deserialized object.
-        :rtype: object
+        Raises:
+            ValueError: If no payload field is set or if the payload field is not registered.
+
+        Args:
+            data (bytes): The serialized protobuf message.
+
+        Returns:
+            SICMessage: An instance of the appropriate SICMessage subclass.
         """
-        # Read pickle object
-        obj = cls._pickle_load(byte_string)
+        # Deserialize the raw protobuf bytes into the pb_msg object
+        pb_msg = sic_pb2.SICMessageProto()
+        pb_msg.ParseFromString(data)
 
-        # Decompress SICMessage bytes to SICMessage
-        for field in obj.__SIC_MESSAGES:
-            field_val = getattr(obj, field)
-            if not isinstance(field_val, bytes):
-                field_val = field_val.encode("latin1")
-            setattr(obj, field, SICMessage.deserialize(field_val))
+        payload_field = pb_msg.WhichOneof("payload")
 
-        # Decompress numpy bytes to numpy arrays
-        for field in obj.__NP_VALUES:
-            field_val = getattr(obj, field)
-            if not isinstance(field_val, bytes):
-                field_val = field_val.encode("latin1")
-            setattr(obj, field, obj._base2np(field_val))
+        if payload_field is None:
+            raise ValueError("No payload set in SICMessageProto, need to define a payload field in sic.proto")
+        
+        # check if the payload_field is registered in the MESSAGE_TYPE_REGISTRY
+        # if yes, use the class from the registry
+        cls = MESSAGE_TYPE_REGISTRY.get(payload_field)
+        if cls is None:
+            raise ValueError(f"Unknown message type: {payload_field}")
 
-        # Decompress JPEG images to numpy arrays
-        for field in obj.__JPEG_VALUES:
-            field_val = getattr(obj, field)
-            if not isinstance(field_val, bytes):
-                field_val = field_val.encode("latin1")
-            setattr(obj, field, obj.jpeg2np(field_val))
+        # use getattr to get the actual payload message dynamically
+        payload = getattr(pb_msg, payload_field)
 
+        # use class method to parse proto message into your Python object
+        # this will call the class’s own from_proto method
+        # if the class does not define it, the base class SICMessage.from_proto will be used
+        obj = cls.from_proto(payload)
+        # fill out other common metadata
+        obj._timestamp = pb_msg.timestamp
+        obj._previous_component_name = pb_msg.previous_component_name
+        obj._request_id = pb_msg.request_id
+ 
         return obj
 
     @staticmethod
@@ -200,103 +315,6 @@ class SICMessage(object):
         return self._previous_component_name
 
 
-    def serialize(self):
-        """
-        Convert this object to its bytes representation, compatible between python2 and python3 and
-        with support for numpy arrays.
-
-        :return: 'bytes' in python3, 'str' in python2 (which are roughly the same)
-        :rtype: bytes or str
-        """
-        self.__NP_VALUES = []
-        self.__JPEG_VALUES = []
-        self.__SIC_MESSAGES = []
-
-        # Compress np arrays with np.save
-        for attr in vars(self):
-            attr_value = getattr(self, attr)
-
-            if isinstance(attr_value, SICMessage):
-                setattr(self, attr, attr_value.serialize())
-                self.__SIC_MESSAGES.append(attr)
-            elif isinstance(attr_value, np.ndarray):
-                if (
-                    self._compress_images
-                    and attr_value.ndim == 3
-                    and attr_value.shape[-1] == 3
-                ):
-                    setattr(self, attr, self.np2jpeg(attr_value))
-                    self.__JPEG_VALUES.append(attr)
-                else:
-                    setattr(self, attr, self._np2base(attr_value))
-                    self.__NP_VALUES.append(attr)
-
-        # Pickle dataclass
-        return pickle.dumps(self, protocol=2)
-
-    @staticmethod
-    def _pickle_load(byte_string):
-        """
-        Load a pickle object from a byte string.
-
-        The pickle loads call is different between python versions. To reduce code duplication, this
-        function is created to contain only the difference.
-
-        :param byte_string: The byte string to load.
-        :type byte_string: bytes
-        :return: The loaded object.
-        :rtype: object
-        """
-
-        # Not everything is a pickle object...
-        # If byte_string starts with 'text:<channel_name>' some alien (non-SIC) agent is trying to tell us something...
-        # Otherwise, the EISComponent has been doing the talking (sending messages of the form 'text:' and the logger
-        # is listening to this talk too...
-        try:
-            # If decoding works, we have a string that was sent by someone...
-            message = byte_string.decode("utf-8")
-            if message.startswith("text:"):
-                print("Communication with agent alien to SIC: sending or receiving message " + message)
-                # We need to accommodate SIC and turn a string into a SIC message. So, let's give SIC what it needs...
-                # If message was received from an alien agent on a reqreply channel, create a TextRequest object
-                if message.startswith("text:reqreply:"):
-                    byte_string = TextRequest(byte_string.decode("utf-8")).serialize()
-                else:
-                    # Whether the message was sent by a SIC component or received from an agent alien to SIC, create a
-                    # TextMessage object
-                    byte_string = TextMessage(byte_string.decode("utf-8")).serialize()
-
-        except UnicodeError as e:
-            # Pickle serialised objects will give a decoding exception; in that case we silently fail and assume we
-            # have a Pickle object we need to deal with...
-            pass
-
-        try:
-            if utils.PYTHON_VERSION_IS_2:
-                byte_string = utils.ensure_binary(byte_string)
-                return pickle.loads(byte_string)
-            else:
-                return pickle.loads(byte_string, encoding="latin1")
-
-        except pickle.UnpicklingError as e:
-            print(byte_string)
-            raise pickle.UnpicklingError(
-                "Byte string is likely not a SICMessage ({})".format(e)
-            )
-
-        except AttributeError as e:
-            raise AttributeError(
-                "You likely haven't imported the class that caused the original error in your SICApplication.\n--> Original error: {}".format(
-                    e
-                )
-            )
-        except TypeError as e:
-            raise TypeError(
-                "You tried to deserialize a wrong type of message, or sent unpickleable types such as numpy arrays nested in objects. \n Got message:\n\n{}\n\n(original error: {})".format(
-                    byte_string, e
-                )
-            )
-
     def __eq__(self, other):
         """
         Loose check to compare if messages are the same type. type(a) == type(b) might not work because the messages
@@ -341,14 +359,39 @@ class SICMessage(object):
 #                             Message types                                          #
 ######################################################################################
 
-
+@register_message_type("sic_conf_message")
 class SICConfMessage(SICMessage):
-    """
-    A type of message that carries configuration information for services.
-    """
+    _proto_cls = sic_pb2.SICConfMessageProto
 
-    pass
+    def to_proto(self):
+        pb_msg = self._proto_cls()
+        # store the class name in the config field for serialization and deserialization
+        pb_msg.config["_conf_class"] = f"{self.__class__.__module__}.{self.__class__.__name__}"
+        for key, value in self.__dict__.items():
+            if isinstance(value, (int, float, str, bool)):
+                    print(type(key), type(value))
+                    pb_msg.config[key] = str(value)
+        return pb_msg
 
+    @classmethod
+    def from_proto(cls, proto_msg):
+        class_name = proto_msg.config.get("_conf_class")
+        actual_cls = dynamic_import(class_name) if class_name else cls
+        obj = actual_cls.__new__(actual_cls)
+
+        # print("Deserializing SICConfMessage with class:", actual_cls)
+        for k, v in proto_msg.config.items():
+            # Skip the class name key
+            if k == "_conf_class":
+                continue
+            try:
+                val = json.loads(v)  # Handles dict, list, numbers, strings
+            except (json.JSONDecodeError, TypeError):
+                val = infer_type(v)  # Fallback for string → int/float/bool
+            setattr(obj, k, val)
+
+
+        return obj
 
 class SICRequest(SICMessage):
     """
@@ -358,12 +401,11 @@ class SICRequest(SICMessage):
     _request_id = None
 
     def __init__(self, request_id=None):
-        if request_id:
+        if request_id is not None:
             self._request_id = request_id
         else:
-            # TODO https://softwareengineering.stackexchange.com/questions/339125/acceptable-to-rely-on-random-ints-being-unique
-            # should be a global that gets incremented, or 512
-            self._request_id = random.getrandbits(128)
+            # Use a large random int as default request_id
+            self._request_id = random.randint(1, 2**63 - 1)
 
 
 class SICControlMessage(SICMessage):
@@ -378,22 +420,27 @@ class SICControlRequest(SICRequest):
     """
 
 
+@register_message_type("sic_ping_request")
 class SICPingRequest(SICControlRequest):
     """
     A request for a ping to check if alive.
     """
+    _proto_cls = sic_pb2.SICPingRequestProto
 
-
+@register_message_type("sic_pong_message")
 class SICPongMessage(SICControlMessage):
     """
     A pong to reply to a ping request.;
     """
+    _proto_cls = sic_pb2.SICPongMessageProto
 
+@register_message_type("sic_success_message")
 
 class SICSuccessMessage(SICControlMessage):
     """
     Special type of message to signal a request was successfully completed.
     """
+    _proto_cls = sic_pb2.SICSuccessMessageProto
 
 
 class SICStopRequest(SICControlRequest):
@@ -401,15 +448,17 @@ class SICStopRequest(SICControlRequest):
     Special type of message to signal a device it should stop as the user no longer needs it.
     """
 
-
+@register_message_type("sic_ignore_request_message")
 class SICIgnoreRequestMessage(SICControlMessage):
     """
     Special type of message with the request_response_id set to -1. This means it will not
     be automatically set to the id of the request this is a reply to, and in effect will
     not reply to the request as the user will ignore this reply.
     """
+    _proto_cls = sic_pb2.SICIgnoreRequestMessageProto
 
     _request_id = -1
+
 
 
 ######################################################################################
@@ -429,16 +478,38 @@ class CompressedImage(object):
     def __init__(self, image):
         self.image = image
 
-
+@register_message_type("compressed_image_message")
 class CompressedImageMessage(CompressedImage, SICMessage):
     """
     See CompressedImage
     """
+    _proto_cls = sic_pb2.CompressedImageMessageProto
 
     def __init__(self, *args, **kwargs):
         CompressedImage.__init__(self, *args, **kwargs)
         SICMessage.__init__(self)
 
+    def to_proto(self):
+        pb_msg = self._proto_cls()
+
+        if isinstance(self.image, np.ndarray):
+
+            from turbojpeg import TurboJPEG
+            jpeg = TurboJPEG()
+            self.image = jpeg.encode(self.image)
+
+        if not isinstance(self.image, (bytes, bytearray)):
+            raise TypeError(f"Expected bytes for image, got {type(self.image)}")
+
+        pb_msg.jpeg_data = self.image
+        # print(pb_msg)
+        return pb_msg
+    
+    @classmethod
+    def from_proto(cls, proto_msg):
+        image_np = jpeg.decode(proto_msg.jpeg_data)
+        return cls(image=image_np)
+    
 
 class CompressedImageRequest(CompressedImage, SICRequest):
     """
@@ -577,3 +648,57 @@ class BoundingBoxesMessage(SICMessage):
 
     def __init__(self, bboxes):
         self.bboxes = bboxes
+
+@register_message_type("sic_log_message")
+class SICLogMessage(SICMessage):
+    _proto_cls = sic_pb2.SICLogMessageProto
+
+    def __init__(self, msg):
+        self.msg = msg
+        super(SICLogMessage, self).__init__()
+
+
+@register_message_type("sic_start_component_request")
+class SICStartComponentRequest(SICRequest):
+    """
+    A request from a user to start a component.
+
+    :param component_name: The name of the component to start.
+    :type component_name: str
+    :param log_level: The logging level to use for the component.
+    :type log_level: logging.LOGLEVEL
+    :param conf: The configuration the component.
+    :type conf: SICConfMessage
+    """
+    # _proto_field_name = "sic_start_component_request"
+    _proto_cls = sic_pb2.SICStartComponentRequestProto
+
+    def __init__(self, component_name, log_level, input_channel, client_id, conf=None):
+        super(SICStartComponentRequest, self).__init__()
+        self.component_name = component_name  # str
+        self.log_level = log_level  # logging.LOGLEVEL
+        self.input_channel = input_channel
+        self.client_id = client_id
+        self.conf = conf  # SICConfMessage
+
+    @classmethod
+    def from_proto(cls, proto_msg):
+        config_map = proto_msg.conf.config
+        conf_classname = config_map.get("_conf_class")
+        conf_cls = CONFIG_CLASS_REGISTRY.get(conf_classname, SICConfMessage)
+        conf_obj = conf_cls.from_proto(proto_msg.conf)
+        return cls(
+            component_name = proto_msg.component_name,
+            log_level = proto_msg.log_level,
+            input_channel = proto_msg.input_channel,
+            client_id = proto_msg.client_id,
+            conf = conf_obj,
+        )
+    
+@register_message_type("sic_component_started_message")
+class SICComponentStartedMessage(SICMessage):
+    _proto_cls = sic_pb2.SICComponentStartedMessageProto
+    def __init__(self, output_channel, request_reply_channel):
+        self.output_channel = output_channel
+        self.request_reply_channel = request_reply_channel
+        super(SICComponentStartedMessage, self).__init__()

@@ -13,7 +13,7 @@ import threading
 from datetime import datetime
 
 from . import utils
-from .message_python2 import SICMessage
+from .message_python2 import SICMessage, SICLogMessage
 from .sic_redis import SICRedis
 
 ANSI_CODE_REGEX = re.compile(r'\033\[[0-9;]*m')
@@ -34,15 +34,15 @@ def get_log_channel(client_id=""):
     return "sic:logging:{client_id}".format(client_id=client_id)
 
 
-class SICLogMessage(SICMessage):
-    def __init__(self, msg, client_id=""):
-        """
-        A wrapper for log messages to be sent over the SICRedis pubsub framework.
-        :param msg: The log message to send to the user
-        """
-        self.msg = msg
-        self.client_id = None
-        super(SICLogMessage, self).__init__()
+# class SICLogMessage(SICMessage):
+#     def __init__(self, msg, client_id=""):
+#         """
+#         A wrapper for log messages to be sent over the SICRedis pubsub framework.
+#         :param msg: The log message to send to the user
+#         """
+#         self.msg = msg
+#         self.client_id = None
+#         super(SICLogMessage, self).__init__()
 
 
 class SICRemoteError(Exception):

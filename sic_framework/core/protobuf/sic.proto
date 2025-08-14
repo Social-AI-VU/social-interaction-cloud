@@ -1,0 +1,178 @@
+syntax = "proto3";
+
+package sic;
+
+// -------------------
+// Messages for text
+// -------------------
+
+message TextMessageProto {
+  string text = 1;
+}
+
+message TextRequestProto {
+  string text = 1;
+}
+
+// -------------------
+// Messages for images
+// -------------------
+
+message CompressedImageMessageProto {
+  bytes jpeg_data = 1;
+}
+
+message CompressedImageRequestProto {
+  bytes jpeg_data = 1;
+}
+
+message UncompressedImageMessageProto {
+  bytes image_data = 1; // For raw or np.save compressed bytes
+}
+
+// -------------------
+// Messages for audio
+// -------------------
+
+message AudioMessageProto {
+  bytes waveform = 1;        // PCM 16-bit signed little endian audio
+  uint32 sample_rate = 2;    // Sample rate in Hz
+}
+
+message AudioRequestProto {
+  bytes waveform = 1;
+  uint32 sample_rate = 2;
+}
+
+// -------------------
+// Bounding box message
+// -------------------
+
+message BoundingBoxProto {
+  float x = 1;
+  float y = 2;
+  float w = 3;
+  float h = 4;
+  string identifier = 5;
+  float confidence = 6;
+}
+
+message BoundingBoxesMessageProto {
+  repeated BoundingBoxProto bboxes = 1;
+}
+
+// -------------------
+// Control and config messages (empty bodies, just type marker)
+// -------------------
+
+message SICConfMessageProto {
+  map<string, string> config = 1;
+}
+
+message SICRequestProto {
+  uint64 request_id = 1; // from SICRequest class, 128-bit truncated to 64 bits here
+  map<string, string> config = 2;
+
+}
+
+message SICControlMessageProto {}
+
+message SICControlRequestProto {}
+
+message SICPingRequestProto {}
+
+message SICPongMessageProto {}
+
+message SICSuccessMessageProto {}
+
+message SICStopRequestProto {
+    string type = 1;
+}
+
+message SICIgnoreRequestMessageProto {
+  int64 request_id = 1;  // set to -1 in your Python code
+}
+
+///-------------------
+/// SIC logging
+///-------------------
+
+message SICLogMessageProto {
+  string msg = 1;
+}
+
+message SICStartComponentRequestProto {
+  string component_name = 1;
+  int32 log_level = 2;  // Assuming it's an enum or int value
+  string input_channel = 3;
+  string client_id = 4;
+  SICConfMessageProto conf = 5; // Optional; can be empty
+}
+
+message SICNotStartedMessageProto {
+  string message = 1;
+}
+
+// -------------------
+// Connect request
+// -------------------
+
+message ConnectRequestProto {
+  string channel = 1;
+}
+
+message SICComponentStartedMessageProto {
+  string output_channel = 1;
+  string request_reply_channel = 2;
+}
+
+
+// -------------------
+// The master SICMessageProto with oneof payload
+// -------------------
+
+// use int64 instead uint64 which don't take -1
+message SICMessageProto {
+  int64 timestamp = 1;
+  string previous_component_name = 2;
+  int64 request_id = 3;
+  map<string, string> config = 4;
+  string message_type = 5;
+
+  // only one payload variant is set at any time
+  oneof payload {
+    TextMessageProto text_message = 10;
+    TextRequestProto text_request = 11;
+
+    CompressedImageMessageProto compressed_image_message = 20;
+    CompressedImageRequestProto compressed_image_request = 21;
+    UncompressedImageMessageProto uncompressed_image_message = 22;
+
+    AudioMessageProto audio_message = 30;
+    AudioRequestProto audio_request = 31;
+
+    BoundingBoxesMessageProto bounding_boxes_message = 40;
+
+    SICConfMessageProto sic_conf_message = 50;
+    SICRequestProto sic_request = 51;
+
+    SICControlMessageProto sic_control_message = 60;
+    SICControlRequestProto sic_control_request = 61;
+
+    SICPingRequestProto sic_ping_request = 70;
+    SICPongMessageProto sic_pong_message = 71;
+
+    SICSuccessMessageProto sic_success_message = 80;
+    SICStopRequestProto sic_stop_request = 81;
+
+    SICIgnoreRequestMessageProto sic_ignore_request_message = 90;
+    SICLogMessageProto sic_log_message = 91;
+
+    SICStartComponentRequestProto sic_start_component_request = 92;
+    SICNotStartedMessageProto sic_not_started_message = 93;
+
+    ConnectRequestProto connect_request = 94;
+
+    SICComponentStartedMessageProto sic_component_started_message = 95;
+  }
+}
