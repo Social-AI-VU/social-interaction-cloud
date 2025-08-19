@@ -62,6 +62,12 @@ extras_require = {
         "protobuf==3.20.3",
         "websockets==13.1",
     ],
+    # There is another dependency needed for Franka but it requires manual installation- panda-python
+    # See Installation point 3 for instructions on installing the correct version: https://socialrobotics.atlassian.net/wiki/spaces/CBSR/pages/2412675074/Getting+started+with+Franka+Emika+Research+3#Installation%3A
+    "franka": [
+        "pyspacemouse",
+        "scipy",
+    ],
 }
 
 setup(
