@@ -39,7 +39,7 @@ For detailed examples and tutorials, see the demos in the `sic_applications repo
    architecture
    api
    faq
-   feature_requests
+   contributions
 
 Indices and tables
 ==================
