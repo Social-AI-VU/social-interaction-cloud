@@ -3,8 +3,6 @@ from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import SICConfMessage, SICMessage
 from sic_framework.core.sensor_python2 import SICSensor
 
-import pyspacemouse
-
 class SpaceMouseStates(SICMessage):
     def __init__(self, t, x, y, z, roll, pitch, yaw, buttons):
         """
@@ -33,6 +31,7 @@ class SpaceMouseStates(SICMessage):
 class DesktopSpaceMouseSensor(SICSensor):
     def __init__(self, *args, **kwargs):
         super(DesktopSpaceMouseSensor, self).__init__(*args, **kwargs)
+        import pyspacemouse
         self.logger.info("Initializing DesktopSpaceMouseSensor")
         self.success = pyspacemouse.open(dof_callback=pyspacemouse.print_state, button_callback=pyspacemouse.print_buttons)
     @staticmethod

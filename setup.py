@@ -8,7 +8,6 @@ requirements = [
     "Pillow",
     "pyaudio",
     "PyTurboJPEG",
-    "pyspacemouse",
     "redis",
     "scp",
     "six",
