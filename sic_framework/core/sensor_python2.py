@@ -29,6 +29,18 @@ class SICSensor(SICComponent):
 
         self._produce()
 
+    def on_message(self, message):
+        """
+        Sensors do not handle messages.
+        """
+        pass
+
+    def on_request(self, request):
+        """
+        Sensors do not handle requests other than control requests (Start/Stop).
+        """
+        pass
+
     @abstractmethod
     def execute(self):
         """

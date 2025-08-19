@@ -15,8 +15,6 @@ import os
 
 from . import utils
 from .message_python2 import SICMessage
-from .sic_redis import SICRedis
-from sic_framework.core.sic_application import get_redis_instance
 
 ANSI_CODE_REGEX = re.compile(r'\033\[[0-9;]*m')
 
@@ -82,6 +80,7 @@ class SICCommonLog(object):
         with self.lock:  # Ensure thread-safe access
             if not self.running:
                 self.running = True
+                from sic_framework.core.sic_application import get_redis_instance
                 self.redis = get_redis_instance()
                 self.redis.register_message_handler(
                     get_log_channel(client_id), self._handle_redis_log_message, name="SICCommonLog"
@@ -182,6 +181,9 @@ class SICRedisHandler(logging.Handler):
         :type record: logging.LogRecord
         """
         try:
+            if self.redis.stopping:
+                return # silently ignore messages if the application is stopping
+
             # Get the formatted message
             msg = self.format(record)
             
@@ -200,7 +202,8 @@ class SICRedisHandler(logging.Handler):
             # Send over Redis
             self.redis.send_message(log_channel, log_message)
         except Exception:
-            self.handleError(record)
+            if not self.redis.stopping:
+                self.handleError(record)
 
     def readable(self):
         """

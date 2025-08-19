@@ -178,7 +178,8 @@ class SICComponent:
 
             self.logger.debug("Graceful exit was successful")
         except Exception as err:
-            self.logger.error("Graceful exit has failed: {}".format(err.message))
+            self.logger.error("Graceful exit has failed: {}".format(err))
+            exit(1)
 
     def set_config(self, new=None):
         """
@@ -216,7 +217,7 @@ class SICComponent:
         :return: The reply
         :rtype: SICMessage
         """
-        raise NotImplementedError("You need to define a message handler.")
+        raise NotImplementedError("You need to define a message handler for component {}".format(self.component_id))
 
     def output_message(self, message):
         """

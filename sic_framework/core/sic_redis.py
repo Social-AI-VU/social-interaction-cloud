@@ -58,6 +58,28 @@ class CallbackThread:
         self.pubsub = pubsub
         self.thread = thread
 
+    def join(self, timeout=5):
+        """
+        Join the thread.
+        """
+        self.thread.join(timeout=timeout)
+
+    def is_alive(self):
+        """
+        Check if the underlying thread is still alive.
+        
+        :return: True if the thread is still alive, False otherwise
+        :rtype: bool
+        """
+        return self.thread.is_alive()
+
+    @property
+    def name(self):
+        return self.thread.name
+
+    @name.setter
+    def name(self, value):
+        self.thread.name = value
 
 # keep track of all redis instances, so we can close them on exit
 _sic_redis_instances = []
@@ -284,6 +306,9 @@ class SICRedis:
         :return: The number of subscribers that received the message.
         :rtype: int
         """
+        if self.stopping:
+            return 0 # silently ignore messages if the application is stopping
+        
         assert isinstance(
             message, SICMessage
         ), "Message must inherit from SICMessage (got {})".format(type(message))

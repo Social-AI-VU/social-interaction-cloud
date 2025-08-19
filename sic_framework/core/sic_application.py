@@ -45,7 +45,7 @@ def cleanup():
         _app_redis = None
 
 def handler(signum, frame):
-    print("SIGINT received!")
+    print("signal interrupt received, exiting...")
     sys.exit(0)
 
 atexit.register(cleanup)
