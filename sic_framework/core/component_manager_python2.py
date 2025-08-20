@@ -49,6 +49,18 @@ class SICStartComponentRequest(SICRequest):
         self.client_id = client_id
         self.conf = conf  # SICConfMessage
 
+class SICStopComponentRequest(SICRequest):
+    """
+    A request from a user to stop a component.
+
+    :param component_id: The id of the component to stop. A string of characters corresponding to the output channel of the component.
+    :type component_id: str
+    """
+
+    def __init__(self, component_id):
+        super(SICStopComponentRequest, self).__init__()
+        self.component_id = component_id  # str
+
 class SICNotStartedMessage(SICMessage):
     """
     A message to indicate that a component failed to start.
@@ -236,12 +248,19 @@ class SICComponentManager(object):
         :param component_id: The id of the component to stop. A string of characters corresponding to the output channel of the component.
         :type component_id: str
         """
-        if component_id not in self.active_components:
-            self.logger.warning("Component {} not found".format(component_id))
-            return
-        
+
         component = self.active_components[component_id]
-        component.stop()
+
+        try:
+            component.stop()
+            del self.active_components[component_id]
+            return SICSuccessMessage()
+        except Exception as e:
+            self.logger.error(
+                "Error stopping component: {}".format(e),
+                extra={"client_id": component.client_id}
+            )
+            return SICNotStartedMessage(e)
 
     def stop(self, *args):
         """
@@ -320,21 +339,41 @@ class SICComponentManager(object):
             # return an empty stop message as a request must always be replied to
             return SICSuccessMessage()
         
-        # reply to the request if the component manager can start the component
-        if request.component_name in self.component_classes:
-            self.logger.info(
-                "Handling request to start component {}".format(
-                    request.component_name
-                ),
-                extra={"client_id": client_id}
-            )
+        if is_sic_instance(request, SICStartComponentRequest):
+            # reply to the request if the component manager can start the component
+            if request.component_name in self.component_classes:
+                self.logger.info(
+                    "Handling request to start component for client {}".format(
+                        client_id
+                    ),
+                    extra={"client_id": client_id}
+                )
 
-            return self.start_component(request)
-        else:
-            self.logger.warning(
-                "Ignored request {}".format(
-                    request.component_name
+                return self.start_component(request)
+            else:
+                self.logger.warning(
+                    "Ignored request to start component {} as it is not in the component classes that may be started by this ComponentManager".format(
+                        request.component_name
+                    ),
+                    extra={"client_id": client_id}
+                )
+                return SICIgnoreRequestMessage()
+        
+        if is_sic_instance(request, SICStopComponentRequest):
+            # reply to the request if the component manager can stop the component
+            self.logger.info(
+                "Handling request to stop component for client {}".format(
+                    client_id
                 ),
                 extra={"client_id": client_id}
             )
-            return SICIgnoreRequestMessage()
+            if request.component_id in self.active_components:
+                return self.stop_component(request.component_id)
+            else:
+                self.logger.error(
+                    "Ignored request to stop component with output channel {} as it is not in the active components".format(
+                        request.component_id
+                    ),
+                    extra={"client_id": client_id}
+                )
+                return SICIgnoreRequestMessage()

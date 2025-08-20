@@ -17,8 +17,12 @@ from sic_framework.core.service_python2 import SICService
 from sic_framework.core.utils import is_sic_instance
 
 from . import utils
-from .component_manager_python2 import SICNotStartedMessage, SICStartComponentRequest
-from .message_python2 import SICMessage, SICPingRequest, SICRequest, SICStopRequest
+from .component_manager_python2 import (
+    SICNotStartedMessage, 
+    SICStartComponentRequest, 
+    SICStopComponentRequest
+)
+from .message_python2 import SICMessage, SICPingRequest, SICRequest, SICSuccessMessage
 from . import sic_logging
 from .sic_redis import SICRedis
 from sic_framework.core.sic_application import get_redis_instance
@@ -99,7 +103,7 @@ class SICConnector(object):
             raise RuntimeError(e)
 
         self._callback_threads = []
-        atexit.register(self.stop)
+        atexit.register(self._stop_component)
         self.logger.debug("Component initialization complete")
 
     @property
@@ -176,12 +180,19 @@ class SICConnector(object):
             self._request_reply_channel, request, timeout=timeout, block=block
         )
 
-    def stop(self):
+    def _stop_component(self):
         """
-        Send a stop request to the component and close the Redis connection.
+        Send a StopComponentRequest to the component, called on exit.
         """
-        self.logger.debug("Connector sending StopRequest to component")
-        self._redis.send_message(self._request_reply_channel, SICStopRequest())
+
+        self.logger.debug("Connector sending StopComponentRequest to component")
+        stop_result = self._redis.request(self.component_ip, SICStopComponentRequest(self._output_channel))
+        if stop_result is None:
+            self.logger.error("Stop request timed out")
+            raise TimeoutError("Stop request timed out")
+        if not is_sic_instance(stop_result, SICSuccessMessage):
+            self.logger.error("Stop request failed")
+            raise RuntimeError("Stop request failed")
 
         # close callback threads
         self.logger.debug("Closing callback threads")
@@ -273,27 +284,4 @@ class SICConnector(object):
             logging.error("Unknown exception occured while trying to start {name} component: {e}".format(name=self.component_class.get_component_name(), e=e))
 
     def _get_timestamp(self):
-        # TODO this needs to be synchronized with all devices, because if a nao is off by a second or two
-        # its data will align wrong with other sources
-        # possible solution: do redis.time, and use a custom get time functions that is aware of the offset
-        return time.time()
-
-    # TODO: maybe put this in constructor to do a graceful exit on crash?
-    # register cleanup to disconnect redis if an exception occurs anywhere during exection
-    # TODO FIX cannot register multiple exepthooks
-    # sys.excepthook = self.cleanup_after_except
-    # #
-    # def cleanup_after_except(self, *args):
-    #     self.stop()
-    #     # call original except hook after stopping
-    #     sys.__excepthook__(*args)
-
-    # TODO: maybe also helps for a graceful exit?
-    def __del__(self):
-        """
-        Call stop() on the connector when it is deleted.
-        """
-        try:
-            self.stop()
-        except Exception as e:
-            self.logger.error("Error in clean shutdown: {}".format(e))
+        return self._redis.time()
