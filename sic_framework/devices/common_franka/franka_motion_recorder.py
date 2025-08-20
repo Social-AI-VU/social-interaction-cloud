@@ -152,6 +152,8 @@ class FrankaMotionRecorderActuator(SICActuator):
 
         :param request: The PlayRecordingRequest containing recorded joint positions and velocities.
         """
+        # here we set the controller to Joint Position, which requires joint positions and velocities to control the joints
+        # see more details: https://jeanelsner.github.io/panda-py/panda_py.controllers.html#panda_py.controllers.JointPosition.set_control
         ctrl = controllers.JointPosition()
         self.panda.start_controller(ctrl)
         i = 0

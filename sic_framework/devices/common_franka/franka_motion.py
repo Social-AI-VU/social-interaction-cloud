@@ -35,6 +35,8 @@ class FrankaMotionActuator(SICComponent):
     def __init__(self, *args, **kwargs):
         super(FrankaMotionActuator, self).__init__(*args, **kwargs)
         self.panda = panda_py.Panda("172.16.0.2")
+        # here we set the controller to Cartesian Impedance, which only requires position and orientation to control the end effector (EE)
+        # see more details: https://jeanelsner.github.io/panda-py/panda_py.controllers.html#panda_py.controllers.CartesianImpedance.set_control
         self.ctrl = controllers.CartesianImpedance(filter_coeff=1.0)
         self.panda.start_controller(self.ctrl)
 
@@ -43,7 +45,7 @@ class FrankaMotionActuator(SICComponent):
     def get_inputs():
         return [FrankaPose]
 
-    # it's outputting the current EE pose
+    # it's outputting the current EE pose from _start_streaming
     @staticmethod
     def get_output():
         return FrankaPose
