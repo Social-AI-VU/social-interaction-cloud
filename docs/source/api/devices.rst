@@ -34,6 +34,11 @@ Robot Platforms
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: sic_framework.devices.franka
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Shared Components
 -----------------
 
