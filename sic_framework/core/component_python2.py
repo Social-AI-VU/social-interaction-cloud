@@ -61,6 +61,8 @@ class SICComponent:
         output_channel=None, 
         req_reply_channel=None,
         client_id="",
+        endpoint="",
+        ip="",
         redis=None
     ):
         self.client_id = client_id
@@ -75,8 +77,8 @@ class SICComponent:
         except Exception as e:
             raise e
 
-        self._ip = utils.get_ip_adress()
-        self.component_id = self.get_component_name() + ":" + self._ip
+        self._ip = ip
+        self.component_endpoint = endpoint
 
         # _ready_event is set once the component has started, signals to the component manager that the component is ready.
         self._ready_event = ready_event if ready_event else threading.Event()
@@ -119,7 +121,7 @@ class SICComponent:
 
         # register a request handler to handle requests
         request_handler_thread = self._redis.register_request_handler(
-            self.request_reply_channel, self._handle_request, name="{}_request_handler".format(self.component_id)
+            self.request_reply_channel, self._handle_request, name="{}_request_handler".format(self.component_endpoint)
         )
 
         self._threads.append(request_handler_thread)
@@ -133,7 +135,7 @@ class SICComponent:
             return self.on_message(message=message)
         
         message_handler_thread = self._redis.register_message_handler(
-            self.input_channel, message_handler, name="{}_message_handler".format(self.component_id)
+            self.input_channel, message_handler, name="{}_message_handler".format(self.component_endpoint) 
         )
 
         self._threads.append(message_handler_thread)
@@ -154,6 +156,9 @@ class SICComponent:
         :param args: Additional arguments (not used)
         :type args: tuple
         """
+        if hasattr(self, '_stopped') and self._stopped:
+            return
+    
         self.logger.debug(
             "Trying to exit {} gracefully...".format(self.get_component_name())
         )
@@ -162,24 +167,30 @@ class SICComponent:
             self._stop_event.set()
 
             # join all threads
-            for thread in self._threads:
-                thread.join(timeout=5)
-                if thread.is_alive():
-                    self.logger.warning("Thread {} did not stop cleanly".format(thread.name))
+            for thread in self._threads[:]:
+                try:
+                    thread.join(timeout=5)
+                    if thread.is_alive():
+                        self.logger.warning("Thread {} did not stop cleanly".format(thread.name))
+                except Exception as e:
+                    self.logger.error("Error joining thread {}: {}".format(thread.name, e))
                 
             # remove the data stream
-            self.logger.debug("Removing data stream for {}".format(self.component_id))
-            data_stream_result = self._redis.unset_data_stream(self.output_channel)
+            try:
+                self.logger.debug("Removing data stream information for {}".format(self.component_endpoint))
+                data_stream_result = self._redis.unset_data_stream(self.output_channel)
 
-            if data_stream_result == 1:
-                self.logger.debug("Data stream for {} removed".format(self.component_id))
-            else:
-                self.logger.debug("Data stream for {} not found".format(self.component_id))
+                if data_stream_result == 1:
+                    self.logger.debug("Data stream information for {} removed".format(self.component_endpoint))
+                else:
+                    self.logger.debug("Data stream information for {} not found".format(self.component_endpoint))
+            except Exception as e:
+                self.logger.error("Error removing data stream information: {}".format(e))
 
+            self._stopped = True
             self.logger.debug("Graceful exit was successful")
-        except Exception as err:
-            self.logger.error("Graceful exit has failed: {}".format(err))
-            exit(1)
+        except Exception as e:
+            self.logger.error("Graceful exit has failed: {}".format(e))
 
     def set_config(self, new=None):
         """
@@ -217,7 +228,7 @@ class SICComponent:
         :return: The reply
         :rtype: SICMessage
         """
-        raise NotImplementedError("You need to define a message handler for component {}".format(self.component_id))
+        raise NotImplementedError("You need to define a message handler for component {}".format(self.component_endpoint))
 
     def output_message(self, message):
         """

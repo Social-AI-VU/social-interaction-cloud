@@ -71,7 +71,7 @@ class SICConnector(object):
 
         self.component_name = self.component_class.get_component_name()
         self.component_ip = ip
-        self.component_id = self.component_name + ":" + self.component_ip
+        self.component_endpoint = self.component_name + ":" + self.component_ip
 
         # if the input channel is not provided, assume the client ID (IP address) is the input channel (i.e. Component is a Sensor)
         if input_source is None:    
@@ -92,8 +92,8 @@ class SICConnector(object):
         # make sure we can start the component and ping it
         try:
             self._start_component()
-            self.logger.debug("Component started")
-            assert self._ping()
+            self.logger.debug("Received SICComponentStartedMessage, component successfully started")
+            assert self._ping(), "Component failed to ping"
         except Exception as e:
             self.logger.error(e)
             raise RuntimeError(e)
@@ -132,7 +132,7 @@ class SICConnector(object):
         """
 
         try:
-            ct = self._redis.register_message_handler(self.get_output_channel(), callback, name="{}_callback".format(self.component_id))
+            ct = self._redis.register_message_handler(self.get_output_channel(), callback, name="{}_callback".format(self.component_endpoint))
         except Exception as e:
             self.logger.error("Error registering callback: {}".format(e))
             raise e

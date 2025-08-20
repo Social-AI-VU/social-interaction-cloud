@@ -24,6 +24,7 @@ sic_logging.set_log_file_path(LOG_PATH)
 
 # Create the application-wide Redis instance
 _app_redis = None
+_cleanup_in_progress = False
 
 def get_redis_instance():
     """
@@ -39,10 +40,21 @@ load_dotenv("../.env")
 
 # register cleanup and signal handler
 def cleanup():
+    """Cleanup function to stop Redis and other resources."""
+    global _app_redis, _cleanup_in_progress
+    if _cleanup_in_progress:
+        return
+    _cleanup_in_progress = True
+    
     print("Running atexit cleanup, closing Redis connection...")
-    if _app_redis is not None:
-        _app_redis.close()
-        _app_redis = None
+    try:
+        if _app_redis is not None:
+            _app_redis.close()
+            _app_redis = None
+    except Exception as e:
+        print(f"Error during cleanup: {e}")
+    finally:
+        _cleanup_in_progress = False
 
 def handler(signum, frame):
     print("signal interrupt received, exiting...")

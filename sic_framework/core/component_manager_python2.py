@@ -86,7 +86,7 @@ class SICComponentManager(object):
         self.ip = utils.get_ip_adress()
         self.client_id = client_id
 
-        self.active_components = []
+        self.active_components = {}
         self.component_classes = {
             cls.get_component_name(): cls for cls in component_classes
         }
@@ -144,10 +144,10 @@ class SICComponentManager(object):
 
         # extract component information from the request
         component_name = request.component_name
-        component_id = component_name + ":" + self.ip
+        component_endpoint = component_name + ":" + self.ip
         input_channel = request.input_channel
         client_id = request.client_id
-        output_channel = create_data_stream_id(component_id, input_channel)
+        output_channel = create_data_stream_id(component_endpoint, input_channel)
         request_reply_channel = output_channel + ":request_reply"
         conf = request.conf
 
@@ -171,13 +171,13 @@ class SICComponentManager(object):
                 output_channel=output_channel,
                 req_reply_channel=request_reply_channel,
                 client_id=client_id,
+                endpoint=component_endpoint,
+                ip=self.ip,
                 redis=self.redis
             )
-            self.logger.debug("Component {} created".format(component.component_id), extra={"client_id": client_id})
-            self.active_components.append(component)
+            self.logger.debug("Component {} created".format(component.component_endpoint), extra={"client_id": client_id})
+            self.active_components[output_channel] = component
 
-            # TODO daemon=False could be set to true, but then the component cannot clean up properly
-            # but also not available in python2
             thread = threading.Thread(target=component._start)
             thread.name = component_class.get_component_name()
             thread.start()
@@ -196,24 +196,24 @@ class SICComponentManager(object):
 
             # register the datastreams for the component
             try:
-                self.logger.debug("Setting data stream for component {}".format(component.component_id), extra={"client_id": client_id})
+                self.logger.debug("Setting data stream for component {}".format(component.component_endpoint), extra={"client_id": client_id})
 
                 data_stream_info = {
-                    "component_id": component_id,
+                    "component_endpoint": component_endpoint,
                     "input_channel": input_channel,
                     "client_id": client_id
                 }
                                 
                 self.redis.set_data_stream(output_channel, data_stream_info)
 
-                self.logger.debug("Data stream set for component {}".format(component.component_id), extra={"client_id": client_id})
+                self.logger.debug("Data stream set for component {}".format(component.component_endpoint), extra={"client_id": client_id})
             except Exception as e:
                 self.logger.error(
-                    "Error setting data stream for component {}: {}".format(component.component_id, e),
+                    "Error setting data stream for component {}: {}".format(component.component_endpoint, e),
                     extra={"client_id": client_id}
                 )
 
-            self.logger.debug("Component {} started successfully".format(component.component_id), extra={"client_id": client_id})
+            self.logger.debug("Component {} started successfully".format(component.component_endpoint), extra={"client_id": client_id})
             
             # inform the user their component has started
             reply = SICComponentStartedMessage(output_channel, request_reply_channel)
@@ -229,6 +229,19 @@ class SICComponentManager(object):
                 component.stop()
             return SICNotStartedMessage(e)
     
+    def stop_component(self, component_id):
+        """
+        Stop a component.
+
+        :param component_id: The id of the component to stop. A string of characters corresponding to the output channel of the component.
+        :type component_id: str
+        """
+        if component_id not in self.active_components:
+            self.logger.warning("Component {} not found".format(component_id))
+            return
+        
+        component = self.active_components[component_id]
+        component.stop()
 
     def stop(self, *args):
         """
