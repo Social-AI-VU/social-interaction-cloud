@@ -185,7 +185,7 @@ class SICConnector(object):
         Send a StopComponentRequest to the component, called on exit.
         """
 
-        self.logger.debug("Connector sending StopComponentRequest to component")
+        self.logger.debug("Connector sending StopComponentRequest to ComponentManager")
         stop_result = self._redis.request(self.component_ip, SICStopComponentRequest(self._output_channel))
         if stop_result is None:
             self.logger.error("Stop request timed out")
@@ -196,10 +196,9 @@ class SICConnector(object):
 
         # close callback threads
         self.logger.debug("Closing callback threads")
-        for ct in self._callback_threads:
-            ct.join(timeout=5)
-            if ct.is_alive():
-                self.logger.warning("Callback thread {} did not stop cleanly".format(ct.name))
+        for ct in self._callback_threads[:]:
+            self._redis.unregister_callback(ct)
+
 
     def get_input_channel(self):
         """

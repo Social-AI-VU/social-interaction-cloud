@@ -84,11 +84,17 @@ class SICComponent:
         self._ready_event = ready_event if ready_event else threading.Event()
         # _stop_event is set when the component should stop
         self._stop_event = stop_event if stop_event else threading.Event()
+        # _stopped is set when the component has stopped
+        self._stopped = threading.Event()
 
         # Components constrained to one input, request_reply, output channel
         self.input_channel = input_channel
         self.output_channel = output_channel
         self.request_reply_channel = req_reply_channel
+
+        # Threads for the message and request handlers
+        self.message_handler_thread = None
+        self.request_handler_thread = None
 
         self.params = None
         self._threads = []
@@ -120,11 +126,9 @@ class SICComponent:
         self.logger.debug("Registering request handler")
 
         # register a request handler to handle requests
-        request_handler_thread = self._redis.register_request_handler(
+        self.request_handler_thread = self._redis.register_request_handler(
             self.request_reply_channel, self._handle_request, name="{}_request_handler".format(self.component_endpoint)
         )
-
-        self._threads.append(request_handler_thread)
 
         self.logger.debug("Request handler registered")
 
@@ -134,11 +138,9 @@ class SICComponent:
         def message_handler(message):
             return self.on_message(message=message)
         
-        message_handler_thread = self._redis.register_message_handler(
+        self.message_handler_thread = self._redis.register_message_handler(
             self.input_channel, message_handler, name="{}_message_handler".format(self.component_endpoint) 
         )
-
-        self._threads.append(message_handler_thread)
         
         self.logger.debug("Message handler registered")
 
@@ -147,50 +149,16 @@ class SICComponent:
 
         self.logger.info("Successfully started component {}".format(self.get_component_name()))
 
+
     def stop(self, *args):
         """
-        Stop the component.
-
-        Closes the Redis connection and sets the stop event.
-        
-        :param args: Additional arguments (not used)
-        :type args: tuple
+        Set the stop event to signal the component to stop.
         """
-        if hasattr(self, '_stopped') and self._stopped:
-            return
-    
-        self.logger.debug(
-            "Trying to exit {} gracefully...".format(self.get_component_name())
-        )
-        try:
-            # set stop event to signal the component to stop
-            self._stop_event.set()
-
-            # join all threads
-            for thread in self._threads[:]:
-                try:
-                    thread.join(timeout=5)
-                    if thread.is_alive():
-                        self.logger.warning("Thread {} did not stop cleanly".format(thread.name))
-                except Exception as e:
-                    self.logger.error("Error joining thread {}: {}".format(thread.name, e))
-                
-            # remove the data stream
-            try:
-                self.logger.debug("Removing data stream information for {}".format(self.component_endpoint))
-                data_stream_result = self._redis.unset_data_stream(self.output_channel)
-
-                if data_stream_result == 1:
-                    self.logger.debug("Data stream information for {} removed".format(self.component_endpoint))
-                else:
-                    self.logger.debug("Data stream information for {} not found".format(self.component_endpoint))
-            except Exception as e:
-                self.logger.error("Error removing data stream information: {}".format(e))
-
-            self._stopped = True
-            self.logger.debug("Graceful exit was successful")
-        except Exception as e:
-            self.logger.error("Graceful exit has failed: {}".format(e))
+        self._stop_event.set()
+        if self._stopped.wait(timeout=2):
+            self.logger.debug("Component stop event set successfully")
+        else:
+            self.logger.warning("Component stop event was not set on time")
 
     def set_config(self, new=None):
         """

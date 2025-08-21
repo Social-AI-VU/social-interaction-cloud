@@ -170,11 +170,10 @@ class SICComponentManager(object):
         component = None
 
         try:
-            self.logger.debug("Creating threads for {}".format(component_name), extra={"client_id": client_id})
+            self.logger.debug("Creating component {}".format(component_name), extra={"client_id": client_id})
             
             stop_event = threading.Event()
             ready_event = threading.Event()
-            self.logger.debug("Creating component {}".format(component_name), extra={"client_id": client_id})
             component = component_class(
                 stop_event=stop_event,
                 ready_event=ready_event,
@@ -187,7 +186,7 @@ class SICComponentManager(object):
                 ip=self.ip,
                 redis=self.redis
             )
-            self.logger.debug("Component {} created".format(component.component_endpoint), extra={"client_id": client_id})
+            self.logger.debug("Component {} instantiated".format(component.component_endpoint), extra={"client_id": client_id})
             self.active_components[output_channel] = component
 
             thread = threading.Thread(target=component._start)
@@ -206,6 +205,8 @@ class SICComponentManager(object):
                     extra={"client_id": client_id}
                 )
 
+            self.logger.debug("Component {} started".format(component.component_endpoint), extra={"client_id": client_id})
+            
             # register the datastreams for the component
             try:
                 self.logger.debug("Setting data stream for component {}".format(component.component_endpoint), extra={"client_id": client_id})
@@ -252,8 +253,28 @@ class SICComponentManager(object):
         component = self.active_components[component_id]
 
         try:
+            # set stop event to signal the component to stop
             component.stop()
+
+            # unsubscribe the Component's handler threads from Redis
+            self.redis.unregister_callback(component.message_handler_thread)
+            self.redis.unregister_callback(component.request_handler_thread)
+                
+            # remove the data stream information from redis
+            try:
+                self.logger.debug("Removing data stream information for {}".format(component.component_endpoint), extra={"client_id": component.client_id})
+                data_stream_result = self.redis.unset_data_stream(component.output_channel)
+
+                if data_stream_result == 1:
+                    self.logger.debug("Data stream information for {} removed".format(component.component_endpoint), extra={"client_id": component.client_id})
+                else:
+                    self.logger.debug("Data stream information for {} not found".format(component.component_endpoint), extra={"client_id": component.client_id})
+            except Exception as e:
+                self.logger.error("Error removing data stream information: {}".format(e), extra={"client_id": component.client_id})
+                raise e
+            
             del self.active_components[component_id]
+
             return SICSuccessMessage()
         except Exception as e:
             self.logger.error(
@@ -286,11 +307,12 @@ class SICComponentManager(object):
             self.logger.info("Closing Redis connection")
             self.redis.close()
 
-            self.logger.info("Graceful exit was successful")
-            exit(0)
+            if threading.current_thread() is threading.main_thread():
+                exit(0)
         except Exception as err:
-            self.logger.error("Graceful exit has failed: {}".format(err))
-            exit(1)
+            self.logger.error("Failed to exit manager: {}".format(err))
+            if threading.current_thread() is threading.main_thread():
+                exit(1)
 
     def _sync_time(self):
         """

@@ -5,9 +5,10 @@ Boilerplate setup for SIC applications.
 from sic_framework.core import utils
 from sic_framework.core import sic_logging
 from dotenv import load_dotenv
-import signal, sys, atexit
+import signal, sys, atexit, threading
 import tempfile
 import os
+import time
 from sic_framework.core.sic_redis import SICRedis
 
 # Initialize logging
@@ -22,7 +23,7 @@ os.makedirs(LOG_PATH, exist_ok=True)
 # sic logging will automatically create the log directory if it doesn't exist
 sic_logging.set_log_file_path(LOG_PATH)
 
-# Create the application-wide Redis instance
+# Global state
 _app_redis = None
 _cleanup_in_progress = False
 
@@ -40,14 +41,16 @@ load_dotenv("../.env")
 
 # register cleanup and signal handler
 def cleanup():
-    """Cleanup function to stop Redis and other resources."""
+    """
+    Cleanup function to stop Redis and other resources.
+    """
     global _app_redis, _cleanup_in_progress
     if _cleanup_in_progress:
         return
     _cleanup_in_progress = True
     
-    print("Running atexit cleanup, closing Redis connection...")
     try:
+        print("Closing Redis connection...")
         if _app_redis is not None:
             _app_redis.close()
             _app_redis = None
@@ -57,8 +60,18 @@ def cleanup():
         _cleanup_in_progress = False
 
 def handler(signum, frame):
+    """
+    Signal handler for graceful shutdown.
+    """
+    if _cleanup_in_progress:
+        return  # Prevent multiple signal handling
+        
     print("signal interrupt received, exiting...")
-    sys.exit(0)
+
+    # Only exit if we're in the main thread
+    if threading.current_thread() is threading.main_thread():
+        sys.exit(0)
 
 atexit.register(cleanup)
 signal.signal(signal.SIGINT, handler)
+signal.signal(signal.SIGTERM, handler)

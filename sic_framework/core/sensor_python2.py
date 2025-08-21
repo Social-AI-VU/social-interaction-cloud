@@ -67,4 +67,5 @@ class SICSensor(SICComponent):
 
             self.output_message(output)
 
+        self._stopped.set()
         self.logger.debug("Stopped producing")
