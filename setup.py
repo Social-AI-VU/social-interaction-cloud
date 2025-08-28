@@ -70,6 +70,7 @@ extras_require = {
     "franka": [
         "pyspacemouse",
         "scipy",
+        "numpy<2.0.0",  # numpy 2.0.0 is not compatible with panda_py
     ],
 }
 
