@@ -25,6 +25,9 @@ extras_require = {
     "dialogflow": [
         "google-cloud-dialogflow",
     ],
+    "google-stt": [
+        "google-cloud-speech",
+    ],
     "google-tts": [
         "google-cloud-texttospeech",
     ],
@@ -100,6 +103,7 @@ setup(
             "run-whisper=sic_framework.services.openai_whisper_speech_to_text:main",
             "run-webserver=sic_framework.services.webserver.webserver_component:main",
             "run-google-tts=sic_framework.services.text2speech.text2speech_service:main",
+            "run-google-stt=sic_framework.services.speech2text.google_STT:main",
         ],
     },
 )

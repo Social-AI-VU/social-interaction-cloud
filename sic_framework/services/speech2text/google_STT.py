@@ -129,7 +129,7 @@ class GoogleSpeechToTextComponent(SICService):
             explicit_decoding_config=cloud_speech_types.ExplicitDecodingConfig(
                 encoding=cloud_speech_types.ExplicitDecodingConfig.AudioEncoding.LINEAR16,
                 sample_rate_hertz=self.params.sample_rate_hertz,
-                audio_channel_count=self.params.audio_channel_count,
+                audio_channel_count=1,
             ),
             # NOTE: auto detect decoding causes the bidirectional iterator to hang, so we use explicit decoding for now.
             # auto_decoding_config=cloud_speech_types.AutoDetectDecodingConfig(),
@@ -187,11 +187,11 @@ class GoogleSpeechToTextComponent(SICService):
             # first request to Google needs to be a setup request with the session parameters
             yield self.config_request
 
-            start_time = self._redis.get_time()
+            start_time = self._redis.time()
 
             while not self.message_was_final.is_set():
                 if self.params.timeout != None:
-                    if self._redis.get_time() - start_time > self.params.timeout:
+                    if self._redis.time() - start_time > self.params.timeout:
                         self.logger.warning(
                             "Request is longer than {timeout} seconds, stopping Google request".format(
                                 timeout=self.params.timeout
@@ -235,13 +235,13 @@ class GoogleSpeechToTextComponent(SICService):
         requests = self.request_generator() 
 
         try:
-            responses = self.google_speech_client.streaming_detect_intent(requests)
+            responses = self.google_speech_client.streaming_recognize(requests)
         except Exception as e:
             self.logger.error("Exception in get_statement: {}".format(e))
             return RecognitionResult(dict())
 
         for response in responses:
-            if self.stop_event.is_set():
+            if self._stop_event.is_set():
                 break
 
             if not response.results:
