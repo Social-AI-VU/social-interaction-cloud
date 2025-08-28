@@ -24,6 +24,7 @@ def start_franka_components():
     """
     Initialize and run the Franka component manager
     """
+
     global franka_active
     manager = SICComponentManager(franka_component_list, client_id=utils.get_ip_adress(), auto_serve=False, name="Franka")
 
@@ -38,6 +39,7 @@ class Franka(SICDevice):
     Franka device interface that automatically starts the component manager
     in a background thread on first initialization.
     """
+
     def __init__(self, motion_conf=None):
         """
         Initialize the Franka device with the given motion configuration
@@ -59,6 +61,7 @@ class Franka(SICDevice):
         Get the Franka motion recorder connector.
         :return: The FrankaMotionRecorder connector.
         """
+
         return self._get_connector(FrankaMotionRecorder)
 
     @property
@@ -67,6 +70,7 @@ class Franka(SICDevice):
         Get the Franka motion connector.
         :return: The FrankaMotion connector.
         """
+
         return self._get_connector(FrankaMotion)
 
 
