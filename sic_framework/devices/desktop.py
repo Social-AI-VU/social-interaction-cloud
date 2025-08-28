@@ -20,6 +20,10 @@ from sic_framework.devices.common_desktop.desktop_text_to_speech import (
     DesktopTextToSpeech,
     DesktopTextToSpeechActuator,
 )
+from sic_framework.devices.common_desktop.desktop_spacemouse import (
+    DesktopSpaceMouse,
+    DesktopSpaceMouseSensor
+)
 from sic_framework.devices.device import SICDevice
 
 desktop_active = False
@@ -75,12 +79,16 @@ class Desktop(SICDevice):
     def tts(self):
         return self._get_connector(DesktopTextToSpeech)
 
+    @property
+    def spacemouse(self):
+        return self._get_connector(DesktopSpaceMouse)
 
 desktop_component_list = [
     DesktopMicrophoneSensor,
     DesktopCameraSensor,
     DesktopSpeakersActuator,
     DesktopTextToSpeechActuator,
+    DesktopSpaceMouseSensor
 ]
 
 if __name__ == "__main__":
