@@ -3,7 +3,7 @@ from sic_framework.services.face_detection_dnn.face_detection_dnn import (
     DNNFaceDetectionComponent,
 )
 from sic_framework.services.openai_gpt.gpt import GPTComponent
-from sic_framework.services.openai_whisper_speech_to_text.whisper_speech_to_text import (
+from sic_framework.services.openai_whisper_stt.whisper_stt import (
     WhisperComponent,
 )
 
