@@ -101,10 +101,10 @@ setup(
             "run-face-detection-dnn=sic_framework.services.face_detection_dnn:main",
             "run-face-recognition=sic_framework.services.face_recognition_dnn:main",
             "run-gpt=sic_framework.services.openai_gpt:main",
-            "run-whisper=sic_framework.services.openai_whisper_speech_to_text:main",
+            "run-whisper=sic_framework.services.openai_whisper_stt:main",
             "run-webserver=sic_framework.services.webserver.webserver_component:main",
-            "run-google-tts=sic_framework.services.text2speech.text2speech_service:main",
-            "run-google-stt=sic_framework.services.speech2text.google_STT:main",
+            "run-google-tts=sic_framework.services.google_tts.google_tts:main",
+            "run-google-stt=sic_framework.services.google_stt.google_stt:main",
         ],
     },
 )

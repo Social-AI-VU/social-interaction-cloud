@@ -56,3 +56,13 @@ Tutorial 5: Visual Perception
    :maxdepth: 2
 
    tutorials/5_visual_perception
+
+Tutorial 6: Google Cloud Platform
+-------------------------------------
+
+🧐 How to use Google Cloud Platform services using the Google Cloud Console.
+
+.. toctree::
+   :maxdepth: 2
+
+   tutorials/6_google_cloud

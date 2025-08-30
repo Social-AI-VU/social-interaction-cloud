@@ -1,11 +1,9 @@
 """
-Google Speech-to-Text API
+Service that transcribes audio to text in real time using the Google Speech-to-Text API.
 """
 
 import threading
-import time
 
-import google
 from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech as cloud_speech_types
 
@@ -24,6 +22,26 @@ from sic_framework.core.utils import is_sic_instance
 
 
 class GoogleSpeechToTextConf(SICConfMessage):
+    """
+    Configuration for the Google Speech-to-Text API.
+
+    :param keyfile_json         Dict of google service account json key file, which has access to your google
+                                project. Example `keyfile_json = json.load(open("my-google-project.json"))`
+    :type keyfile_json: dict
+    :param sample_rate_hertz    44100Hz by default. Use 16000 for a Nao/Pepper robot.
+    :type sample_rate_hertz: int
+    :param audio_encoding       encoding for the audio
+    :type audio_encoding: cloud_speech_types.ExplicitDecodingConfig.AudioEncoding
+    :param language             the language of the Google project
+    :type language: str
+    :param timeout              the maximum time in seconds to wait for a response from Google. Default is None, which means no timeout,
+                                and it will listen indefinitely until it thinks the user is done talking.
+    :type timeout: float | None
+    :param interim_results      whether to return interim results (when the user is still speaking). Default is True.
+    :type interim_results: bool
+    :param model                the model to use for the speech recognition. Default is "long".
+    :type model: str
+    """
     def __init__(
         self,
         keyfile_json: dict,
@@ -34,17 +52,6 @@ class GoogleSpeechToTextConf(SICConfMessage):
         interim_results: bool = True,
         model: str = "long",
     ):
-        """
-        :param keyfile_json         Dict of google service account json key file, which has access to your google
-                                    project. Example `keyfile_json = json.load(open("my-google-project.json"))`
-        :param sample_rate_hertz    44100Hz by default. Use 16000 for a Nao/Pepper robot.
-        :param audio_encoding       encoding for the audio
-        :param language             the language of the Google project
-        :param timeout              the maximum time in seconds to wait for a response from Google. Default is None, which means no timeout,
-                                    and it will listen indefinitely until it thinks the user is done talking.
-        :param interim_results      whether to return interim results (when the user is still speaking). Default is True.
-        :param model                the model to use for the speech recognition. Default is "long".
-        """
         SICConfMessage.__init__(self)
 
         # init Google variables
@@ -57,72 +64,41 @@ class GoogleSpeechToTextConf(SICConfMessage):
         self.interim_results = interim_results
         self.model = model
 
-
-class StopListeningMessage(SICMessage):
-    def __init__(self, session_id=0):
-        """
-        Stop the conversation and determine a last intent. Dialogflow automatically stops listening when it thinks the
-        user is done talking, but this can be used to force intent detection as well.
-        :param session_id: a (randomly generated) id, but the same one for the whole conversation
-        """
-        super().__init__()
-        self.session_id = session_id
-
 class GetStatementRequest(SICRequest):
-    def __init__(self, session_id=0):
+    def __init__(self):
         """
-        Get the last statement the user said.
-
-        :param session_id: a (randomly generated) id, but the same one for the whole conversation
+        Transcribe the next thing the user says.
         """
         super().__init__()
-        self.session_id = session_id
 
 class RecognitionResult(SICMessage):
+    """
+    Google's recognition of what was said. 
+    
+    This may take a few different forms. For more information, see:
+    https://cloud.google.com/php/docs/reference/cloud-speech/latest/V2.StreamingRecognizeResponse
+    
+    :param response: the response from Google
+    :type response: google.cloud.speech_v2.types.StreamingRecognizeResponse
+    """
     def __init__(self, response):
-        """
-        Google's recognition of the conversation up to that point. Is streamed during the execution of the request
-        to provide interim results.
-
-        :param response: the response from Google
-        :type response: dict
-
-        Example:
-
-        metadata {
-        request_id: "696c3874-0000-2d3a-976f-582429aac290"
-        }
-        results {
-            alternatives {
-                transcript: "test"
-            }
-            stability: 0.01
-            result_end_offset {
-                seconds: 1
-                nanos: 560000000
-            }
-            language_code: "en-US"
-            }
-            speech_event_offset {
-        }
-
-        """
         self.response = response
 
 class GoogleSpeechToTextComponent(SICService):
     """
-    Transcribes audio to text.
+    SICService that transcribes audio to text using the Google Speech-to-Text API.
     """
 
     def __init__(self, *args, **kwargs):
         self.responses = None
         super().__init__(*args, **kwargs)
-
-        self.google_speech_is_init = False
         self.init_google_speech()
 
     def init_google_speech(self):
-        # Setup session client
+        """
+        Initialize the Google Speech-to-Text client.
+        """
+        # setup session client using keyfile json
         self.google_speech_client = SpeechClient.from_service_account_info(self.params.keyfile_json)
 
         recognition_config = cloud_speech_types.RecognitionConfig(
@@ -150,9 +126,14 @@ class GoogleSpeechToTextComponent(SICService):
 
         self.message_was_final = threading.Event()
         self.audio_buffer = queue.Queue(maxsize=1)
-        self.google_speech_is_init = True
 
     def on_message(self, message):
+        """
+        Put incoming audio message into the buffer.
+
+        :param message: the audio message
+        :type message: AudioMessage
+        """
         if is_sic_instance(message, AudioMessage):
             # update the audio message in the queue
             try:
@@ -167,22 +148,21 @@ class GoogleSpeechToTextComponent(SICService):
             raise NotImplementedError("Unknown message type {}".format(type(message)))
 
     def on_request(self, request):
-        if not self.google_speech_is_init:
-            self.init_google_speech()
+        """
+        Transcribe the next thing the user says.
 
+        :param request: the request
+        :type request: SICRequest
+        """
         if is_sic_instance(request, GetStatementRequest):
             return self.get_statement()
-        elif is_sic_instance(request, StopListeningMessage):
-            self.message_was_final.set()
-            try:
-                del self.google_speech_client
-            except AttributeError:
-                pass
-            self.google_speech_is_init = False
         else:
             raise NotImplementedError("Unknown request type {}".format(type(request)))
 
     def request_generator(self):
+        """
+        Generate requests to Google Speech-to-Text.
+        """
         try:
             # first request to Google needs to be a setup request with the session parameters
             yield self.config_request
@@ -218,7 +198,7 @@ class GoogleSpeechToTextComponent(SICService):
 
     @staticmethod
     def get_inputs():
-        return [GetStatementRequest, StopListeningMessage, AudioMessage]
+        return [GetStatementRequest, AudioMessage]
 
     @staticmethod
     def get_output():
@@ -227,6 +207,9 @@ class GoogleSpeechToTextComponent(SICService):
     def get_statement(self):
         """
         Listen and get the next statement the user says.
+
+        :return: the recognition result
+        :rtype: RecognitionResult
         """
         # unset final message flag
         self.message_was_final.clear()
@@ -248,26 +231,34 @@ class GoogleSpeechToTextComponent(SICService):
                 continue
 
             # The `results` list is consecutive. For streaming, we only care about
-            # the first result being considered, since once it's `is_final`, it
+            # the first result being considered, since once it's `is_final` is set, it
             # moves on to considering the next utterance.
             result = response.results[0]
 
+            # if there are no alternatives, then there is no transcript, so we skip
             if not result.alternatives:
                 continue
 
-            if not result.is_final:
+            # if the result is not final, then we output the interim result if enabled
+            if not result.is_final and self.params.interim_results:
                 self.output_message(RecognitionResult(result))
             else:
-                # stop the generator function
+                # stop the generator function and return the final result
                 self.message_was_final.set()
                 return RecognitionResult(result)
 
 
 class GoogleSpeechToText(SICConnector):
+    """
+    Connector for the Google Speech-to-Text Component.
+    """
     component_class = GoogleSpeechToTextComponent
 
 
 def main():
+    """
+    Run a ComponentManager that can start the Google Speech-to-Text Component.
+    """
     SICComponentManager([GoogleSpeechToTextComponent], name="GoogleSpeechToText")
 
 
