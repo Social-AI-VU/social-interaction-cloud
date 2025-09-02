@@ -63,6 +63,10 @@ extras_require = {
         "protobuf==3.20.3",
         "websockets==13.1",
     ],
+    "protobuf": [
+        "protobuf<3.21.0",
+        "google-api-python-client",
+    ],
 }
 
 setup(
