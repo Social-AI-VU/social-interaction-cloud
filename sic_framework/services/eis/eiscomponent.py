@@ -12,7 +12,7 @@ from sic_framework.core.message_python2 import\
 from sic_framework.core.utils import is_sic_instance
 from sic_framework.devices.desktop import Desktop
 from sic_framework.devices.common_desktop.desktop_speakers import DesktopSpeakersActuator, SpeakersConf
-from sic_framework.services.text2speech.text2speech_service import \
+from sic_framework.services.google_tts.google_tts import \
     (Text2Speech, Text2SpeechConf, GetSpeechRequest, SpeechResult)
 from sic_framework.services.dialogflow.dialogflow import\
     (DialogflowConf, GetIntentRequest, StopListeningMessage, RecognitionResult, QueryResult, Dialogflow)
