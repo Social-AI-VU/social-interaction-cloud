@@ -266,8 +266,14 @@ class SICLogFormatter(logging.Formatter):
         color = self.LOG_COLORS.get(record.levelno, self.RESET_COLOR)
 
         # Create the prefix part
+        # Highlight and bold "SICApplication" in the logger name if present
+        name = record.name
+        if "SICApplication" in name:
+            # ANSI escape codes: bold (\033[1m), yellow (\033[93m), reset (\033[0m)
+            highlighted = "\033[1m\033[93mSICApplication\033[0m"
+            name = name.replace("SICApplication", highlighted)
         name_ip = "[{name} {ip}]".format(
-            name=record.name,
+            name=name,
             ip=utils.get_ip_adress()
         )
         name_ip_padded = name_ip.ljust(45, '-')

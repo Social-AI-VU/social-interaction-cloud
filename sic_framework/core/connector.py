@@ -8,7 +8,6 @@ This module contains the SICConnector class, the user interface to connect to co
 import logging
 import time
 from abc import ABCMeta
-import atexit
 import six
 import sys
 
@@ -25,7 +24,7 @@ from .component_manager_python2 import (
 from .message_python2 import SICMessage, SICPingRequest, SICRequest, SICSuccessMessage
 from . import sic_logging
 from .sic_redis import SICRedis
-from sic_framework.core.sic_application import get_redis_instance
+from sic_framework.core.sic_application import get_redis_instance, register_connector
 
 
 class ComponentNotStartedError(Exception):
@@ -66,7 +65,6 @@ class SICConnector(object):
         self.logger = sic_logging.get_sic_logger(
             name=self.name, client_id=self.client_id, redis=self._redis
         )
-        self._redis.parent_logger = self.logger
 
         # if the component is running on the same machine as the Connector
         if ip in ["localhost", "127.0.0.1"]:
@@ -103,7 +101,7 @@ class SICConnector(object):
             raise RuntimeError(e)
 
         self._callback_threads = []
-        atexit.register(self._stop_component)
+        register_connector(self)
         self.logger.debug("Component initialization complete")
 
     @property

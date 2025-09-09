@@ -70,7 +70,7 @@ class SICDevice(object):
         self.device_ip = ip
         self._client_id = utils.get_ip_adress()
         self.logger = sic_logging.get_sic_logger(
-            name="{}DeviceManager".format(self.__class__.__name__), client_id=self._client_id
+            name="{}DeviceManager".format(self.__class__.__name__), client_id=self._client_id, redis=self._redis
         )
 
         try:
