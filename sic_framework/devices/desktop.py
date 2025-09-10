@@ -53,7 +53,8 @@ class Desktop(SICDevice):
             # Run serve in non-daemon thread but with controlled shutdown
             self.thread = threading.Thread(
                 target=managed_serve,
-                name="DesktopComponentManager-singleton"
+                name="DesktopComponentManager-singleton",
+                daemon=True
             )
             self.thread.start()
             
