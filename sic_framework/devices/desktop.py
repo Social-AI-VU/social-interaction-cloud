@@ -58,14 +58,6 @@ class Desktop(SICDevice):
             )
             self.thread.start()
             
-            # Register cleanup that coordinates shutdown
-            def desktop_cm_cleanup():
-                self.manager.stop_event.set()  # Signal serve loop to stop
-                self.thread.join(timeout=5)     # Wait for clean shutdown
-                if self.thread.is_alive():      # If still alive after timeout
-                    self.logger.warning("Desktop manager thread did not stop cleanly")
-            
-            atexit.register(desktop_cm_cleanup)
             desktop_active = True
 
     @property

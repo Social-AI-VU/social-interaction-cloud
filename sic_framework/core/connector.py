@@ -102,7 +102,7 @@ class SICConnector(object):
 
         self._callback_threads = []
         register_connector(self)
-        self.logger.debug("Component initialization complete")
+        self.logger.info("Component initialization complete")
 
     @property
     def component_class(self):
@@ -178,7 +178,7 @@ class SICConnector(object):
             self._request_reply_channel, request, timeout=timeout, block=block
         )
 
-    def _stop_component(self):
+    def stop_component(self):
         """
         Send a StopComponentRequest to the component, called on exit.
         """

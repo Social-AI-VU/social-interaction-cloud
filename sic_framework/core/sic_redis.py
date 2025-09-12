@@ -84,28 +84,6 @@ class CallbackThread:
 # keep track of all redis instances, so we can close them on exit
 _sic_redis_instances = []
 
-
-def cleanup_on_exit():
-    """
-    Cleanup on exit. Close all Redis connections.
-    """
-    from sic_framework.core import sic_logging
-    logger = sic_logging.get_sic_logger("SICRedis")
-
-    for s in _sic_redis_instances:
-        s.close()
-
-    time.sleep(0.2)
-    if len([x.is_alive() for x in threading.enumerate()]) > 1:
-        logger.warning("Left over threads:")
-        for thread in threading.enumerate():
-            if thread.is_alive() and thread.name != "SICRedisCleanup":
-                logger.warning(thread.name, " is still alive")
-
-
-atexit.register(cleanup_on_exit)
-
-
 def get_redis_db_ip_password():
     """
     Get the Redis database IP and password from environment variables. If not set, use default values.

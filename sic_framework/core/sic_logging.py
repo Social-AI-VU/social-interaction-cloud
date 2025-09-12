@@ -268,7 +268,9 @@ class SICLogFormatter(logging.Formatter):
         # Create the prefix part
         # Highlight and bold "SICApplication" in the logger name if present
         name = record.name
+        pad_amount = 45
         if "SICApplication" in name:
+            pad_amount = 58
             # ANSI escape codes: bold (\033[1m), yellow (\033[93m), reset (\033[0m)
             highlighted = "\033[1m\033[93mSICApplication\033[0m"
             name = name.replace("SICApplication", highlighted)
@@ -276,7 +278,7 @@ class SICLogFormatter(logging.Formatter):
             name=name,
             ip=utils.get_ip_adress()
         )
-        name_ip_padded = name_ip.ljust(45, '-')
+        name_ip_padded = name_ip.ljust(pad_amount, '-')
         prefix = "{name_ip_padded}{color}{record_level}{reset_color}: ".format(name_ip_padded=name_ip_padded, color=color, record_level=record.levelname, reset_color=self.RESET_COLOR)
 
         # Split message into lines and handle each line

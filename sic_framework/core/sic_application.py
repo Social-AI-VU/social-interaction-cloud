@@ -86,7 +86,7 @@ def exit_handler(signum=None, frame=None):
     connectors_to_stop = list(_active_connectors)
     for connector in connectors_to_stop:
         try:
-            connector._stop_component()
+            connector.stop_component()
         except Exception as e:
             _app_logger.info(f"Error stopping connector: {e}")
 

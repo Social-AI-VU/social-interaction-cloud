@@ -165,8 +165,6 @@ class SICComponentManager(object):
 
         component_class = self.component_classes[component_name]  # SICComponent object
 
-        self.logger.debug("Starting component {}".format(component_name), extra={"client_id": client_id})
-
         component = None
 
         try:
@@ -186,7 +184,7 @@ class SICComponentManager(object):
                 ip=self.ip,
                 redis=self.redis
             )
-            self.logger.debug("Component {} instantiated".format(component.component_endpoint), extra={"client_id": client_id})
+            self.logger.info("Component {} instantiated".format(component.component_endpoint), extra={"client_id": client_id})
             self.active_components[output_channel] = component
 
             thread = threading.Thread(target=component._start)
@@ -305,14 +303,10 @@ class SICComponentManager(object):
                 component.stop()
 
             self.logger.info("Closing Redis connection")
-            self.redis.close()
 
-            if threading.current_thread() is threading.main_thread():
-                exit(0)
+            self.redis.close()
         except Exception as err:
             self.logger.error("Failed to exit manager: {}".format(err))
-            if threading.current_thread() is threading.main_thread():
-                exit(1)
 
     def _sync_time(self):
         """
