@@ -4,9 +4,13 @@ Comprehensive FAQ
 Frequently Asked Questions and Solutions for the Social Interaction Cloud framework.
 
 General Troubleshooting Advice:
+
 1. Sometimes there are permission differences between using a shell within an IDE or standalone terminal. Try running the commands in a standalone terminal or using a sudo command.
+
 2. Firewalls can sometimes block network communication. You may need to turn off your firewall.
+
 3. If you are using WSL, WSL uses a virtual IP, which causes connection issues. See the Windows WSL Connection Issues section for more details.
+
 
 .. note::
    If your issue is not covered here, please check the `troubleshooting forum <https://github.com/Social-AI-VU/social-interaction-cloud/discussions/64>`_.
@@ -235,4 +239,3 @@ Webcam output is flipped
    .. code-block:: python
 
       img = cv2.flip(img, 0)
-      
