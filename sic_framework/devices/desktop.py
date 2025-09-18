@@ -50,7 +50,7 @@ class Desktop(SICDevice):
                     # Ensure cleanup happens even if serve exits unexpectedly
                     self.manager.stop()
             
-            # Run serve in non-daemon thread but with controlled shutdown
+            # Run serve in a thread
             self.thread = threading.Thread(
                 target=managed_serve,
                 name="DesktopComponentManager-singleton",

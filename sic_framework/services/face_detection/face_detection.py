@@ -74,8 +74,13 @@ class FaceDetectionComponent(SICComponent):
         return self.detect(request.image)
 
     def detect(self, image):
-        img = array(image).astype(np.uint8)
 
+        if self._signal_to_stop.is_set():
+            self._stopped.set()
+            # return the image as is
+            return BoundingBoxesMessage([])
+        
+        img = array(image).astype(np.uint8)
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
         faces = self.faceCascade.detectMultiScale(

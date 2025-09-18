@@ -80,8 +80,6 @@ class SICCommonLog(object):
         with self.lock:  # Ensure thread-safe access
             if not self.running:
                 self.running = True
-                from sic_framework.core.sic_application import get_redis_instance
-                self.redis = get_redis_instance()
                 self.redis.register_message_handler(
                     get_log_channel(client_id), self._handle_redis_log_message, name="SICCommonLog"
                 )
@@ -312,7 +310,7 @@ class SICLogFormatter(logging.Formatter):
         return text
 
 
-def get_sic_logger(name="", client_id="", redis=None):
+def get_sic_logger(name="", client_id="", redis=None, client_logger=False):
     """
     Set up logging to the log output channel to be able to report messages to users.
 
@@ -330,45 +328,22 @@ def get_sic_logger(name="", client_id="", redis=None):
     logger.setLevel(DEBUG)
     log_format = SICLogFormatter()
 
-    if redis:
-        # if redis is provided, use our custom handler
-        handler_redis = SICRedisHandler(redis, client_id)
-        handler_redis.setFormatter(log_format)
-        logger.addHandler(handler_redis)
-    else:
-        # if there is no redis instance, this is a local device
-        # make sure the SICCommonLog is subscribed to the Redis log channel
-        SIC_COMMON_LOG.subscribe_to_redis_log(client_id)
+    handler_redis = SICRedisHandler(redis, client_id)
+    handler_redis.setFormatter(log_format)
+    logger.addHandler(handler_redis)
 
-        # For local logging, create a custom handler that uses SICCommonLog's file
-        class SICStreamHandler(logging.StreamHandler):
-            def emit(self, record):
-                if record.levelno >= SIC_COMMON_LOG.threshold:
-                    super(SICStreamHandler, self).emit(record)
-
-        class SICFileHandler(logging.Handler):
-            def emit(self, record):
-                if record.levelno >= SIC_COMMON_LOG.threshold:
-                    SIC_COMMON_LOG._write_to_logfile(self.format(record))
-
-        # log to the terminal
-        handler_terminal = SICStreamHandler()
-        handler_terminal.setFormatter(log_format)
-        logger.addHandler(handler_terminal)
-
-        # write to the logfile
-        handler_file = SICFileHandler()
-        handler_file.setFormatter(log_format)
-        logger.addHandler(handler_file)
+    if client_logger:
+        SIC_CLIENT_LOG.redis = redis
+        SIC_CLIENT_LOG.subscribe_to_redis_log(client_id)
 
     return logger
 
 # pseudo singleton object. Does nothing when this file is executed during the import, but can subscribe to the log
 # channel for the user with subscribe_to_redis_log once
-SIC_COMMON_LOG = SICCommonLog()
+SIC_CLIENT_LOG = SICCommonLog()
 
 def set_log_level(level):
-    SIC_COMMON_LOG.threshold = level
+    SIC_CLIENT_LOG.threshold = level
 
 def set_log_file_path(path):
-    SIC_COMMON_LOG.set_log_file_path(path)
+    SIC_CLIENT_LOG.set_log_file_path(path)

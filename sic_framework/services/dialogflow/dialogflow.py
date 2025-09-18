@@ -337,7 +337,7 @@ class DialogflowComponent(SICComponent):
                     "Recognition_result: " + response.recognition_result.transcript
                 )
                 self._redis.send_message(
-                    self.output_channel, RecognitionResult(response)
+                    self.component_channel, RecognitionResult(response)
                 )
             if response.query_result:
                 self.logger.info("Received intent: " + response.query_result.action)

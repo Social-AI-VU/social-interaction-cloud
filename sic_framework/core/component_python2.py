@@ -51,6 +51,14 @@ class SICComponent:
     that need to stand up or models that need to load to GPU).
     """
 
+    COMPONENT_STOP_TIMEOUT = 2
+    """
+    Timeout in seconds for a component stop.
+    
+    This controls how long a SICConnector should wait when requesting a component to stop.
+    Increase this value for components that need more time to stop.
+    """
+
     # 2. Special methods
     def __init__(
         self, 
@@ -58,7 +66,7 @@ class SICComponent:
         stop_event=None, 
         conf=None, 
         input_channel=None, 
-        output_channel=None, 
+        component_channel=None, 
         req_reply_channel=None,
         client_id="",
         endpoint="",
@@ -82,14 +90,14 @@ class SICComponent:
 
         # _ready_event is set once the component has started, signals to the component manager that the component is ready.
         self._ready_event = ready_event if ready_event else threading.Event()
-        # _stop_event is set when the component should stop
-        self._stop_event = stop_event if stop_event else threading.Event()
+        # _signal_to_stop is set when the component should stop
+        self._signal_to_stop = stop_event if stop_event else threading.Event()
         # _stopped is set when the component has stopped
         self._stopped = threading.Event()
 
         # Components constrained to one input, request_reply, output channel
         self.input_channel = input_channel
-        self.output_channel = output_channel
+        self.component_channel = component_channel
         self.request_reply_channel = req_reply_channel
 
         # Threads for the message and request handlers
@@ -154,11 +162,11 @@ class SICComponent:
         """
         Set the stop event to signal the component to stop.
         """
-        self._stop_event.set()
-        if self._stopped.wait(timeout=2):
-            self.logger.debug("Component stop event set successfully")
+        self._signal_to_stop.set()
+        if self._stopped.wait(timeout=self.COMPONENT_STOP_TIMEOUT):
+            self.logger.debug("Component's _stopped event set successfully")
         else:
-            self.logger.warning("Component stop event was not set on time")
+            self.logger.warning("Component's _stopped event was not set on time")
 
     def set_config(self, new=None):
         """
@@ -208,7 +216,7 @@ class SICComponent:
         :type message: SICMessage
         """
         message._previous_component_name = self.get_component_name()
-        self._redis.send_message(self.output_channel, message)
+        self._redis.send_message(self.component_channel, message)
 
     @staticmethod
     @abstractmethod

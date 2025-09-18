@@ -72,8 +72,8 @@ class SICNotStartedMessage(SICMessage):
         self.message = message
 
 class SICComponentStartedMessage(SICMessage):
-    def __init__(self, output_channel, request_reply_channel):
-        self.output_channel = output_channel
+    def __init__(self, component_channel, request_reply_channel):
+        self.component_channel = component_channel
         self.request_reply_channel = request_reply_channel
 
 class SICComponentManager(object):
@@ -108,7 +108,7 @@ class SICComponentManager(object):
         self.ready_event = threading.Event()
 
         self.name = "{}ComponentManager".format(name)
-        self.logger = sic_logging.get_sic_logger(name=self.name, client_id=self.client_id, redis=self.redis)
+        self.logger = sic_logging.get_sic_logger(name=self.name, client_id=self.client_id, redis=self.redis, client_logger=True)
         self.redis.parent_logger = self.logger
 
         # The _handle_request function is calls execute directly, as we must reply when execution done to allow the user
@@ -123,7 +123,9 @@ class SICComponentManager(object):
             self.logger.info(" - {}".format(c.get_component_name()))
 
         self.ready_event.set()
-        atexit.register(self.stop)
+        if threading.current_thread() == threading.main_thread():
+            self.logger.info("Registering atexit handler for component manager")
+            atexit.register(self.stop)
         if auto_serve:
             self.serve()
 
@@ -159,8 +161,8 @@ class SICComponentManager(object):
         component_endpoint = component_name + ":" + self.ip
         input_channel = request.input_channel
         client_id = request.client_id
-        output_channel = create_data_stream_id(component_endpoint, input_channel)
-        request_reply_channel = output_channel + ":request_reply"
+        component_channel = create_data_stream_id(component_endpoint, input_channel)
+        request_reply_channel = component_channel + ":request_reply"
         conf = request.conf
 
         component_class = self.component_classes[component_name]  # SICComponent object
@@ -177,7 +179,7 @@ class SICComponentManager(object):
                 ready_event=ready_event,
                 conf=conf,
                 input_channel=input_channel,
-                output_channel=output_channel,
+                component_channel=component_channel,
                 req_reply_channel=request_reply_channel,
                 client_id=client_id,
                 endpoint=component_endpoint,
@@ -185,7 +187,9 @@ class SICComponentManager(object):
                 redis=self.redis
             )
             self.logger.info("Component {} instantiated".format(component.component_endpoint), extra={"client_id": client_id})
-            self.active_components[output_channel] = component
+            self.active_components[component_channel] = component
+            self.logger.info("Component {} added to active components".format(component_channel), extra={"client_id": client_id})
+            self.logger.critical("Active components: {}".format(self.active_components.keys()), extra={"client_id": client_id})
 
             thread = threading.Thread(target=component._start)
             thread.name = component_class.get_component_name()
@@ -215,7 +219,7 @@ class SICComponentManager(object):
                     "client_id": client_id
                 }
                                 
-                self.redis.set_data_stream(output_channel, data_stream_info)
+                self.redis.set_data_stream(component_channel, data_stream_info)
 
                 self.logger.debug("Data stream set for component {}".format(component.component_endpoint), extra={"client_id": client_id})
             except Exception as e:
@@ -227,7 +231,7 @@ class SICComponentManager(object):
             self.logger.debug("Component {} started successfully".format(component.component_endpoint), extra={"client_id": client_id})
             
             # inform the user their component has started
-            reply = SICComponentStartedMessage(output_channel, request_reply_channel)
+            reply = SICComponentStartedMessage(component_channel, request_reply_channel)
 
             return reply
 
@@ -254,6 +258,7 @@ class SICComponentManager(object):
             # set stop event to signal the component to stop
             component.stop()
 
+            self.logger.debug("Unregistering component's handler threads from Redis", extra={"client_id": component.client_id})
             # unsubscribe the Component's handler threads from Redis
             self.redis.unregister_callback(component.message_handler_thread)
             self.redis.unregister_callback(component.request_handler_thread)
@@ -261,7 +266,7 @@ class SICComponentManager(object):
             # remove the data stream information from redis
             try:
                 self.logger.debug("Removing data stream information for {}".format(component.component_endpoint), extra={"client_id": component.client_id})
-                data_stream_result = self.redis.unset_data_stream(component.output_channel)
+                data_stream_result = self.redis.unset_data_stream(component.component_channel)
 
                 if data_stream_result == 1:
                     self.logger.debug("Data stream information for {} removed".format(component.component_endpoint), extra={"client_id": component.client_id})
@@ -386,8 +391,9 @@ class SICComponentManager(object):
             if request.component_id in self.active_components:
                 return self.stop_component(request.component_id)
             else:
+                self.logger.critical("Active components: {}".format(self.active_components.keys()), extra={"client_id": client_id})
                 self.logger.error(
-                    "Ignored request to stop component with output channel {} as it is not in the active components".format(
+                    "Ignored request to stop component with component channel {} as it is not in the active components".format(
                         request.component_id
                     ),
                     extra={"client_id": client_id}

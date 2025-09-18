@@ -60,7 +60,7 @@ class SICSensor(SICComponent):
         The output of the execute method is sent on the output channel.
         """
         self.logger.debug("Starting to produce")
-        while not self._stop_event.is_set():
+        while not self._signal_to_stop.is_set():
             output = self.execute()
 
             output._timestamp = self._get_timestamp()

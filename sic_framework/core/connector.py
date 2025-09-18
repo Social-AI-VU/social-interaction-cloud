@@ -3,8 +3,6 @@ connector.py
 
 This module contains the SICConnector class, the user interface to connect to components.
 """
-
-
 import logging
 import time
 from abc import ABCMeta
@@ -24,7 +22,7 @@ from .component_manager_python2 import (
 from .message_python2 import SICMessage, SICPingRequest, SICRequest, SICSuccessMessage
 from . import sic_logging
 from .sic_redis import SICRedis
-from sic_framework.core.sic_application import get_redis_instance, register_connector
+from sic_framework.core.sic_application import get_redis_instance, register_connector, register_exit_handler
 
 
 class ComponentNotStartedError(Exception):
@@ -43,6 +41,7 @@ class SICConnector(object):
     :param conf: The configuration for the connector.
     :type conf: SICConfMessage, optional
     """
+
     __metaclass__ = ABCMeta
 
     # define how long an "instant" reply should take at most (ping sometimes takes more than 150ms)
@@ -54,6 +53,7 @@ class SICConnector(object):
                  input_source=None):
 
         assert isinstance(ip, str), "IP must be string"
+        register_exit_handler()
 
         # connect to Redis
         self._redis = get_redis_instance()
@@ -82,14 +82,14 @@ class SICConnector(object):
             if not isinstance(input_source, SICConnector):
                 self.logger.error("Input source must be a SICConnector")
                 sys.exit(1)
-            self._input_channel = input_source.get_output_channel()
+            self._input_channel = input_source.get_component_channel()
 
         self._callback_threads = []
         self._conf = conf
 
         # these are set once the component manager has started the component
         self._request_reply_channel = None
-        self._output_channel = None
+        self._component_channel = None
 
         # make sure we can start the component and ping it
         try:
@@ -134,7 +134,7 @@ class SICConnector(object):
         """
 
         try:
-            ct = self._redis.register_message_handler(self.get_output_channel(), callback, name="{}_callback".format(self.component_endpoint))
+            ct = self._redis.register_message_handler(self.get_component_channel(), callback, name="{}_callback".format(self.component_endpoint))
         except Exception as e:
             self.logger.error("Error registering callback: {}".format(e))
             raise e
@@ -184,7 +184,7 @@ class SICConnector(object):
         """
 
         self.logger.debug("Connector sending StopComponentRequest to ComponentManager")
-        stop_result = self._redis.request(self.component_ip, SICStopComponentRequest(self._output_channel))
+        stop_result = self._redis.request(self.component_ip, SICStopComponentRequest(self._component_channel))
         if stop_result is None:
             self.logger.error("Stop request timed out")
             raise TimeoutError("Stop request timed out")
@@ -204,11 +204,11 @@ class SICConnector(object):
         """
         return self._input_channel
     
-    def get_output_channel(self):
+    def get_component_channel(self):
         """
         Get the output channel of the component.
         """
-        return self._output_channel
+        return self._component_channel
 
     def _ping(self):
         """
@@ -263,7 +263,7 @@ class SICConnector(object):
                 )
             else:
                 # set the output and request/reply channels
-                self._output_channel = return_message.output_channel
+                self._component_channel = return_message.component_channel
                 self._request_reply_channel = return_message.request_reply_channel
 
         except TimeoutError as e:

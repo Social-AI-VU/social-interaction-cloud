@@ -30,6 +30,7 @@ _cleanup_in_progress = False
 _shutdown_event = None
 _active_connectors = weakref.WeakSet()
 _app_logger = None
+_shutdown_handler_registered = False
 
 def register_connector(connector):
     """Register a connector to be shutdown when the application shuts down."""
@@ -51,7 +52,7 @@ def get_app_logger():
     """
     global _app_logger
     if _app_logger is None:
-        _app_logger = sic_logging.get_sic_logger("SICApplication", client_id=utils.get_ip_adress())
+        _app_logger = sic_logging.get_sic_logger("SICApplication", client_id=utils.get_ip_adress(), redis=get_redis_instance(), client_logger=True)
     return _app_logger
 
 def get_redis_instance():
@@ -68,7 +69,9 @@ def exit_handler(signum=None, frame=None):
     """
     Signal handler for graceful shutdown.
     """
-    global _cleanup_in_progress, _shutdown_event, _app_redis, _app_logger
+    global _cleanup_in_progress, _shutdown_event, _app_redis 
+    
+    _app_logger = get_app_logger()
     
     if _cleanup_in_progress:
         return  # Prevent multiple signal handling
@@ -100,6 +103,14 @@ def exit_handler(signum=None, frame=None):
         _app_logger.info("Exiting main thread")
         sys.exit(0)
 
-atexit.register(exit_handler)
-signal.signal(signal.SIGINT, exit_handler)
-signal.signal(signal.SIGTERM, exit_handler)
+def register_exit_handler():
+    """
+    Register the exit handler.
+    """
+    global _shutdown_handler_registered
+    if _shutdown_handler_registered:
+        return
+    _shutdown_handler_registered = True
+    atexit.register(exit_handler)
+    signal.signal(signal.SIGINT, exit_handler)
+    signal.signal(signal.SIGTERM, exit_handler)
