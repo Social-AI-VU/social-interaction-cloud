@@ -74,6 +74,8 @@ class GPTRequest(SICRequest):
     :type text: str
     :param context_messages: Optional list of previous messages to provide conversation context
     :type context_messages: list[str] or None
+    :param system_message: Optional system message to set the behavior/context for the AI assistant
+    :type system_message: str or None
     :param model: Optional model override (if None, uses service default from GPTConf)
     :type model: str or None
     :param temp: Optional temperature override (if None, uses service default from GPTConf)
@@ -84,15 +86,17 @@ class GPTRequest(SICRequest):
 
     def __init__(
         self,
-        text,
+        input="",
         context_messages=None,
+        system_message=None,
         model=None,
         temp=None,
         max_tokens=None,
     ):
         super().__init__()
-        self.text = text
+        self.input = input
         self.context_messages = context_messages
+        self.system_message = system_message
         self.model = model
         self.temperature = temp
         self.max_tokens = max_tokens
@@ -132,6 +136,7 @@ class GPTComponent(SICService):
         self,
         user_messages,
         context_messages=None,
+        system_message=None,
         model=None,
         temp=None,
         max_tokens=None,
@@ -158,6 +163,8 @@ class GPTComponent(SICService):
         messages = []
         if self.params.system_message != "":
             messages.append({"role": "system", "content": self.params.system_message})
+        if system_message:
+            messages.append({"role": "system", "content": system_message})
         if context_messages:
             for context_message in context_messages:
                 messages.append({"role": "user", "content": context_message})
@@ -208,8 +215,9 @@ class GPTComponent(SICService):
             return SICMessage("Invalid request type: %s", type(request))
         else:
             output = self.get_openai_response(
-                request.text,
+                request.input,
                 context_messages=request.context_messages,
+                system_message=request.system_message,
                 model=request.model,
                 temp=request.temperature,
                 max_tokens=request.max_tokens,
