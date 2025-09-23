@@ -132,7 +132,10 @@ class SICCommonLog(object):
         :param message: The message to write to the logfile.
         :type message: str
         """
-        with self.lock:
+        acquired = self.lock.acquire(timeout=0.5)
+        if not acquired:
+            return
+        try:
             if self.log_dir is None:
                 # on remote devices the log_dir is set to None. We don't want to write to a logfile on remote devices
                 return
@@ -155,6 +158,8 @@ class SICCommonLog(object):
             # write to logfile
             self.logfile.write(clean_message)
             self.logfile.flush()
+        finally:
+            self.lock.release()
 
 class SICRedisHandler(logging.Handler):
     """

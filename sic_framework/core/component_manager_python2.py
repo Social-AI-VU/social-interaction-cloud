@@ -10,6 +10,7 @@ import time
 from signal import SIGINT, SIGTERM, signal
 from sys import exit
 import atexit
+import sys, traceback
 
 import sic_framework.core.sic_logging
 from sic_framework.core.utils import (
@@ -304,14 +305,37 @@ class SICComponentManager(object):
                 self.redis.unset_reservation(self.ip)
 
             self.logger.info("Stopping all active components")
-            for component in self.active_components:
+
+            for component in list(self.active_components.values()):
                 component.stop()
+
+            # self.log_live_threads(reason="before closing Redis connection")
 
             self.logger.info("Closing Redis connection")
 
             self.redis.close()
         except Exception as err:
             self.logger.error("Failed to exit manager: {}".format(err))
+
+    def log_live_threads(self, reason=""):
+        try:
+            frames = sys._current_frames()
+            lines = []
+            lines.append("=== Live threads {} ===".format(("(" + reason + ")") if reason else ""))
+            for t in threading.enumerate():
+                try:
+                    lines.append("Thread name='{}' ident={} daemon={} alive={}".format(t.name, t.ident, t.daemon, t.is_alive()))
+                    frame = frames.get(t.ident)
+                    if frame is not None:
+                        stack_lines = traceback.format_stack(frame)
+                        lines.extend("    " + s.rstrip() for s in stack_lines)
+                except Exception as e:
+                    lines.append("  <error formatting thread {}: {}>".format(t.name, e))
+            message = "\n".join(lines)
+            self.logger.warning(message)
+        except Exception as e:
+            self.logger.warning("Failed to log live threads: {}".format(e))
+    
 
     def _sync_time(self):
         """
