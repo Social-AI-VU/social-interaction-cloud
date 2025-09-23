@@ -10,7 +10,7 @@ import time
 from signal import SIGINT, SIGTERM, signal
 from sys import exit
 import atexit
-import sys, traceback
+import os, sys, traceback
 
 import sic_framework.core.sic_logging
 from sic_framework.core.utils import (
@@ -124,7 +124,8 @@ class SICComponentManager(object):
             self.logger.info(" - {}".format(c.get_component_name()))
 
         self.ready_event.set()
-        if threading.current_thread() == threading.main_thread():
+        self.is_main_thread = (threading.current_thread() == threading.main_thread())
+        if self.is_main_thread:
             self.logger.info("Registering atexit handler for component manager")
             atexit.register(self.stop)
         if auto_serve:
@@ -297,7 +298,13 @@ class SICComponentManager(object):
         :type args: tuple
         """
         self.logger.info("Attempting to exit manager gracefully...")
+
+        # prevent stopping the component manager multiple times
+        if self.stop_event.is_set():
+            return
+        
         self.stop_event.set()
+
         try:
             # remove the reservation for the device running this component manager
             if self.client_id != "":
@@ -306,35 +313,90 @@ class SICComponentManager(object):
 
             self.logger.info("Stopping all active components")
 
-            for component in list(self.active_components.values()):
+            components_to_stop = list(self.active_components.values())
+            for component in components_to_stop:
+                self.logger.info("Stopping component {}".format(component.component_endpoint))
                 component.stop()
 
-            # self.log_live_threads(reason="before closing Redis connection")
-
             self.logger.info("Closing Redis connection")
+    
+            time.sleep(1)
+    
+            self.log_live_threads(reason="before closing Redis connection")
 
             self.redis.close()
+            
+            self.log_live_threads(reason="after closing Redis connection")
+
+            # exit the program if the current thread is the main thread
+            if self.is_main_thread:
+                # Add explicit cleanup and final logging
+                import gc
+                gc.collect()  # Force garbage collection
+                
+                # Write directly to stderr to see if we reach the end
+                sys.stderr.write("ComponentManager.stop() completed successfully\n")
+                sys.stderr.flush()
+                
+                # Try multiple exit strategies
+                sys.stderr.write("Calling os._exit(0) now...\n")
+                sys.stderr.flush()
+                
+                try:
+                    os._exit(0)
+                except Exception as e:
+                    sys.stderr.write("os._exit(0) failed: {}\n".format(e))
+                    sys.stderr.flush()
+                    # Fallback to more aggressive exit
+                    import ctypes
+                    ctypes.windll.kernel32.ExitProcess(0)
+            
         except Exception as err:
-            self.logger.error("Failed to exit manager: {}".format(err))
+            sys.stderr.write("Failed to exit manager: {}\n".format(err))
+            sys.stderr.flush()
+            if self.is_main_thread:
+                os._exit(1)
 
     def log_live_threads(self, reason=""):
         try:
+            import os
+            from datetime import datetime
+            
             frames = sys._current_frames()
             lines = []
             lines.append("=== Live threads {} ===".format(("(" + reason + ")") if reason else ""))
             for t in threading.enumerate():
                 try:
-                    lines.append("Thread name='{}' ident={} daemon={} alive={}".format(t.name, t.ident, t.daemon, t.is_alive()))
+                    lines.append("Thread name='{}' ident={} daemon={} alive={} target={}".format(t.name, t.ident, t.daemon, t.is_alive(), getattr(t, '_target', 'unknown')))
                     frame = frames.get(t.ident)
                     if frame is not None:
                         stack_lines = traceback.format_stack(frame)
                         lines.extend("    " + s.rstrip() for s in stack_lines)
                 except Exception as e:
                     lines.append("  <error formatting thread {}: {}>".format(t.name, e))
+            
             message = "\n".join(lines)
-            self.logger.warning(message)
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            hour_timestamp = datetime.now().strftime("%H-%M-%S")
+            
+            # Write directly to file to avoid Redis logging system
+            log_filename = "{}_shutdown_threads_{}.log".format(hour_timestamp, self.name.replace(" ", "_"))
+            try:
+                with open(log_filename, "a") as f:
+                    f.write("[{}] {}\n\n".format(timestamp, message))
+                    f.flush()
+            except Exception as file_err:
+                # Fallback to stderr if file write fails
+                sys.stderr.write("[{}] Failed to write to {}: {}\n".format(timestamp, log_filename, file_err))
+                sys.stderr.write("[{}] {}\n\n".format(timestamp, message))
+                sys.stderr.flush()
+            
+            return True
         except Exception as e:
-            self.logger.warning("Failed to log live threads: {}".format(e))
+            # Write error directly to stderr, bypassing logging system
+            sys.stderr.write("Failed to log live threads: {}\n".format(e))
+            sys.stderr.flush()
+            return False
     
 
     def _sync_time(self):

@@ -31,6 +31,7 @@ import atexit
 import os
 import threading
 import time
+import sys
 
 import redis
 import six
@@ -413,11 +414,19 @@ class SICRedis:
         """
         Cleanup function to stop listening to all callback channels and disconnect Redis.
         """
+        # prevent closing the Redis connection if already stopping
+        if self.stopping:
+            return
         self.stopping = True
         for c in self._running_callbacks:
-            if c.thread.is_alive():
-                c.pubsub.unsubscribe()
-                c.thread.stop()
+            try:
+                if c.thread.is_alive():
+                    c.pubsub.unsubscribe()
+                    c.thread.stop()
+                    c.thread.join(timeout=1.0)
+            except Exception as e:
+                sys.stderr.write("Error stopping Redis callback thread {}: {}\n".format(c.name, e))
+                sys.stderr.flush()
         self._redis.close()
 
     def _reply(self, channel, request, reply):
