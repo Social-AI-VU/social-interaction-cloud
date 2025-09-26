@@ -11,6 +11,7 @@ from signal import SIGINT, SIGTERM, signal
 from sys import exit
 import atexit
 import os, sys, traceback
+import collections
 
 import sic_framework.core.sic_logging
 from sic_framework.core.utils import (
@@ -30,7 +31,7 @@ from .message_python2 import (
     SICPongMessage
 )
 
-from .sic_redis import SICRedis
+from .sic_redis import SICRedisConnection
 
 
 class SICStartComponentRequest(SICRequest):
@@ -54,13 +55,13 @@ class SICStopComponentRequest(SICRequest):
     """
     A request from a user to stop a component.
 
-    :param component_id: The id of the component to stop. A string of characters corresponding to the output channel of the component.
-    :type component_id: str
+    :param component_channel: The id of the component to stop. A string of characters corresponding to the output channel of the component.
+    :type component_channel: str
     """
 
-    def __init__(self, component_id):
+    def __init__(self, component_channel):
         super(SICStopComponentRequest, self).__init__()
-        self.component_id = component_id  # str
+        self.component_channel = component_channel  # str
 
 class SICNotStartedMessage(SICMessage):
     """
@@ -95,11 +96,12 @@ class SICComponentManager(object):
 
     def __init__(self, component_classes, client_id="", auto_serve=True, name=""):
         # Redis initialization
-        self.redis = SICRedis()
+        self.redis = SICRedisConnection()
         self.ip = utils.get_ip_adress()
         self.client_id = client_id
 
         self.active_components = {}
+        self.component_threads = collections.defaultdict(dict)
         self.component_classes = {
             cls.get_component_name(): cls for cls in component_classes
         }
@@ -191,7 +193,6 @@ class SICComponentManager(object):
             self.logger.info("Component {} instantiated".format(component.component_endpoint), extra={"client_id": client_id})
             self.active_components[component_channel] = component
             self.logger.info("Component {} added to active components".format(component_channel), extra={"client_id": client_id})
-            self.logger.critical("Active components: {}".format(self.active_components.keys()), extra={"client_id": client_id})
 
             thread = threading.Thread(target=component._start)
             thread.name = component_class.get_component_name()
@@ -208,6 +209,9 @@ class SICComponentManager(object):
                     ), 
                     extra={"client_id": client_id}
                 )
+
+            # Store the main thread for the component
+            self.component_threads[component_channel]["main"] = thread
 
             self.logger.debug("Component {} started".format(component.component_endpoint), extra={"client_id": client_id})
             
@@ -246,24 +250,28 @@ class SICComponentManager(object):
                 component.stop()
             return SICNotStartedMessage(e)
     
-    def stop_component(self, component_id):
+    def stop_component(self, component_channel):
         """
         Stop a component.
 
-        :param component_id: The id of the component to stop. A string of characters corresponding to the output channel of the component.
-        :type component_id: str
+        :param component_channel: The id of the component to stop. A string of characters corresponding to the output channel of the component.
+        :type component_channel: str
         """
 
-        component = self.active_components[component_id]
+        component = self.active_components[component_channel]
 
         try:
             # set stop event to signal the component to stop
             component.stop()
 
             self.logger.debug("Unregistering component's handler threads from Redis", extra={"client_id": component.client_id})
+            
             # unsubscribe the Component's handler threads from Redis
             self.redis.unregister_callback(component.message_handler_thread)
             self.redis.unregister_callback(component.request_handler_thread)
+
+            # Join the main thread
+            self.component_threads[component_channel]["main"].join()
                 
             # remove the data stream information from redis
             try:
@@ -278,7 +286,7 @@ class SICComponentManager(object):
                 self.logger.error("Error removing data stream information: {}".format(e), extra={"client_id": component.client_id})
                 raise e
             
-            del self.active_components[component_id]
+            del self.active_components[component_channel]
 
             return SICSuccessMessage()
         except Exception as e:
@@ -306,27 +314,24 @@ class SICComponentManager(object):
         self.stop_event.set()
 
         try:
-            # remove the reservation for the device running this component manager
-            if self.client_id != "":
-                self.logger.info("Removing reservation for device {}".format(self.ip))
-                self.redis.unset_reservation(self.ip)
-
             self.logger.info("Stopping all active components")
 
             components_to_stop = list(self.active_components.values())
             for component in components_to_stop:
                 self.logger.info("Stopping component {}".format(component.component_endpoint))
-                component.stop()
+                self.stop_component(component.component_channel)
+
+            # remove the reservation for the device running this component manager
+            if self.client_id != "":
+                self.logger.info("Removing reservation for device {}".format(self.ip))
+                self.redis.unset_reservation(self.ip)
+    
+            # self.log_live_threads(reason="before closing Redis connection")
 
             self.logger.info("Closing Redis connection")
-    
-            time.sleep(1)
-    
-            self.log_live_threads(reason="before closing Redis connection")
-
             self.redis.close()
             
-            self.log_live_threads(reason="after closing Redis connection")
+            # self.log_live_threads(reason="after closing Redis connection")
 
             # exit the program if the current thread is the main thread
             if self.is_main_thread:
@@ -335,12 +340,12 @@ class SICComponentManager(object):
                 gc.collect()  # Force garbage collection
                 
                 # Write directly to stderr to see if we reach the end
-                sys.stderr.write("ComponentManager.stop() completed successfully\n")
-                sys.stderr.flush()
+                # sys.stderr.write("ComponentManager.stop() completed successfully\n")
+                # sys.stderr.flush()
                 
                 # Try multiple exit strategies
-                sys.stderr.write("Calling os._exit(0) now...\n")
-                sys.stderr.flush()
+                # sys.stderr.write("Calling os._exit(0) now...\n")
+                # sys.stderr.flush()
                 
                 try:
                     os._exit(0)
@@ -357,46 +362,46 @@ class SICComponentManager(object):
             if self.is_main_thread:
                 os._exit(1)
 
-    def log_live_threads(self, reason=""):
-        try:
-            import os
-            from datetime import datetime
+    # def log_live_threads(self, reason=""):
+    #     try:
+    #         import os
+    #         from datetime import datetime
             
-            frames = sys._current_frames()
-            lines = []
-            lines.append("=== Live threads {} ===".format(("(" + reason + ")") if reason else ""))
-            for t in threading.enumerate():
-                try:
-                    lines.append("Thread name='{}' ident={} daemon={} alive={} target={}".format(t.name, t.ident, t.daemon, t.is_alive(), getattr(t, '_target', 'unknown')))
-                    frame = frames.get(t.ident)
-                    if frame is not None:
-                        stack_lines = traceback.format_stack(frame)
-                        lines.extend("    " + s.rstrip() for s in stack_lines)
-                except Exception as e:
-                    lines.append("  <error formatting thread {}: {}>".format(t.name, e))
+    #         frames = sys._current_frames()
+    #         lines = []
+    #         lines.append("=== Live threads {} ===".format(("(" + reason + ")") if reason else ""))
+    #         for t in threading.enumerate():
+    #             try:
+    #                 lines.append("Thread name='{}' ident={} daemon={} alive={} target={}".format(t.name, t.ident, t.daemon, t.is_alive(), getattr(t, '_target', 'unknown')))
+    #                 frame = frames.get(t.ident)
+    #                 if frame is not None:
+    #                     stack_lines = traceback.format_stack(frame)
+    #                     lines.extend("    " + s.rstrip() for s in stack_lines)
+    #             except Exception as e:
+    #                 lines.append("  <error formatting thread {}: {}>".format(t.name, e))
             
-            message = "\n".join(lines)
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            hour_timestamp = datetime.now().strftime("%H-%M-%S")
+    #         message = "\n".join(lines)
+    #         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    #         hour_timestamp = datetime.now().strftime("%H-%M-%S")
             
-            # Write directly to file to avoid Redis logging system
-            log_filename = "{}_shutdown_threads_{}.log".format(hour_timestamp, self.name.replace(" ", "_"))
-            try:
-                with open(log_filename, "a") as f:
-                    f.write("[{}] {}\n\n".format(timestamp, message))
-                    f.flush()
-            except Exception as file_err:
-                # Fallback to stderr if file write fails
-                sys.stderr.write("[{}] Failed to write to {}: {}\n".format(timestamp, log_filename, file_err))
-                sys.stderr.write("[{}] {}\n\n".format(timestamp, message))
-                sys.stderr.flush()
+    #         # Write directly to file to avoid Redis logging system
+    #         log_filename = "{}_shutdown_threads_{}.log".format(hour_timestamp, self.name.replace(" ", "_"))
+    #         try:
+    #             with open(log_filename, "a") as f:
+    #                 f.write("[{}] {}\n\n".format(timestamp, message))
+    #                 f.flush()
+    #         except Exception as file_err:
+    #             # Fallback to stderr if file write fails
+    #             sys.stderr.write("[{}] Failed to write to {}: {}\n".format(timestamp, log_filename, file_err))
+    #             sys.stderr.write("[{}] {}\n\n".format(timestamp, message))
+    #             sys.stderr.flush()
             
-            return True
-        except Exception as e:
-            # Write error directly to stderr, bypassing logging system
-            sys.stderr.write("Failed to log live threads: {}\n".format(e))
-            sys.stderr.flush()
-            return False
+    #         return True
+    #     except Exception as e:
+    #         # Write error directly to stderr, bypassing logging system
+    #         sys.stderr.write("Failed to log live threads: {}\n".format(e))
+    #         sys.stderr.flush()
+    #         return False
     
 
     def _sync_time(self):
@@ -474,13 +479,12 @@ class SICComponentManager(object):
                 ),
                 extra={"client_id": client_id}
             )
-            if request.component_id in self.active_components:
-                return self.stop_component(request.component_id)
+            if request.component_channel in self.active_components:
+                return self.stop_component(request.component_channel)
             else:
-                self.logger.critical("Active components: {}".format(self.active_components.keys()), extra={"client_id": client_id})
-                self.logger.error(
+                self.logger.warning(
                     "Ignored request to stop component with component channel {} as it is not in the active components".format(
-                        request.component_id
+                        request.component_channel
                     ),
                     extra={"client_id": client_id}
                 )
