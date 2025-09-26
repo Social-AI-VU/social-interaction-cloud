@@ -76,6 +76,7 @@ extras_require = {
         "sphinx",
         "sphinx-togglebutton",
         "sphinx-rtd-theme",
+        "sphinx-copybutton",
     ],
 }
 

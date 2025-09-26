@@ -26,6 +26,7 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',  # For Google/NumPy style docstrings
     'sphinx_togglebutton',
+    'sphinx_copybutton',
 ]
 
 togglebutton_hint = ""
