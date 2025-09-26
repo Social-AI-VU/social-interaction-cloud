@@ -22,8 +22,8 @@ ANSI_CODE_REGEX = re.compile(r'\033\[[0-9;]*m')
 CRITICAL = 50
 ERROR = 40
 WARNING = 30
-INFO = 20  # service dependent sparse information
-DEBUG = 10  # service dependent verbose information
+INFO = 20 
+DEBUG = 10 
 NOTSET = 0
 
 
@@ -37,7 +37,7 @@ def get_log_channel(client_id=""):
 class SICLogMessage(SICMessage):
     def __init__(self, msg, client_id=""):
         """
-        A wrapper for log messages to be sent over the SICRedis pubsub framework.
+        A wrapper for log messages to be sent over the SIC SICRedisConnection pubsub framework.
         :param msg: The log message to send to the user
         """
         self.msg = msg
@@ -58,7 +58,7 @@ class SICCommonLog(object):
     channel for the user with subscribe_to_redis_log once.
 
     :param redis: The Redis instance to use for logging.
-    :type redis: SICRedis
+    :type redis: SICRedisConnection
     :param logfile: The file path to write the log to.
     :type logfile: str
     """
@@ -67,6 +67,7 @@ class SICCommonLog(object):
         self.running = False
         self.logfile = None
         self.log_dir = None
+        self.write_to_logfile = False
         self.lock = threading.Lock()
         self.threshold = DEBUG
 
@@ -122,8 +123,9 @@ class SICCommonLog(object):
             # outputs to terminal
             print(message.msg, end="\n")
 
-            # writes to logfile
-            self._write_to_logfile(message.msg)
+            if self.write_to_logfile:
+                # writes to logfile
+                self._write_to_logfile(message.msg)
     
     def _write_to_logfile(self, message):
         """
@@ -161,17 +163,17 @@ class SICCommonLog(object):
         finally:
             self.lock.release()
 
-class SICRedisHandler(logging.Handler):
+class SICRedisLogHandler(logging.Handler):
     """
     Facilities to log to Redis as a file-like object, to integrate with standard python logging facilities.
 
     :param redis: The Redis instance to use for logging.
-    :type redis: SICRedis
+    :type redis: SICRedisConnection
     :param client_id: The client id of the device that is logging
     :type client_id: str
     """
     def __init__(self, redis, client_id):
-        super(SICRedisHandler, self).__init__()
+        super(SICRedisLogHandler, self).__init__()
         self.redis = redis
         self.client_id = client_id
         self.logging_channel = get_log_channel(client_id)
@@ -323,8 +325,8 @@ def get_sic_logger(name="", client_id="", redis=None, client_logger=False):
     :type name: str
     :param client_id: The client id of the device that is logging
     :type client_id: str
-    :param redis: The SICRedis object
-    :type redis: SICRedis
+    :param redis: The SICRedisConnection object
+    :type redis: SICRedisConnection
     :return: The logger.
     :rtype: logging.Logger
     """
@@ -333,7 +335,7 @@ def get_sic_logger(name="", client_id="", redis=None, client_logger=False):
     logger.setLevel(DEBUG)
     log_format = SICLogFormatter()
 
-    handler_redis = SICRedisHandler(redis, client_id)
+    handler_redis = SICRedisLogHandler(redis, client_id)
     handler_redis.setFormatter(log_format)
     logger.addHandler(handler_redis)
 
@@ -350,5 +352,6 @@ SIC_CLIENT_LOG = SICCommonLog()
 def set_log_level(level):
     SIC_CLIENT_LOG.threshold = level
 
-def set_log_file_path(path):
+def set_log_file(path):
+    SIC_CLIENT_LOG.write_to_logfile = True
     SIC_CLIENT_LOG.set_log_file_path(path)

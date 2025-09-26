@@ -27,7 +27,7 @@ from sic_framework.devices.common_naoqi.naoqi_tracker import (
     NaoqiTracker,
     NaoqiTrackerActuator,
 )
-from sic_framework.devices.device import SICDevice
+from sic_framework.devices.device import SICDeviceManager
 
 shared_naoqi_components = [
     NaoqiTopCameraSensor,
@@ -46,7 +46,7 @@ shared_naoqi_components = [
 ]
 
 
-class Naoqi(SICDevice):
+class Naoqi(SICDeviceManager):
     __metaclass__ = ABCMeta
 
     def __init__(

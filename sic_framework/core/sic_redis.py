@@ -97,7 +97,7 @@ def get_redis_db_ip_password():
     return host, password
 
 
-class SICRedis:
+class SICRedisConnection:
     """
     A custom version of Redis that provides a clear blocking and non-blocking API.
 
@@ -350,7 +350,7 @@ class SICRedis:
                 done.set()
 
         if block:
-            callback_thread = self.register_message_handler(channel, await_reply, name="SICRedis_request_await_reply")
+            callback_thread = self.register_message_handler(channel, await_reply, name="SICRedisConnection_request_await_reply")
 
         self.send_message(channel, request)
 

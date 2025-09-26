@@ -1,5 +1,12 @@
 """
-Boilerplate setup for SIC applications.
+Application infrastructure and lifecycle management for SIC (Social Interaction Cloud) applications.
+
+Provides essential boilerplate setup and infrastructure for SIC applications, including:
+- Logging setup and configuration
+- Process-wide Redis connection management
+- Graceful shutdown handling
+- Connector lifecycle management
+- Application-wide state management
 """
 
 from sic_framework.core import utils
@@ -10,19 +17,11 @@ import tempfile
 import os
 import weakref
 import time
-from sic_framework.core.sic_redis import SICRedis
+from sic_framework.core.sic_redis import SICRedisConnection
 
 # Initialize logging
 # can be set to DEBUG, INFO, WARNING, ERROR, CRITICAL
 sic_logging.set_log_level(sic_logging.DEBUG)
-
-# Get system's temp directory and create SIC-specific log directory
-LOG_PATH = os.path.join(tempfile.gettempdir(), "sic", "logs")
-# Create the directory if it doesn't exist (parent directories too)
-os.makedirs(LOG_PATH, exist_ok=True)
-
-# sic logging will automatically create the log directory if it doesn't exist
-sic_logging.set_log_file_path(LOG_PATH)
 
 # Global state
 _app_redis = None
@@ -33,13 +32,39 @@ _app_logger = None
 _shutdown_handler_registered = False
 
 def register_connector(connector):
-    """Register a connector to be shutdown when the application shuts down."""
+    """
+    Register a connector to be shutdown when the application shuts down.
+    """
     global _active_connectors
     _active_connectors.add(connector)
+
+def set_log_level(level):   
+    """
+    Set the log level for the application.
+
+    :param level: The log level to set.
+    :type level: 
+    """
+    sic_logging.set_log_level(level)
+
+def set_log_file(path):
+    """
+    Set the log file path for the application.
+
+    Must be a valid full path to a directory.
+
+    :param path: The log file path to set.
+    :type path: str
+    """
+    # Create the directory if it doesn't exist (parent directories too)
+    os.makedirs(path, exist_ok=True)
+    sic_logging.set_log_file(path)
 
 def get_shutdown_event():
     """
     Get or create the application-wide shutdown event.
+
+    To be used inside main thread of the application for loops.
     """
     global _shutdown_event
     if _shutdown_event is None:
@@ -49,6 +74,9 @@ def get_shutdown_event():
 def get_app_logger():
     """
     Get or create the application-wide logger.
+
+    To be used inside main thread of the application. Sets client_logger=True so that the Redis log channel
+    is subscribed to. Causes log messages to be printed and written to the logfile.
     """
     global _app_logger
     if _app_logger is None:
@@ -58,16 +86,20 @@ def get_app_logger():
 def get_redis_instance():
     """
     Get or create the application-wide Redis instance.
+
+    Shared by Connectors and DeviceManagers.
     """
     global _app_redis
     if _app_redis is None:
-        _app_redis = SICRedis()
+        _app_redis = SICRedisConnection()
     return _app_redis
 
 
 def exit_handler(signum=None, frame=None):
     """
     Signal handler for graceful shutdown.
+
+    Stops all connectors and closes the Redis connection.
     """
     global _cleanup_in_progress, _shutdown_event, _app_redis 
     

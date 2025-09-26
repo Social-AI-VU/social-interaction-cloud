@@ -33,7 +33,7 @@ def exclude_pyc(tarinfo):
         return tarinfo
 
 
-class SICDevice(object):
+class SICDeviceManager(object):
     """
     Abstract class to facilitate property initialization for SICConnector properties.
     This way components of a device can easily be used without initializing all device components manually.
@@ -45,7 +45,7 @@ class SICDevice(object):
 
         Reasoning: Alphamini does not support these imports; they are only needed for remotely installing packages on robots from the local machine
         """
-        instance = super(SICDevice, cls).__new__(cls)
+        instance = super(SICDeviceManager, cls).__new__(cls)
 
         if cls.__name__ in ("Nao", "Pepper", "Alphamini"):
             import six

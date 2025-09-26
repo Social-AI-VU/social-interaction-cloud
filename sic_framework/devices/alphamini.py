@@ -23,10 +23,10 @@ from sic_framework.devices.common_mini.mini_speaker import (
     MiniSpeaker,
     MiniSpeakerComponent,
 )
-from sic_framework.devices.device import SICDevice
+from sic_framework.devices.device import SICDeviceManager
 
 
-class Alphamini(SICDevice):
+class Alphamini(SICDeviceManager):
     def __init__(
         self,
         ip,
@@ -77,7 +77,7 @@ class Alphamini(SICDevice):
         if not self._is_ssh_available(host=ip):
             self.install_ssh()
 
-        # only after ssh is available, we can initialize the SICDevice
+        # only after ssh is available, we can initialize the SICDeviceManager
         super().__init__(
             ip=ip,
             username=username,

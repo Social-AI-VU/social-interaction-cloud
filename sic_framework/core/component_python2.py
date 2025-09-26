@@ -22,7 +22,7 @@ from .message_python2 import (
     SICStopRequest,
     SICSuccessMessage,
 )
-from .sic_redis import SICRedis
+from .sic_redis import SICRedisConnection
 
 class SICComponent:
     """

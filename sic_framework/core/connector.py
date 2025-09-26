@@ -21,7 +21,7 @@ from .component_manager_python2 import (
 )
 from .message_python2 import SICMessage, SICPingRequest, SICRequest, SICSuccessMessage
 from . import sic_logging
-from .sic_redis import SICRedis
+from .sic_redis import SICRedisConnection
 from sic_framework.core.sic_application import get_redis_instance, register_connector, register_exit_handler
 
 

@@ -20,11 +20,11 @@ from sic_framework.devices.common_desktop.desktop_text_to_speech import (
     DesktopTextToSpeech,
     DesktopTextToSpeechActuator,
 )
-from sic_framework.devices.device import SICDevice
+from sic_framework.devices.device import SICDeviceManager
 
 desktop_active = False
 
-class Desktop(SICDevice):
+class Desktop(SICDeviceManager):
     def __init__(
         self, camera_conf=None, mic_conf=None, speakers_conf=None, tts_conf=None
     ):
