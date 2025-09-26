@@ -161,6 +161,8 @@ class SICComponent:
     def stop(self, *args):
         """
         Set the stop event to signal the component to stop.
+
+        Awaits for the component to stop and checks that the _stopped event is set.
         """
         self._signal_to_stop.set()
         if self._stopped.wait(timeout=self.COMPONENT_STOP_TIMEOUT):

@@ -180,7 +180,7 @@ class SICConnector(object):
 
     def stop_component(self):
         """
-        Send a StopComponentRequest to the component, called on exit.
+        Send a StopComponentRequest to the respective ComponentManager, called on exit.
         """
 
         self.logger.debug("Connector sending StopComponentRequest to ComponentManager")

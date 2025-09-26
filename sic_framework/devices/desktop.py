@@ -40,8 +40,6 @@ class Desktop(SICDeviceManager):
         if not desktop_active:
             # Create manager in main thread
             self.manager = SICComponentManager(desktop_component_list, client_id=utils.get_ip_adress(), auto_serve=False, name="Desktop")
-            # Create shutdown event
-            self._shutdown_event = threading.Event()
             
             def managed_serve():
                 try:
