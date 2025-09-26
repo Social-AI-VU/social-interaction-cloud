@@ -8,7 +8,6 @@ requirements = [
     "Pillow",
     "pyaudio",
     "PyTurboJPEG",
-    "pyspacemouse",
     "redis",
     "scp",
     "six",
@@ -26,6 +25,9 @@ extras_require = {
     ],
     "dialogflow": [
         "google-cloud-dialogflow",
+    ],
+    "google-stt": [
+        "google-cloud-speech",
     ],
     "google-tts": [
         "google-cloud-texttospeech",
@@ -64,11 +66,23 @@ extras_require = {
         "protobuf==3.20.3",
         "websockets==13.1",
     ],
+    # There is another dependency needed for Franka but it requires manual installation- panda-python
+    # See Installation point 3 for instructions on installing the correct version: https://socialrobotics.atlassian.net/wiki/spaces/CBSR/pages/2412675074/Getting+started+with+Franka+Emika+Research+3#Installation%3A
+    "franka": [
+        "pyspacemouse",
+        "scipy",
+        "numpy<2.0.0",  # numpy 2.0.0 is not compatible with panda_py
+    ],
+    "docs": [
+        "sphinx",
+        "sphinx-togglebutton",
+        "sphinx-rtd-theme",
+    ],
 }
 
 setup(
     name="social-interaction-cloud",
-    version="2.0.38",
+    version="2.0.40",
     author="Koen Hindriks",
     author_email="k.v.hindriks@vu.nl",
     long_description=open("README.md").read(),
@@ -93,9 +107,10 @@ setup(
             "run-face-detection-dnn=sic_framework.services.face_detection_dnn:main",
             "run-face-recognition=sic_framework.services.face_recognition_dnn:main",
             "run-gpt=sic_framework.services.openai_gpt:main",
-            "run-whisper=sic_framework.services.openai_whisper_speech_to_text:main",
+            "run-whisper=sic_framework.services.openai_whisper_stt:main",
             "run-webserver=sic_framework.services.webserver.webserver_component:main",
-            "run-google-tts=sic_framework.services.text2speech.text2speech_service:main",
+            "run-google-tts=sic_framework.services.google_tts.google_tts:main",
+            "run-google-stt=sic_framework.services.google_stt.google_stt:main",
         ],
     },
 )
