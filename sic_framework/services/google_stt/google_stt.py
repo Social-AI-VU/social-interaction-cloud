@@ -224,7 +224,7 @@ class GoogleSpeechToTextComponent(SICService):
             return RecognitionResult(dict())
 
         for response in responses:
-            if self._stop_event.is_set():
+            if self._signal_to_stop.is_set():
                 break
 
             if not response.results:

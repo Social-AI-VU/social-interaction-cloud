@@ -168,7 +168,7 @@ class SICComponent:
         if self._stopped.wait(timeout=self.COMPONENT_STOP_TIMEOUT):
             self.logger.debug("Component's _stopped event set successfully")
         else:
-            self.logger.warning("Component's _stopped event was not set on time")
+            self.logger.warning("Component's _stopped event was not set within the specified timeout time")
 
     def set_config(self, new=None):
         """
