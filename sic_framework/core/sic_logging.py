@@ -145,7 +145,7 @@ class SICCommonLog(object):
                 if not os.path.exists(self.log_dir):
                     os.makedirs(self.log_dir)
                 current_date = datetime.now().strftime("%Y-%m-%d")
-                log_path = os.path.join(self.log_dir, f"sic_{current_date}.log")
+                log_path = os.path.join(self.log_dir, "sic_{current_date}.log".format(current_date=current_date))
                 self.logfile = open(log_path, "a")
 
             # strip ANSI codes before writing to logfile

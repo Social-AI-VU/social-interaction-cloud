@@ -503,7 +503,7 @@ class Alphamini(SICDeviceManager):
                 )
         else:
             raise RuntimeError(
-                "Could not start SIC on remote device\nSee sic.log for details"
+                "Could not start SIC on remote device\nSee SIC logs for details"
             )
 
     def __del__(self):

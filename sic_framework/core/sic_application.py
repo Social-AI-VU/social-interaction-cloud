@@ -11,7 +11,6 @@ Provides essential boilerplate setup and infrastructure for SIC applications, in
 
 from sic_framework.core import utils
 from sic_framework.core import sic_logging
-from dotenv import load_dotenv
 import signal, sys, atexit, threading
 import tempfile
 import os
@@ -123,15 +122,22 @@ def exit_handler(signum=None, frame=None):
         try:
             connector.stop_component()
         except Exception as e:
-            _app_logger.info(f"Error stopping connector: {e}")
+            _app_logger.error("Error stopping connector {name}: {e}".format(name=connector.component_endpoint, e=e))
 
     _app_logger.info("Closing redis connection")
     if _app_redis is not None:
         _app_redis.close()
         _app_redis = None
 
+    # Check if we're in the main thread
+    if hasattr(threading, "main_thread"):
+        is_main_thread = (threading.current_thread() == threading.main_thread())
+    else:
+        # Python 2 fallback
+        is_main_thread = (threading.current_thread().name == "MainThread")
+
     # Only exit if we're in the main thread
-    if threading.current_thread() is threading.main_thread():
+    if is_main_thread:
         _app_logger.info("Exiting main thread")
         sys.exit(0)
 

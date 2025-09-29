@@ -126,7 +126,13 @@ class SICComponentManager(object):
             self.logger.info(" - {}".format(c.get_component_name()))
 
         self.ready_event.set()
-        self.is_main_thread = (threading.current_thread() == threading.main_thread())
+
+        if hasattr(threading, "main_thread"):
+            self.is_main_thread = (threading.current_thread() == threading.main_thread())
+        else:
+            # Python 2 fallback
+            self.is_main_thread = (threading.current_thread().name == "MainThread")
+        
         if self.is_main_thread:
             self.logger.info("Registering atexit handler for component manager")
             atexit.register(self.stop)

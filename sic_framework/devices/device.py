@@ -316,7 +316,7 @@ class SICDeviceManager(object):
                     while not stdout.channel.exit_status_ready():
                         if stdout.channel.recv_ready():
                             line = stdout.channel.recv(1024).decode("utf-8")
-                            self.logger.debug(line)
+                            # self.logger.debug(line)
                     else:
                         # get exit status of the command
                         status = stdout.channel.recv_exit_status()
@@ -332,7 +332,7 @@ class SICDeviceManager(object):
                                 output=stdout.read().decode("utf-8")
                             )
                         )
-                        self.logger.debug(
+                        self.logger.error(
                             "SSH command error: {error}".format(
                                 error=stderr.read().decode("utf-8")
                             )
@@ -347,7 +347,7 @@ class SICDeviceManager(object):
                                 "Remote SIC program has stopped unexpectedly.\nSee sic.log for details"
                             )
 
-                thread = threading.Thread(target=monitor_call)
+                thread = threading.Thread(target=monitor_call, daemon=True)
                 thread.name = "remote_SIC_process_monitor"
                 thread.start()
                 return thread
