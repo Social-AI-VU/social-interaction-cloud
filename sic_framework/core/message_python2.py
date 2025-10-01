@@ -395,6 +395,12 @@ class SICSuccessMessage(SICControlMessage):
     Special type of message to signal a request was successfully completed.
     """
 
+class SICFailureMessage(SICControlMessage):
+    """
+    Special type of message to signal a request was not successfully completed.
+    """
+    def __init__(self, message=""):
+        self.message = message
 
 class SICStopRequest(SICControlRequest):
     """

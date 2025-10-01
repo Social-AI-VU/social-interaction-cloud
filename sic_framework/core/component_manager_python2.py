@@ -28,7 +28,8 @@ from .message_python2 import (
     SICStopRequest,
     SICSuccessMessage,
     SICPingRequest,
-    SICPongMessage
+    SICPongMessage,
+    SICFailureMessage
 )
 
 from .sic_redis import SICRedisConnection
@@ -94,7 +95,7 @@ class SICComponentManager(object):
     # Number of seconds we wait at most for a component to start
     COMPONENT_START_TIMEOUT = 10
 
-    def __init__(self, component_classes, client_id="", auto_serve=True, name=""):
+    def __init__(self, component_classes, client_id="", auto_serve=True, name="", stop_timeout=5):
         # Redis initialization
         self.redis = SICRedisConnection()
         self.ip = utils.get_ip_adress()
@@ -105,10 +106,11 @@ class SICComponentManager(object):
         self.component_classes = {
             cls.get_component_name(): cls for cls in component_classes
         }
-        self.component_counter = 0
+        self.stop_timeout = stop_timeout
 
         self.stop_event = threading.Event()
         self.ready_event = threading.Event()
+        self._components_stopped = threading.Event()
 
         self.name = "{}ComponentManager".format(name)
         self.logger = sic_logging.get_sic_logger(name=self.name, client_id=self.client_id, redis=self.redis, client_logger=True)
@@ -135,7 +137,7 @@ class SICComponentManager(object):
         
         if self.is_main_thread:
             self.logger.info("Registering atexit handler for component manager")
-            atexit.register(self.stop)
+            atexit.register(self.stop_component_manager)
         if auto_serve:
             self.serve()
 
@@ -152,8 +154,7 @@ class SICComponentManager(object):
         except KeyboardInterrupt:
             pass
 
-        self.stop()
-        self.logger.info("Stopped component manager.")
+        self.stop_component_manager()
         
 
     def start_component(self, request):
@@ -300,9 +301,9 @@ class SICComponentManager(object):
                 "Error stopping component: {}".format(e),
                 extra={"client_id": component.client_id}
             )
-            return SICNotStartedMessage(e)
+            return SICFailureMessage(e)
 
-    def stop(self, *args):
+    def stop_component_manager(self, *args):
         """
         Stop the component manager.
 
@@ -326,6 +327,8 @@ class SICComponentManager(object):
             for component in components_to_stop:
                 self.logger.info("Stopping component {}".format(component.component_endpoint))
                 self.stop_component(component.component_channel)
+
+            self._components_stopped.set()
 
             # remove the reservation for the device running this component manager
             if self.client_id != "":
@@ -453,9 +456,12 @@ class SICComponentManager(object):
             return SICPongMessage()
 
         if is_sic_instance(request, SICStopRequest):
-            self.stop_event.set()
-            # return an empty stop message as a request must always be replied to
-            return SICSuccessMessage()
+            self.stop_component_manager()
+            
+            if self._components_stopped.wait(timeout=self.stop_timeout):
+                return SICSuccessMessage()
+            else:
+                return SICFailureMessage("Component manager failed to stop within timeout")
         
         if is_sic_instance(request, SICStartComponentRequest):
             # reply to the request if the component manager can start the component

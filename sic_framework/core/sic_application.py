@@ -1,12 +1,11 @@
 """
-Application infrastructure and lifecycle management for SIC (Social Interaction Cloud) applications.
+SIC application runtime: process-wide lifecycle and infrastructure.
 
-Provides essential boilerplate setup and infrastructure for SIC applications, including:
-- Logging setup and configuration
-- Process-wide Redis connection management
-- Graceful shutdown handling
-- Connector lifecycle management
-- Application-wide state management
+Provides a singleton for:
+- Centralized logging setup and configuration
+- Shared Redis connection management
+- Graceful shutdown (signal and atexit) with device and connector cleanup
+- Registration of connectors/devices and an app-wide shutdown event
 """
 
 from sic_framework.core import utils
@@ -18,137 +17,141 @@ import weakref
 import time
 from sic_framework.core.sic_redis import SICRedisConnection
 
-# Initialize logging
-# can be set to DEBUG, INFO, WARNING, ERROR, CRITICAL
-sic_logging.set_log_level(sic_logging.DEBUG)
 
-# Global state
-_app_redis = None
-_cleanup_in_progress = False
-_shutdown_event = None
-_active_connectors = weakref.WeakSet()
-_app_logger = None
-_shutdown_handler_registered = False
-
-def register_connector(connector):
+class SICApplication(object):
     """
-    Register a connector to be shutdown when the application shuts down.
+    Process-wide singleton for SIC app infrastructure.
+
+    Responsibilities:
+    - Expose a shared Redis connection and app logger
+    - Register and gracefully stop connectors on exit
+    - Provide an application shutdown event for main loops
+    - Auto-register a SIGINT/SIGTERM/atexit handler on first creation
     """
-    global _active_connectors
-    _active_connectors.add(connector)
 
-def set_log_level(level):   
-    """
-    Set the log level for the application.
+    _instance = None
+    _instance_lock = threading.Lock()
 
-    :param level: The log level to set.
-    :type level: 
-    """
-    sic_logging.set_log_level(level)
+    def __new__(cls, *args, **kwargs):
+        """Return the single instance (thread-safe lazy init)."""
+        if cls._instance is not None:
+            return cls._instance
+        with cls._instance_lock:
+            if cls._instance is None:
+                cls._instance = super(SICApplication, cls).__new__(cls)
+        return cls._instance
 
-def set_log_file(path):
-    """
-    Set the log file path for the application.
+    def __init__(self):
+        """Initialize runtime state and register exit handler once."""
+        if getattr(self, "_initialized", False):
+            return
 
-    Must be a valid full path to a directory.
+        # Logging defaults (can be changed via set_log_level / set_log_file)
+        sic_logging.set_log_level(sic_logging.DEBUG)
 
-    :param path: The log file path to set.
-    :type path: str
-    """
-    # Create the directory if it doesn't exist (parent directories too)
-    os.makedirs(path, exist_ok=True)
-    sic_logging.set_log_file(path)
+        # Runtime state
+        self._redis = None
+        self._cleanup_in_progress = False
+        self._shutdown_event = None
+        self._active_connectors = weakref.WeakSet()
+        self._active_devices = weakref.WeakSet()
+        self._app_logger = None
+        self._shutdown_handler_registered = False
 
-def get_shutdown_event():
-    """
-    Get or create the application-wide shutdown event.
+        # Automatically register exit handler once per process
+        self.register_exit_handler()
 
-    To be used inside main thread of the application for loops.
-    """
-    global _shutdown_event
-    if _shutdown_event is None:
-        _shutdown_event = threading.Event()
-    return _shutdown_event
+        self._initialized = True
 
-def get_app_logger():
-    """
-    Get or create the application-wide logger.
+    # ------------ Public API (instance methods) ------------
+    def register_connector(self, connector):
+        """Track a connector for cleanup during shutdown."""
+        self._active_connectors.add(connector)
 
-    To be used inside main thread of the application. Sets client_logger=True so that the Redis log channel
-    is subscribed to. Causes log messages to be printed and written to the logfile.
-    """
-    global _app_logger
-    if _app_logger is None:
-        _app_logger = sic_logging.get_sic_logger("SICApplication", client_id=utils.get_ip_adress(), redis=get_redis_instance(), client_logger=True)
-    return _app_logger
+    def register_device(self, device):
+        """Track a device manager."""
+        self._active_devices.add(device)
 
-def get_redis_instance():
-    """
-    Get or create the application-wide Redis instance.
+    def set_log_level(self, level):
+        """Set global log level for the application runtime."""
+        sic_logging.set_log_level(level)
 
-    Shared by Connectors and DeviceManagers.
-    """
-    global _app_redis
-    if _app_redis is None:
-        _app_redis = SICRedisConnection()
-    return _app_redis
+    def set_log_file(self, path):
+        """Write logs to directory at ``path`` (created if missing)."""
+        os.makedirs(path, exist_ok=True)
+        sic_logging.set_log_file(path)
 
+    def get_shutdown_event(self):
+        """Return an app-wide ``threading.Event`` to control main loops."""
+        if self._shutdown_event is None:
+            self._shutdown_event = threading.Event()
+        return self._shutdown_event
 
-def exit_handler(signum=None, frame=None):
-    """
-    Signal handler for graceful shutdown.
+    def get_app_logger(self):
+        """Return the shared application logger (client_logger=True)."""
+        if self._app_logger is None:
+            self._app_logger = sic_logging.get_sic_logger(
+                "SICApplication",
+                client_id=utils.get_ip_adress(),
+                redis=self.get_redis_instance(),
+                client_logger=True,
+            )
+        return self._app_logger
 
-    Stops all connectors and closes the Redis connection.
-    """
-    global _cleanup_in_progress, _shutdown_event, _app_redis 
-    
-    _app_logger = get_app_logger()
-    
-    if _cleanup_in_progress:
-        return  # Prevent multiple signal handling
-    _cleanup_in_progress = True
-        
-    _app_logger.info("signal interrupt received, exiting...")
-    
-    # Signal the shutdown event if it exists
-    if _shutdown_event is not None:
-        _app_logger.info("Setting shutdown event")
-        _shutdown_event.set()
+    def get_redis_instance(self):
+        """Return the shared Redis connection for this process."""
+        if self._redis is None:
+            self._redis = SICRedisConnection()
+        return self._redis
 
-    _app_logger.info("Stopping connectors")
-    # Stop connectors (each connector signals to respective CM to stop the component)
-    connectors_to_stop = list(_active_connectors)
-    for connector in connectors_to_stop:
-        try:
-            connector.stop_component()
-        except Exception as e:
-            _app_logger.error("Error stopping connector {name}: {e}".format(name=connector.component_endpoint, e=e))
+    def exit_handler(self, signum=None, frame=None):
+        """Gracefully stop connectors and close Redis, then exit main thread.
 
-    _app_logger.info("Closing redis connection")
-    if _app_redis is not None:
-        _app_redis.close()
-        _app_redis = None
+        Called on SIGINT/SIGTERM and at process exit (atexit).
+        """
+        if self._cleanup_in_progress:
+            return
+        self._cleanup_in_progress = True
 
-    # Check if we're in the main thread
-    if hasattr(threading, "main_thread"):
-        is_main_thread = (threading.current_thread() == threading.main_thread())
-    else:
-        # Python 2 fallback
-        is_main_thread = (threading.current_thread().name == "MainThread")
+        app_logger = self.get_app_logger()
+        app_logger.info("signal interrupt received, exiting...")
 
-    # Only exit if we're in the main thread
-    if is_main_thread:
-        _app_logger.info("Exiting main thread")
-        sys.exit(0)
+        if self._shutdown_event is not None:
+            app_logger.info("Setting shutdown event")
+            self._shutdown_event.set()
 
-def register_exit_handler():
-    """
-    Register the exit handler.
-    """
-    global _shutdown_handler_registered
-    if _shutdown_handler_registered:
-        return
-    _shutdown_handler_registered = True
-    atexit.register(exit_handler)
-    signal.signal(signal.SIGINT, exit_handler)
-    signal.signal(signal.SIGTERM, exit_handler)
+        app_logger.info("Stopping connectors")
+        connectors_to_stop = list(self._active_connectors)
+        for connector in connectors_to_stop:
+            try:
+                connector.stop_component()
+            except Exception as e:
+                app_logger.error(
+                    "Error stopping connector {name}: {e}".format(
+                        name=getattr(connector, "component_endpoint", "unknown"), e=e
+                    )
+                )
+
+        app_logger.info("Closing redis connection")
+        if self._redis is not None:
+            self._redis.close()
+            self._redis = None
+
+        if hasattr(threading, "main_thread"):
+            is_main = threading.current_thread() == threading.main_thread()
+        else:
+            is_main = threading.current_thread().name == "MainThread"
+
+        if is_main:
+            app_logger.info("Exiting main thread")
+            sys.exit(0)
+
+    def register_exit_handler(self):
+        """Idempotently register signal and atexit shutdown handlers."""
+        if self._shutdown_handler_registered:
+            return
+        self._shutdown_handler_registered = True
+        atexit.register(self.exit_handler)
+        signal.signal(signal.SIGINT, self.exit_handler)
+        signal.signal(signal.SIGTERM, self.exit_handler)
+

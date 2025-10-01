@@ -50,7 +50,7 @@ class Desktop(SICDeviceManager):
                     self.manager.serve()
                 finally:
                     # Ensure cleanup happens even if serve exits unexpectedly
-                    self.manager.stop()
+                    self.manager.stop_component_manager()
             
             # Run serve in a thread
             self.thread = threading.Thread(

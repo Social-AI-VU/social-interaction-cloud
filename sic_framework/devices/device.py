@@ -5,10 +5,11 @@ import tarfile
 import tempfile
 import threading
 import time
+from abc import abstractmethod
 
 from sic_framework.core import sic_logging, utils
 from sic_framework.core.connector import SICConnector
-from sic_framework.core.sic_application import get_redis_instance
+from sic_framework.core.sic_application import SICApplication
 
 
 class SICLibrary(object):
@@ -66,7 +67,8 @@ class SICDeviceManager(object):
         :param username: the ssh login name
         :param passwords: the (list) of passwords to use
         """
-        self._redis = get_redis_instance()
+        self.app = SICApplication()
+        self._redis = self.app.get_redis_instance()
         self.device_ip = ip
         self._client_id = utils.get_ip_adress()
         self.logger = sic_logging.get_sic_logger(
@@ -93,11 +95,11 @@ class SICDeviceManager(object):
 
             self.sic_version = version("social-interaction-cloud")
 
+
         try:
             self.SCPClient = SCPClient
         except:
             pass
-
 
         self.logger.info("Initializing device with ip: {ip}".format(ip=ip))
 
@@ -139,6 +141,9 @@ class SICDeviceManager(object):
                         username, passwords
                     )
                 )
+        
+        # register device with the sic application
+        self.app.register_device(self)
 
     def set_reservation(self):
         """
@@ -453,6 +458,14 @@ class SICDeviceManager(object):
             )
         else:
             self.logger.info("Successfully installed {} package".format(lib.name))
+
+    @abstractmethod
+    def stop_device(self):
+        """
+        Stops the device and all its components.
+        Must be implemented by subclasses.
+        """
+        pass
 
     def _get_connector(self, component_connector, **kwargs):
         """

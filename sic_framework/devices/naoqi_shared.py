@@ -3,7 +3,7 @@ from __future__ import print_function
 from abc import ABCMeta, abstractmethod
 
 from sic_framework.core import sic_redis, utils
-from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage
+from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage, SICStopRequest
 from sic_framework.core.utils import MAGIC_STARTED_COMPONENT_MANAGER_TEXT
 from sic_framework.devices.common_naoqi.nao_motion_streamer import *
 from sic_framework.devices.common_naoqi.naoqi_autonomous import *
@@ -224,12 +224,21 @@ class Naoqi(SICDeviceManager):
 
         self.logger.debug("ComponentManager on ip {} has started!".format(self.device_ip))
 
-    def stop(self):
-        for connector in self.connectors.values():
-            connector.stop()
+    def stop_device(self):
+        """
+        Stops the device and all its components.
 
-        self.stop_event.set()
-        self.ssh_command(self.stop_cmd)
+        Makes sure the process is killed and the device is stopped.
+        """
+        # send StopRequest to ComponentManager
+        self._redis.request(self.device_ip, SICStopRequest())
+
+        # make sure the process is killed
+        stdin, stdout, stderr = self.ssh_command(self.stop_cmd)
+        status = stdout.channel.recv_exit_status()
+        if status != 0:
+            self.logger.error("Failed to stop device, exit code: {status}".format(status=status))
+            self.logger.error(stderr.read().decode("utf-8"))
 
     @property
     def top_camera(self):
