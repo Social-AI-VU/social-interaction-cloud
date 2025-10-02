@@ -63,3 +63,6 @@ Thread Types
 Shutdown Process
 ----------------
 
+.. image:: /_static/app_shutdown_process.drawio.svg
+   :alt: Application Shutdown Process
+   :align: center
