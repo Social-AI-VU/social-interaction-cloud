@@ -3,7 +3,7 @@ from __future__ import print_function
 from abc import ABCMeta, abstractmethod
 
 from sic_framework.core import sic_redis, utils
-from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage, SICStopRequest
+from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage, SICStopServerRequest
 from sic_framework.core.utils import MAGIC_STARTED_COMPONENT_MANAGER_TEXT
 from sic_framework.devices.common_naoqi.nao_motion_streamer import *
 from sic_framework.devices.common_naoqi.naoqi_autonomous import *
@@ -231,7 +231,7 @@ class Naoqi(SICDeviceManager):
         Makes sure the process is killed and the device is stopped.
         """
         # send StopRequest to ComponentManager
-        self._redis.request(self.device_ip, SICStopRequest())
+        self._redis.request(self.device_ip, SICStopServerRequest())
 
         # make sure the process is killed
         stdin, stdout, stderr = self.ssh_command(self.stop_cmd)

@@ -402,11 +402,10 @@ class SICFailureMessage(SICControlMessage):
     def __init__(self, message=""):
         self.message = message
 
-class SICStopRequest(SICControlRequest):
+class SICStopServerRequest(SICControlRequest):
     """
-    Special type of message to signal a device it should stop as the user no longer needs it.
+    Special type of message to signal a ComponentManager it should stop as the user no longer needs it.
     """
-
 
 class SICIgnoreRequestMessage(SICControlMessage):
     """

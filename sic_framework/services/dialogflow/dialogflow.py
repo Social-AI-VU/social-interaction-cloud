@@ -20,10 +20,8 @@ from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
     AudioMessage,
     SICConfMessage,
-    SICIgnoreRequestMessage,
     SICMessage,
     SICRequest,
-    SICStopRequest,
 )
 from sic_framework.core.utils import is_sic_instance
 

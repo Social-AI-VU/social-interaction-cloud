@@ -25,7 +25,7 @@ from .message_python2 import (
     SICIgnoreRequestMessage,
     SICMessage,
     SICRequest,
-    SICStopRequest,
+    SICStopServerRequest,
     SICSuccessMessage,
     SICPingRequest,
     SICPongMessage,
@@ -455,7 +455,7 @@ class SICComponentManager(object):
             # this request is sent to see if the ComponentManager has started
             return SICPongMessage()
 
-        if is_sic_instance(request, SICStopRequest):
+        if is_sic_instance(request, SICStopServerRequest):
             self.stop_component_manager()
             
             if self._components_stopped.wait(timeout=self.stop_timeout):

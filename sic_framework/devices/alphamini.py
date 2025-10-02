@@ -9,7 +9,7 @@ import mini.pkg_tool as Tool
 
 from sic_framework import SICComponentManager
 from sic_framework.core import utils
-from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage
+from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage, SICStopServerRequest
 from sic_framework.core.utils import MAGIC_STARTED_COMPONENT_MANAGER_TEXT
 from sic_framework.devices.common_mini.mini_animation import (
     MiniAnimation,
@@ -509,6 +509,23 @@ class Alphamini(SICDeviceManager):
     def __del__(self):
         if hasattr(self, "logfile"):
             self.logfile.close()
+
+    def stop_device(self):
+        """
+        Stops the device and all its components.
+
+        Makes sure the process is killed and the device is stopped.
+        """
+        # send StopRequest to ComponentManager
+        self._redis.request(self.device_ip, SICStopServerRequest())
+
+        # make sure the process is killed
+        stdin, stdout, stderr = self.ssh_command(self.stop_cmd)
+        status = stdout.channel.recv_exit_status()
+        if status != 0:
+            self.logger.error("Failed to stop device, exit code: {status}".format(status=status))
+            self.logger.error(stderr.read().decode("utf-8"))
+
 
     @staticmethod
     def _is_ssh_available(host, port=8022, timeout=5):

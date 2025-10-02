@@ -62,6 +62,13 @@ class Desktop(SICDeviceManager):
             
             desktop_active = True
 
+    def stop_device(self):
+        """
+        Stops the desktop device and all its components.
+        """
+        self.manager.stop_component_manager()
+        desktop_active = False
+
     @property
     def camera(self):
         return self._get_connector(DesktopCamera)

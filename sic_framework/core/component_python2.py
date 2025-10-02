@@ -15,14 +15,9 @@ from . import sic_logging, utils
 from .message_python2 import (
     SICConfMessage,
     SICControlRequest,
-    SICMessage,
     SICPingRequest,
     SICPongMessage,
-    SICRequest,
-    SICStopRequest,
-    SICSuccessMessage,
 )
-from .sic_redis import SICRedisConnection
 
 class SICComponent:
     """
@@ -285,8 +280,8 @@ class SICComponent:
 
     def _handle_request(self, request):
         """
-        Handle control requests such as SICPingRequests and SICStopRequest by calling 
-        generic Component methods. Component specific requests are passed to the normal on_request handler.
+        Handle control requests such as SICPingRequests by calling generic Component methods.
+        Component specific requests are passed to the normal on_request handler.
         
         :param request: The request to handle.
         :type request: SICRequest
@@ -300,10 +295,6 @@ class SICComponent:
 
         if is_sic_instance(request, SICPingRequest):
             return SICPongMessage()
-
-        if is_sic_instance(request, SICStopRequest):
-            self.stop()
-            return SICSuccessMessage()
 
         if not is_sic_instance(request, SICControlRequest):
             return self.on_request(request)

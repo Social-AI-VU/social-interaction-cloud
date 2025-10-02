@@ -17,7 +17,6 @@ import weakref
 import time
 from sic_framework.core.sic_redis import SICRedisConnection
 
-
 class SICApplication(object):
     """
     Process-wide singleton for SIC app infrastructure.
@@ -104,6 +103,10 @@ class SICApplication(object):
             self._redis = SICRedisConnection()
         return self._redis
 
+    def shutdown(self):
+        """Gracefully stop connectors and close Redis, then exit main thread."""
+        self.exit_handler()
+
     def exit_handler(self, signum=None, frame=None):
         """Gracefully stop connectors and close Redis, then exit main thread.
 
@@ -120,9 +123,22 @@ class SICApplication(object):
             app_logger.info("Setting shutdown event")
             self._shutdown_event.set()
 
+        app_logger.info("Stopping devices")
+        devices_to_stop = list(self._active_devices)
+        for device in devices_to_stop:
+            try:
+                device.stop_device()
+            except Exception as e:
+                app_logger.error("Error stopping device {name}: {e}".format(name=device.name, e=e))
+
         app_logger.info("Stopping connectors")
         connectors_to_stop = list(self._active_connectors)
         for connector in connectors_to_stop:
+            # Skip if this connector belongs to a device we already stopped
+            if any(connector in device._connectors for device in devices_to_stop):
+                app_logger.debug("Skipping connector {name} as it belongs to a device we already stopped".format(name=connector.component_endpoint))
+                continue
+                
             try:
                 connector.stop_component()
             except Exception as e:
@@ -136,15 +152,6 @@ class SICApplication(object):
         if self._redis is not None:
             self._redis.close()
             self._redis = None
-
-        if hasattr(threading, "main_thread"):
-            is_main = threading.current_thread() == threading.main_thread()
-        else:
-            is_main = threading.current_thread().name == "MainThread"
-
-        if is_main:
-            app_logger.info("Exiting main thread")
-            sys.exit(0)
 
     def register_exit_handler(self):
         """Idempotently register signal and atexit shutdown handlers."""
