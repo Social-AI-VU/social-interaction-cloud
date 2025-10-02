@@ -124,20 +124,20 @@ class SICApplication(object):
             self._shutdown_event.set()
 
         app_logger.info("Stopping devices")
-        devices_to_stop = list(self._active_devices)
-        for device in devices_to_stop:
-            try:
-                device.stop_device()
-            except Exception as e:
-                app_logger.error("Error stopping device {name}: {e}".format(name=device.name, e=e))
+        # devices_to_stop = list(self._active_devices)
+        # for device in devices_to_stop:
+        #     try:
+        #         device.stop_device()
+        #     except Exception as e:
+        #         app_logger.error("Error stopping device {name}: {e}".format(name=device.name, e=e))
 
         app_logger.info("Stopping connectors")
         connectors_to_stop = list(self._active_connectors)
         for connector in connectors_to_stop:
             # Skip if this connector belongs to a device we already stopped
-            if any(connector in device._connectors for device in devices_to_stop):
-                app_logger.debug("Skipping connector {name} as it belongs to a device we already stopped".format(name=connector.component_endpoint))
-                continue
+            # if any(connector in device._connectors for device in devices_to_stop):
+            #     app_logger.debug("Skipping connector {name} as it belongs to a device we already stopped".format(name=connector.component_endpoint))
+            #     continue
                 
             try:
                 connector.stop_component()
