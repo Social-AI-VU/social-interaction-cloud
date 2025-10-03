@@ -24,23 +24,11 @@ from sic_framework.devices.common_desktop.desktop_spacemouse import (
     DesktopSpaceMouse,
     DesktopSpaceMouseSensor
 )
-from sic_framework.devices.device import SICDevice
+from sic_framework.devices.device import SICDeviceManager
 
 desktop_active = False
 
-
-def start_desktop_components():
-    manager = SICComponentManager(desktop_component_list, client_id=utils.get_ip_adress(), auto_serve=False, name="Desktop")
-
-    atexit.register(manager.stop)
-
-    from contextlib import redirect_stderr
-
-    with redirect_stderr(None):
-        manager.serve()
-
-
-class Desktop(SICDevice):
+class Desktop(SICDeviceManager):
     def __init__(
         self, camera_conf=None, mic_conf=None, speakers_conf=None, tts_conf=None
     ):
@@ -54,14 +42,32 @@ class Desktop(SICDevice):
         global desktop_active
 
         if not desktop_active:
-            # run the component manager in a thread
-            thread = threading.Thread(
-                target=start_desktop_components,
-                name="DesktopComponentManager-singelton",
+            # Create manager in main thread
+            self.manager = SICComponentManager(desktop_component_list, client_id=utils.get_ip_adress(), auto_serve=False, name="Desktop")
+            
+            def managed_serve():
+                try:
+                    self.manager.serve()
+                finally:
+                    # Ensure cleanup happens even if serve exits unexpectedly
+                    self.manager.stop_component_manager()
+            
+            # Run serve in a thread
+            self.thread = threading.Thread(
+                target=managed_serve,
+                name="DesktopComponentManager-singleton",
+                daemon=True
             )
-            thread.start()
-
+            self.thread.start()
+            
             desktop_active = True
+
+    def stop_device(self):
+        """
+        Stops the desktop device and all its components.
+        """
+        self.manager.stop_component_manager()
+        desktop_active = False
 
     @property
     def camera(self):

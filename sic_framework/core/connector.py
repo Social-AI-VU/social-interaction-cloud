@@ -3,12 +3,9 @@ connector.py
 
 This module contains the SICConnector class, the user interface to connect to components.
 """
-
-
 import logging
 import time
 from abc import ABCMeta
-
 import six
 import sys
 
@@ -17,10 +14,15 @@ from sic_framework.core.service_python2 import SICService
 from sic_framework.core.utils import is_sic_instance
 
 from . import utils
-from .component_manager_python2 import SICNotStartedMessage, SICStartComponentRequest
-from .message_python2 import SICMessage, SICPingRequest, SICRequest, SICStopRequest
+from .component_manager_python2 import (
+    SICNotStartedMessage, 
+    SICStartComponentRequest, 
+    SICStopComponentRequest
+)
+from .message_python2 import SICMessage, SICPingRequest, SICRequest, SICSuccessMessage
 from . import sic_logging
-from .sic_redis import SICRedis
+from .sic_redis import SICRedisConnection
+from sic_framework.core.sic_application import SICApplication
 
 
 class ComponentNotStartedError(Exception):
@@ -36,11 +38,10 @@ class SICConnector(object):
 
     :param ip: The IP address of the component to connect to.
     :type ip: str, optional
-    :param log_level: The logging level to use for the connector.
-    :type log_level: logging.LOGLEVEL, optional
     :param conf: The configuration for the connector.
     :type conf: SICConfMessage, optional
     """
+
     __metaclass__ = ABCMeta
 
     # define how long an "instant" reply should take at most (ping sometimes takes more than 150ms)
@@ -48,26 +49,22 @@ class SICConnector(object):
 
     def __init__(self, 
                  ip="localhost", 
-                 log_level=logging.INFO, 
                  conf=None,
                  input_source=None):
 
-        self._redis = SICRedis()
-
         assert isinstance(ip, str), "IP must be string"
+        app = SICApplication()
 
         # connect to Redis
-        self._redis = SICRedis()
+        self._redis = app.get_redis_instance()
 
         # client ID is the IP of whatever machine is running this connector
         self.client_id = utils.get_ip_adress()
-        self._log_level = log_level
 
         self.name = "{component}Connector".format(component=self.__class__.__name__)
         self.logger = sic_logging.get_sic_logger(
             name=self.name, client_id=self.client_id, redis=self._redis
         )
-        self._redis.parent_logger = self.logger
 
         # if the component is running on the same machine as the Connector
         if ip in ["localhost", "127.0.0.1"]:
@@ -76,7 +73,7 @@ class SICConnector(object):
 
         self.component_name = self.component_class.get_component_name()
         self.component_ip = ip
-        self.component_id = self.component_name + ":" + self.component_ip
+        self.component_endpoint = self.component_name + ":" + self.component_ip
 
         # if the input channel is not provided, assume the client ID (IP address) is the input channel (i.e. Component is a Sensor)
         if input_source is None:    
@@ -85,25 +82,27 @@ class SICConnector(object):
             if not isinstance(input_source, SICConnector):
                 self.logger.error("Input source must be a SICConnector")
                 sys.exit(1)
-            self._input_channel = input_source.get_output_channel()
+            self._input_channel = input_source.get_component_channel()
 
         self._callback_threads = []
         self._conf = conf
 
         # these are set once the component manager has started the component
         self._request_reply_channel = None
-        self._output_channel = None
+        self._component_channel = None
 
         # make sure we can start the component and ping it
         try:
             self._start_component()
-            self.logger.debug("Component started")
-            assert self._ping()
+            self.logger.debug("Received SICComponentStartedMessage, component successfully started")
+            assert self._ping(), "Component failed to ping"
         except Exception as e:
             self.logger.error(e)
             raise RuntimeError(e)
 
-        self.logger.debug("Component initialization complete")
+        self._callback_threads = []
+        app.register_connector(self)
+        self.logger.info("Component initialization complete")
 
     @property
     def component_class(self):
@@ -135,11 +134,11 @@ class SICConnector(object):
         """
 
         try:
-            ct = self._redis.register_message_handler(self.get_output_channel(), callback)
+            ct = self._redis.register_message_handler(self.get_component_channel(), callback, name="{}_callback".format(self.component_endpoint))
         except Exception as e:
             self.logger.error("Error registering callback: {}".format(e))
             raise e
-
+        
         self._callback_threads.append(ct)
 
     def request(self, request, timeout=100.0, block=True):
@@ -179,14 +178,25 @@ class SICConnector(object):
             self._request_reply_channel, request, timeout=timeout, block=block
         )
 
-    def stop(self):
+    def stop_component(self):
         """
-        Send a stop request to the component and close the redis connection.
+        Send a StopComponentRequest to the respective ComponentManager, called on exit.
         """
-        self.logger.debug("Sending StopRequest to component")
-        self._redis.send_message(self._request_reply_channel, SICStopRequest())
-        if hasattr(self, "_redis"):
-            self._redis.close()
+
+        self.logger.debug("Connector sending StopComponentRequest to ComponentManager")
+        stop_result = self._redis.request(self.component_ip, SICStopComponentRequest(self._component_channel))
+        if stop_result is None:
+            self.logger.error("Stop request timed out")
+            raise TimeoutError("Stop request timed out")
+        if not is_sic_instance(stop_result, SICSuccessMessage):
+            self.logger.error("Stop request failed")
+            raise RuntimeError("Stop request failed")
+
+        # close callback threads
+        self.logger.debug("Closing callback threads")
+        for ct in self._callback_threads[:]:
+            self._redis.unregister_callback(ct)
+
 
     def get_input_channel(self):
         """
@@ -194,11 +204,11 @@ class SICConnector(object):
         """
         return self._input_channel
     
-    def get_output_channel(self):
+    def get_component_channel(self):
         """
         Get the output channel of the component.
         """
-        return self._output_channel
+        return self._component_channel
 
     def _ping(self):
         """
@@ -232,7 +242,6 @@ class SICConnector(object):
 
         component_request = SICStartComponentRequest(
             component_name=self.component_class.get_component_name(),
-            log_level=self._log_level,
             input_channel=self._input_channel,
             client_id=self.client_id,
             conf=self._conf,
@@ -254,7 +263,7 @@ class SICConnector(object):
                 )
             else:
                 # set the output and request/reply channels
-                self._output_channel = return_message.output_channel
+                self._component_channel = return_message.component_channel
                 self._request_reply_channel = return_message.request_reply_channel
 
         except TimeoutError as e:
@@ -272,27 +281,4 @@ class SICConnector(object):
             logging.error("Unknown exception occured while trying to start {name} component: {e}".format(name=self.component_class.get_component_name(), e=e))
 
     def _get_timestamp(self):
-        # TODO this needs to be synchronized with all devices, because if a nao is off by a second or two
-        # its data will align wrong with other sources
-        # possible solution: do redis.time, and use a custom get time functions that is aware of the offset
-        return time.time()
-
-    # TODO: maybe put this in constructor to do a graceful exit on crash?
-    # register cleanup to disconnect redis if an exception occurs anywhere during exection
-    # TODO FIX cannot register multiple exepthooks
-    # sys.excepthook = self.cleanup_after_except
-    # #
-    # def cleanup_after_except(self, *args):
-    #     self.stop()
-    #     # call original except hook after stopping
-    #     sys.__excepthook__(*args)
-
-    # TODO: maybe also helps for a graceful exit?
-    def __del__(self):
-        """
-        Call stop() on the connector when it is deleted.
-        """
-        try:
-            self.stop()
-        except Exception as e:
-            self.logger.error("Error in clean shutdown: {}".format(e))
+        return self._redis.time()

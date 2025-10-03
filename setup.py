@@ -11,6 +11,7 @@ requirements = [
     "redis",
     "scp",
     "six",
+    "dotenv"
 ]
 
 # Dependencies specific to each component or server

@@ -11,10 +11,10 @@ import logging
 import re
 import threading
 from datetime import datetime
+import os
 
 from . import utils
 from .message_python2 import SICMessage
-from .sic_redis import SICRedis
 
 ANSI_CODE_REGEX = re.compile(r'\033\[[0-9;]*m')
 
@@ -22,8 +22,8 @@ ANSI_CODE_REGEX = re.compile(r'\033\[[0-9;]*m')
 CRITICAL = 50
 ERROR = 40
 WARNING = 30
-INFO = 20  # service dependent sparse information
-DEBUG = 10  # service dependent verbose information
+INFO = 20 
+DEBUG = 10 
 NOTSET = 0
 
 
@@ -37,11 +37,12 @@ def get_log_channel(client_id=""):
 class SICLogMessage(SICMessage):
     def __init__(self, msg, client_id=""):
         """
-        A wrapper for log messages to be sent over the SICRedis pubsub framework.
+        A wrapper for log messages to be sent over the SIC SICRedisConnection pubsub framework.
         :param msg: The log message to send to the user
         """
         self.msg = msg
-        self.client_id = None
+        self.client_id = client_id
+        self.level = None
         super(SICLogMessage, self).__init__()
 
 
@@ -57,19 +58,18 @@ class SICCommonLog(object):
     channel for the user with subscribe_to_redis_log once.
 
     :param redis: The Redis instance to use for logging.
-    :type redis: SICRedis
+    :type redis: SICRedisConnection
     :param logfile: The file path to write the log to.
     :type logfile: str
     """
     def __init__(self):
         self.redis = None
         self.running = False
-        
-        # Create log filename with current date
-        current_date = datetime.now().strftime("%Y-%m-%d")
-        self.logfile = open("sic_{date}.log".format(date=current_date), "a")
-        
+        self.logfile = None
+        self.log_dir = None
+        self.write_to_logfile = False
         self.lock = threading.Lock()
+        self.threshold = DEBUG
 
     def subscribe_to_redis_log(self, client_id=""):
         """
@@ -81,10 +81,36 @@ class SICCommonLog(object):
         with self.lock:  # Ensure thread-safe access
             if not self.running:
                 self.running = True
-                self.redis = SICRedis(parent_name="SICCommonLog")
                 self.redis.register_message_handler(
-                    get_log_channel(client_id), self._handle_redis_log_message
+                    get_log_channel(client_id), self._handle_redis_log_message, name="SICCommonLog"
                 )
+
+    def stop(self):
+        """
+        Stop the logging.
+        """
+        with self.lock:  # Ensure thread-safe access
+            if self.running:
+                self.running = False
+            if self.logfile:
+                self.logfile.close()
+                self.logfile = None
+
+    def set_log_file_path(self, path):
+        """
+        Set the path to the log file.
+
+        :param path: The path to the log file.
+        :type path: str
+        """
+        with self.lock:
+            self.log_dir = os.path.normpath(path)
+            if not os.path.exists(self.log_dir):
+                os.makedirs(self.log_dir)
+            if self.logfile is not None:
+                self.logfile.close()
+                self.logfile = None
+
 
     def _handle_redis_log_message(self, message):
         """
@@ -93,11 +119,13 @@ class SICCommonLog(object):
         :param message: The message to handle.
         :type message: SICLogMessage
         """
-        # outputs to terminal
-        print(message.msg, end="\n")
+        if message.level >= self.threshold:
+            # outputs to terminal
+            print(message.msg, end="\n")
 
-        # writes to logfile
-        self._write_to_logfile(message.msg)
+            if self.write_to_logfile:
+                # writes to logfile
+                self._write_to_logfile(message.msg)
     
     def _write_to_logfile(self, message):
         """
@@ -106,7 +134,20 @@ class SICCommonLog(object):
         :param message: The message to write to the logfile.
         :type message: str
         """
-        with self.lock:
+        acquired = self.lock.acquire(timeout=0.5)
+        if not acquired:
+            return
+        try:
+            if self.log_dir is None:
+                # on remote devices the log_dir is set to None. We don't want to write to a logfile on remote devices
+                return
+            if self.logfile is None:
+                if not os.path.exists(self.log_dir):
+                    os.makedirs(self.log_dir)
+                current_date = datetime.now().strftime("%Y-%m-%d")
+                log_path = os.path.join(self.log_dir, "sic_{current_date}.log".format(current_date=current_date))
+                self.logfile = open(log_path, "a")
+
             # strip ANSI codes before writing to logfile
             clean_message = ANSI_CODE_REGEX.sub("", message)
 
@@ -119,29 +160,20 @@ class SICCommonLog(object):
             # write to logfile
             self.logfile.write(clean_message)
             self.logfile.flush()
+        finally:
+            self.lock.release()
 
-
-    def stop(self):
-        """
-        Stop the logging.
-        """
-        with self.lock:  # Ensure thread-safe access
-            if self.running:
-                self.running = False
-                self.redis.close()
-
-
-class SICRedisHandler(logging.Handler):
+class SICRedisLogHandler(logging.Handler):
     """
     Facilities to log to Redis as a file-like object, to integrate with standard python logging facilities.
 
     :param redis: The Redis instance to use for logging.
-    :type redis: SICRedis
+    :type redis: SICRedisConnection
     :param client_id: The client id of the device that is logging
     :type client_id: str
     """
     def __init__(self, redis, client_id):
-        super(SICRedisHandler, self).__init__()
+        super(SICRedisLogHandler, self).__init__()
         self.redis = redis
         self.client_id = client_id
         self.logging_channel = get_log_channel(client_id)
@@ -154,6 +186,9 @@ class SICRedisHandler(logging.Handler):
         :type record: logging.LogRecord
         """
         try:
+            if self.redis.stopping:
+                return # silently ignore messages if the application is stopping
+
             # Get the formatted message
             msg = self.format(record)
             
@@ -167,10 +202,13 @@ class SICRedisHandler(logging.Handler):
             else:
                 log_channel = self.logging_channel
 
+            log_message.level = record.levelno
+
             # Send over Redis
             self.redis.send_message(log_channel, log_message)
         except Exception:
-            self.handleError(record)
+            if not self.redis.stopping:
+                self.handleError(record)
 
     def readable(self):
         """
@@ -233,11 +271,19 @@ class SICLogFormatter(logging.Formatter):
         color = self.LOG_COLORS.get(record.levelno, self.RESET_COLOR)
 
         # Create the prefix part
+        # Highlight and bold "SICApplication" in the logger name if present
+        name = record.name
+        pad_amount = 45
+        if "SICApplication" in name:
+            pad_amount = 58
+            # ANSI escape codes: bold (\033[1m), yellow (\033[93m), reset (\033[0m)
+            highlighted = "\033[1m\033[93mSICApplication\033[0m"
+            name = name.replace("SICApplication", highlighted)
         name_ip = "[{name} {ip}]".format(
-            name=record.name,
+            name=name,
             ip=utils.get_ip_adress()
         )
-        name_ip_padded = name_ip.ljust(45, '-')
+        name_ip_padded = name_ip.ljust(pad_amount, '-')
         prefix = "{name_ip_padded}{color}{record_level}{reset_color}: ".format(name_ip_padded=name_ip_padded, color=color, record_level=record.levelname, reset_color=self.RESET_COLOR)
 
         # Split message into lines and handle each line
@@ -271,7 +317,7 @@ class SICLogFormatter(logging.Formatter):
         return text
 
 
-def get_sic_logger(name="", client_id="", redis=None, log_level=DEBUG):
+def get_sic_logger(name="", client_id="", redis=None, client_logger=False):
     """
     Set up logging to the log output channel to be able to report messages to users.
 
@@ -279,45 +325,33 @@ def get_sic_logger(name="", client_id="", redis=None, log_level=DEBUG):
     :type name: str
     :param client_id: The client id of the device that is logging
     :type client_id: str
-    :param redis: The SICRedis object
-    :type redis: SICRedis
-    :param log_level: The logger.LOGLEVEL verbosity level
-    :type log_level: int
+    :param redis: The SICRedisConnection object
+    :type redis: SICRedisConnection
     :return: The logger.
     :rtype: logging.Logger
     """
     # logging initialisation
     logger = logging.Logger(name)
-    logger.setLevel(log_level)
+    logger.setLevel(DEBUG)
     log_format = SICLogFormatter()
 
-    if redis:
-        # if redis is provided, use our custom handler
-        handler_redis = SICRedisHandler(redis, client_id)
-        handler_redis.setFormatter(log_format)
-        logger.addHandler(handler_redis)
-    else:
-        # if there is no redis instance, this is a local device
-        # make sure the SICCommonLog is subscribed to the Redis log channel
-        SIC_COMMON_LOG.subscribe_to_redis_log(client_id)
+    handler_redis = SICRedisLogHandler(redis, client_id)
+    handler_redis.setFormatter(log_format)
+    logger.addHandler(handler_redis)
 
-        # For local logging, create a custom handler that uses SICCommonLog's file
-        class SICFileHandler(logging.Handler):
-            def emit(self, record):
-                SIC_COMMON_LOG._write_to_logfile(self.format(record))
-
-        # log to the terminal
-        handler_terminal = logging.StreamHandler()
-        handler_terminal.setFormatter(log_format)
-        logger.addHandler(handler_terminal)
-
-        # write to the logfile
-        handler_file = SICFileHandler()
-        handler_file.setFormatter(log_format)
-        logger.addHandler(handler_file)
+    if client_logger:
+        SIC_CLIENT_LOG.redis = redis
+        SIC_CLIENT_LOG.subscribe_to_redis_log(client_id)
 
     return logger
 
 # pseudo singleton object. Does nothing when this file is executed during the import, but can subscribe to the log
 # channel for the user with subscribe_to_redis_log once
-SIC_COMMON_LOG = SICCommonLog()
+SIC_CLIENT_LOG = SICCommonLog()
+
+def set_log_level(level):
+    SIC_CLIENT_LOG.threshold = level
+
+def set_log_file(path):
+    SIC_CLIENT_LOG.write_to_logfile = True
+    SIC_CLIENT_LOG.set_log_file_path(path)

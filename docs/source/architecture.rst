@@ -1,5 +1,5 @@
-SIC Architecture
-========
+How SIC Works
+=============
 
 Fundamentals of the Social Interaction Cloud framework.
 
@@ -25,4 +25,4 @@ Processes and Threads
 
 .. toctree::
 
-   architecture/processes_and_threads
+   architecture/processes_threads

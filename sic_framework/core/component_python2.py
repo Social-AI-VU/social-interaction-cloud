@@ -15,14 +15,9 @@ from . import sic_logging, utils
 from .message_python2 import (
     SICConfMessage,
     SICControlRequest,
-    SICMessage,
     SICPingRequest,
     SICPongMessage,
-    SICRequest,
-    SICStopRequest,
-    SICSuccessMessage,
 )
-from .sic_redis import SICRedis
 
 class SICComponent:
     """
@@ -32,8 +27,6 @@ class SICComponent:
     :type ready_event: threading.Event, optional
     :param stop_event: Threading event to signal when the component should stop. If None, creates a new Event.
     :type stop_event: threading.Event, optional
-    :param log_level: The logging verbosity level (e.g., DEBUG, INFO, WARNING, ERROR).
-    :type log_level: int, optional
     :param conf: Configuration parameters for the component. If None, uses default configuration.
     :type conf: dict, optional
     """
@@ -53,20 +46,28 @@ class SICComponent:
     that need to stand up or models that need to load to GPU).
     """
 
+    COMPONENT_STOP_TIMEOUT = 2
+    """
+    Timeout in seconds for a component stop.
+    
+    This controls how long a SICConnector should wait when requesting a component to stop.
+    Increase this value for components that need more time to stop.
+    """
+
     # 2. Special methods
     def __init__(
         self, 
         ready_event=None, 
         stop_event=None, 
-        log_level=sic_logging.DEBUG, 
         conf=None, 
         input_channel=None, 
-        output_channel=None, 
+        component_channel=None, 
         req_reply_channel=None,
         client_id="",
+        endpoint="",
+        ip="",
         redis=None
     ):
-        self.log_level = log_level
         self.client_id = client_id
 
         # Redis and logger initialization
@@ -79,20 +80,27 @@ class SICComponent:
         except Exception as e:
             raise e
 
-        self._ip = utils.get_ip_adress()
-        self.component_id = self.get_component_name() + ":" + self._ip
+        self._ip = ip
+        self.component_endpoint = endpoint
 
         # _ready_event is set once the component has started, signals to the component manager that the component is ready.
         self._ready_event = ready_event if ready_event else threading.Event()
-        # _stop_event is set when the component should stop
-        self._stop_event = stop_event if stop_event else threading.Event()
+        # _signal_to_stop is set when the component should stop
+        self._signal_to_stop = stop_event if stop_event else threading.Event()
+        # _stopped is set when the component has stopped
+        self._stopped = threading.Event()
 
         # Components constrained to one input, request_reply, output channel
         self.input_channel = input_channel
-        self.output_channel = output_channel
+        self.component_channel = component_channel
         self.request_reply_channel = req_reply_channel
 
+        # Threads for the message and request handlers
+        self.message_handler_thread = None
+        self.request_handler_thread = None
+
         self.params = None
+        self._threads = []
 
         self.set_config(conf)
     
@@ -121,8 +129,8 @@ class SICComponent:
         self.logger.debug("Registering request handler")
 
         # register a request handler to handle requests
-        self._redis.register_request_handler(
-            self.request_reply_channel, self._handle_request
+        self.request_handler_thread = self._redis.register_request_handler(
+            self.request_reply_channel, self._handle_request, name="{}_request_handler".format(self.component_endpoint)
         )
 
         self.logger.debug("Request handler registered")
@@ -133,8 +141,8 @@ class SICComponent:
         def message_handler(message):
             return self.on_message(message=message)
         
-        self._redis.register_message_handler(
-            self.input_channel, message_handler
+        self.message_handler_thread = self._redis.register_message_handler(
+            self.input_channel, message_handler, name="{}_message_handler".format(self.component_endpoint) 
         )
         
         self.logger.debug("Message handler registered")
@@ -142,36 +150,20 @@ class SICComponent:
         # communicate the service is set up and listening to its inputs
         self._ready_event.set()
 
-        self.logger.info("Started component {}".format(self.get_component_name()))
+        self.logger.info("Successfully started component {}".format(self.get_component_name()))
+
 
     def stop(self, *args):
         """
-        Stop the component.
+        Set the stop event to signal the component to stop.
 
-        Closes the Redis connection and sets the stop event.
-        
-        :param args: Additional arguments (not used)
-        :type args: tuple
+        Awaits for the component to stop and checks that the _stopped event is set.
         """
-        self.logger.debug(
-            "Trying to exit {} gracefully...".format(self.get_component_name())
-        )
-        try:
-            # set stop event to signal the component to stop
-            self._stop_event.set()
-            
-            # remove the data stream
-            self.logger.debug("Removing data stream for {}".format(self.component_id))
-            data_stream_result = self._redis.unset_data_stream(self.output_channel)
-
-            if data_stream_result == 1:
-                self.logger.debug("Data stream for {} removed".format(self.component_id))
-            else:
-                self.logger.debug("Data stream for {} not found".format(self.component_id))
-
-            self.logger.debug("Graceful exit was successful")
-        except Exception as err:
-            self.logger.error("Graceful exit has failed: {}".format(err.message))
+        self._signal_to_stop.set()
+        if self._stopped.wait(timeout=self.COMPONENT_STOP_TIMEOUT):
+            self.logger.debug("Component's _stopped event set successfully")
+        else:
+            self.logger.warning("Component's _stopped event was not set within the specified timeout time")
 
     def set_config(self, new=None):
         """
@@ -209,7 +201,7 @@ class SICComponent:
         :return: The reply
         :rtype: SICMessage
         """
-        raise NotImplementedError("You need to define a message handler.")
+        raise NotImplementedError("You need to define a message handler for component {}".format(self.component_endpoint))
 
     def output_message(self, message):
         """
@@ -221,7 +213,7 @@ class SICComponent:
         :type message: SICMessage
         """
         message._previous_component_name = self.get_component_name()
-        self._redis.send_message(self.output_channel, message)
+        self._redis.send_message(self.component_channel, message)
 
     @staticmethod
     @abstractmethod
@@ -288,8 +280,8 @@ class SICComponent:
 
     def _handle_request(self, request):
         """
-        Handle control requests such as SICPingRequests and SICStopRequest by calling 
-        generic Component methods. Component specific requests are passed to the normal on_request handler.
+        Handle control requests such as SICPingRequests by calling generic Component methods.
+        Component specific requests are passed to the normal on_request handler.
         
         :param request: The request to handle.
         :type request: SICRequest
@@ -303,10 +295,6 @@ class SICComponent:
 
         if is_sic_instance(request, SICPingRequest):
             return SICPongMessage()
-
-        if is_sic_instance(request, SICStopRequest):
-            self.stop()
-            return SICSuccessMessage()
 
         if not is_sic_instance(request, SICControlRequest):
             return self.on_request(request)

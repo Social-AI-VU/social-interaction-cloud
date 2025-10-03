@@ -20,10 +20,8 @@ from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
     AudioMessage,
     SICConfMessage,
-    SICIgnoreRequestMessage,
     SICMessage,
     SICRequest,
-    SICStopRequest,
 )
 from sic_framework.core.utils import is_sic_instance
 
@@ -337,7 +335,7 @@ class DialogflowComponent(SICComponent):
                     "Recognition_result: " + response.recognition_result.transcript
                 )
                 self._redis.send_message(
-                    self.output_channel, RecognitionResult(response)
+                    self.component_channel, RecognitionResult(response)
                 )
             if response.query_result:
                 self.logger.info("Received intent: " + response.query_result.action)

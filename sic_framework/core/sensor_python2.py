@@ -29,6 +29,18 @@ class SICSensor(SICComponent):
 
         self._produce()
 
+    def on_message(self, message):
+        """
+        Sensors do not handle messages.
+        """
+        pass
+
+    def on_request(self, request):
+        """
+        Sensors do not handle requests other than control requests (Start/Stop).
+        """
+        pass
+
     @abstractmethod
     def execute(self):
         """
@@ -48,11 +60,12 @@ class SICSensor(SICComponent):
         The output of the execute method is sent on the output channel.
         """
         self.logger.debug("Starting to produce")
-        while not self._stop_event.is_set():
+        while not self._signal_to_stop.is_set():
             output = self.execute()
 
             output._timestamp = self._get_timestamp()
 
             self.output_message(output)
 
+        self._stopped.set()
         self.logger.debug("Stopped producing")

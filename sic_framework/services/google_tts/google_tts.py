@@ -215,7 +215,7 @@ def main():
     """
     Run a ComponentManager that can start the Google Text-to-Speech Component.
     """
-    SICComponentManager([Text2SpeechService])
+    SICComponentManager([Text2SpeechService], name="GoogleTTS")
 
 
 if __name__ == "__main__":
