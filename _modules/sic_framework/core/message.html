@@ -1,0 +1,311 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.core.message &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=13237357" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=61708c92" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../_static/togglebutton.js?v=4a39c7ea"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.core.message</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.core.message</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConfMessage</span> <span class="k">as</span> <span class="n">SICConfMessage_python2</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICMessage</span> <span class="k">as</span> <span class="n">SICMessage_python2</span>
+
+
+<div class="viewcode-block" id="SICMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message.SICMessage">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICMessage</span><span class="p">(</span><span class="n">SICMessage_python2</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="SICConfMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message.SICConfMessage">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICConfMessage</span><span class="p">(</span><span class="n">SICConfMessage_python2</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">Redis</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">():</span>
+        <span class="n">host</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DB_IP&quot;</span><span class="p">)</span>
+        <span class="n">password</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DB_PASS&quot;</span><span class="p">)</span>
+        <span class="n">self_signed</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DB_SSL_SELFSIGNED&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">self_signed</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Redis</span><span class="p">(</span>
+                <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">ssl</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ssl_ca_certs</span><span class="o">=</span><span class="s2">&quot;cert.pem&quot;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">password</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Redis</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">ssl</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">)</span>
+
+    <span class="nd">@dataclass</span>
+    <span class="k">class</span><span class="w"> </span><span class="nc">FaceRecData</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+        <span class="n">count</span><span class="p">:</span> <span class="nb">int</span>
+        <span class="n">arr</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span>
+
+    <span class="c1"># np_arr = np.random.random((640, 480, 3)).astype(np.float32)</span>
+    <span class="c1"># x = FaceRecData(5, np_arr)</span>
+
+    <span class="c1"># print(hasattr(x, &quot;count&quot;))</span>
+    <span class="c1"># exit(1)</span>
+    <span class="c1">#</span>
+    <span class="c1"># N = 10</span>
+    <span class="c1">#</span>
+    <span class="c1"># print(&quot;pickle&quot;)</span>
+    <span class="c1">#</span>
+    <span class="c1"># time = timeit.timeit(lambda: pickle.dumps(x), number=N)</span>
+    <span class="c1"># print(&quot;  serialize&quot;, time)</span>
+    <span class="c1">#</span>
+    <span class="c1"># string = pickle.dumps(x)</span>
+    <span class="c1"># time = timeit.timeit(lambda: pickle.loads(string), number=N)</span>
+    <span class="c1"># print(&quot;  deserialize&quot;, time)</span>
+    <span class="c1">#</span>
+    <span class="c1"># ##############################</span>
+    <span class="c1"># print(&quot;pickle 2&quot;)</span>
+    <span class="c1">#</span>
+    <span class="c1"># time = timeit.timeit(lambda: pickle.dumps(x, protocol=2), number=N)</span>
+    <span class="c1"># print(&quot;  serialize&quot;, time)</span>
+    <span class="c1">#</span>
+    <span class="c1"># string = pickle.dumps(x)</span>
+    <span class="c1"># time = timeit.timeit(lambda: pickle.loads(string), number=N)</span>
+    <span class="c1"># print(&quot;  deserialize&quot;, time)</span>
+    <span class="c1">#</span>
+    <span class="c1"># ###########################</span>
+    <span class="c1"># print(&quot;pickle vars&quot;)</span>
+    <span class="c1">#</span>
+    <span class="c1"># time = timeit.timeit(lambda: bytes(x), number=N)</span>
+    <span class="c1"># print(&quot;  serialize&quot;, time)</span>
+    <span class="c1">#</span>
+    <span class="c1"># string = bytes(x)</span>
+    <span class="c1"># time = timeit.timeit(lambda: x.from_bytes(string), number=N)</span>
+    <span class="c1"># print(&quot;  deserialize&quot;, time)</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="c1"># # HARD</span>
+    <span class="c1"># # string = x.serialize_vars()</span>
+    <span class="c1"># # time = timeit.timeit(lambda: x.deserialize_vars(string), number=N)</span>
+    <span class="c1"># # print(&quot;  deserialize&quot;, time)</span>
+    <span class="c1">#</span>
+    <span class="c1"># ###########################</span>
+    <span class="c1">#</span>
+    <span class="c1"># def serialize_numpy(arr: np.array) -&gt; str:</span>
+    <span class="c1">#     arr_dtype = bytearray(str(arr.dtype), &#39;utf-8&#39;)</span>
+    <span class="c1">#     arr_shape = bytearray(&#39;,&#39;.join([str(a) for a in arr.shape]), &#39;utf-8&#39;)</span>
+    <span class="c1">#     sep = bytearray(&#39;|&#39;, &#39;utf-8&#39;)</span>
+    <span class="c1">#     arr_bytes = arr.ravel().tobytes()</span>
+    <span class="c1">#     to_return = arr_dtype + sep + arr_shape + sep + arr_bytes</span>
+    <span class="c1">#     return to_return</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="c1"># def deserialize_numpy(serialized_arr: str) -&gt; np.array:</span>
+    <span class="c1">#     sep = &#39;|&#39;.encode(&#39;utf-8&#39;)</span>
+    <span class="c1">#     i_0 = serialized_arr.find(sep)</span>
+    <span class="c1">#     i_1 = serialized_arr.find(sep, i_0 + 1)</span>
+    <span class="c1">#     arr_dtype = serialized_arr[:i_0].decode(&#39;utf-8&#39;)</span>
+    <span class="c1">#     arr_shape = tuple([int(a) for a in serialized_arr[i_0 + 1:i_1].decode(&#39;utf-8&#39;).split(&#39;,&#39;)])</span>
+    <span class="c1">#     arr_str = serialized_arr[i_1 + 1:]</span>
+    <span class="c1">#     arr = np.frombuffer(arr_str, dtype=arr_dtype).reshape(arr_shape)</span>
+    <span class="c1">#     return arr</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="c1"># print(&quot;serialize using np.tobytes and np.frombuffer with struct.pack length and shape&quot;)</span>
+    <span class="c1"># time = timeit.timeit(lambda: serialize_numpy(np_arr), number=N)</span>
+    <span class="c1"># print(&quot;  serialize&quot;, time)</span>
+    <span class="c1"># #</span>
+    <span class="c1"># string = serialize_numpy(np_arr)</span>
+    <span class="c1"># time = timeit.timeit(lambda: deserialize_numpy(string), number=N)</span>
+    <span class="c1"># print(&quot;  deserialize&quot;, time)</span>
+    <span class="c1">#</span>
+    <span class="c1"># # ###########################</span>
+    <span class="c1"># import io</span>
+    <span class="c1">#</span>
+    <span class="c1"># print(&quot;serialize using numpy save and load&quot;)</span>
+    <span class="c1"># f = io.BytesIO()</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="c1"># def np_writez():</span>
+    <span class="c1">#     f.flush()</span>
+    <span class="c1">#     f.seek(0)</span>
+    <span class="c1">#     np.savez_compressed(f, np_arr)</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="c1"># np_fun = np.savez</span>
+    <span class="c1">#</span>
+    <span class="c1"># time = timeit.timeit(lambda: np_fun(f, np_arr), number=N)</span>
+    <span class="c1"># print(&quot;  serialize&quot;, time)</span>
+    <span class="c1"># #</span>
+    <span class="c1"># # string = np.load(np_arr)</span>
+    <span class="c1">#</span>
+    <span class="c1"># # def load_np():</span>
+    <span class="c1"># #     f.seek(0)</span>
+    <span class="c1"># #     np.load(f)</span>
+    <span class="c1">#</span>
+    <span class="c1"># f = io.BytesIO()</span>
+    <span class="c1"># np_fun(f, np_arr)</span>
+    <span class="c1"># content = f.getvalue()</span>
+    <span class="c1">#</span>
+    <span class="c1"># time = timeit.timeit(lambda: np.load(io.BytesIO(content)), number=N)</span>
+    <span class="c1"># print(&quot;  deserialize&quot;, time)</span>
+    <span class="c1">#</span>
+    <span class="c1"># b&quot;&quot;.join([])</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="c1"># np_arr_list = serialize_numpy(np_arr)</span>
+    <span class="c1">#</span>
+    <span class="c1"># from sic.image_depth_pb2 import ImageDepth</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="c1"># def pack_protobuf():</span>
+    <span class="c1">#     img_depth = ImageDepth()</span>
+    <span class="c1">#     img_depth.image_width = np_arr.shape[1]</span>
+    <span class="c1">#     img_depth.image_height = np_arr.shape[0]</span>
+    <span class="c1">#     img_depth.depth_image.extend(np_arr_list)</span>
+    <span class="c1">#     return img_depth.SerializeToString()</span>
+    <span class="c1">#</span>
+    <span class="c1">#</span>
+    <span class="c1"># time = timeit.timeit(pack_protobuf, number=N)</span>
+    <span class="c1"># print(f&quot;protobuf N = {N}&quot;)</span>
+    <span class="c1"># print(&quot;  serialize&quot;, time)</span>
+    <span class="c1">#</span>
+    <span class="c1"># print()</span>
+    <span class="c1"># # print(string)</span>
+
+    <span class="c1">#</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">np_arr</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span> <span class="o">*</span> <span class="mi">255</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">FaceRecData</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">np_arr</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Python </span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">: serialized</span><span class="se">\n</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">ser_a</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">serialize</span><span class="p">()</span>
+
+    <span class="n">redis</span> <span class="o">=</span> <span class="n">connect</span><span class="p">()</span>
+    <span class="n">redis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;test_np&quot;</span><span class="p">,</span> <span class="n">ser_a</span><span class="p">)</span>
+    <span class="n">ser_message</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;test_np&quot;</span><span class="p">)</span>
+    <span class="n">mess</span> <span class="o">=</span> <span class="n">FaceRecData</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">ser_message</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Python </span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">: deserialized message, got</span><span class="se">\n</span><span class="si">{</span><span class="n">mess</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mess</span><span class="o">.</span><span class="n">arr</span> <span class="o">-</span> <span class="n">np_arr</span><span class="p">)))</span>
+    <span class="c1"># ser_obj = x.serialize()</span>
+    <span class="c1"># deser_obj = FaceRecData.deserialize(ser_obj)</span>
+    <span class="c1">#</span>
+    <span class="c1"># N = 1_000</span>
+    <span class="c1"># time = timeit.timeit(lambda: FaceRecData(5, np_arr).serialize(), number=N)</span>
+    <span class="c1"># print(f&quot;Serialize FaceRecData {(time / N)} seconds per iteration (FPS: {round(1/ (time / N))})&quot;)</span>
+    <span class="c1">#</span>
+    <span class="c1"># time = timeit.timeit(lambda: FaceRecData.deserialize(ser_obj), number=N)</span>
+    <span class="c1"># print(f&quot;Deserialize FaceRecData {(time / N)} seconds per iteration (FPS: {round(1/ (time / N))})&quot;)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
