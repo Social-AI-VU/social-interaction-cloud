@@ -41,6 +41,8 @@ class SICStartComponentRequest(SICRequest):
 
     :param name: The name of the component to start.
     :type name: str
+    :param endpoint: The endpoint of the component.
+    :type endpoint: str
     :param output_channel: The output channel of the component.
     :type output_channel: str
     :param input_channel: The input channel of the component.
