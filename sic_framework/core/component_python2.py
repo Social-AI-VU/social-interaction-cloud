@@ -139,7 +139,8 @@ class SICComponent:
 
         # Create a closure for the message handler to register on the channel
         def message_handler(message):
-            return self.on_message(message=message)
+            # Route through _handle_message to ensure type validation occurs
+            return self._handle_message(message)
         
         self.message_handler_thread = self._redis.register_message_handler(
             self.input_channel, message_handler, name="{}_message_handler".format(self.component_endpoint) 
@@ -269,13 +270,37 @@ class SICComponent:
         """
         Handle incoming messages.
         
-        Calls the user-implemented on_message method to process the message.
+        Validates the message against this Component's declared inputs (get_inputs) before
+        dispatching to the user-implemented on_message method. Messages that do not match
+        any declared input types are ignored.
 
         :param message: The message to handle.
         :type message: SICMessage
-        :return: The reply to the message.
-        :rtype: SICMessage
+        :return: The reply to the message, if any.
+        :rtype: SICMessage | None
         """
+        # First check if the message is of a valid type
+        try:
+            expected_inputs = self.get_inputs()
+        except Exception:
+            expected_inputs = []
+
+        # Normalize to list
+        if not isinstance(expected_inputs, (list, tuple)):
+            expected_inputs = [expected_inputs] if expected_inputs else []
+
+        # If no expected inputs declared, forward as-is
+        if expected_inputs:
+            is_valid = any(is_sic_instance(message, input_cls) for input_cls in expected_inputs)
+            if not is_valid:
+                # Ignore unexpected message types to prevent component crashes
+                self.logger.warning(
+                    "Ignoring message of type {} not in expected inputs {}".format(
+                        type(message).__name__, [c.__name__ for c in expected_inputs]
+                    )
+                )
+                return None
+
         return self.on_message(message)
 
     def _handle_request(self, request):

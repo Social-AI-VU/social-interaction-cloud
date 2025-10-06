@@ -421,12 +421,14 @@ class SICRedisConnection:
         for c in self._running_callbacks:
             try:
                 if c.thread.is_alive():
+                    # print("REDIS SHUTDOWN: Unsubscribing callback thread {}".format(c.name))
                     c.pubsub.unsubscribe()
                     c.thread.stop()
-                    c.thread.join(timeout=1.0)
+                    c.thread.join(timeout=0.2)
             except Exception as e:
-                sys.stderr.write("Error stopping Redis callback thread {}: {}\n".format(c.name, e))
+                sys.stderr.write("REDIS SHUTDOWN: Error stopping callback thread {}: {}\n".format(c.name, e))
                 sys.stderr.flush()
+        # print("REDIS SHUTDOWN: Closing Redis connection")
         self._redis.close()
 
     def _reply(self, channel, request, reply):

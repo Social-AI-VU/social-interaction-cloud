@@ -42,7 +42,7 @@ class SICLogMessage(SICMessage):
         """
         self.msg = msg
         self.client_id = client_id
-        self.level = None
+        self.level = INFO
         super(SICLogMessage, self).__init__()
 
 
@@ -119,9 +119,15 @@ class SICCommonLog(object):
         :param message: The message to handle.
         :type message: SICLogMessage
         """
-        if message.level >= self.threshold:
+        # default to INFO level if not set
+        level = getattr(message, 'level', logging.INFO)
+        # check if the level is greater than or equal to the threshold
+        if level >= self.threshold:
             # outputs to terminal
-            print(message.msg, end="\n")
+            try:    
+                print(message.msg, end="\n")
+            except BrokenPipeError:
+                pass
 
             if self.write_to_logfile:
                 # writes to logfile
@@ -287,7 +293,10 @@ class SICLogFormatter(logging.Formatter):
         prefix = "{name_ip_padded}{color}{record_level}{reset_color}: ".format(name_ip_padded=name_ip_padded, color=color, record_level=record.levelname, reset_color=self.RESET_COLOR)
 
         # Split message into lines and handle each line
-        message_lines = record.msg.splitlines()
+        try:
+            message_lines = str(record.getMessage()).splitlines()
+        except Exception as e:
+            message_lines = ["ERROR: Could not get message from record: {}".format(record), "Exception: {e}".format(e=e)]
         if not message_lines:
             return prefix
 
@@ -298,6 +307,17 @@ class SICLogFormatter(logging.Formatter):
         if len(message_lines) > 1:
             indent = ' ' * len(prefix)
             formatted_lines.extend("{indent}{line}".format(indent=indent, line=line.strip()) for line in message_lines[1:])
+
+        # If an exception was attached (e.g., logger.exception), append formatted exception text
+        if record.exc_info:
+            try:
+                exc_text = self.formatException(record.exc_info)
+            except Exception:
+                exc_text = None
+            if exc_text:
+                indent = ' ' * len(prefix)
+                for line in str(exc_text).splitlines():
+                    formatted_lines.append("{indent}{line}".format(indent=indent, line=line))
 
         # Join all lines with newlines
         return '\n'.join(formatted_lines)
