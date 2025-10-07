@@ -39,16 +39,29 @@ class SICStartComponentRequest(SICRequest):
     """
     A request from a user to start a component.
 
-    :param component_name: The name of the component to start.
-    :type component_name: str
+    :param name: The name of the component to start.
+    :type name: str
+    :param endpoint: The endpoint of the component.
+    :type endpoint: str
+    :param output_channel: The output channel of the component.
+    :type output_channel: str
+    :param input_channel: The input channel of the component.
+    :type input_channel: str
+    :param request_reply_channel: The request reply channel of the component.
+    :type request_reply_channel: str
+    :param client_id: The client id of the component.
+    :type client_id: str
     :param conf: The configuration the component.
     :type conf: SICConfMessage
     """
 
-    def __init__(self, component_name, input_channel, client_id, conf=None):
+    def __init__(self, component_name, endpoint, input_channel, component_channel, request_reply_channel, client_id, conf=None):
         super(SICStartComponentRequest, self).__init__()
         self.component_name = component_name  # str
+        self.endpoint = endpoint
         self.input_channel = input_channel
+        self.component_channel = component_channel
+        self.request_reply_channel = request_reply_channel
         self.client_id = client_id
         self.conf = conf  # SICConfMessage
 
@@ -75,9 +88,8 @@ class SICNotStartedMessage(SICMessage):
         self.message = message
 
 class SICComponentStartedMessage(SICMessage):
-    def __init__(self, component_channel, request_reply_channel):
-        self.component_channel = component_channel
-        self.request_reply_channel = request_reply_channel
+    def __init__(self):
+        pass
 
 class SICComponentManager(object):
     """
@@ -113,7 +125,9 @@ class SICComponentManager(object):
         self._components_stopped = threading.Event()
 
         self.name = "{}ComponentManager".format(name)
-        self.logger = sic_logging.get_sic_logger(name=self.name, client_id=self.client_id, redis=self.redis, client_logger=True)
+
+        self.logger = sic_logging.get_sic_logger(name=self.name, redis=self.redis)
+        
         self.redis.parent_logger = self.logger
 
         # The _handle_request function is calls execute directly, as we must reply when execution done to allow the user
@@ -169,11 +183,11 @@ class SICComponentManager(object):
 
         # extract component information from the request
         component_name = request.component_name
-        component_endpoint = component_name + ":" + self.ip
+        component_endpoint = request.endpoint
         input_channel = request.input_channel
         client_id = request.client_id
-        component_channel = create_data_stream_id(component_endpoint, input_channel)
-        request_reply_channel = component_channel + ":request_reply"
+        component_channel = request.component_channel
+        request_reply_channel = request.request_reply_channel
         conf = request.conf
 
         component_class = self.component_classes[component_name]  # SICComponent object
@@ -243,10 +257,7 @@ class SICComponentManager(object):
 
             self.logger.debug("Component {} started successfully".format(component.component_endpoint), extra={"client_id": client_id})
             
-            # inform the user their component has started
-            reply = SICComponentStartedMessage(component_channel, request_reply_channel)
-
-            return reply
+            return SICComponentStartedMessage()
 
         except Exception as e:
             self.logger.error(

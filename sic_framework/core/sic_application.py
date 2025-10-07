@@ -56,6 +56,7 @@ class SICApplication(object):
         self._active_devices = weakref.WeakSet()
         self._app_logger = None
         self._shutdown_handler_registered = False
+        self.client_ip = utils.get_ip_adress()
 
         # Automatically register exit handler once per process
         self.register_exit_handler()
@@ -65,10 +66,16 @@ class SICApplication(object):
     # ------------ Public API (instance methods) ------------
     def register_connector(self, connector):
         """Track a connector for cleanup during shutdown."""
+        # don't register connectors if cleanup is in progress (maybe there was an error during startup)
+        if self._cleanup_in_progress:
+            return
         self._active_connectors.add(connector)
 
     def register_device(self, device):
         """Track a device manager."""
+        # don't register devices if cleanup is in progress (maybe there was an error during startup)
+        if self._cleanup_in_progress:
+            return
         self._active_devices.add(device)
 
     def set_log_level(self, level):
@@ -148,7 +155,7 @@ class SICApplication(object):
                     )
                 )
 
-        app_logger.info("Closing redis connection")
+        app_logger.info("Shutting down Redis connection")
         if self._redis is not None:
             self._redis.close()
             self._redis = None

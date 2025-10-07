@@ -11,13 +11,14 @@ import sys
 
 from sic_framework.core.sensor_python2 import SICSensor
 from sic_framework.core.service_python2 import SICService
-from sic_framework.core.utils import is_sic_instance
+from sic_framework.core.utils import is_sic_instance, create_data_stream_id
 
 from . import utils
 from .component_manager_python2 import (
     SICNotStartedMessage, 
     SICStartComponentRequest, 
-    SICStopComponentRequest
+    SICStopComponentRequest,
+    SICComponentStartedMessage
 )
 from .message_python2 import SICMessage, SICPingRequest, SICRequest, SICSuccessMessage
 from . import sic_logging
@@ -53,43 +54,45 @@ class SICConnector(object):
                  input_source=None):
 
         assert isinstance(ip, str), "IP must be string"
-        app = SICApplication()
+        self.app = SICApplication()
 
         # connect to Redis
-        self._redis = app.get_redis_instance()
-
-        # client ID is the IP of whatever machine is running this connector
-        self.client_id = utils.get_ip_adress()
+        self._redis = self.app.get_redis_instance()
 
         self.name = "{component}Connector".format(component=self.__class__.__name__)
         self.logger = sic_logging.get_sic_logger(
-            name=self.name, client_id=self.client_id, redis=self._redis
+            name=self.name, client_id=self.app.client_ip, redis=self._redis
         )
 
         # if the component is running on the same machine as the Connector
         if ip in ["localhost", "127.0.0.1"]:
             # get the ip address of the current machine on the network
-            ip = utils.get_ip_adress()
+            ip = self.app.client_ip
 
         self.component_name = self.component_class.get_component_name()
         self.component_ip = ip
         self.component_endpoint = self.component_name + ":" + self.component_ip
 
-        # if the input channel is not provided, assume the client ID (IP address) is the input channel (i.e. Component is a Sensor)
         if input_source is None:    
-            self._input_channel = ip
+            # If an input source is not provided, assume the client ID (IP address) is the input channel (i.e. Component is a Sensor/Actuator)
+            # First we create a component channel with the client ID as the input source
+            # Then we create an input channel with the component channel as the input source, so that the input channel is unique to the component
+            self.component_channel = create_data_stream_id(self.component_endpoint, self.app.client_ip)
+            self.input_channel = self.component_channel + ":input"
         else:
+            # if the input channel is provided, assume the input source is a SICConnector
             if not isinstance(input_source, SICConnector):
                 self.logger.error("Input source must be a SICConnector")
-                sys.exit(1)
-            self._input_channel = input_source.get_component_channel()
+                self.app.shutdown()
+            # If the input source is a SICConnector, we use the component channel of the input source as the input channel (already unique to the component)
+            self.input_channel = input_source.get_component_channel()
+            self.component_channel = create_data_stream_id(self.component_endpoint, self.input_channel)
+
+        self.request_reply_channel = self.component_channel + ":request_reply"
+
 
         self._callback_threads = []
         self._conf = conf
-
-        # these are set once the component manager has started the component
-        self._request_reply_channel = None
-        self._component_channel = None
 
         # make sure we can start the component and ping it
         try:
@@ -101,7 +104,7 @@ class SICConnector(object):
             raise RuntimeError(e)
 
         self._callback_threads = []
-        app.register_connector(self)
+        self.app.register_connector(self)
         self.logger.info("Component initialization complete")
 
     @property
@@ -123,7 +126,7 @@ class SICConnector(object):
         """
         # Update the timestamp, as it should be set by the device of origin
         message._timestamp = self._get_timestamp()
-        self._redis.send_message(self._input_channel, message)
+        self._redis.send_message(self.input_channel, message)
 
     def register_callback(self, callback):
         """
@@ -159,7 +162,7 @@ class SICConnector(object):
         :rtype: SICMessage | None
         """
 
-        self.logger.debug("Sending request: {} over channel: {}".format(request, self._request_reply_channel))
+        self.logger.debug("Sending request: {} over channel: {}".format(request, self.request_reply_channel))
 
         if isinstance(request, type):
             self.logger.error(
@@ -175,7 +178,7 @@ class SICConnector(object):
         request._timestamp = self._get_timestamp()
 
         return self._redis.request(
-            self._request_reply_channel, request, timeout=timeout, block=block
+            self.request_reply_channel, request, timeout=timeout, block=block
         )
 
     def stop_component(self):
@@ -184,7 +187,7 @@ class SICConnector(object):
         """
 
         self.logger.debug("Connector sending StopComponentRequest to ComponentManager")
-        stop_result = self._redis.request(self.component_ip, SICStopComponentRequest(self._component_channel))
+        stop_result = self._redis.request(self.component_ip, SICStopComponentRequest(self.component_channel))
         if stop_result is None:
             self.logger.error("Stop request timed out")
             raise TimeoutError("Stop request timed out")
@@ -202,13 +205,13 @@ class SICConnector(object):
         """
         Get the input channel of the component.
         """
-        return self._input_channel
+        return self.input_channel
     
     def get_component_channel(self):
         """
         Get the output channel of the component.
         """
-        return self._component_channel
+        return self.component_channel
 
     def _ping(self):
         """
@@ -242,8 +245,11 @@ class SICConnector(object):
 
         component_request = SICStartComponentRequest(
             component_name=self.component_class.get_component_name(),
-            input_channel=self._input_channel,
-            client_id=self.client_id,
+            endpoint=self.component_endpoint,
+            input_channel=self.input_channel,
+            component_channel=self.component_channel,
+            request_reply_channel=self.request_reply_channel,
+            client_id=self.app.client_ip,
             conf=self._conf,
         )
 
@@ -261,10 +267,11 @@ class SICConnector(object):
                         return_message.message
                     )
                 )
+            elif is_sic_instance(return_message, SICComponentStartedMessage):
+                self.logger.debug("Received SICComponentStartedMessage, component successfully started")
             else:
-                # set the output and request/reply channels
-                self._component_channel = return_message.component_channel
-                self._request_reply_channel = return_message.request_reply_channel
+                self.logger.critical("Received unknown message type from component manager: {}".format(type(return_message)))
+                self.app.shutdown()
 
         except TimeoutError as e:
             # ? Why use six.raise_from?
