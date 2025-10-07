@@ -66,3 +66,13 @@ Tutorial 6: Google Cloud Platform
    :maxdepth: 2
 
    tutorials/6_google_cloud
+
+Tutorial 7: Creating Components
+-------------------------------------
+
+🧐 How to create a custom component.
+
+.. toctree::
+   :maxdepth: 2
+
+   tutorials/7_creating_components

@@ -36,6 +36,8 @@ For detailed examples and tutorials, see the demos in the `sic_applications repo
    :caption: Contents:
 
    tutorials
+   getting_started
+   services
    architecture
    api
    faq

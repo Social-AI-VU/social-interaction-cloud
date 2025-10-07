@@ -4,7 +4,9 @@
 📄 Installation Guide
 ----------------------------
 
-The Social Interaction Cloud (SIC) is a native python framework. It can be used via the social-interaction-cloud python package. The framework uses Redis for message brokering. To help you get started you can clone the sic_applications repository. Below you will find the basic instructions for cloning the repository and setting up the Social Interaction Cloud. 
+The Social Interaction Cloud (SIC) is a native python framework. It can be used via the ``social-interaction-cloud`` `python package <https://pypi.org/project/social-interaction-cloud/>`_. The framework uses `Redis <https://redis.io/docs/latest/get-started/>`_ for message brokering. To help you get started you can clone the ``sic_applications`` `repository <https://github.com/Social-AI-VU/sic_applications/tree/main>`_. Below you will find the basic instructions for cloning the repository and setting up the Social Interaction Cloud. 
+
+SIC requires :math:`3.10 \leq` python version :math:`\leq 3.12`.
 
 Below you can find the installation instructions for Linux, MacOS, and Windows. 
 
@@ -74,11 +76,11 @@ Use the following commands within a shell to install the Social Interaction Clou
 
    For Windows users, the installation is not as as straightforward as for Ubuntu or Mac users, but it’s also fairly simple.
 
-   Go to the official Git Download for Windows and download the latest version of the installer. A file named Git-2.xx.xx-64-bit.exe should be downloaded.
+   Go to the official Git `Download for Windows <https://git-scm.com/downloads/win>`_ and download the latest version of the installer. A file named **Git-2.xx.xx-64-bit.exe** should be downloaded.
 
-   Run the downloaded installer. You can keep the default settings by clicking Next through each step, and then click Install at the end.
+   Run the downloaded installer. You can keep the default settings by clicking **Next** through each step, and then click **Install** at the end.
 
-   After installation, open Git Bash and run the following commands:
+   After installation, open **Git Bash** and run the following commands:
 
    .. code-block:: bash
 
@@ -113,6 +115,22 @@ Use the following commands within a shell to install the Social Interaction Clou
 
       pip install -U git+https://github.com/lilohuang/PyTurboJPEG.git
 
+   📹: Video Tutorial (Windows)
+   ----------------------------
+
+   .. raw:: html
+
+      <iframe width="560" height="315" src="https://www.youtube.com/embed/iWvUm7mJOA8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+
+**Upgrading SIC**
+~~~~~~~~~~
+If you want to upgrade to the latest version, run this command in your venv:
+
+   .. code-block:: bash
+
+      pip install social-interaction-cloud --upgrade
+
 **Running your first application**
 ~~~~~~~~~~
 
@@ -126,15 +144,217 @@ Running any application consists of two (or three) steps:
 
 We will cover two examples: running an application without a service (step 1 and 3) and with a service (step 1, 2, and 3).
 
-**Running Applications**
+
+**Example 1: Running an application without a service**
 ~~~~~~~~~~
+For this example we will show your computer’s camera output on your screen. The code for this example is available in the ``sic_applications/demos`` folder and called `demo_desktop_camera.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera.py>`_. An equivalent example showing Nao’s camera output can be found here :doc:`Intro to SIC <2_intro_to_sic>`.
 
-See the second half of the `Getting Started Tutorial <https://socialrobotics.atlassian.net/wiki/spaces/CBSR/pages/2180415493/Getting+started>`_ .
+**Step 1: starting Redis on your laptop**
+To enable communication between all your devices, we have to start Redis server. Make sure Redis is always up and running when you run any demos.
 
+**Ubuntu/Debian/MacOS**
 
-📹: Video Tutorial (Windows)
+.. toggle:: Ubuntu/Debian/MacOS
+
+   .. code-block:: bash
+
+      # Navigate to the repo where you cloned the sic_applications
+      cd sic_applications
+
+      # Start the Redis server
+      redis-server conf/redis/redis.conf
+
+   For **Ubuntu/Debian** users, if you encounter the error *Could not create server TCP listening socket \*\:6379\: bind: Address already in use.*, please use the following command to stop the Redis server first
+
+   .. code-block:: bash
+
+      sudo systemctl stop redis-server.service  
+
+   And, if you wish to prevent Redis server from starting automatically at boot, you can run
+
+   .. code-block:: bash
+
+      sudo systemctl disable redis-server.service  
+
+   If you still can’t kill Redis server, you can use ``ps aux | grep redis-server`` command to find the PID (process ID) of the Redis server. And, terminate the process using ``kill PID``
+   
+   For **macOS** users, the process should be similar; just find the PID of the Redis server and kill the process:
+   
+   .. code-block:: bash
+
+      lsof -i tcp:6379  
+
+   And kill the pid shown:
+
+   .. code-block:: bash
+
+         kill -9 pid  
+
+**Windows**
+
+.. toggle:: Windows
+   
+   The commands below are for the Git Bash:
+
+   .. code-block:: bash
+
+      # Navigate to the repo where you cloned the sic_applications  
+      cd sic_applications
+
+      # Start the Redis server
+      cd conf/redis  
+      redis-server.exe redis.conf  
+
+   If you encounter the error *Could not create server TCP listening socket \*\:6379\: bind: Address already in use.*, it means that port 6379 is already in use, probably by a previous instance of the Redis server that is still running in the background. You can either leave it as it is because it means that there is already a Redis server running, or if you really want to kill it and restart the server, find the PID and kill the program.
+ 
+*Could not connect to redis at xxx.xxx.xxx.xxx*: If you have a problem connecting to the Redis server, even after running it in another terminal, it could be that your firewall is blocking communication from the robot. Please turn off your firewall to allow the robot to connect to the Redis server.
+
+**Step 2: running an application**
+To start the camera demo from the terminal, use the following commands.
+
+**Ubuntu/Debian/MacOS**
+
+.. toggle:: Ubuntu/Debian/MacOS
+
+   .. code-block:: bash
+
+      # Activate the same virtual environment where you pip installed  
+      # social-interaction-cloud in the installation steps  
+      source venv_sic/bin/activate  
+
+      # Go to sic_applications and the demo script  
+      cd sic_applications/demos/desktop  
+      python demo_desktop_camera.py  
+
+   For **macOS** users, you might get a warning to allow the python script to access your camera. Click allow, and start ``demo_desktop_camera.py`` again.
+
+**Windows**
+
+.. toggle:: Windows
+
+   .. code-block:: bash
+
+      # Activate the same virtual environment where you pip installed  
+      # social-interaction-cloud in the installation steps  
+      source venv_sic/Scripts/activate  
+
+      # Go to sic_applications and the demo script  
+      cd sic_applications/demos/desktop  
+      python demo_desktop_camera.py  
+
+If all goes well, a display should pop up showing you the camera output from your webcam!
+
+And you should get the following output:
+
+.. code-block:: bash
+
+   [SICComponentManager 145.108.228.128]: INFO: Manager on device 145.108.228.128 starting  
+   [SICComponentManager 145.108.228.128]: INFO: Started component manager on ip "145.108.228.128" with components:  
+   [SICComponentManager 145.108.228.128]: INFO:  - DesktopMicrophoneSensor  
+   [SICComponentManager 145.108.228.128]: INFO:  - DesktopCameraSensor  
+   [SICComponentManager 145.108.228.128]: INFO:  - DesktopSpeakersActuator  
+   [DesktopCameraSensor 145.108.228.128]: INFO: Starting sensor DesktopCameraSensor  
+   [DesktopCameraSensor 145.108.228.128]: INFO: Started component DesktopCameraSensor  
+
+**Example 2: Running an application with a service**
+~~~~~~~~~~
+In this example we will use the face detection service to draw a bounding box around a face that is detected in your laptop camera feed. It uses the ``sic_applications/demos`` `demo_desktop_camera_facedetection.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection.py>`_.
+
+The :doc:`Available services <../api/services>` page provides more details about which services are available, how to use them, and how to extend them.
+
+**Step 1: starting Redis on your laptop**
+It is the same as in example 1.
+
+**Step 2: run the service**
+Services might need additional dependencies installed before being able to run them. You can install them with the appropriate service tag. For example,
+
+.. code-block:: bash
+
+   pip install --upgrade social-interaction-cloud[face-detection,dialogflow]  
+
+A service can easily be run by opening a new terminal and calling the ``run-service`` command, for example ``run-face-detection`` or ``run-dialogflow``. See the :doc:`Available services <../api/services>`  page for more info about the dependencies and run commands for each service.
+
+Note: the ``--upgrade`` flag ensures the new dependencies are installed if you already have previously installed the social interaction cloud.
+
+For our example we will start the face-detection service.
+
+**Ubuntu/Debian/MacOS**
+
+.. toggle:: Ubuntu/Debian/MacOS
+   
+   .. code-block:: bash
+
+      # Activate the same virtual environment where you pip installed  
+      # social-interaction-cloud in the installation steps (e.g. in sic-applications)  
+      source venv_sic/bin/activate  
+
+      # First, install all the extra dependencies that this service depends on.  
+      pip install --upgrade social-interaction-cloud[face-detection]  
+      
+      # Run the face-detection server  
+      run-face-detection  
+
+**Windows**
+
+.. toggle:: Windows
+
+   .. code-block:: bash
+
+      # Activate the same virtual environment where you pip installed the  
+      # social interaction cloud in the installation steps (e.g. in sic-applications)  
+      source venv_sic/Scripts/activate  
+
+      # First, install all the extra dependencies that this service depends on.  
+      pip install --upgrade social-interaction-cloud[face-detection]  
+
+      # Run the face-detection server  
+      run-face-detection  
+
+If successful, you should get the following output:
+
+.. code-block:: bash
+
+   [SICComponentManager 192.168.2.6]: INFO: Manager on device 192.168.2.6 starting  
+   [SICComponentManager 192.168.2.6]: INFO: Started component manager on ip "192.168.2.6" with components:  
+   [SICComponentManager 192.168.2.6]: INFO:  - FaceDetectionComponent  
+
+**Step 3: running an application**
+Run the demo file `demo_desktop_camera_facedetection.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection.py>`_.
+
+**Ubuntu/Debian/MacOS**
+
+.. toggle:: Ubuntu/Debian/MacOS
+
+   .. code-block:: bash
+
+      # Activate the virtual environment in sic_applications  
+      source venv_sic/bin/activate  
+
+      # Go to sic_applications and the demo script  
+      cd demos/desktop  
+      python demo_desktop_camera_facedetection.py  
+
+**Windows**
+
+.. toggle:: Windows
+
+   .. code-block:: bash
+
+      # Activate the virtual environment in sic_applications  
+      source venv_sic/Scripts/activate  
+
+      # Go to sic_applications and the demo script  
+      cd demos/desktop  
+      python demo_desktop_camera_facedetection.py  
+
+If all goes well, a display should pop up showing a bounding box around the detected face! If the image appears upside down, go to line 34 in ``demo_desktop_camera_facedetection.py`` and change the ``flip parameter`` to -1.
+
+**And that's it!**
+Go have some fun with robots, see :doc:`Getting started with the Nao robot <2_intro_to_sic>` and :doc:`Getting started with Franka Emika Research 3 <../getting_started/getting_started_franka>`.
+
+📹: Video Tutorial
 ----------------------------
 
 .. raw:: html
 
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/iWvUm7mJOA8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/iWvUm7mJOA8?si=-4TuHfi4E-ww2HjM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>

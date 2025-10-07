@@ -17,3 +17,11 @@
     font-weight: bold;
     color: #fcfcfc;
 } 
+
+/* Allow text wrapping in all docutils and list-table cells */
+table.docutils td, table.docutils th,
+table.align-default td, table.align-default th {
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
