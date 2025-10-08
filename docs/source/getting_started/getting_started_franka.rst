@@ -1,5 +1,5 @@
 Getting started with the Franka Emika Research 3
-======================
+=================================================
 
 This is only a brief introductory guide on how to use the Franka Emika robot. For more detailed information—especially regarding safety—please refer to the product manual available here: Franka Robot Manual.
 
@@ -26,7 +26,7 @@ Start with the robot
 ----------------------------
 
 **Switch on the Franka**
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 Press the power switch on the backside of the Control
 
 **Network setup**
@@ -37,11 +37,11 @@ Set up the connection between the Control and the workstation:
 2. Select network ``Wired connection 1``, where the IPv4 address is set to 172.16.0.1.
 
 **Preparing the robot for FCI usage in Desk**
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 1. Open a browser, \*Desk (you will need to log in; ask Lilly for the username and password) can be accessed via https://172.16.0.2, although you will see a certificate warning in your browser
 2. Unlock joints: go to the joints section and select the unlock icon
 
-.. image:: ../resources/franka_unlock_joints.png
+.. image:: ../_static/franka_unlock_joints.png
    :width: 200px
    :height: 75px
    :scale: 100 %
@@ -53,7 +53,7 @@ Set up the connection between the Control and the workstation:
 \*Desk is Franka Emika's web-based, intuitive and graphical programming and user interface
 
 **Operate the robot**
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 1. If you're going to run code, make sure the operation mode is set to 'Execution' instead of 'Programming'. The status indicator should be green when in Execution mode. If you want to freely move the arm, switch to 'Programming' mode— the status indicator should then turn white.
 
 2. If you're not going to use SIC, you can run a very simple example to make the robot move:
@@ -75,11 +75,11 @@ You can find more details `here <https://jeanelsner.github.io/panda-py/panda_py.
 6. If the robot moves to a weird position and you encounter a “Joint Position Error Detected,” and you're unable to recover it back to the reference position or continue operating the robot, please contact Lilly. Only Safety Operators can recover joint position sensor errors.
 
 **Switch off the Franka**
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 1. Before switching off the robot, always move it to its starting (home) position first. You can use the ``move_to_start()`` function, see `Panda.move_to_start <https://jeanelsner.github.io/panda-py/panda_py.html#panda_py.Panda.move_to_start>`_.
 See the photo below:
 
-.. image:: ../resources/franka_start_position.jpeg
+.. image:: ../_static/franka_start_position.jpeg
    :width: 250px
    :height: 350px
    :scale: 100 %

@@ -290,22 +290,27 @@ class Alphamini(SICDeviceManager):
         Creates a test environment on the Alphamini
 
         To use test environment, you must pass in a repo to the device initialization. For example:
+        
         - Mini(ip, mini_id, mini_password, redis_ip, dev_test=True, test_repo=PATH_TO_REPO) OR
         - Mini(ip, mini_id, mini_password, redis_ip, dev_test=True)
 
         If you do not pass in a repo, it will assume the repo to test is already installed in a test environment on the Alphamini.
 
         This function:
+        
         - checks to see if test environment exists
         - if test_venv exists and no repo is passed in (self.test_repo), return True (no need to do anything)
         - if test_venv exists but a new repo has been passed in:
-            1. uninstall old version of social-interaction-cloud on Alphamini
-            2. zip the provided repo
-            3. scp zip file over to alphamini, to 'sic_to_test' folder
-            4. unzip repo and install
+        
+          1. uninstall old version of social-interaction-cloud on Alphamini
+          2. zip the provided repo
+          3. scp zip file over to alphamini, to 'sic_to_test' folder
+          4. unzip repo and install
+          
         - if test_venv does not exist:
-            1. check to make sure a test repo has been passed in to device initialization. If not, raise RuntimeError
-            2. if repo has been passed in, create a new .test_venv and install repo
+        
+          1. check to make sure a test repo has been passed in to device initialization. If not, raise RuntimeError
+          2. if repo has been passed in, create a new .test_venv and install repo
         """
 
         def init_test_venv():
