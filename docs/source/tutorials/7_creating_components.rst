@@ -46,11 +46,11 @@ Three helpful subclasses have been defined for common cases in robotics. For the
 
 Use this flowchart to help you determine which type of component class your component should extend:
 
-.. image:: ../_static/service_flowchart.png
+.. image:: ../_static/component_breakdown.png
    :width: 500px
    :height: 350px
    :scale: 100 %
-   :alt: Service flowchart
+   :alt: Component breakdown
    :align: center
 
 Make sure to use predifined messages where possible to ensure interoperability between your component and others. See `SIC standardized pre-defined messages todonew` for an overview.
@@ -64,7 +64,7 @@ Make sure to use predifined messages where possible to ensure interoperability b
 
 
 Extending an Existing Service
-----------------------------
+-----------------------------
 **Overview**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Say there's an existing service that does almost everything you want it to, but there's some slight changes you wish you could make. Luckily, SIC's object-oriented architecture enables you to inherit from and extend the component you wish to modify. Let's take the 'detect' function of the `FaceDetectionComponent <https://github.com/Social-AI-VU/social-interaction-cloud/blob/main/sic_framework/services/face_detection/face_detection.py>`_, for example:
@@ -129,7 +129,7 @@ First, we have already decided we are going to change the 'detect' function of t
 Now run 'pip install -e .' within your SIC repository. This will create a link in your environment to the custom_components folder so that you can easily import your custom components within your other scripts.
 
 **Writing a new component (steps 3, 4 and 5)**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Inside the new custom component script, we import the old component, as well as the SICComponentManager, SICConnector, and anything the new custom component may need:
 
 .. code-block:: python
@@ -190,7 +190,7 @@ Next, each SICComponent needs a SICConnector and a main() function that calls th
 
 
 **Using the new component (step 6)**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The work on the new custom component is done. Now, you must change the scripts that you want to use the new component. Here the `demo_desktop_camera_facedetection.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection.py>`_ is used as an example. 
 
 .. note::
@@ -212,7 +212,7 @@ And then change anywhere you use the old one to the new one:
     face_rec = CustomFaceDetection()  
 
 **Run the component (step 7)**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Run the new component in a separate shell as if it were the old service (assuming you're inside 'custom_components') folder:
 
 .. code-block:: bash
@@ -231,7 +231,7 @@ And now you should be able to run your scripts with the new custom component!
 
 
 SIC standardized pre-defined messages
-----------------------------
+-------------------------------------
 The SIC framework includes a number of predefined extended subclasses for common data types. This allows for `inheritance <https://www.w3schools.com/python/python_inheritance.asp>`_. Make sure to use or extend these classes if the data type you will be working with matches one of these pre-defined types.
 
 The messages can be found in https://github.com/Social-AI-VU/social-interaction-cloud/blob/main/sic_framework/core/message_python2.py.
@@ -255,7 +255,7 @@ The messages can be found in https://github.com/Social-AI-VU/social-interaction-
 
 
 **Control requests and messages**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 To control a running component, system level requests can be sent. These requests will not be passed on to the message handlers (``on_request`` and ``on_message``). These requests should inherit from ``SICControlRequest``. 
 
     - ``SICPingRequest`` - A ping message to check if a component is active. Should be answered with a reply by sending back a ``SICPongMessage``.

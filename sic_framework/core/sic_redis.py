@@ -6,23 +6,26 @@ The non-blocking (asynchronous) API is used for messages which are simply broadc
 The blocking (synchronous) API is used for requests, from which a reply is expected when the action is completed.
 
 Example Usage:
-Non-blocking (asynchronous):
+
+Non-blocking (asynchronous)::
+
     ## DEVICE A
-        r.register_message_handler("my_channel", do_something_fn)
+    r.register_message_handler("my_channel", do_something_fn)
 
     ## DEVICE B
-        r.send_message("my_channel", SICMessage("abc"))
+    r.send_message("my_channel", SICMessage("abc"))
 
 
-Blocking (synchronous):
+Blocking (synchronous)::
+
     ## DEVICE A
-        def do_reply(channel, request):
-            return SICMessage()
+    def do_reply(channel, request):
+        return SICMessage()
 
-        r.register_request_handler("my_channel", do_reply)
+    r.register_request_handler("my_channel", do_reply)
 
     ## DEVICE B
-        reply = r.request("my_channel", NamedRequest("req_handling"), timeout=5)
+    reply = r.request("my_channel", NamedRequest("req_handling"), timeout=5)
     
     # here the reply is received and stored in the variable 'reply'.
 """

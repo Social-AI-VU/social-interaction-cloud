@@ -86,22 +86,26 @@ Display face detection:
 The full code can be found `here <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection.py>`_.
 
 📄 Facial Recognition Tutorial
-----------------------------
+-------------------------------
 
 **Prerequisites**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    - redis server is running
-    .. code-block:: bash
+- redis server is running
 
-            redis-server conf/redis/redis.conf  
-    - Make sure the dependencies for the face recognition service are installed in your virtual environment
-    .. code-block:: bash
+  .. code-block:: bash
 
-        pip install social-interaction-cloud[face-recognition]  
+      redis-server conf/redis/redis.conf  
 
-    - Use the following command to start the face recognition service, and pass the model files (the cascade classifier file used in this example can be found here: `haarcascade_frontalface_default.xml <https://github.com/kipr/opencv/blob/master/data/haarcascades/haarcascade_frontalface_default.xml>`_, and the resnet50 model file can be found here `resnet50_ft_weight.pt <https://bitbucket.org/socialroboticshub/framework/src/master/sic_framework/services/face_recognition_dnn/resnet50_ft_weight.pt>`_):
-    .. code-block:: bash
+- Make sure the dependencies for the face recognition service are installed in your virtual environment
+
+  .. code-block:: bash
+
+      pip install social-interaction-cloud[face-recognition]  
+
+- Use the following command to start the face recognition service, and pass the model files (the cascade classifier file used in this example can be found here: `haarcascade_frontalface_default.xml <https://github.com/kipr/opencv/blob/master/data/haarcascades/haarcascade_frontalface_default.xml>`_, and the resnet50 model file can be found here `resnet50_ft_weight.pt <https://bitbucket.org/socialroboticshub/framework/src/master/sic_framework/services/face_recognition_dnn/resnet50_ft_weight.pt>`_):
+
+  .. code-block:: bash
 
         run-face-recognition --model resnet50_ft_weight.pt --cascadefile haarcascade_frontalface_default.xml  
 

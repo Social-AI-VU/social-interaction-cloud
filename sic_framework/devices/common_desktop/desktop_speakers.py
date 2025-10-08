@@ -2,8 +2,7 @@ import pyaudio
 
 from sic_framework import SICActuator, SICComponentManager
 from sic_framework.core.connector import SICConnector
-from sic_framework.core.message import SICMessage
-from sic_framework.core.message_python2 import AudioMessage, SICConfMessage
+from sic_framework.core.message_python2 import AudioMessage, SICConfMessage, SICMessage
 
 
 class SpeakersConf(SICConfMessage):

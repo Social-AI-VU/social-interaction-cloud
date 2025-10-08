@@ -1,5 +1,5 @@
 Getting started with the robots
-=========
+===============================
 
 This page contains information on how to get started with the various robots.
 
@@ -9,7 +9,7 @@ For information on how to get started with the Nao, please consult the tutorials
 
 
 Getting started with the Franka Emika robot arm
-----------------------------------
+------------------------------------------------
 .. toctree::
    :maxdepth: 2
 

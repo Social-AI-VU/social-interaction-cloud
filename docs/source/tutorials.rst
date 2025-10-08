@@ -29,7 +29,7 @@ Tutorial 2: Intro to SIC
    tutorials/2_intro_to_sic
 
 Tutorial 3: Application with a Service
--------------------------------------
+--------------------------------------
 
 🧐 This tutorial covers the basics of building an application with a service (Dialogflow).
 
@@ -69,12 +69,12 @@ Tutorial 6: Google Cloud Platform
 
    tutorials/6_google_cloud
 
-Tutorial 7: Creating Components
--------------------------------------
+.. Tutorial 7: Creating Components
+.. -------------------------------------
 
-🧐 How to create a custom component.
+.. 🧐 How to create a custom component.
 
-.. toctree::
-   :maxdepth: 2
+.. .. toctree::
+..    :maxdepth: 2
 
-   tutorials/7_creating_components
+..    tutorials/7_creating_components

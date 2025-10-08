@@ -17,7 +17,7 @@ General Troubleshooting Advice:
 
 
 Redis address already in use
------------------------
+----------------------------
 
 .. toggle::
 
@@ -34,7 +34,7 @@ Redis address already in use
 
 
 Could not connect to Redis server
------------------------
+----------------------------------
 
 .. toggle::
 
@@ -48,7 +48,7 @@ Could not connect to Redis server
 
 
 Could not connect to component
------------------------
+-------------------------------
 
 .. toggle::
 
@@ -65,7 +65,7 @@ Could not connect to component
 
 
 Windows WSL Connection Issues
------------------------
+------------------------------
 
 .. toggle::
 
@@ -91,7 +91,7 @@ Windows WSL Connection Issues
 
 
 Animation wrong path format error
---------------------------------
+----------------------------------
 
 .. toggle::
 
@@ -102,7 +102,7 @@ Animation wrong path format error
 
 
 Camera output not showing
-------------------
+-------------------------
 
 .. toggle::
 
@@ -119,7 +119,7 @@ Camera output not showing
 
 
 Personal Apple device sensors being used
----------------------
+-----------------------------------------
 
 .. toggle::
 
@@ -132,7 +132,7 @@ Personal Apple device sensors being used
 
 
 Portaudio.h file not found
----------------------
+---------------------------
 
 .. toggle::
 
@@ -158,7 +158,7 @@ Portaudio.h file not found
 
 
 ImportError: libGL.so.1: cannot open shared object file
----------------------
+-------------------------------------------------------
 
 .. toggle::
 
@@ -172,7 +172,7 @@ ImportError: libGL.so.1: cannot open shared object file
 
 
 Incompatible architecture [Mac]
----------------------
+--------------------------------
 
 .. toggle::
 
@@ -182,7 +182,7 @@ Incompatible architecture [Mac]
 
 
 Could not build wheels for opencv-python
----------------------
+-----------------------------------------
 
 .. toggle::
 

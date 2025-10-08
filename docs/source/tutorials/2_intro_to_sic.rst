@@ -1,10 +1,10 @@
 2: Introduction to the Social Interaction Cloud & Getting Started with the Nao
-============================================
+===============================================================================
 
 This tutorial will guide you through the introduction to the Social Interaction Cloud framework by showing you how to use the Nao robot.
 
 📄 Getting Started with the Nao Robot
-----------------------------
+--------------------------------------
 
 This guide will walk you through the process of getting started with SIC and the Nao robot.
 
@@ -49,8 +49,8 @@ To start the camera demo from the terminal, use the following commands:
       python demo_nao_camera.py
 
 
-    📹: Video Tutorial (Windows)
-        ----------------------------
+📹: Video Tutorial (Windows)
+----------------------------
 
         .. raw:: html
 

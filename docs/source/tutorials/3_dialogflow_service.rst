@@ -28,7 +28,7 @@ Moreover, it is useful to set a context for the intent. Contexts allow you to de
 Now we arrive at the most important aspect of the intent: the training phrases. Here, you can give the kinds of input strings you would expect; from these, Dialogflow learns the model it will eventually use. You can identify a part of the phrase as a parameter by double-clicking on the relevant word and selecting the appropriate entity from the list. It will then automatically appear below ‘Action and parameters' as well; the ‘parameter name’ there will be passed in the result (we use ‘name’ here). The system has many built-in entities (like 'sys.person'), but you can define your own entities as well (even through importing CSV files). Our complete intent example thus looks like this (note: using ``sys.given-name`` is usually preferred):
 
 Using the Dialogflow component with Nao microphone
-----------------------------
+---------------------------------------------------
 
 .. note::
     Before running ``demo_nao_diaglogflow.py``, make sure to start the SIC service by running ``run-dialogflow`` in another terminal. You may have to run ``pip install social-interaction-cloud[dialogflow]`` beforehand.
@@ -104,7 +104,7 @@ And that's it! You should now be able to talk to your robot. See also `this demo
 
 
 Transcribing audio with Dialogflow
-----------------------------
+-----------------------------------
 
 This section shows you how to transcribe the audio from a file on your computer using Dialogflow. Dialogflow was made to be used for conversations, but as it sends a transcription of what was said we can use it to transcribe audio as well.
 
@@ -131,7 +131,7 @@ This tutorial will show you how to convert audio to text. We'll split this up in
     3. Transcribing the audio file
 
 **Converting to .wav format**
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To be able to read the audio in python, its easiest to convert it to a ``.wav`` file. Depending on which file type you have this might need to be done differently, but here is an example using ffmpeg. Make sure to convert it to mono 16bit PCM little-endian audio (this is what ``pcm_s16le`` means).
 
@@ -140,7 +140,7 @@ To be able to read the audio in python, its easiest to convert it to a ``.wav`` 
     ffmpeg -i my_audio.mp3 -codec:a pcm_s16le -ac 1 -ar 44100 my_audio.wav
 
 **Installing and starting Dialogflow**
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 First, start the SIC Dialogflow service, you should see something like this:
 
@@ -154,7 +154,7 @@ First, start the SIC Dialogflow service, you should see something like this:
 If you don't already have a key, check out :doc:`Getting a google dialogflow key <../services/google_dialogflow_key>`. If everything went right, you should have a ``your_dialogflow_key.json``.
 
 **Transcribing the audio**
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Alright! Now that we have everything set up we can start transcribing the audio.
 

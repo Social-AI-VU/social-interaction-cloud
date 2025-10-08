@@ -7,7 +7,7 @@ This tutorial shows you how to play system motions, create, save, and replay cus
 ----------------------------
 
 **Playing Animations and Setting Posture**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 First, import the necessary functions from the SIC framework:
 
@@ -40,13 +40,13 @@ Set posture or play animation:
 
     nao.motion.request(NaoqiAnimationRequest("animations/Stand/Gestures/Hey_1"))
 
-A list of all Nao animations can be found `here <http://doc.aldebaran.com/2-4/naoqi/motion/alanimationplayer-advanced.html#animationplayer-list-behaviors-nao>`_.
+A list of all Nao animations can be found in the `Nao animation documentation <http://doc.aldebaran.com/2-4/naoqi/motion/alanimationplayer-advanced.html#animationplayer-list-behaviors-nao>`_.
 
 A complete script for this tutorial can be found here: `demo_nao_motion.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/nao/demo_nao_motion.py>`_
 
 
 **Recording and Playing Custom Animations**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 First, import the necessary functions from the SIC framework:
 
@@ -68,7 +68,7 @@ Connect to the Nao (computer must be connected to the same network):
 
     nao = Nao(ip="NAO_IP_HERE")
 
-Specify which Nao parts you want to record (NOTE: a 'chain' is a group of body parts, or a link of joints). The full list can be found `here <http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains>`_.
+Specify which Nao parts you want to record (NOTE: a 'chain' is a group of body parts, or a link of joints). The full list can be found in the `Nao body parts documentation <http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains>`_.
 
 .. code-block:: python
 

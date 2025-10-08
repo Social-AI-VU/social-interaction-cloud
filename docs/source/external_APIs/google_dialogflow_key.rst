@@ -1,5 +1,5 @@
 Getting a google dialogflow key
-======================
+================================
 
 To use google dialogflow or other services, you need an authentication JSON key. This can be a little bothersome to set up without a credit card, but if you follow these instructions you should be able to.
 For instructions on how to use google dialogflow, please refer to :doc:``
@@ -23,10 +23,11 @@ Ensure you have the right project and enable the API
 https://console.cloud.google.com/flows/enableapi?apiid=dialogflow.googleapis.com
 
 3. **Create service account**
-Go to https://console.cloud.google.com/iam-admin/serviceaccounts and click on the project you just created, then click “Create service account” in the top bar
-Follow the instructions, and grant it the following roles
- - Dialogflow API Client
- - Dialogflow API Reader
+Go to https://console.cloud.google.com/iam-admin/serviceaccounts and click on the project you just created, then click "Create service account" in the top bar
+Follow the instructions, and grant it the following roles:
+
+- Dialogflow API Client
+- Dialogflow API Reader
 
 4. **Create account key**
 In the service accounts view, click the service account you have just created. 

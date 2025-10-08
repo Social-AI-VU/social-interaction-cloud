@@ -52,9 +52,9 @@ Computer Vision Services
 Speech Services
 ---------------
 
-.. automodule:: sic_framework.services.text2speech.text2speech_service
+.. automodule:: sic_framework.services.google_tts.google_tts
    :members:
-   :undoc-members:
+   :undoc-members: 
    :show-inheritance:
 
 Web Services

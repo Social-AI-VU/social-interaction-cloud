@@ -470,7 +470,7 @@ class UncompressedImageMessage(SICMessage):
 
 class Audio(object):
     """
-    A message that containes a _byte representation_ of pulse-code modulated (PCM) 16-bit signed little endian
+    A message that containes a byte representation of pulse-code modulated (PCM) 16-bit signed little endian
     integer waveform audio data. 
     
     Integers are represented as a python byte array because this is the expected and provided data format of 

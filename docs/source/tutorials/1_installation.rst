@@ -1,5 +1,5 @@
 1: Installation and Setup
-======================
+==========================
 
 📄 Installation Guide
 ----------------------------
@@ -70,7 +70,7 @@ Use the following commands within a shell to install the Social Interaction Clou
 
 
 **Windows**
-~~~~~~~~~~
+~~~~~~~~~~~
 
 .. toggle:: Windows
 
@@ -115,8 +115,8 @@ Use the following commands within a shell to install the Social Interaction Clou
 
       pip install -U git+https://github.com/lilohuang/PyTurboJPEG.git
 
-   📹: Video Tutorial (Windows)
-   ----------------------------
+📹: Video Tutorial (Windows)
+----------------------------
 
    .. raw:: html
 
@@ -124,7 +124,7 @@ Use the following commands within a shell to install the Social Interaction Clou
 
 
 **Upgrading SIC**
-~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 If you want to upgrade to the latest version, run this command in your venv:
 
    .. code-block:: bash
@@ -132,7 +132,7 @@ If you want to upgrade to the latest version, run this command in your venv:
       pip install social-interaction-cloud --upgrade
 
 **Running your first application**
-~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Running any application consists of two (or three) steps:
 
@@ -146,7 +146,7 @@ We will cover two examples: running an application without a service (step 1 and
 
 
 **Example 1: Running an application without a service**
-~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 For this example we will show your computer’s camera output on your screen. The code for this example is available in the ``sic_applications/demos`` folder and called `demo_desktop_camera.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera.py>`_. An equivalent example showing Nao’s camera output can be found here :doc:`Intro to SIC <2_intro_to_sic>`.
 
 **Step 1: starting Redis on your laptop**
@@ -257,7 +257,7 @@ And you should get the following output:
    [DesktopCameraSensor 145.108.228.128]: INFO: Started component DesktopCameraSensor  
 
 **Example 2: Running an application with a service**
-~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 In this example we will use the face detection service to draw a bounding box around a face that is detected in your laptop camera feed. It uses the ``sic_applications/demos`` `demo_desktop_camera_facedetection.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection.py>`_.
 
 The :doc:`Available services <../api/services>` page provides more details about which services are available, how to use them, and how to extend them.
