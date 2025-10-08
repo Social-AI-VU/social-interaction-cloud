@@ -13,7 +13,7 @@ In order to create a Dialogflow agent, visit https://dialogflow.cloud.google.com
 
 In Dialogflow, the main items of interest are the `Intents <https://cloud.google.com/dialogflow/docs/intents-overview>`_ and the `Entities <https://cloud.google.com/dialogflow/docs/entities-overview>`_. An intent is something you want to recognize from an end-user; here we will show you an example of an intent that is aimed at recognizing someone’s name.
 
-.. image:: ../resources/intent.png
+.. image:: ../_static/intent.png
    :width: 500px
    :height: 350px
    :scale: 100 %

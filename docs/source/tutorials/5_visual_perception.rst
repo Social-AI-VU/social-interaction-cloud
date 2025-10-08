@@ -167,7 +167,7 @@ The actual code:
 
 Here is the schematic overview of how this program works. The camera streams its output to the face recognition service, and both stream the output to the program on your laptop.
 
-.. image:: ../resources/facial_recognition.png
+.. image:: ../_static/facial_recognition.png
    :width: 500px
    :height: 350px
    :scale: 100 %

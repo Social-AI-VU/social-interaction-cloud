@@ -46,7 +46,7 @@ Three helpful subclasses have been defined for common cases in robotics. For the
 
 Use this flowchart to help you determine which type of component class your component should extend:
 
-.. image:: ../resources/service_flowchart.png
+.. image:: ../_static/service_flowchart.png
    :width: 500px
    :height: 350px
    :scale: 100 %
@@ -119,7 +119,7 @@ First, we have already decided we are going to change the 'detect' function of t
 
     There also needs to be an '\_\_init\_\_.py' script within the custom_components folder. This script should be empty, but it needs to be there for Python to recognize this folder as a module.
 
-.. image:: ../resources/component_extension_setup.png
+.. image:: ../_static/component_extension_setup.png
    :width: 300px
    :height: 150px
    :scale: 100 %
