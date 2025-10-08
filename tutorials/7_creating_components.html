@@ -1,0 +1,357 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>7: Creating Components &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=4a39c7ea"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">7: Creating Components</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/tutorials/7_creating_components.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="creating-components">
+<h1>7: Creating Components<a class="headerlink" href="#creating-components" title="Link to this heading"></a></h1>
+<p>This tutorial shows you how to create your own components.</p>
+<section id="id1">
+<h2>Creating Components<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<p>To create custom functionality, such as new sensors, functions on the robot, or a new type of data processing such as a custom object detection system, you will need to create your own component. This component can then be used in your SIC programs.</p>
+<p>Creating a component requires the following steps:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Choosing a component type for your application (See flowchart below)</p></li>
+<li><p>Choosing the input datatypes (See SIC standardized pre-defined messages todonew)</p></li>
+<li><p>Creating a new file following the templates (See framework: <a class="reference external" href="https://bitbucket.org/socialroboticshub/framework/src/master/sic_framework/services/templates/">sic_framework/services/templates</a>)</p></li>
+<li><p>Implement the appropriate methods</p></li>
+<li><p>Start the component (<code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">your_file.py</span></code>)</p></li>
+</ol>
+</div></blockquote>
+<p>At its core, any new component (extending <code class="docutils literal notranslate"><span class="pre">SICComponent</span></code>) has to implement <code class="docutils literal notranslate"><span class="pre">on_message</span></code> and/or <code class="docutils literal notranslate"><span class="pre">on_request</span></code>. <code class="docutils literal notranslate"><span class="pre">on_message</span></code> allows components to be linked to one another, to send and receive messages in a data stream. <code class="docutils literal notranslate"><span class="pre">on_request</span></code> allows a component to handle requests and send an explicit reply to the device that requested it.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">MyComponent</span><span class="p">(</span><span class="n">SICComponent</span><span class="p">):</span>
+
+<span class="o">...</span> <span class="p">[</span><span class="n">other</span> <span class="n">methods</span><span class="p">,</span> <span class="n">see</span> <span class="n">sic_framework</span><span class="o">/</span><span class="n">services</span><span class="o">/</span><span class="n">templates</span><span class="o">/</span><span class="p">]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">on_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+    <span class="c1"># Do something</span>
+
+    <span class="n">reply</span> <span class="o">=</span> <span class="c1"># Return a SICMessage response</span>
+    <span class="k">return</span> <span class="n">reply</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+    <span class="c1"># Do something</span>
+
+    <span class="c1"># Optional:</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="c1"># A SICMessage output of this service</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">output_message</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Three helpful subclasses have been defined for common cases in robotics. For these components you only need to implement the <code class="docutils literal notranslate"><span class="pre">execute()</span></code> method.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Sensor - A sensor is a component that has no inputs, but simply outputs the physical sensor values as often as it can. This forms the starting point of a data stream.</p></li>
+<li><p>Service - A service is a component that is built to combine multiple streams at once, and process them in a synchronized way. For example, a service that has both bounding boxes of detected faces and and an image containing these faces, needs to align the right bounding box message to the right image. A Service will provide these aligned inputs to the execute method.</p></li>
+<li><p>Actuator - An actuator is mostly used for performing physical actions with a robot. For example, requesting the robot to raise its arm. It might be usefull to know when this action is completed, and an Actuator sends back a message whenever it has completed a request.</p></li>
+</ul>
+</div></blockquote>
+<p>Use this flowchart to help you determine which type of component class your component should extend:</p>
+<a class="reference internal image-reference" href="../_images/component_breakdown.png"><img alt="Component breakdown" class="align-center" src="../_images/component_breakdown.png" style="width: 500.0px; height: 350.0px;" />
+</a>
+<p>Make sure to use predifined messages where possible to ensure interoperability between your component and others. See <cite>SIC standardized pre-defined messages todonew</cite> for an overview.</p>
+</section>
+<section id="video-tutorial-windows">
+<h2>📹: Video Tutorial (Windows)<a class="headerlink" href="#video-tutorial-windows" title="Link to this heading"></a></h2>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/C_y42blplhs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></section>
+<section id="extending-an-existing-service">
+<h2>Extending an Existing Service<a class="headerlink" href="#extending-an-existing-service" title="Link to this heading"></a></h2>
+<section id="overview">
+<h3><strong>Overview</strong><a class="headerlink" href="#overview" title="Link to this heading"></a></h3>
+<p>Say there’s an existing service that does almost everything you want it to, but there’s some slight changes you wish you could make. Luckily, SIC’s object-oriented architecture enables you to inherit from and extend the component you wish to modify. Let’s take the ‘detect’ function of the <a class="reference external" href="https://github.com/Social-AI-VU/social-interaction-cloud/blob/main/sic_framework/services/face_detection/face_detection.py">FaceDetectionComponent</a>, for example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">detect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+    <span class="n">gray</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_RGB2GRAY</span><span class="p">)</span>
+
+    <span class="n">faces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">faceCascade</span><span class="o">.</span><span class="n">detectMultiScale</span><span class="p">(</span>
+        <span class="n">gray</span><span class="p">,</span>
+        <span class="n">scaleFactor</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>
+        <span class="n">minNeighbors</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">minSize</span><span class="o">=</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">minW</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">minH</span><span class="p">)),</span>
+    <span class="p">)</span>
+
+    <span class="n">faces</span> <span class="o">=</span> <span class="p">[</span><span class="n">BoundingBox</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="ow">in</span> <span class="n">faces</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">BoundingBoxesMessage</span><span class="p">(</span><span class="n">faces</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this function the ‘scaleFactor’ and ‘minNeighbors’ variables are hidden within the function, meaning the only way to access or change them is to rewrite the function. However, rather than rewriting the whole entire FaceDetectionComponent, we can simply create a new component where we inherit from the FaceDetectionComponent, and change just the detect function.</p>
+</section>
+<section id="outline">
+<h3><strong>Outline</strong><a class="headerlink" href="#outline" title="Link to this heading"></a></h3>
+<p>To extend an existing component we will go through the following steps:</p>
+<ol class="arabic simple">
+<li><p>Identify the component we wish to change.</p></li>
+<li><p>Create a new script called ‘custom_{COMPONENT_NAME}.py’.</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is recommended to add these to a ‘custom_components’ folder within your repo to keep track of these.</p>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>Import the original component and relevant modules in the new custom component.</p></li>
+<li><p>Extend the original component, rewrite the functions you wish to change.</p></li>
+<li><p>Change the SICConnector and SICComponentManager to match the new component name.</p></li>
+<li><p>Import the new connector for the custom component in your scripts that use it.</p></li>
+<li><p>Run the new custom component in place of the old one.</p></li>
+</ol>
+</section>
+<section id="setup-steps-1-and-2">
+<h3><strong>Setup (steps 1 and 2)</strong><a class="headerlink" href="#setup-steps-1-and-2" title="Link to this heading"></a></h3>
+<p>First, we have already decided we are going to change the ‘detect’ function of the FaceDetectionComponent. So next, we create a ‘custom_components’ folder in our repo if we do not have one already, and within that add a ‘custom_{COMPONENT}’ script:</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>There also needs to be an ‘__init__.py’ script within the custom_components folder. This script should be empty, but it needs to be there for Python to recognize this folder as a module.</p>
+</div>
+<a class="reference internal image-reference" href="../_images/component_extension_setup.png"><img alt="Structure for component extension" class="align-center" src="../_images/component_extension_setup.png" style="width: 300.0px; height: 150.0px;" />
+</a>
+<p>Now run ‘pip install -e .’ within your SIC repository. This will create a link in your environment to the custom_components folder so that you can easily import your custom components within your other scripts.</p>
+</section>
+<section id="writing-a-new-component-steps-3-4-and-5">
+<h3><strong>Writing a new component (steps 3, 4 and 5)</strong><a class="headerlink" href="#writing-a-new-component-steps-3-4-and-5" title="Link to this heading"></a></h3>
+<p>Inside the new custom component script, we import the old component, as well as the SICComponentManager, SICConnector, and anything the new custom component may need:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.services.face_detection.face_detection</span><span class="w"> </span><span class="kn">import</span> <span class="n">FaceDetectionComponent</span>  <span class="c1"># Import the original component</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.component_manager_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICComponentManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConnector</span>
+
+<span class="c1"># additional modules used by custom function</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">cv2</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">array</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BoundingBox</span><span class="p">,</span>
+    <span class="n">BoundingBoxesMessage</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>We then extend the original component by instantiating a new class and rewriting just the functionality we wish to change:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">CustomFaceDetectionComponent</span><span class="p">(</span><span class="n">FaceDetectionComponent</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CustomFaceDetectionComponent</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scaleFactor</span> <span class="o">=</span> <span class="mf">1.2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minNeighbors</span> <span class="o">=</span> <span class="mi">3</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">detect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
+        <span class="c1"># Override the detect function with custom behavior</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+
+        <span class="n">gray</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_RGB2GRAY</span><span class="p">)</span>
+
+        <span class="n">faces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">faceCascade</span><span class="o">.</span><span class="n">detectMultiScale</span><span class="p">(</span>
+            <span class="n">gray</span><span class="p">,</span>
+            <span class="n">scaleFactor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scaleFactor</span><span class="p">,</span>  <span class="c1"># now these variables belong to the class</span>
+            <span class="n">minNeighbors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">minNeighbors</span><span class="p">,</span>    <span class="c1"># they can be accessed and changed outside this function</span>
+            <span class="n">minSize</span><span class="o">=</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">minW</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">minH</span><span class="p">)),</span>
+        <span class="p">)</span>
+
+        <span class="n">faces</span> <span class="o">=</span> <span class="p">[</span><span class="n">BoundingBox</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="ow">in</span> <span class="n">faces</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">BoundingBoxesMessage</span><span class="p">(</span><span class="n">faces</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Next, each SICComponent needs a SICConnector and a main() function that calls the SICComponentManager, so we add this after we have instantiated the class:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">CustomFaceDetection</span><span class="p">(</span><span class="n">SICConnector</span><span class="p">):</span>
+    <span class="n">component_class</span> <span class="o">=</span> <span class="n">CustomFaceDetectionComponent</span> <span class="c1"># make sure to change the component name here</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="c1"># register the custom component in the component manager</span>
+    <span class="n">SICComponentManager</span><span class="p">([</span><span class="n">CustomFaceDetectionComponent</span><span class="p">])</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="using-the-new-component-step-6">
+<h3><strong>Using the new component (step 6)</strong><a class="headerlink" href="#using-the-new-component-step-6" title="Link to this heading"></a></h3>
+<p>The work on the new custom component is done. Now, you must change the scripts that you want to use the new component. Here the <a class="reference external" href="https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection.py">demo_desktop_camera_facedetection.py</a> is used as an example.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Make sure you ran <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code> within the directory so that the ‘custom_components’ folder is linked to your environment’s packages.</p>
+</div>
+<p>First, import the new connector rather than the old one:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">### from sic_framework.services.face_detection.face_detection import FaceDetection</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">custom_components.custom_face_detection</span><span class="w"> </span><span class="kn">import</span> <span class="n">CustomFaceDetection</span>
+</pre></div>
+</div>
+<p>And then change anywhere you use the old one to the new one:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">### face_rec = FaceDetection()</span>
+<span class="n">face_rec</span> <span class="o">=</span> <span class="n">CustomFaceDetection</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="run-the-component-step-7">
+<h3><strong>Run the component (step 7)</strong><a class="headerlink" href="#run-the-component-step-7" title="Link to this heading"></a></h3>
+<p>Run the new component in a separate shell as if it were the old service (assuming you’re inside ‘custom_components’) folder:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>custom_face_detection.py
+</pre></div>
+</div>
+<p>You should see an output like this:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>SICComponentManager<span class="w"> </span><span class="m">100</span>.84.25.4<span class="o">]</span>:<span class="w"> </span>INFO:<span class="w"> </span>Manager<span class="w"> </span>on<span class="w"> </span>device<span class="w"> </span><span class="m">100</span>.84.25.4<span class="w"> </span>starting
+<span class="o">[</span>SICComponentManager<span class="w"> </span><span class="m">100</span>.84.25.4<span class="o">]</span>:<span class="w"> </span>INFO:<span class="w"> </span>Started<span class="w"> </span>component<span class="w"> </span>manager<span class="w"> </span>on<span class="w"> </span>ip<span class="w"> </span><span class="s2">&quot;100.84.25.4&quot;</span><span class="w"> </span>with<span class="w"> </span>components:
+<span class="o">[</span>SICComponentManager<span class="w"> </span><span class="m">100</span>.84.25.4<span class="o">]</span>:<span class="w"> </span>INFO:<span class="w">  </span>-<span class="w"> </span>CustomFaceDetectionComponent
+</pre></div>
+</div>
+<p>And now you should be able to run your scripts with the new custom component!</p>
+</section>
+</section>
+<section id="sic-standardized-pre-defined-messages">
+<h2>SIC standardized pre-defined messages<a class="headerlink" href="#sic-standardized-pre-defined-messages" title="Link to this heading"></a></h2>
+<p>The SIC framework includes a number of predefined extended subclasses for common data types. This allows for <a class="reference external" href="https://www.w3schools.com/python/python_inheritance.asp">inheritance</a>. Make sure to use or extend these classes if the data type you will be working with matches one of these pre-defined types.</p>
+<p>The messages can be found in <a class="reference external" href="https://github.com/Social-AI-VU/social-interaction-cloud/blob/main/sic_framework/core/message_python2.py">https://github.com/Social-AI-VU/social-interaction-cloud/blob/main/sic_framework/core/message_python2.py</a>.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 40.0%" />
+<col style="width: 60.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Message class name</strong></p></th>
+<th class="head"><p><strong>Description of use</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">JPEGCompressedImageMessage</span></code></p></td>
+<td><p>Preferred way of sending any message containing an image. Uses lossy JPEG
+compression on WxHx3 images. Non-image content will be destroyed by this
+compression.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">UncompressedImageMessage</span></code></p></td>
+<td><p>Same as <code class="docutils literal notranslate"><span class="pre">JPEGCompressedImageMessage</span></code>, but without compression. This means that this message can be significantly slower. Only use this if the image data must be kept untouched. For example, if you want to send an array of depth values, because you don’t want those values to be changed (8cm might become 7.3cm with <code class="docutils literal notranslate"><span class="pre">JPEGCompressedImageMessage</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AudioMessage</span></code></p></td>
+<td><p>Preferred way of sending a message containing audio. The audio must contain pulse-code modulated (PCM) 16-bit signed integer waveform audio data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BoundingBoxesMessage</span></code></p></td>
+<td><p>Preferred way of sending any message containing a list of <code class="docutils literal notranslate"><span class="pre">BoundingBox</span></code> objects. The <code class="docutils literal notranslate"><span class="pre">BoundingBox</span></code> is a generic class for single bounding boxes in <code class="docutils literal notranslate"><span class="pre">x,y,w,h</span></code>-format. <code class="docutils literal notranslate"><span class="pre">x,y</span></code> represents top-left pixel. Bounding boxes can easily be drawn by calling <code class="docutils literal notranslate"><span class="pre">draw_on_image</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+<section id="control-requests-and-messages">
+<h3><strong>Control requests and messages</strong><a class="headerlink" href="#control-requests-and-messages" title="Link to this heading"></a></h3>
+<p>To control a running component, system level requests can be sent. These requests will not be passed on to the message handlers (<code class="docutils literal notranslate"><span class="pre">on_request</span></code> and <code class="docutils literal notranslate"><span class="pre">on_message</span></code>). These requests should inherit from <code class="docutils literal notranslate"><span class="pre">SICControlRequest</span></code>.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SICPingRequest</span></code> - A ping message to check if a component is active. Should be answered with a reply by sending back a <code class="docutils literal notranslate"><span class="pre">SICPongMessage</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ConnectRequest</span></code> - A request for a component to start listening to some some channel. The messages on this channel will be passed onto the on_message callback.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SICSuccessMessage</span></code> - A message indicating succes, for example responding to a <code class="docutils literal notranslate"><span class="pre">ConnectRequest</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SICStopRequest</span></code> - A request for the component to shut down.</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

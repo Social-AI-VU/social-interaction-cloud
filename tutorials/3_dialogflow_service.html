@@ -1,0 +1,411 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3: Using the Dialogflow Service &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=4a39c7ea"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="4: Robot Motion" href="4_motion.html" />
+    <link rel="prev" title="2: Introduction to the Social Interaction Cloud &amp; Getting Started with the Nao" href="2_intro_to_sic.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-1-installation-and-setup">Tutorial 1: Installation and Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-2-intro-to-sic">Tutorial 2: Intro to SIC</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../tutorials.html#tutorial-3-application-with-a-service">Tutorial 3: Application with a Service</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">3: Using the Dialogflow Service</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction-to-dialogflow">Introduction to Dialogflow</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-the-dialogflow-component-with-nao-microphone">Using the Dialogflow component with Nao microphone</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#transcribing-audio-with-dialogflow">Transcribing audio with Dialogflow</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#video-tutorial-windows">📹: Video Tutorial (Windows)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-4-robot-motion">Tutorial 4: Robot Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-5-visual-perception">Tutorial 5: Visual Perception</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-6-google-cloud-platform">Tutorial 6: Google Cloud Platform</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">3: Using the Dialogflow Service</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/tutorials/3_dialogflow_service.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="using-the-dialogflow-service">
+<h1>3: Using the Dialogflow Service<a class="headerlink" href="#using-the-dialogflow-service" title="Link to this heading"></a></h1>
+<p>This tutorial will guide you through the use of the Dialogflow service. First, we introduce Dialogflow and explain how it works. Then, we look at how to use Dialogflow with the Nao robot. Finally, we introduce a way to use Dialogflow to transcribe audio - this is platform-independent and can thus be used even if you don’t have access to a robot.</p>
+<section id="introduction-to-dialogflow">
+<h2>Introduction to Dialogflow<a class="headerlink" href="#introduction-to-dialogflow" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">dialogflow</span></code> service enables the use of the <a class="reference external" href="https://dialogflow.com/">Google Dialogflow</a> platform within your application.</p>
+<p>Dialogflow is used to translate human speech into intents (<em>intent classification</em>). In other words, not only does it (try to) convert an audio stream into readable text, it also classifies this text into an intent and extracts additional parameters called entities from the text, if specified. For example, an audio stream can be transcribed to the string “I am 15 years old”, and classified as the intent ‘answer_age’ with entity ‘age=15’.</p>
+<p>In order to create a Dialogflow agent, visit <a class="reference external" href="https://dialogflow.cloud.google.com">https://dialogflow.cloud.google.com</a> and log-in with a Google account of choice. Use the ‘Create Agent’ button in the top left to start your first project. For our framework to be able to communicate with this agent, the project ID and a keyfile are required. To get a keyfile read the instructions on <span class="xref std std-doc">Getting a google dialogflow key</span>. Once you have a keyfile, place it inside the conf/google folder in your local repository.</p>
+<p>In Dialogflow, the main items of interest are the <a class="reference external" href="https://cloud.google.com/dialogflow/docs/intents-overview">Intents</a> and the <a class="reference external" href="https://cloud.google.com/dialogflow/docs/entities-overview">Entities</a>. An intent is something you want to recognize from an end-user; here we will show you an example of an intent that is aimed at recognizing someone’s name.</p>
+<a class="reference internal image-reference" href="../_images/intent.png"><img alt="intent creation with Google Dialogflow" class="align-center" src="../_images/intent.png" style="width: 500.0px; height: 350.0px;" />
+</a>
+<p>When creating an intent you can name it anything you like; In this example we go with ‘answer_name’ (seen at the very top). Below ‘Action and parameters’, you should give the name of the intent that will actually be used in your program. Here, we also set that to ‘answer_name’.</p>
+<p>Moreover, it is useful to set a context for the intent. Contexts allow you to define specific states that a conversation must be in for an intent to match. You can also have intents activate contexts to help direct the conversation in future exchanges. Usually though, in a social robotics application, the context is already known. So in this example we match the name of the (input)context with the name of the intent, and thus make it ‘answer_name’ as well. By default, Dialogflow keeps the context active for 5 exchanges; but we can fix this by changing the 5 (at the start of the output context) to a 0.</p>
+<p>Now we arrive at the most important aspect of the intent: the training phrases. Here, you can give the kinds of input strings you would expect; from these, Dialogflow learns the model it will eventually use. You can identify a part of the phrase as a parameter by double-clicking on the relevant word and selecting the appropriate entity from the list. It will then automatically appear below ‘Action and parameters’ as well; the ‘parameter name’ there will be passed in the result (we use ‘name’ here). The system has many built-in entities (like ‘sys.person’), but you can define your own entities as well (even through importing CSV files). Our complete intent example thus looks like this (note: using <code class="docutils literal notranslate"><span class="pre">sys.given-name</span></code> is usually preferred):</p>
+</section>
+<section id="using-the-dialogflow-component-with-nao-microphone">
+<h2>Using the Dialogflow component with Nao microphone<a class="headerlink" href="#using-the-dialogflow-component-with-nao-microphone" title="Link to this heading"></a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Before running <code class="docutils literal notranslate"><span class="pre">demo_nao_diaglogflow.py</span></code>, make sure to start the SIC service by running <code class="docutils literal notranslate"><span class="pre">run-dialogflow</span></code> in another terminal. You may have to run <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">social-interaction-cloud[dialogflow]</span></code> beforehand.</p>
+</div>
+<p>Let’s create a simple demo that prints the transcript and the intent detected by Dialogflow.</p>
+<p>Start by importing the necessary SIC functions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nao</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.nao</span><span class="w"> </span><span class="kn">import</span> <span class="n">NaoqiTextToSpeechRequest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.services.dialogflow.dialogflow</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">DialogflowConf</span><span class="p">,</span> <span class="n">GetIntentRequest</span><span class="p">,</span> <span class="n">RecognitionResult</span><span class="p">,</span> <span class="n">QueryResult</span><span class="p">,</span> <span class="n">Dialogflow</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>First, we create a connection to the Nao robot to be able to access its microphone. In order to use this intent we created earlier in an application, we need to set the keyfile and the sample rate. To do this, we create the Dialogflow configuration object. Make sure you read the documentation at the start of this page to obtain the key file for your Dialogflow project.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># connect to the robot</span>
+<span class="n">nao</span> <span class="o">=</span> <span class="n">Nao</span><span class="p">(</span><span class="n">ip</span><span class="o">=</span><span class="s1">&#39;192.168.178.45&#39;</span><span class="p">)</span>
+
+<span class="c1"># load the key json file</span>
+<span class="n">keyfile_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;../../conf/google/dialogflow-tutorial.json&quot;</span><span class="p">))</span>
+
+<span class="c1"># set up the config</span>
+<span class="n">conf</span> <span class="o">=</span> <span class="n">DialogflowConf</span><span class="p">(</span><span class="n">keyfile_json</span><span class="o">=</span><span class="n">keyfile_json</span><span class="p">,</span> <span class="n">sample_rate_hertz</span><span class="o">=</span><span class="mi">16000</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Having done this setup, we can initiate the Dialogflow object and connect the output of <code class="docutils literal notranslate"><span class="pre">NaoqiMicrophone</span></code> as the input of Dialogflow. The parameters <code class="docutils literal notranslate"><span class="pre">ip='localhost</span></code> and <code class="docutils literal notranslate"><span class="pre">conf=conf</span></code> pass the ip address of the device the <code class="docutils literal notranslate"><span class="pre">DialogflowComponent</span></code> is running on and our configuration to be able to authenticate to Dialogflow.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># initiate Dialogflow object</span>
+<span class="n">dialogflow</span> <span class="o">=</span> <span class="n">Dialogflow</span><span class="p">(</span><span class="n">ip</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="n">conf</span><span class="o">=</span><span class="n">conf</span><span class="p">)</span>
+
+<span class="c1"># connect the output of NaoqiMicrophone as the input of DialogflowComponent</span>
+<span class="n">dialogflow</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">nao</span><span class="o">.</span><span class="n">mic</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, we need to register a callback function to act whenever Dialogflow output is available. Whenever Dialogflow detects a new word, we will receive a <code class="docutils literal notranslate"><span class="pre">RecognitionResult</span></code> message. Then, <code class="docutils literal notranslate"><span class="pre">on_dialog</span></code> function simply prints the detected speech when it’s considered <code class="docutils literal notranslate"><span class="pre">final</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># register a callback function to act upon arrival of recognition_result</span>
+<span class="n">dialogflow</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="n">on_dialog</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we can start actually getting intents from the user! We need to set a chat ID, with which Dialogflow identifies the conversation. This can be a random number (or the same one if you want to continue a conversation). Then, we request Dialogflow to get an intent. It will start sending the Nao’s microphone audio to Dialogflow. As you start talking, the SIC <code class="docutils literal notranslate"><span class="pre">on_dialog</span></code> function should print the transcript in the terminal.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">10000</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">25</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; ----- Conversation turn&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+    <span class="n">reply</span> <span class="o">=</span> <span class="n">dialogflow</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">GetIntentRequest</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">intent</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">reply</span><span class="o">.</span><span class="n">fulfillment_message</span><span class="p">:</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">reply</span><span class="o">.</span><span class="n">fulfillment_message</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reply:&quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+        <span class="n">nao</span><span class="o">.</span><span class="n">tts</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">NaoqiTextToSpeechRequest</span><span class="p">(</span><span class="n">text</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Here is the definition for <code class="docutils literal notranslate"><span class="pre">on_dialog</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">on_dialog</span><span class="p">(</span><span class="n">message</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">response</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">recognition_result</span><span class="o">.</span><span class="n">is_final</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Transcript:&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">recognition_result</span><span class="o">.</span><span class="n">transcript</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And that’s it! You should now be able to talk to your robot. See also <a class="reference external" href="https://github.com/Social-AI-VU/sic_applications/blob/main/demos/nao/demo_nao_dialogflow.py">this demo script</a> for a more complete example. Make sure to set the proper keyfile path!</p>
+</section>
+<section id="transcribing-audio-with-dialogflow">
+<h2>Transcribing audio with Dialogflow<a class="headerlink" href="#transcribing-audio-with-dialogflow" title="Link to this heading"></a></h2>
+<p>This section shows you how to transcribe the audio from a file on your computer using Dialogflow. Dialogflow was made to be used for conversations, but as it sends a transcription of what was said we can use it to transcribe audio as well.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is not necessarily the best way to transcribe audio.
+This demo is here for two reasons:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>To provide a platform independent way to test your Dialogflow setup</p></li>
+<li><p>To demonstrate how to work with audio and more complex Dialogflow setups in the framework</p></li>
+</ol>
+</div></blockquote>
+</div>
+<p>In addition to the setup described in <a class="reference internal" href="1_installation.html"><span class="doc">1: Installation and Setup</span></a>, you will also need to have <a class="reference external" href="https://pypi.org/project/PyAudio/">PyAudio</a> installed on your virtual environment.</p>
+<section id="approach">
+<h3><strong>Approach</strong><a class="headerlink" href="#approach" title="Link to this heading"></a></h3>
+<p>This tutorial will show you how to convert audio to text. We’ll split this up into a couple parts</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Converting an audio file to a .wav file</p></li>
+<li><p>Starting the Dialogflow component</p></li>
+<li><p>Transcribing the audio file</p></li>
+</ol>
+</div></blockquote>
+</section>
+<section id="converting-to-wav-format">
+<h3><strong>Converting to .wav format</strong><a class="headerlink" href="#converting-to-wav-format" title="Link to this heading"></a></h3>
+<p>To be able to read the audio in python, its easiest to convert it to a <code class="docutils literal notranslate"><span class="pre">.wav</span></code> file. Depending on which file type you have this might need to be done differently, but here is an example using ffmpeg. Make sure to convert it to mono 16bit PCM little-endian audio (this is what <code class="docutils literal notranslate"><span class="pre">pcm_s16le</span></code> means).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ffmpeg<span class="w"> </span>-i<span class="w"> </span>my_audio.mp3<span class="w"> </span>-codec:a<span class="w"> </span>pcm_s16le<span class="w"> </span>-ac<span class="w"> </span><span class="m">1</span><span class="w"> </span>-ar<span class="w"> </span><span class="m">44100</span><span class="w"> </span>my_audio.wav
+</pre></div>
+</div>
+</section>
+<section id="installing-and-starting-dialogflow">
+<h3><strong>Installing and starting Dialogflow</strong><a class="headerlink" href="#installing-and-starting-dialogflow" title="Link to this heading"></a></h3>
+<p>First, start the SIC Dialogflow service, you should see something like this:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>SICComponentManager<span class="w"> </span><span class="m">192</span>.168.0.181<span class="o">]</span>:<span class="w"> </span>INFO:<span class="w"> </span>Manager<span class="w"> </span>on<span class="w"> </span>device<span class="w"> </span><span class="m">192</span>.168.0.181<span class="w"> </span>starting
+<span class="o">[</span>SICComponentManager<span class="w"> </span><span class="m">192</span>.168.0.181<span class="o">]</span>:<span class="w"> </span>INFO:<span class="w"> </span>Starting<span class="w"> </span>component<span class="w"> </span>manager<span class="w"> </span>on<span class="w"> </span>ip<span class="w"> </span><span class="s2">&quot;192.168.0.181&quot;</span><span class="w"> </span>with<span class="w"> </span>components:
+<span class="o">[</span>SICComponentManager<span class="w"> </span><span class="m">192</span>.168.0.181<span class="o">]</span>:<span class="w"> </span>INFO:<span class="w">  </span>-<span class="w"> </span>DialogflowService
+</pre></div>
+</div>
+<p><strong>Getting a key</strong>
+If you don’t already have a key, check out <span class="xref std std-doc">Getting a google dialogflow key</span>. If everything went right, you should have a <code class="docutils literal notranslate"><span class="pre">your_dialogflow_key.json</span></code>.</p>
+</section>
+<section id="transcribing-the-audio">
+<h3><strong>Transcribing the audio</strong><a class="headerlink" href="#transcribing-the-audio" title="Link to this heading"></a></h3>
+<p>Alright! Now that we have everything set up we can start transcribing the audio.</p>
+<p>Just to be sure, make sure you have:</p>
+<blockquote>
+<div><p>The dialogflow component is running</p>
+<p>You have a dialogflow key</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">.wav</span></code> audio file in the folder you are working in</p>
+</div></blockquote>
+<p>In a new python file copy the following code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pyaudio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">wave</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">AudioMessage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.services.dialogflow.dialogflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">DialogflowConf</span><span class="p">,</span> <span class="n">GetIntentRequest</span><span class="p">,</span> <span class="n">Dialogflow</span><span class="p">,</span> \
+    <span class="n">StopListeningMessage</span><span class="p">,</span> <span class="n">QueryResult</span><span class="p">,</span> <span class="n">RecognitionResult</span>
+</pre></div>
+</div>
+<p>To read the wave file we can use the python wave library. This will read the file as raw bytes, which is what dialogflow will expect from us.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Read the wav file</span>
+<span class="n">wavefile</span> <span class="o">=</span> <span class="n">wave</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;office_top_short.wav&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span>
+<span class="n">samplerate</span> <span class="o">=</span> <span class="n">wavefile</span><span class="o">.</span><span class="n">getframerate</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Audio file specs:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  sample rate:&quot;</span><span class="p">,</span> <span class="n">wavefile</span><span class="o">.</span><span class="n">getframerate</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  length:&quot;</span><span class="p">,</span> <span class="n">wavefile</span><span class="o">.</span><span class="n">getnframes</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  data size in bytes:&quot;</span><span class="p">,</span> <span class="n">wavefile</span><span class="o">.</span><span class="n">getsampwidth</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  number of chanels:&quot;</span><span class="p">,</span> <span class="n">wavefile</span><span class="o">.</span><span class="n">getnchannels</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Now we get to more interesting stuff. The Dialogflow component will send back a lot of information, so we will have to handle that, and extract the transcription.</p>
+<p>First, we’ll create an event. We’ll set this event whenever Dialogflow has detected the end of a sentence. That way we can ask Dialogflow to listen to the next immediately after. Its easiest to use a <code class="docutils literal notranslate"><span class="pre">threading.Event</span></code>, because Dialogflow will signal the end of a sentence at an arbitrary point.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">on_dialog</span></code> function handles setting this event. It also will print the partial transcript intermittently and once dialogflow has chosen a final transcript we’ll add this to the list.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># set up the callback and variables to contain the transcript results</span>
+<span class="c1"># Dialogflow is not made for transcribing, so we&#39;ll have to work around this by &quot;faking&quot; a conversation</span>
+
+<span class="n">dialogflow_detected_sentence</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+<span class="n">transcripts</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">on_dialog</span><span class="p">(</span><span class="n">message</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">response</span><span class="p">:</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">recognition_result</span><span class="o">.</span><span class="n">transcript</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\r</span><span class="s2"> Transcript:&quot;</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">recognition_result</span><span class="o">.</span><span class="n">is_final</span><span class="p">:</span>
+            <span class="n">transcripts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+            <span class="n">dialogflow_detected_sentence</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Now we can set up dialogflow. We do this by first reading in our json key:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># read you keyfile and connect to dialogflow</span>
+<span class="n">keyfile_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;path/to/your_keyfile_here.json&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>And then we can create a configuration for the dialogflow component. Make sure to set the proper sample rate!</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">conf</span> <span class="o">=</span> <span class="n">DialogflowConf</span><span class="p">(</span><span class="n">keyfile_json</span><span class="o">=</span><span class="n">keyfile_json</span><span class="p">,</span> <span class="n">sample_rate_hertz</span><span class="o">=</span><span class="n">samplerate</span><span class="p">,</span> <span class="p">)</span>
+<span class="n">dialogflow</span> <span class="o">=</span> <span class="n">Dialogflow</span><span class="p">(</span><span class="n">conf</span><span class="o">=</span><span class="n">conf</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We’ll direct the output message’s produced by dialogflow to the <code class="docutils literal notranslate"><span class="pre">on_dialog</span></code> function by registering it as a callback.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dialogflow</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="n">on_dialog</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To get a sense of what dialogflow is hearing, we’ll also play the sound on our own speakers.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set up output device to play audio along transcript</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">pyaudio</span><span class="o">.</span><span class="n">PyAudio</span><span class="p">()</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="n">pyaudio</span><span class="o">.</span><span class="n">paInt16</span><span class="p">,</span>
+                <span class="n">channels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">rate</span><span class="o">=</span><span class="n">samplerate</span><span class="p">,</span>
+                <span class="n">output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>With everything set up, we can start to ask dialogflow to detect a sentence! We do this using <code class="docutils literal notranslate"><span class="pre">dialogflow.request(GetIntentRequest(),</span> <span class="pre">block=False)</span></code>. Non-blocking is important here, because we need to keep sending audio (and not wait for some result, which will not occur because no audio is sent). Every time dialogflow detects a sentence, we ask it to listen for the next one!</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># To make dialogflow listen to the audio, we need to ask it to &quot;listen for intent&quot;.</span>
+<span class="c1"># This means it will try to determine what the intention is of what is being said by the person speaking.</span>
+<span class="c1"># Instead of using this intent, we simply store the transcript and ask it to listen for intent again.</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Listening for first sentence&quot;</span><span class="p">)</span>
+<span class="n">dialogflow</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">GetIntentRequest</span><span class="p">(),</span> <span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1"># send the audio in chunks of one second</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">wavefile</span><span class="o">.</span><span class="n">getnframes</span><span class="p">()</span> <span class="o">//</span> <span class="n">wavefile</span><span class="o">.</span><span class="n">getframerate</span><span class="p">()):</span>
+
+    <span class="k">if</span> <span class="n">dialogflow_detected_sentence</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">()</span>
+        <span class="n">dialogflow</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">GetIntentRequest</span><span class="p">(),</span> <span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">dialogflow_detected_sentence</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="c1"># grab one second of audio data</span>
+    <span class="n">chunk</span> <span class="o">=</span> <span class="n">wavefile</span><span class="o">.</span><span class="n">readframes</span><span class="p">(</span><span class="n">samplerate</span><span class="p">)</span>
+
+    <span class="n">output</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>  <span class="c1"># replace with time.sleep to not send audio too fast if not playing audio</span>
+
+    <span class="n">message</span> <span class="o">=</span> <span class="n">AudioMessage</span><span class="p">(</span><span class="n">sample_rate</span><span class="o">=</span><span class="n">samplerate</span><span class="p">,</span> <span class="n">waveform</span><span class="o">=</span><span class="n">chunk</span><span class="p">)</span>
+    <span class="n">dialogflow</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When we’re done we’ll write the output to a file and clean up dialogflow.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dialogflow</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">StopListeningMessage</span><span class="p">())</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Final transcript&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">transcripts</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;transcript.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">transcripts</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">output</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">p</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Thats the code! Run your file like so:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>sic_framework/tests
+python3<span class="w"> </span>demo_transcribe_with_dialogflow.py
+</pre></div>
+</div>
+<p>The output should look something like this:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Audio<span class="w"> </span>file<span class="w"> </span>specs:
+<span class="w">    </span>sample<span class="w"> </span>rate:<span class="w"> </span><span class="m">44100</span>
+<span class="w">    </span>length:<span class="w"> </span><span class="m">4505992</span>
+<span class="w">    </span>data<span class="w"> </span>size<span class="w"> </span><span class="k">in</span><span class="w"> </span>bytes:<span class="w"> </span><span class="m">2</span>
+<span class="w">    </span>number<span class="w"> </span>of<span class="w"> </span>chanels:<span class="w"> </span><span class="m">1</span>
+
+Component<span class="w"> </span>not<span class="w"> </span>already<span class="w"> </span>alive,<span class="w"> </span>requesting<span class="w"> </span>DialogflowService<span class="w"> </span>from<span class="w"> </span>manager<span class="w">  </span><span class="m">192</span>.168.0.181
+<span class="o">[</span>DialogflowService<span class="w"> </span><span class="m">192</span>.168.0.181<span class="o">]</span>:<span class="w"> </span>INFO:<span class="w"> </span>Started<span class="w"> </span>component<span class="w"> </span>DialogflowService
+Listening<span class="w"> </span><span class="k">for</span><span class="w"> </span>first<span class="w"> </span>sentence
+Transcript:<span class="w"> </span>I<span class="w"> </span>can<span class="s1">&#39;t believe I started the fire</span>
+<span class="s1">Transcript:  a brown</span>
+<span class="s1">Transcript: I&#39;</span>m<span class="w"> </span>taking<span class="w"> </span>two<span class="w"> </span>so<span class="w"> </span>I<span class="w"> </span>can<span class="w"> </span>parcel<span class="w"> </span>them<span class="w"> </span>up<span class="w"> </span>and<span class="w"> </span>eat<span class="w"> </span>them<span class="w"> </span>at<span class="w"> </span>my<span class="w"> </span>leisure<span class="w"> </span>later<span class="w"> </span>on<span class="w"> </span>much<span class="w"> </span>healthier
+
+
+Final<span class="w"> </span>transcript
+<span class="o">[</span><span class="s2">&quot;I can&#39;t believe I started the fire&quot;</span>,<span class="w"> </span><span class="s1">&#39; a brown&#39;</span><span class="o">]</span>
+</pre></div>
+</div>
+<p>And the transcript should be stored in <code class="docutils literal notranslate"><span class="pre">transcript.txt</span></code>!</p>
+<p>When the transcript is done, you might get some errors about google not receiving new request, like <code class="docutils literal notranslate"><span class="pre">google.api_core.exceptions.InvalidArgument:</span> <span class="pre">400</span> <span class="pre">Did</span> <span class="pre">not</span> <span class="pre">receive</span> <span class="pre">any</span> <span class="pre">new</span> <span class="pre">request</span> <span class="pre">for</span> <span class="pre">1m.</span></code> We are still working on how to properly end a conversation after it is done, but Google’s documentation has little mention of this. If you find it, let us know!</p>
+</section>
+</section>
+<section id="video-tutorial-windows">
+<h2>📹: Video Tutorial (Windows)<a class="headerlink" href="#video-tutorial-windows" title="Link to this heading"></a></h2>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/3w6F60XDmOw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="2_intro_to_sic.html" class="btn btn-neutral float-left" title="2: Introduction to the Social Interaction Cloud &amp; Getting Started with the Nao" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="4_motion.html" class="btn btn-neutral float-right" title="4: Robot Motion" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

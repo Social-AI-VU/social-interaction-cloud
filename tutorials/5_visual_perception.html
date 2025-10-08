@@ -1,0 +1,280 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5: Visual Perception &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=4a39c7ea"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="6: Google Cloud Platform" href="6_google_cloud.html" />
+    <link rel="prev" title="4: Robot Motion" href="4_motion.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-1-installation-and-setup">Tutorial 1: Installation and Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-2-intro-to-sic">Tutorial 2: Intro to SIC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-3-application-with-a-service">Tutorial 3: Application with a Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-4-robot-motion">Tutorial 4: Robot Motion</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../tutorials.html#tutorial-5-visual-perception">Tutorial 5: Visual Perception</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">5: Visual Perception</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#face-detection-tutorial">📄 Face Detection Tutorial</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#facial-recognition-tutorial">📄 Facial Recognition Tutorial</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#video-tutorial-windows">📹: Video Tutorial (Windows)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-6-google-cloud-platform">Tutorial 6: Google Cloud Platform</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">5: Visual Perception</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/tutorials/5_visual_perception.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="visual-perception">
+<h1>5: Visual Perception<a class="headerlink" href="#visual-perception" title="Link to this heading"></a></h1>
+<p>This tutorial shows you how to use a visual perception service to detect objects in the camera feed.</p>
+<section id="face-detection-tutorial">
+<h2>📄 Face Detection Tutorial<a class="headerlink" href="#face-detection-tutorial" title="Link to this heading"></a></h2>
+<section id="prerequisites">
+<h3><strong>Prerequisites</strong><a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p>redis server is running</p></li>
+<li><p>face detection service is running</p></li>
+</ul>
+</div></blockquote>
+<p>Code (in separate terminals):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>redis-server<span class="w"> </span>conf/redis/redis.conf
+run-face-detection
+</pre></div>
+</div>
+</section>
+<section id="face-detection">
+<h3><strong>Face Detection</strong><a class="headerlink" href="#face-detection" title="Link to this heading"></a></h3>
+<p>Import necessary libraries:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">queue</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cv2</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">utils_cv2</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BoundingBoxesMessage</span><span class="p">,</span>
+    <span class="n">CompressedImageMessage</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_desktop.desktop_camera</span><span class="w"> </span><span class="kn">import</span> <span class="n">DesktopCameraConf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.desktop</span><span class="w"> </span><span class="kn">import</span> <span class="n">Desktop</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.services.face_detection.face_detection</span><span class="w"> </span><span class="kn">import</span> <span class="n">FaceDetection</span>
+</pre></div>
+</div>
+<p>Create buffers for image/face objects, define callback functions. Whenever a new image or face detection is received, <code class="docutils literal notranslate"><span class="pre">on_image</span></code> or <code class="docutils literal notranslate"><span class="pre">on_faces</span></code> will be called to place the data object into its respective buffer.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">imgs_buffer</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">faces_buffer</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">on_image</span><span class="p">(</span><span class="n">image_message</span><span class="p">:</span> <span class="n">CompressedImageMessage</span><span class="p">):</span>
+    <span class="n">imgs_buffer</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">image_message</span><span class="o">.</span><span class="n">image</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">on_faces</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">BoundingBoxesMessage</span><span class="p">):</span>
+    <span class="n">faces_buffer</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">bboxes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Set up the camera, register callback functions:</p>
+<p>Display face detection:</p>
+<p>The full code can be found <a class="reference external" href="https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection.py">here</a>.</p>
+</section>
+</section>
+<section id="facial-recognition-tutorial">
+<h2>📄 Facial Recognition Tutorial<a class="headerlink" href="#facial-recognition-tutorial" title="Link to this heading"></a></h2>
+<section id="id1">
+<h3><strong>Prerequisites</strong><a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<ul>
+<li><p>redis server is running</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>redis-server<span class="w"> </span>conf/redis/redis.conf
+</pre></div>
+</div>
+</li>
+<li><p>Make sure the dependencies for the face recognition service are installed in your virtual environment</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>social-interaction-cloud<span class="o">[</span>face-recognition<span class="o">]</span>
+</pre></div>
+</div>
+</li>
+<li><p>Use the following command to start the face recognition service, and pass the model files (the cascade classifier file used in this example can be found here: <a class="reference external" href="https://github.com/kipr/opencv/blob/master/data/haarcascades/haarcascade_frontalface_default.xml">haarcascade_frontalface_default.xml</a>, and the resnet50 model file can be found here <a class="reference external" href="https://bitbucket.org/socialroboticshub/framework/src/master/sic_framework/services/face_recognition_dnn/resnet50_ft_weight.pt">resnet50_ft_weight.pt</a>):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>run-face-recognition<span class="w"> </span>--model<span class="w"> </span>resnet50_ft_weight.pt<span class="w"> </span>--cascadefile<span class="w"> </span>haarcascade_frontalface_default.xml
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="facial-recognition">
+<h3><strong>Facial recognition</strong><a class="headerlink" href="#facial-recognition" title="Link to this heading"></a></h3>
+<p>Create a new file with the code below or use <a class="reference external" href="https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facerecognition.py">demo_desktop_camera_facerecognition.py</a> from GitHub.</p>
+<p>Imports and callbacks:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">queue</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cv2</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">BoundingBoxesMessage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">CompressedImageMessage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.utils_cv2</span><span class="w"> </span><span class="kn">import</span> <span class="n">draw_on_image</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.desktop.desktop_camera</span><span class="w"> </span><span class="kn">import</span> <span class="n">DesktopCamera</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.services.face_recognition_dnn.face_recognition_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">DNNFaceRecognition</span>
+
+<span class="n">imgs_buffer</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">on_image</span><span class="p">(</span><span class="n">image_message</span><span class="p">:</span> <span class="n">CompressedImageMessage</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">imgs_buffer</span><span class="o">.</span><span class="n">get_nowait</span><span class="p">()</span>  <span class="c1"># remove previous message if its still there</span>
+    <span class="k">except</span> <span class="n">queue</span><span class="o">.</span><span class="n">Empty</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="n">imgs_buffer</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">image_message</span><span class="o">.</span><span class="n">image</span><span class="p">)</span>
+
+
+<span class="n">faces_buffer</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">on_faces</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">BoundingBoxesMessage</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">faces_buffer</span><span class="o">.</span><span class="n">get_nowait</span><span class="p">()</span>  <span class="c1"># remove previous message if its still there</span>
+    <span class="k">except</span> <span class="n">queue</span><span class="o">.</span><span class="n">Empty</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="n">faces_buffer</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">bboxes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The actual code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Connect to the services</span>
+<span class="n">camera</span> <span class="o">=</span> <span class="n">DesktopCamera</span><span class="p">()</span>
+<span class="n">face_rec</span> <span class="o">=</span> <span class="n">DNNFaceRecognition</span><span class="p">()</span>
+
+<span class="c1"># Feed the camera images into the face recognition component</span>
+<span class="n">face_rec</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">camera</span><span class="p">)</span>
+
+<span class="c1"># Send back the outputs to this program</span>
+<span class="n">camera</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="n">on_image</span><span class="p">)</span>
+<span class="n">face_rec</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="n">on_faces</span><span class="p">)</span>
+
+<span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">imgs_buffer</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+    <span class="n">faces</span> <span class="o">=</span> <span class="n">faces_buffer</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">face</span> <span class="ow">in</span> <span class="n">faces</span><span class="p">:</span>
+        <span class="n">draw_on_image</span><span class="p">(</span><span class="n">face</span><span class="p">,</span> <span class="n">img</span><span class="p">)</span>
+
+    <span class="n">cv2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">img</span><span class="p">)</span>
+    <span class="n">cv2</span><span class="o">.</span><span class="n">waitKey</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here is the schematic overview of how this program works. The camera streams its output to the face recognition service, and both stream the output to the program on your laptop.</p>
+<a class="reference internal image-reference" href="../_images/facial_recognition.png"><img alt="schema of facial recognition" class="align-center" src="../_images/facial_recognition.png" style="width: 500.0px; height: 350.0px;" />
+</a>
+</section>
+</section>
+<section id="video-tutorial-windows">
+<h2>📹: Video Tutorial (Windows)<a class="headerlink" href="#video-tutorial-windows" title="Link to this heading"></a></h2>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/VXYRnFJcAEc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="4_motion.html" class="btn btn-neutral float-left" title="4: Robot Motion" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="6_google_cloud.html" class="btn btn-neutral float-right" title="6: Google Cloud Platform" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
