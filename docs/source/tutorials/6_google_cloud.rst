@@ -1,8 +1,8 @@
 6: Google Cloud Platform
-======================
+========================
 
 📄 Google Cloud Platform Guide
-----------------------------
+-------------------------------
 
 The Google Cloud Platform is a suite of cloud computing services provided by Google. It provides AI services such as speech-to-text, text-to-speech, and conversational agents.
 
@@ -20,7 +20,7 @@ To use Google Cloud Platform services, you'll need to:
 Let's go through each step:
 
 **Setting up a Google Cloud Project**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 First, go to the `Google Cloud Platform Console <https://console.cloud.google.com/>`_ and create a new project (Top left).
 
 You can name the project whatever you want, but we will use "SAIL" for this tutorial.
@@ -77,7 +77,7 @@ Next, you will need to create a key for the service account.
 Click "Create Key" and select "JSON" as the key type. Download the keyfile and save it to your computer.
 
 **Configuring your application**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Place the service account keyfile in the `conf/google` folder of the sic_applications repository.
 

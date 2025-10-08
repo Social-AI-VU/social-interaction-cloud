@@ -25,7 +25,7 @@ For class and moreso function docstrings, follow these additional principles:
   without type annotations.
 
 Module docstring template
-------------------------
+-------------------------
 
 Every Python module should start with a docstring describing its purpose and contents:
 
@@ -150,7 +150,7 @@ Cross‑references and inline markup
 
 - Reference code objects to create links:
   ``:mod:`package.module``` • ``:class:`package.Class``` • ``:func:`package.func``` • ``:meth:`Class.method``` • ``:attr:`Class.attribute```.
-- Use inline literals (text that should be displayed as is) with double backticks, e.g. `` "utf-8" ``.
+- Use inline literals (text that should be displayed as is) with double backticks, e.g. ``"utf-8"``.
 - Try to include links with descriptive text, e.g. ``:ref:`tutorials```.
 
 Admonitions

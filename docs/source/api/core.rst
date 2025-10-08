@@ -53,11 +53,6 @@ Message System
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: sic_framework.core.message
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Utilities
 ---------
 
