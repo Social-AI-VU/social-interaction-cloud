@@ -172,9 +172,9 @@ class NaoqiMotionRecorderActuator(SICActuator, NaoqiMotionTools):
         """
         try:
 
-            while not self._stop_event.is_set():
+            while not self._signal_to_stop.is_set():
 
-                # check both do_recording and _stop_event periodically
+                # check both do_recording and _signal_to_stop periodically
                 self.do_recording.wait(1)
                 if not self.do_recording.is_set():
                     continue

@@ -197,12 +197,12 @@ def zip_directory(path):
         raise IOError("Error while zipping: {}".format(str(e)))
 
 
-def create_data_stream_id(component_id, input_source, length=16):
+def create_data_stream_id(component_endpoint, input_source, length=16):
     """
     Hashes component info into a short, random-looking string.
 
     Args:
-        component_id (str): Component identifier.
+        component_endpoint (str): Component identifier.
         input_source (str): Input stream name.
         length (int): Length of the resulting string (default 16).
 
@@ -211,7 +211,7 @@ def create_data_stream_id(component_id, input_source, length=16):
     """
     # print("Creating data stream id for \ncomponent_name: {}\ncomponent_ip: {}\ninput_source: {}".format(component_name, component_ip, input_source))
     try:
-        combined = "{component_id}|{input_source}".format(component_id=component_id, input_source=input_source)
+        combined = "{component_endpoint}|{input_source}".format(component_endpoint=component_endpoint, input_source=input_source)
         sha256_hash = hashlib.sha256(combined.encode('utf-8')).digest()
         encoded = base64.urlsafe_b64encode(sha256_hash).decode('utf-8')
         # print("Data stream id created: {}".format(encoded))

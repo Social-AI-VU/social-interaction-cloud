@@ -49,7 +49,10 @@ class DesktopSpeakersActuator(SICActuator):
         return SICMessage()
 
     def on_message(self, message):
-        self.stream.write(message.waveform)
+        if hasattr(message, 'waveform'):
+            self.stream.write(message.waveform)
+        else:
+            self.logger.warning("Expecting a message with a waveform attribute but received none")
 
     def stop(self, *args):
         super(DesktopSpeakersActuator, self).stop(*args)

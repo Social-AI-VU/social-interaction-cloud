@@ -395,12 +395,17 @@ class SICSuccessMessage(SICControlMessage):
     Special type of message to signal a request was successfully completed.
     """
 
-
-class SICStopRequest(SICControlRequest):
+class SICFailureMessage(SICControlMessage):
     """
-    Special type of message to signal a device it should stop as the user no longer needs it.
+    Special type of message to signal a request was not successfully completed.
     """
+    def __init__(self, message=""):
+        self.message = message
 
+class SICStopServerRequest(SICControlRequest):
+    """
+    Special type of message to signal a ComponentManager it should stop as the user no longer needs it.
+    """
 
 class SICIgnoreRequestMessage(SICControlMessage):
     """

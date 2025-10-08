@@ -9,6 +9,9 @@ import threading
 import time
 from signal import SIGINT, SIGTERM, signal
 from sys import exit
+import atexit
+import os, sys, traceback
+import collections
 
 import sic_framework.core.sic_logging
 from sic_framework.core.utils import (
@@ -22,34 +25,57 @@ from .message_python2 import (
     SICIgnoreRequestMessage,
     SICMessage,
     SICRequest,
-    SICStopRequest,
+    SICStopServerRequest,
     SICSuccessMessage,
     SICPingRequest,
-    SICPongMessage
+    SICPongMessage,
+    SICFailureMessage
 )
 
-from .sic_redis import SICRedis
+from .sic_redis import SICRedisConnection
 
 
 class SICStartComponentRequest(SICRequest):
     """
     A request from a user to start a component.
 
-    :param component_name: The name of the component to start.
-    :type component_name: str
-    :param log_level: The logging level to use for the component.
-    :type log_level: logging.LOGLEVEL
+    :param name: The name of the component to start.
+    :type name: str
+    :param endpoint: The endpoint of the component.
+    :type endpoint: str
+    :param output_channel: The output channel of the component.
+    :type output_channel: str
+    :param input_channel: The input channel of the component.
+    :type input_channel: str
+    :param request_reply_channel: The request reply channel of the component.
+    :type request_reply_channel: str
+    :param client_id: The client id of the component.
+    :type client_id: str
     :param conf: The configuration the component.
     :type conf: SICConfMessage
     """
 
-    def __init__(self, component_name, log_level, input_channel, client_id, conf=None):
+    def __init__(self, component_name, endpoint, input_channel, component_channel, request_reply_channel, client_id, conf=None):
         super(SICStartComponentRequest, self).__init__()
         self.component_name = component_name  # str
-        self.log_level = log_level  # logging.LOGLEVEL
+        self.endpoint = endpoint
         self.input_channel = input_channel
+        self.component_channel = component_channel
+        self.request_reply_channel = request_reply_channel
         self.client_id = client_id
         self.conf = conf  # SICConfMessage
+
+class SICStopComponentRequest(SICRequest):
+    """
+    A request from a user to stop a component.
+
+    :param component_channel: The id of the component to stop. A string of characters corresponding to the output channel of the component.
+    :type component_channel: str
+    """
+
+    def __init__(self, component_channel):
+        super(SICStopComponentRequest, self).__init__()
+        self.component_channel = component_channel  # str
 
 class SICNotStartedMessage(SICMessage):
     """
@@ -62,9 +88,8 @@ class SICNotStartedMessage(SICMessage):
         self.message = message
 
 class SICComponentStartedMessage(SICMessage):
-    def __init__(self, output_channel, request_reply_channel):
-        self.output_channel = output_channel
-        self.request_reply_channel = request_reply_channel
+    def __init__(self):
+        pass
 
 class SICComponentManager(object):
     """
@@ -82,23 +107,27 @@ class SICComponentManager(object):
     # Number of seconds we wait at most for a component to start
     COMPONENT_START_TIMEOUT = 10
 
-    def __init__(self, component_classes, client_id="", auto_serve=True, name=""):
+    def __init__(self, component_classes, client_id="", auto_serve=True, name="", stop_timeout=5):
         # Redis initialization
-        self.redis = SICRedis()
+        self.redis = SICRedisConnection()
         self.ip = utils.get_ip_adress()
         self.client_id = client_id
 
-        self.active_components = []
+        self.active_components = {}
+        self.component_threads = collections.defaultdict(dict)
         self.component_classes = {
             cls.get_component_name(): cls for cls in component_classes
         }
-        self.component_counter = 0
+        self.stop_timeout = stop_timeout
 
         self.stop_event = threading.Event()
         self.ready_event = threading.Event()
+        self._components_stopped = threading.Event()
 
         self.name = "{}ComponentManager".format(name)
-        self.logger = sic_logging.get_sic_logger(name=self.name, client_id=self.client_id, redis=self.redis)
+
+        self.logger = sic_logging.get_sic_logger(name=self.name, redis=self.redis)
+        
         self.redis.parent_logger = self.logger
 
         # The _handle_request function is calls execute directly, as we must reply when execution done to allow the user
@@ -113,6 +142,16 @@ class SICComponentManager(object):
             self.logger.info(" - {}".format(c.get_component_name()))
 
         self.ready_event.set()
+
+        if hasattr(threading, "main_thread"):
+            self.is_main_thread = (threading.current_thread() == threading.main_thread())
+        else:
+            # Python 2 fallback
+            self.is_main_thread = (threading.current_thread().name == "MainThread")
+        
+        if self.is_main_thread:
+            self.logger.info("Registering atexit handler for component manager")
+            atexit.register(self.stop_component_manager)
         if auto_serve:
             self.serve()
 
@@ -129,8 +168,7 @@ class SICComponentManager(object):
         except KeyboardInterrupt:
             pass
 
-        self.stop()
-        self.logger.info("Stopped component manager.")
+        self.stop_component_manager()
         
 
     def start_component(self, request):
@@ -145,42 +183,38 @@ class SICComponentManager(object):
 
         # extract component information from the request
         component_name = request.component_name
-        component_id = component_name + ":" + self.ip
+        component_endpoint = request.endpoint
         input_channel = request.input_channel
         client_id = request.client_id
-        output_channel = create_data_stream_id(component_id, input_channel)
-        request_reply_channel = output_channel + ":request_reply"
-        log_level = request.log_level
+        component_channel = request.component_channel
+        request_reply_channel = request.request_reply_channel
         conf = request.conf
 
         component_class = self.component_classes[component_name]  # SICComponent object
 
-        self.logger.debug("Starting component {}".format(component_name), extra={"client_id": client_id})
-
         component = None
 
         try:
-            self.logger.debug("Creating threads for {}".format(component_name), extra={"client_id": client_id})
+            self.logger.debug("Creating component {}".format(component_name), extra={"client_id": client_id})
             
             stop_event = threading.Event()
             ready_event = threading.Event()
-            self.logger.debug("Creating component {}".format(component_name), extra={"client_id": client_id})
             component = component_class(
                 stop_event=stop_event,
                 ready_event=ready_event,
-                log_level=log_level,
                 conf=conf,
                 input_channel=input_channel,
-                output_channel=output_channel,
+                component_channel=component_channel,
                 req_reply_channel=request_reply_channel,
                 client_id=client_id,
+                endpoint=component_endpoint,
+                ip=self.ip,
                 redis=self.redis
             )
-            self.logger.debug("Component {} created".format(component.component_id), extra={"client_id": client_id})
-            self.active_components.append(component)
+            self.logger.info("Component {} instantiated".format(component.component_endpoint), extra={"client_id": client_id})
+            self.active_components[component_channel] = component
+            self.logger.info("Component {} added to active components".format(component_channel), extra={"client_id": client_id})
 
-            # TODO daemon=False could be set to true, but then the component cannot clean up properly
-            # but also not available in python2
             thread = threading.Thread(target=component._start)
             thread.name = component_class.get_component_name()
             thread.start()
@@ -197,31 +231,33 @@ class SICComponentManager(object):
                     extra={"client_id": client_id}
                 )
 
+            # Store the main thread for the component
+            self.component_threads[component_channel]["main"] = thread
+
+            self.logger.debug("Component {} started".format(component.component_endpoint), extra={"client_id": client_id})
+            
             # register the datastreams for the component
             try:
-                self.logger.debug("Setting data stream for component {}".format(component.component_id), extra={"client_id": client_id})
+                self.logger.debug("Setting data stream for component {}".format(component.component_endpoint), extra={"client_id": client_id})
 
                 data_stream_info = {
-                    "component_id": component_id,
+                    "component_endpoint": component_endpoint,
                     "input_channel": input_channel,
                     "client_id": client_id
                 }
                                 
-                self.redis.set_data_stream(output_channel, data_stream_info)
+                self.redis.set_data_stream(component_channel, data_stream_info)
 
-                self.logger.debug("Data stream set for component {}".format(component.component_id), extra={"client_id": client_id})
+                self.logger.debug("Data stream set for component {}".format(component.component_endpoint), extra={"client_id": client_id})
             except Exception as e:
                 self.logger.error(
-                    "Error setting data stream for component {}: {}".format(component.component_id, e),
+                    "Error setting data stream for component {}: {}".format(component.component_endpoint, e),
                     extra={"client_id": client_id}
                 )
 
-            self.logger.debug("Component {} started successfully".format(component.component_id), extra={"client_id": client_id})
+            self.logger.debug("Component {} started successfully".format(component.component_endpoint), extra={"client_id": client_id})
             
-            # inform the user their component has started
-            reply = SICComponentStartedMessage(output_channel, request_reply_channel)
-
-            return reply
+            return SICComponentStartedMessage()
 
         except Exception as e:
             self.logger.error(
@@ -232,8 +268,53 @@ class SICComponentManager(object):
                 component.stop()
             return SICNotStartedMessage(e)
     
+    def stop_component(self, component_channel):
+        """
+        Stop a component.
 
-    def stop(self, *args):
+        :param component_channel: The id of the component to stop. A string of characters corresponding to the output channel of the component.
+        :type component_channel: str
+        """
+
+        component = self.active_components[component_channel]
+
+        try:
+            # set stop event to signal the component to stop
+            component.stop()
+
+            self.logger.debug("Unregistering component's handler threads from Redis", extra={"client_id": component.client_id})
+            
+            # unsubscribe the Component's handler threads from Redis
+            self.redis.unregister_callback(component.message_handler_thread)
+            self.redis.unregister_callback(component.request_handler_thread)
+
+            # Join the main thread
+            self.component_threads[component_channel]["main"].join()
+                
+            # remove the data stream information from redis
+            try:
+                self.logger.debug("Removing data stream information for {}".format(component.component_endpoint), extra={"client_id": component.client_id})
+                data_stream_result = self.redis.unset_data_stream(component.component_channel)
+
+                if data_stream_result == 1:
+                    self.logger.debug("Data stream information for {} removed".format(component.component_endpoint), extra={"client_id": component.client_id})
+                else:
+                    self.logger.debug("Data stream information for {} not found".format(component.component_endpoint), extra={"client_id": component.client_id})
+            except Exception as e:
+                self.logger.error("Error removing data stream information: {}".format(e), extra={"client_id": component.client_id})
+                raise e
+            
+            del self.active_components[component_channel]
+
+            return SICSuccessMessage()
+        except Exception as e:
+            self.logger.error(
+                "Error stopping component: {}".format(e),
+                extra={"client_id": component.client_id}
+            )
+            return SICFailureMessage(e)
+
+    def stop_component_manager(self, *args):
         """
         Stop the component manager.
 
@@ -242,20 +323,106 @@ class SICComponentManager(object):
         :param args: Additional arguments to pass to the stop method.
         :type args: tuple
         """
+        self.logger.info("Attempting to exit manager gracefully...")
+
+        # prevent stopping the component manager multiple times
+        if self.stop_event.is_set():
+            return
+        
         self.stop_event.set()
-        self.logger.info("Trying to exit manager gracefully...")
+
         try:
+            self.logger.info("Stopping all active components")
+
+            components_to_stop = list(self.active_components.values())
+            for component in components_to_stop:
+                self.logger.info("Stopping component {}".format(component.component_endpoint))
+                self.stop_component(component.component_channel)
+
+            self._components_stopped.set()
+
             # remove the reservation for the device running this component manager
             if self.client_id != "":
                 self.logger.info("Removing reservation for device {}".format(self.ip))
                 self.redis.unset_reservation(self.ip)
+    
+            # self.log_live_threads(reason="before closing Redis connection")
+
+            self.logger.info("Closing Redis connection")
             self.redis.close()
-            for component in self.active_components:
-                component.stop()
-                # component._stop_event.set()
-            self.logger.info("Graceful exit was successful")
+            
+            # self.log_live_threads(reason="after closing Redis connection")
+
+            # exit the program if the current thread is the main thread
+            if self.is_main_thread:
+                # Add explicit cleanup and final logging
+                import gc
+                gc.collect()  # Force garbage collection
+                
+                # Write directly to stderr to see if we reach the end
+                # sys.stderr.write("ComponentManager.stop() completed successfully\n")
+                # sys.stderr.flush()
+                
+                # Try multiple exit strategies
+                # sys.stderr.write("Calling os._exit(0) now...\n")
+                # sys.stderr.flush()
+                
+                try:
+                    os._exit(0)
+                except Exception as e:
+                    sys.stderr.write("os._exit(0) failed: {}\n".format(e))
+                    sys.stderr.flush()
+                    # Fallback to more aggressive exit
+                    import ctypes
+                    ctypes.windll.kernel32.ExitProcess(0)
+            
         except Exception as err:
-            self.logger.error("Graceful exit has failed: {}".format(err))
+            sys.stderr.write("Failed to exit manager: {}\n".format(err))
+            sys.stderr.flush()
+            if self.is_main_thread:
+                os._exit(1)
+
+    # def log_live_threads(self, reason=""):
+    #     try:
+    #         import os
+    #         from datetime import datetime
+            
+    #         frames = sys._current_frames()
+    #         lines = []
+    #         lines.append("=== Live threads {} ===".format(("(" + reason + ")") if reason else ""))
+    #         for t in threading.enumerate():
+    #             try:
+    #                 lines.append("Thread name='{}' ident={} daemon={} alive={} target={}".format(t.name, t.ident, t.daemon, t.is_alive(), getattr(t, '_target', 'unknown')))
+    #                 frame = frames.get(t.ident)
+    #                 if frame is not None:
+    #                     stack_lines = traceback.format_stack(frame)
+    #                     lines.extend("    " + s.rstrip() for s in stack_lines)
+    #             except Exception as e:
+    #                 lines.append("  <error formatting thread {}: {}>".format(t.name, e))
+            
+    #         message = "\n".join(lines)
+    #         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    #         hour_timestamp = datetime.now().strftime("%H-%M-%S")
+            
+    #         # Write directly to file to avoid Redis logging system
+    #         log_filename = "{}_shutdown_threads_{}.log".format(hour_timestamp, self.name.replace(" ", "_"))
+    #         try:
+    #             with open(log_filename, "a") as f:
+    #                 f.write("[{}] {}\n\n".format(timestamp, message))
+    #                 f.flush()
+    #         except Exception as file_err:
+    #             # Fallback to stderr if file write fails
+    #             sys.stderr.write("[{}] Failed to write to {}: {}\n".format(timestamp, log_filename, file_err))
+    #             sys.stderr.write("[{}] {}\n\n".format(timestamp, message))
+    #             sys.stderr.flush()
+            
+    #         return True
+    #     except Exception as e:
+    #         # Write error directly to stderr, bypassing logging system
+    #         sys.stderr.write("Failed to log live threads: {}\n".format(e))
+    #         sys.stderr.flush()
+    #         return False
+    
 
     def _sync_time(self):
         """
@@ -299,26 +466,49 @@ class SICComponentManager(object):
             # this request is sent to see if the ComponentManager has started
             return SICPongMessage()
 
-        if is_sic_instance(request, SICStopRequest):
-            self.stop_event.set()
-            # return an empty stop message as a request must always be replied to
-            return SICSuccessMessage()
+        if is_sic_instance(request, SICStopServerRequest):
+            self.stop_component_manager()
+            
+            if self._components_stopped.wait(timeout=self.stop_timeout):
+                return SICSuccessMessage()
+            else:
+                return SICFailureMessage("Component manager failed to stop within timeout")
         
-        # reply to the request if the component manager can start the component
-        if request.component_name in self.component_classes:
-            self.logger.info(
-                "Handling request to start component {}".format(
-                    request.component_name
-                ),
-                extra={"client_id": client_id}
-            )
+        if is_sic_instance(request, SICStartComponentRequest):
+            # reply to the request if the component manager can start the component
+            if request.component_name in self.component_classes:
+                self.logger.info(
+                    "Handling request to start component for client {}".format(
+                        client_id
+                    ),
+                    extra={"client_id": client_id}
+                )
 
-            return self.start_component(request)
-        else:
-            self.logger.warning(
-                "Ignored request {}".format(
-                    request.component_name
+                return self.start_component(request)
+            else:
+                self.logger.warning(
+                    "Ignored request to start component {} as it is not in the component classes that may be started by this ComponentManager".format(
+                        request.component_name
+                    ),
+                    extra={"client_id": client_id}
+                )
+                return SICIgnoreRequestMessage()
+        
+        if is_sic_instance(request, SICStopComponentRequest):
+            # reply to the request if the component manager can stop the component
+            self.logger.info(
+                "Handling request to stop component for client {}".format(
+                    client_id
                 ),
                 extra={"client_id": client_id}
             )
-            return SICIgnoreRequestMessage()
+            if request.component_channel in self.active_components:
+                return self.stop_component(request.component_channel)
+            else:
+                self.logger.warning(
+                    "Ignored request to stop component with component channel {} as it is not in the active components".format(
+                        request.component_channel
+                    ),
+                    extra={"client_id": client_id}
+                )
+                return SICIgnoreRequestMessage()
