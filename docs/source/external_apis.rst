@@ -9,4 +9,4 @@ Google Cloud Platform
    :maxdepth: 2
 
    tutorials/6_google_cloud
-   services/google_dialogflow_key
+   external_apis/google_dialogflow_key

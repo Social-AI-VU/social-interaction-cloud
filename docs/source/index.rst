@@ -37,7 +37,7 @@ For detailed examples and tutorials, see the demos in the `sic_applications repo
 
    tutorials
    getting_started
-   external_APIs
+   external_apis
    architecture
    api
    faq

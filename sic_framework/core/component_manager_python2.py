@@ -126,7 +126,7 @@ class SICComponentManager(object):
 
         self.name = "{}ComponentManager".format(name)
 
-        self.logger = sic_logging.get_sic_logger(name=self.name, redis=self.redis, client_id=self.client_id)
+        self.logger = sic_logging.get_sic_logger(name=self.name, client_id=self.client_id, redis=self.redis)
         
         self.redis.parent_logger = self.logger
 
