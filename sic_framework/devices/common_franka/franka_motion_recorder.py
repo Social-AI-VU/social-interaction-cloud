@@ -124,7 +124,7 @@ class FrankaMotionRecorderActuator(SICActuator):
         Record joint motion when recording event is set.
         """
         try:
-            while not self._stop_event.is_set():
+            while not self._signal_to_stop.is_set():
                 self.recording.wait(1)
                 if not self.recording.is_set():
                     continue

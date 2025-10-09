@@ -9,7 +9,7 @@ import mini.pkg_tool as Tool
 
 from sic_framework import SICComponentManager
 from sic_framework.core import utils
-from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage
+from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage, SICStopServerRequest
 from sic_framework.core.utils import MAGIC_STARTED_COMPONENT_MANAGER_TEXT
 from sic_framework.devices.common_mini.mini_animation import (
     MiniAnimation,
@@ -23,10 +23,10 @@ from sic_framework.devices.common_mini.mini_speaker import (
     MiniSpeaker,
     MiniSpeakerComponent,
 )
-from sic_framework.devices.device import SICDevice
+from sic_framework.devices.device import SICDeviceManager
 
 
-class Alphamini(SICDevice):
+class Alphamini(SICDeviceManager):
     def __init__(
         self,
         ip,
@@ -77,7 +77,7 @@ class Alphamini(SICDevice):
         if not self._is_ssh_available(host=ip):
             self.install_ssh()
 
-        # only after ssh is available, we can initialize the SICDevice
+        # only after ssh is available, we can initialize the SICDeviceManager
         super().__init__(
             ip=ip,
             username=username,
@@ -290,22 +290,27 @@ class Alphamini(SICDevice):
         Creates a test environment on the Alphamini
 
         To use test environment, you must pass in a repo to the device initialization. For example:
+        
         - Mini(ip, mini_id, mini_password, redis_ip, dev_test=True, test_repo=PATH_TO_REPO) OR
         - Mini(ip, mini_id, mini_password, redis_ip, dev_test=True)
 
         If you do not pass in a repo, it will assume the repo to test is already installed in a test environment on the Alphamini.
 
         This function:
+        
         - checks to see if test environment exists
         - if test_venv exists and no repo is passed in (self.test_repo), return True (no need to do anything)
         - if test_venv exists but a new repo has been passed in:
-            1. uninstall old version of social-interaction-cloud on Alphamini
-            2. zip the provided repo
-            3. scp zip file over to alphamini, to 'sic_to_test' folder
-            4. unzip repo and install
+        
+          1. uninstall old version of social-interaction-cloud on Alphamini
+          2. zip the provided repo
+          3. scp zip file over to alphamini, to 'sic_to_test' folder
+          4. unzip repo and install
+          
         - if test_venv does not exist:
-            1. check to make sure a test repo has been passed in to device initialization. If not, raise RuntimeError
-            2. if repo has been passed in, create a new .test_venv and install repo
+        
+          1. check to make sure a test repo has been passed in to device initialization. If not, raise RuntimeError
+          2. if repo has been passed in, create a new .test_venv and install repo
         """
 
         def init_test_venv():
@@ -503,12 +508,29 @@ class Alphamini(SICDevice):
                 )
         else:
             raise RuntimeError(
-                "Could not start SIC on remote device\nSee sic.log for details"
+                "Could not start SIC on remote device\nSee SIC logs for details"
             )
 
     def __del__(self):
         if hasattr(self, "logfile"):
             self.logfile.close()
+
+    def stop_device(self):
+        """
+        Stops the device and all its components.
+
+        Makes sure the process is killed and the device is stopped.
+        """
+        # send StopRequest to ComponentManager
+        self._redis.request(self.device_ip, SICStopServerRequest())
+
+        # make sure the process is killed
+        stdin, stdout, stderr = self.ssh_command(self.stop_cmd)
+        status = stdout.channel.recv_exit_status()
+        if status != 0:
+            self.logger.error("Failed to stop device, exit code: {status}".format(status=status))
+            self.logger.error(stderr.read().decode("utf-8"))
+
 
     @staticmethod
     def _is_ssh_available(host, port=8022, timeout=5):

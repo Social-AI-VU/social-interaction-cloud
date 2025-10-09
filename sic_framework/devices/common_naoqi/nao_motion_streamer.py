@@ -126,9 +126,9 @@ class NaoqiMotionStreamerService(SICComponent, NaoqiMotionTools):
         # For Nao joint chains are: Head, RArm, LArm, RLeg, LLeg
         try:
 
-            while not self._stop_event.is_set():
+            while not self._signal_to_stop.is_set():
 
-                # check both do_streaming and _stop_event periodically
+                # check both do_streaming and _signal_to_stop periodically
                 self.do_streaming.wait(1)
                 if not self.do_streaming.is_set():
                     continue

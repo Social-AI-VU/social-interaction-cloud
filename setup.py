@@ -11,6 +11,7 @@ requirements = [
     "redis",
     "scp",
     "six",
+    "dotenv"
 ]
 
 # Dependencies specific to each component or server
@@ -79,12 +80,13 @@ extras_require = {
         "sphinx",
         "sphinx-togglebutton",
         "sphinx-rtd-theme",
+        "sphinx-copybutton",
     ],
 }
 
 setup(
     name="social-interaction-cloud",
-    version="2.0.40",
+    version="2.0.41",
     author="Koen Hindriks",
     author_email="k.v.hindriks@vu.nl",
     long_description=open("README.md").read(),

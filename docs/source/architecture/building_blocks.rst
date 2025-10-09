@@ -4,7 +4,7 @@ Building Blocks of SIC
 This section will guide you through the building blocks of the Social Interaction Cloud framework.
 
 Components: Sensors, Actuators, and Services
-----------
+---------------------------------------------
 
 You can picture creating a SIC application as a process of connecting components together, or building with Legos.
 Components are either Sensors, Actuators, or Services.
@@ -31,7 +31,7 @@ Components are either Sensors, Actuators, or Services.
    **Actuators** are the output devices that operate on the physical environment.
 
 
-.. figure:: ../_static/component_breakdown.svg
+.. figure:: ../_static/component_breakdown.png
    :alt: Component Breakdown
    :align: center
    :width: 100%
@@ -67,7 +67,7 @@ Pictured below are some example setups of SIC Components:
    Component diagram for a **Sentiment Analysis** application. Note that some Services may require multiple input types.
 
 Supporting Elements: ComponentManager, Connector, and Redis
-----------
+-----------------------------------------------------------
 
 In reality, SIC is a lot more than just Components. There are other elements that are used to support Components, namely:
 
@@ -107,7 +107,7 @@ In reality, SIC is a lot more than just Components. There are other elements tha
    The **SIC Application** is the script the user writes that connects the Components together.
 
 Example Application Diagrams
-----------
+----------------------------
 
 .. figure:: ../_static/DialogflowAppSimple.svg
    :alt: Redis

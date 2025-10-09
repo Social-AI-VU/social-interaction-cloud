@@ -8,7 +8,7 @@ import atexit
 import threading
 
 from sic_framework import SICComponentManager, utils
-from sic_framework.devices.device import SICDevice
+from sic_framework.devices.device import SICDeviceManager
 from sic_framework.devices.common_franka.franka_motion import (
     FrankaMotion,
     FrankaMotionActuator,
@@ -34,7 +34,7 @@ def start_franka_components():
         manager.serve()
 
 
-class Franka(SICDevice):
+class Franka(SICDeviceManager):
     """
     Franka device interface that automatically starts the component manager
     in a background thread on first initialization.

@@ -2,8 +2,7 @@ import pyaudio
 
 from sic_framework import SICActuator, SICComponentManager
 from sic_framework.core.connector import SICConnector
-from sic_framework.core.message import SICMessage
-from sic_framework.core.message_python2 import AudioMessage, SICConfMessage
+from sic_framework.core.message_python2 import AudioMessage, SICConfMessage, SICMessage
 
 
 class SpeakersConf(SICConfMessage):
@@ -49,7 +48,10 @@ class DesktopSpeakersActuator(SICActuator):
         return SICMessage()
 
     def on_message(self, message):
-        self.stream.write(message.waveform)
+        if hasattr(message, 'waveform'):
+            self.stream.write(message.waveform)
+        else:
+            self.logger.warning("Expecting a message with a waveform attribute but received none")
 
     def stop(self, *args):
         super(DesktopSpeakersActuator, self).stop(*args)

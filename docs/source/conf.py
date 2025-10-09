@@ -26,6 +26,7 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',  # For Google/NumPy style docstrings
     'sphinx_togglebutton',
+    'sphinx_copybutton',
 ]
 
 togglebutton_hint = ""
@@ -48,7 +49,6 @@ html_favicon = '_static/sic_mini_logo.svg'
 # Theme options to show logo and project name
 html_theme_options = {
     'logo_only': False,
-    'display_version': True,
 }
 
 # Custom CSS to make the logo smaller
@@ -64,6 +64,16 @@ autodoc_default_options = {
     'undoc-members': True,
     'exclude-members': '__weakref__'
 }
+
+# Mock imports for optional dependencies that may not be installed
+autodoc_mock_imports = [
+    'panda_py',  # Franka robot library
+    'motpy',     # Object tracking library
+    'cv2.ximgproc',  # OpenCV contrib module
+]
+
+# Suppress warnings for modules that cannot be imported
+suppress_warnings = ['autodoc']
 
 # -- Napoleon configuration --------------------------------------------------
 napoleon_google_docstring = True

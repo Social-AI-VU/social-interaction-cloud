@@ -6,23 +6,26 @@ The non-blocking (asynchronous) API is used for messages which are simply broadc
 The blocking (synchronous) API is used for requests, from which a reply is expected when the action is completed.
 
 Example Usage:
-Non-blocking (asynchronous):
+
+Non-blocking (asynchronous)::
+
     ## DEVICE A
-        r.register_message_handler("my_channel", do_something_fn)
+    r.register_message_handler("my_channel", do_something_fn)
 
     ## DEVICE B
-        r.send_message("my_channel", SICMessage("abc"))
+    r.send_message("my_channel", SICMessage("abc"))
 
 
-Blocking (synchronous):
+Blocking (synchronous)::
+
     ## DEVICE A
-        def do_reply(channel, request):
-            return SICMessage()
+    def do_reply(channel, request):
+        return SICMessage()
 
-        r.register_request_handler("my_channel", do_reply)
+    r.register_request_handler("my_channel", do_reply)
 
     ## DEVICE B
-        reply = r.request("my_channel", NamedRequest("req_handling"), timeout=5)
+    reply = r.request("my_channel", NamedRequest("req_handling"), timeout=5)
     
     # here the reply is received and stored in the variable 'reply'.
 """
@@ -31,6 +34,7 @@ import atexit
 import os
 import threading
 import time
+import sys
 
 import redis
 import six
@@ -58,31 +62,31 @@ class CallbackThread:
         self.pubsub = pubsub
         self.thread = thread
 
+    def join(self, timeout=5):
+        """
+        Join the thread.
+        """
+        self.thread.join(timeout=timeout)
+
+    def is_alive(self):
+        """
+        Check if the underlying thread is still alive.
+        
+        :return: True if the thread is still alive, False otherwise
+        :rtype: bool
+        """
+        return self.thread.is_alive()
+
+    @property
+    def name(self):
+        return self.thread.name
+
+    @name.setter
+    def name(self, value):
+        self.thread.name = value
 
 # keep track of all redis instances, so we can close them on exit
 _sic_redis_instances = []
-
-
-def cleanup_on_exit():
-    """
-    Cleanup on exit. Close all Redis connections.
-    """
-    from sic_framework.core import sic_logging
-    logger = sic_logging.get_sic_logger("SICRedis")
-
-    for s in _sic_redis_instances:
-        s.close()
-
-    time.sleep(0.2)
-    if len([x.is_alive() for x in threading.enumerate()]) > 1:
-        logger.warning("Left over threads:")
-        for thread in threading.enumerate():
-            if thread.is_alive() and thread.name != "SICRedisCleanup":
-                logger.warning(thread.name, " is still alive")
-
-
-atexit.register(cleanup_on_exit)
-
 
 def get_redis_db_ip_password():
     """
@@ -96,7 +100,7 @@ def get_redis_db_ip_password():
     return host, password
 
 
-class SICRedis:
+class SICRedisConnection:
     """
     A custom version of Redis that provides a clear blocking and non-blocking API.
 
@@ -104,7 +108,7 @@ class SICRedis:
     :type parent_name: str
     """
 
-    def __init__(self, parent_name=None):
+    def __init__(self):
 
         self.stopping = False
         self._running_callbacks = []
@@ -169,9 +173,6 @@ class SICRedis:
         # To be set by any component that requires exceptions in the callback threads to be logged to somewhere
         self.parent_logger = None
 
-        # service name (assigned to thread to help debugging)
-        self.service_name = parent_name
-
         _sic_redis_instances.append(self)
 
     @staticmethod
@@ -196,7 +197,7 @@ class SICRedis:
 
         return None
 
-    def register_message_handler(self, channels, callback, ignore_requests=True):
+    def register_message_handler(self, channels, callback, name="", ignore_requests=True):
         """
         Subscribe a callback function to one or more channels, start a thread to monitor for new messages.
         
@@ -250,14 +251,13 @@ class SICRedis:
         # if it is 0.0 it can never time out. It can receive messages much faster, so lets be nice to the CPU with 0.1.
         if six.PY3:
             thread = pubsub.run_in_thread(
-                sleep_time=0.1, daemon=False, exception_handler=exception_handler
+                sleep_time=0.1, daemon=True, exception_handler=exception_handler
             )
         else:
-            # python2 does not support exception handler, but it's not as important to provide a clean exit on the robots
-            thread = pubsub.run_in_thread(sleep_time=0.1, daemon=False)
+            # python2 does not support the exception_handler parameter, but it's not as important to provide a clean exit on the robots
+            thread = pubsub.run_in_thread(sleep_time=0.1, daemon=True)
 
-        if self.service_name:
-            thread.name = "{}_callback_thread".format(self.service_name)
+        thread.name = name
 
         c = CallbackThread(callback, pubsub=pubsub, thread=thread)
         self._running_callbacks.append(c)
@@ -288,6 +288,9 @@ class SICRedis:
         :return: The number of subscribers that received the message.
         :rtype: int
         """
+        if self.stopping:
+            return 0 # silently ignore messages if the application is stopping
+        
         assert isinstance(
             message, SICMessage
         ), "Message must inherit from SICMessage (got {})".format(type(message))
@@ -350,7 +353,7 @@ class SICRedis:
                 done.set()
 
         if block:
-            callback_thread = self.register_message_handler(channel, await_reply)
+            callback_thread = self.register_message_handler(channel, await_reply, name="SICRedisConnection_request_await_reply")
 
         self.send_message(channel, request)
 
@@ -373,7 +376,7 @@ class SICRedis:
 
             return q.get()
 
-    def register_request_handler(self, channel, callback):
+    def register_request_handler(self, channel, callback, name=""):
         """
         Register a function to listen to SICRequest's (and ignore SICMessages). Handler must return a SICMessage as a reply.
         Will block receiving new messages until the callback is finished.
@@ -398,7 +401,7 @@ class SICRedis:
                 self._reply(channel, request, reply)
 
         return self.register_message_handler(
-            channel, wrapped_callback, ignore_requests=False
+            channel, wrapped_callback, name=name, ignore_requests=False
         )
 
     def time(self):
@@ -414,10 +417,21 @@ class SICRedis:
         """
         Cleanup function to stop listening to all callback channels and disconnect Redis.
         """
+        # prevent closing the Redis connection if already stopping
+        if self.stopping:
+            return
         self.stopping = True
         for c in self._running_callbacks:
-            c.pubsub.unsubscribe()
-            c.thread.stop()
+            try:
+                if c.thread.is_alive():
+                    # print("REDIS SHUTDOWN: Unsubscribing callback thread {}".format(c.name))
+                    c.pubsub.unsubscribe()
+                    c.thread.stop()
+                    c.thread.join(timeout=0.2)
+            except Exception as e:
+                sys.stderr.write("REDIS SHUTDOWN: Error stopping callback thread {}: {}\n".format(c.name, e))
+                sys.stderr.flush()
+        # print("REDIS SHUTDOWN: Closing Redis connection")
         self._redis.close()
 
     def _reply(self, channel, request, reply):
@@ -586,79 +600,4 @@ class SICRedis:
         return False
 
 if __name__ == "__main__":
-
-    class NamedMessage(SICMessage):
-        def __init__(self, name):
-            self.name = name
-
-    class NamedRequest(NamedMessage, SICRequest):
-        pass
-
-    r = SICRedis()
-
-    def do(channel, message):
-        print("do", message.name)
-
-    # print("Message callback:")
-    # r.register_message_handler("service", do, )
-    # r.send_message("service", NamedMessage("abc"))
-    #
-    #
-    # def do_reply(channel, message):
-    #     print("do_reply", message.name)
-    #     return NamedMessage("reply" + message.name)
-    #
-    #
-    # print("\n\nRequest handling")
-    #
-    # r.register_request_handler("device", do_reply)
-    # reply = r.request("device", NamedRequest("req_handling"), timeout=5)
-    # print("reply:", reply.name)
-    #
-    # print("\n\nincorrect handler: ", )
-    # try:
-    #     r.register_message_handler("a", do_reply)
-    #     reply = r.request("a", NamedRequest("req_incorrect_handler"), timeout=1)
-    #     print("reply:", reply.name)
-    # except TimeoutError as e:
-    #     print("success")
-    #
-    # print("\n\nduplicate handler")
-    # r.register_request_handler("b", do_reply)
-    # r.register_message_handler("b", do)
-    # reply = r.request("b", NamedRequest("req_duplicate_handler"), timeout=5)
-    # print("reply:", reply.name)
-    #
-    # print("\n\ncallbacks")
-    # for k in r._running_callbacks:
-    #     print(k.function)
-    #
-    # print("\n\nSpeed:")
-    #
-    # r.register_request_handler("c", lambda *args: SICMessage())
-    # start = time.time()
-    # for i in range(100):
-    #     reply = r.request("c", NamedRequest("req_duplicate_handler"), timeout=5)
-    # print("100 request took", time.time() - start)
-    #
-    # start = time.time()
-    # for i in range(100):
-    #     r.send_message("d", SICMessage())
-    # print("100 send_message took", time.time() - start)
-
-    # print("Test callback blocking behaviour")
-    #
-    #
-    # def do_reply_slow(channel, message):
-    #     print("do_reply", message.name)
-    #     time.sleep(5)
-    #     return NamedMessage("reply " + message.name)
-    #
-    #
-    # r.register_request_handler("f", do_reply_slow)
-    #
-    # for i in range(5):
-    #     reply = r.request("f", NamedRequest(f"fast{i}"), timeout=6)
-    #     print(reply.name)
-    #
-    # r.close()
+    pass

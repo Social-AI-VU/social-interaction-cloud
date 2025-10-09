@@ -195,7 +195,8 @@ class BaseNaoqiCameraSensor(SICSensor):
 
     def stop(self, *args):
         super(BaseNaoqiCameraSensor, self).stop(*args)
-        self.video_service.shutdown()
+        if hasattr(self.video_service, "shutdown"):
+            self.video_service.shutdown()
 
 
 ##################

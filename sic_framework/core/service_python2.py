@@ -250,7 +250,7 @@ class SICService(SICComponent):
         """
         Wait for new data and execute when possible.
         """
-        while not self._stop_event.is_set():
+        while not self._signal_to_stop.is_set():
             # wait for new data to be set by the _process_message callback, and check every .1 second to check if the
             # service must stop
             self._new_data_event.wait(timeout=0.1)

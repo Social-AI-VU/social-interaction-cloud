@@ -5,6 +5,7 @@ import numpy as np
 from numpy import array
 
 from sic_framework.core import sic_logging
+from sic_framework.core.utils_cv2 import draw_bbox_on_image
 from sic_framework.core.component_manager_python2 import SICComponentManager
 from sic_framework.core.component_python2 import SICComponent
 from sic_framework.core.connector import SICConnector
@@ -20,11 +21,16 @@ from sic_framework.core.service_python2 import SICService
 
 
 class FaceDetectionConf(SICConfMessage):
+    """
+    Face detection configuration.
+
+    :param minW       Minimum possible face width in pixels. Setting this too low causes detection to be slow.
+    :type minW: int
+    :param minH       Minimum possible face height in pixels.
+    :type minH: int
+    :type minW: int
+    """
     def __init__(self, minW=150, minH=150):
-        """
-        :param minW       Minimum possible face width in pixels. Setting this too low causes detection to be slow.
-        :param minH       Minimum possible face height in pixels.
-        """
         SICConfMessage.__init__(self)
 
         # Define min window size to be recognized as a face_img
@@ -49,18 +55,25 @@ class FaceDetectionComponent(SICComponent):
 
     @staticmethod
     def get_output():
-        return BoundingBoxesMessage
+        """
+        Will return a BoundingBoxesMessage.
+        """
+        return [BoundingBoxesMessage]
 
     def on_message(self, message):
-        bboxes = self.detect(message.image)
-        self.output_message(bboxes)
+        self.output_message(self.detect(message.image))
 
     def on_request(self, request):
         return self.detect(request.image)
 
     def detect(self, image):
-        img = array(image).astype(np.uint8)
 
+        if self._signal_to_stop.is_set():
+            self._stopped.set()
+            # return the image as is
+            return BoundingBoxesMessage([])
+        
+        img = array(image).astype(np.uint8)
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
         faces = self.faceCascade.detectMultiScale(

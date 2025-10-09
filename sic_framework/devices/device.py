@@ -5,10 +5,11 @@ import tarfile
 import tempfile
 import threading
 import time
+from abc import abstractmethod
 
 from sic_framework.core import sic_logging, utils
 from sic_framework.core.connector import SICConnector
-from sic_framework.core.sic_redis import SICRedis
+from sic_framework.core.sic_application import SICApplication
 
 
 class SICLibrary(object):
@@ -33,7 +34,7 @@ def exclude_pyc(tarinfo):
         return tarinfo
 
 
-class SICDevice(object):
+class SICDeviceManager(object):
     """
     Abstract class to facilitate property initialization for SICConnector properties.
     This way components of a device can easily be used without initializing all device components manually.
@@ -45,7 +46,7 @@ class SICDevice(object):
 
         Reasoning: Alphamini does not support these imports; they are only needed for remotely installing packages on robots from the local machine
         """
-        instance = super(SICDevice, cls).__new__(cls)
+        instance = super(SICDeviceManager, cls).__new__(cls)
 
         if cls.__name__ in ("Nao", "Pepper", "Alphamini"):
             import six
@@ -66,11 +67,12 @@ class SICDevice(object):
         :param username: the ssh login name
         :param passwords: the (list) of passwords to use
         """
-        self._redis = SICRedis()
+        self.app = SICApplication()
+        self._redis = self.app.get_redis_instance()
         self.device_ip = ip
         self._client_id = utils.get_ip_adress()
         self.logger = sic_logging.get_sic_logger(
-            name="{}DeviceManager".format(self.__class__.__name__), client_id=self._client_id
+            name="{}DeviceManager".format(self.__class__.__name__), client_id=self._client_id, redis=self._redis
         )
 
         try:
@@ -93,11 +95,11 @@ class SICDevice(object):
 
             self.sic_version = version("social-interaction-cloud")
 
+
         try:
             self.SCPClient = SCPClient
         except:
             pass
-
 
         self.logger.info("Initializing device with ip: {ip}".format(ip=ip))
 
@@ -139,6 +141,9 @@ class SICDevice(object):
                         username, passwords
                     )
                 )
+        
+        # register device with the sic application
+        self.app.register_device(self)
 
     def set_reservation(self):
         """
@@ -316,7 +321,7 @@ class SICDevice(object):
                     while not stdout.channel.exit_status_ready():
                         if stdout.channel.recv_ready():
                             line = stdout.channel.recv(1024).decode("utf-8")
-                            self.logger.debug(line)
+                            # self.logger.debug(line)
                     else:
                         # get exit status of the command
                         status = stdout.channel.recv_exit_status()
@@ -332,7 +337,7 @@ class SICDevice(object):
                                 output=stdout.read().decode("utf-8")
                             )
                         )
-                        self.logger.debug(
+                        self.logger.error(
                             "SSH command error: {error}".format(
                                 error=stderr.read().decode("utf-8")
                             )
@@ -347,7 +352,7 @@ class SICDevice(object):
                                 "Remote SIC program has stopped unexpectedly.\nSee sic.log for details"
                             )
 
-                thread = threading.Thread(target=monitor_call)
+                thread = threading.Thread(target=monitor_call, daemon=True)
                 thread.name = "remote_SIC_process_monitor"
                 thread.start()
                 return thread
@@ -453,6 +458,14 @@ class SICDevice(object):
             )
         else:
             self.logger.info("Successfully installed {} package".format(lib.name))
+
+    @abstractmethod
+    def stop_device(self):
+        """
+        Stops the device and all its components.
+        Must be implemented by subclasses.
+        """
+        pass
 
     def _get_connector(self, component_connector, **kwargs):
         """
