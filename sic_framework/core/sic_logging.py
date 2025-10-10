@@ -42,7 +42,6 @@ class SICLogMessage(SICMessage):
         """
         self.msg = msg
         self.client_id = client_id
-        self.level = INFO
         super(SICLogMessage, self).__init__()
 
 
@@ -50,7 +49,7 @@ class SICRemoteError(Exception):
     """An exception indicating the error happened on a remote device"""
 
 
-class SICCommonLog(object):
+class SICClientLog(object):
     """
     A class to subscribe to a Redis log channel and write all log messages to a logfile.
 
@@ -70,6 +69,7 @@ class SICCommonLog(object):
         self.write_to_logfile = False
         self.lock = threading.Lock()
         self.threshold = DEBUG
+        self.callback_thread = None
 
     def subscribe_to_redis_log(self, client_id=""):
         """
@@ -81,17 +81,25 @@ class SICCommonLog(object):
         with self.lock:  # Ensure thread-safe access
             if not self.running:
                 self.running = True
-                self.redis.register_message_handler(
-                    get_log_channel(client_id), self._handle_redis_log_message, name="SICCommonLog"
+                self.callback_thread = self.redis.register_message_handler(
+                    get_log_channel(client_id), self._handle_redis_log_message, name="SICClientLog"
                 )
 
     def stop(self):
         """
-        Stop the logging.
+        Stop the logging and unregister the callback thread.
         """
         with self.lock:  # Ensure thread-safe access
             if self.running:
                 self.running = False
+                # Unregister the callback thread from Redis
+                if self.callback_thread and self.redis:
+                    try:
+                        self.redis.unregister_callback(self.callback_thread)
+                        self.callback_thread = None
+                    except Exception:
+                        # Ignore errors during shutdown (Redis might already be closed)
+                        pass
             if self.logfile:
                 self.logfile.close()
                 self.logfile = None
@@ -114,7 +122,9 @@ class SICCommonLog(object):
 
     def _handle_redis_log_message(self, message):
         """
-        Handle a message sent on a debug stream. Currently it's just printed to the terminal.
+        Handle a message sent on the Redis stream.
+
+        If it surpasses the threshold, it will be printed to the terminal and written to the logfile (if enabled).
 
         :param message: The message to handle.
         :type message: SICLogMessage
@@ -351,6 +361,7 @@ def get_sic_logger(name="", client_id="", redis=None, client_logger=False):
     :rtype: logging.Logger
     """
     # logging initialisation
+    # Always set logger to DEBUG so it logs everything - SICClientLog will filter what to display
     logger = logging.Logger(name)
     logger.setLevel(DEBUG)
     log_format = SICLogFormatter()
@@ -367,9 +378,16 @@ def get_sic_logger(name="", client_id="", redis=None, client_logger=False):
 
 # pseudo singleton object. Does nothing when this file is executed during the import, but can subscribe to the log
 # channel for the user with subscribe_to_redis_log once
-SIC_CLIENT_LOG = SICCommonLog()
+SIC_CLIENT_LOG = SICClientLog()
 
 def set_log_level(level):
+    """
+    Set the log level threshold for SICClientLog.
+    This filters which messages are displayed/written, but all messages are still logged.
+    
+    :param level: The log level threshold (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    :type level: int
+    """
     SIC_CLIENT_LOG.threshold = level
 
 def set_log_file(path):

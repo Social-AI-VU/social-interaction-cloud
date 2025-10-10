@@ -13,8 +13,6 @@ from sic_framework.core.message_python2 import (
     SICConfMessage,
 )
 
-
-
 class ObjectDetectionConf(SICConfMessage):
     def __init__(
         self,
@@ -23,6 +21,7 @@ class ObjectDetectionConf(SICConfMessage):
         iou_threshold=0.7,
         classes=None,
         verbose=False,
+        frequency=2.0,
     ):
         """
         Configurations and hyperparameters for the Object Detection component. See https://docs.ultralytics.com/usage/cfg/#train-settings
@@ -33,6 +32,7 @@ class ObjectDetectionConf(SICConfMessage):
         :param iou_threshold: IoU (Intersection over Union) threshold for Non-Maximum Suppression (NMS)
         :param classes: List of class indices to filter detections. Default is None (all classes).
         :param verbose: If True, display detailed inference logs in the terminal.
+        :param frequency: Detection frequency in Hz (detections per second). Default is 2.0 (every 0.5 seconds).
         """
         SICConfMessage.__init__(self)
 
@@ -41,6 +41,7 @@ class ObjectDetectionConf(SICConfMessage):
         self.iou_threshold = iou_threshold
         self.classes = classes
         self.verbose = verbose
+        self.frequency = frequency
 
 
 """
@@ -51,16 +52,23 @@ class ObjectDetectionComponent(SICComponent):
     def __init__(self, *args, **kwargs):
         super(ObjectDetectionComponent, self).__init__(*args, **kwargs)
         self.model = YOLO(self.params.model_name)
+        self.logger.info(f"Model loaded: {self.params.model_name}")
         self.input_message_buffer = queue.Queue()
 
     def start(self):
         super().start()
+        
+        # Calculate sleep time based on frequency (Hz -> seconds)
+        sleep_time = 1.0 / self.params.frequency if self.params.frequency > 0 else 0.01
 
-        while True:
+        while self._signal_to_stop.is_set() is False:
             message = self.input_message_buffer.get()
             bboxes = self.detect(message.image)
             self.output_message(bboxes)
-            time.sleep(0.01)
+            time.sleep(sleep_time)
+        
+        self._stopped.set()
+        self.logger.info("Stopped producing")
 
     @staticmethod
     def get_inputs():

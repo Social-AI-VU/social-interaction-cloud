@@ -187,7 +187,7 @@ class SICConnector(object):
         """
 
         self.logger.debug("Connector sending StopComponentRequest to ComponentManager")
-        stop_result = self._redis.request(self.component_ip, SICStopComponentRequest(self.component_channel))
+        stop_result = self._redis.request(self.component_ip, SICStopComponentRequest(self.component_channel, self.component_name))
         if stop_result is None:
             self.logger.error("Stop request timed out")
             raise TimeoutError("Stop request timed out")

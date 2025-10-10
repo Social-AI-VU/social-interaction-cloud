@@ -41,22 +41,30 @@ class SICApplication(object):
         return cls._instance
 
     def __init__(self):
-        """Initialize runtime state and register exit handler once."""
+        """
+        Initialize runtime state and register exit handler once.
+        """
+        # Only initialize once (singleton pattern)
         if getattr(self, "_initialized", False):
             return
-
-        # Logging defaults (can be changed via set_log_level / set_log_file)
-        sic_logging.set_log_level(sic_logging.DEBUG)
 
         # Runtime state
         self._redis = None
         self._cleanup_in_progress = False
-        self._shutdown_event = None
         self._active_connectors = weakref.WeakSet()
         self._active_devices = weakref.WeakSet()
-        self._app_logger = None
         self._shutdown_handler_registered = False
+        
+        self.shutdown_event = threading.Event()
         self.client_ip = utils.get_ip_adress()
+
+        # Initialize logger (will be available immediately)
+        self.logger = sic_logging.get_sic_logger(
+            "SICApplication",
+            client_id=utils.get_ip_adress(),
+            redis=self.get_redis_instance(),
+            client_logger=True,
+        )
 
         # Automatically register exit handler once per process
         self.register_exit_handler()
@@ -87,28 +95,28 @@ class SICApplication(object):
         os.makedirs(path, exist_ok=True)
         sic_logging.set_log_file(path)
 
-    def get_shutdown_event(self):
-        """Return an app-wide ``threading.Event`` to control main loops."""
-        if self._shutdown_event is None:
-            self._shutdown_event = threading.Event()
-        return self._shutdown_event
-
     def get_app_logger(self):
-        """Return the shared application logger (client_logger=True)."""
-        if self._app_logger is None:
-            self._app_logger = sic_logging.get_sic_logger(
-                "SICApplication",
-                client_id=utils.get_ip_adress(),
-                redis=self.get_redis_instance(),
-                client_logger=True,
-            )
-        return self._app_logger
+        """Return the shared application logger (backward compatibility wrapper)."""
+        return self.logger
+
+    def get_shutdown_event(self):
+        """Return the app-wide shutdown event (backward compatibility wrapper)."""
+        return self.shutdown_event
 
     def get_redis_instance(self):
         """Return the shared Redis connection for this process."""
         if self._redis is None:
             self._redis = SICRedisConnection()
         return self._redis
+
+    def setup(self):
+        """
+        Hook for application-specific setup (devices, connectors, etc.).
+        
+        Override this method in subclasses to initialize your application
+        components before the main loop runs.
+        """
+        pass
 
     def shutdown(self):
         """Gracefully stop connectors and close Redis, then exit main thread."""
@@ -123,42 +131,50 @@ class SICApplication(object):
             return
         self._cleanup_in_progress = True
 
-        app_logger = self.get_app_logger()
-        app_logger.info("signal interrupt received, exiting...")
+        self.logger.info("signal interrupt received, exiting...")
 
-        if self._shutdown_event is not None:
-            app_logger.info("Setting shutdown event")
-            self._shutdown_event.set()
+        if self.shutdown_event is not None:
+            self.logger.info("Setting shutdown event")
+            self.shutdown_event.set()
 
-        app_logger.info("Stopping devices")
+        self.logger.info("Stopping devices")
         # devices_to_stop = list(self._active_devices)
         # for device in devices_to_stop:
         #     try:
         #         device.stop_device()
         #     except Exception as e:
-        #         app_logger.error("Error stopping device {name}: {e}".format(name=device.name, e=e))
+        #         self.logger.error("Error stopping device {name}: {e}".format(name=device.name, e=e))
 
-        app_logger.info("Stopping connectors")
+        self.logger.info("Stopping components (found {count} components)".format(count=len(self._active_connectors)))
         connectors_to_stop = list(self._active_connectors)
-        for connector in connectors_to_stop:
+        for i, connector in enumerate(connectors_to_stop):
             # Skip if this connector belongs to a device we already stopped
             # if any(connector in device._connectors for device in devices_to_stop):
-            #     app_logger.debug("Skipping connector {name} as it belongs to a device we already stopped".format(name=connector.component_endpoint))
+            #     self.logger.debug("Skipping connector {name} as it belongs to a device we already stopped".format(name=connector.component_endpoint))
             #     continue
-                
+            
+            connector_name = getattr(connector, "component_endpoint", "unknown")
+            self.logger.info("Stopping component {i}/{total}: {name}".format(i=i+1, total=len(connectors_to_stop), name=connector_name))
             try:
                 connector.stop_component()
             except Exception as e:
-                app_logger.error(
-                    "Error stopping connector {name}: {e}".format(
+                self.logger.error(
+                    "Error stopping component {name}: {e}".format(
                         name=getattr(connector, "component_endpoint", "unknown"), e=e
                     )
                 )
 
-        app_logger.info("Shutting down Redis connection")
+        self.logger.info("All components stopped, stopping logging thread")
+        
+        # Stop the SICClientLog thread before closing Redis
+        sic_logging.SIC_CLIENT_LOG.stop()
+        
+        self.logger.info("Shutting down Redis connection")
         if self._redis is not None:
             self._redis.close()
             self._redis = None
+
+        sys.exit(0)
 
     def register_exit_handler(self):
         """Idempotently register signal and atexit shutdown handlers."""
