@@ -103,10 +103,10 @@ class BaseNaoqiCameraSensor(SICSensor):
     def __init__(self, *args, **kwargs):
         super(BaseNaoqiCameraSensor, self).__init__(*args, **kwargs)
 
-        self.s = qi.Session()
-        self.s.connect("tcp://{}:{}".format(self.params.naoqi_ip, self.params.port))
+        self.session = qi.Session()
+        self.session.connect("tcp://{}:{}".format(self.params.naoqi_ip, self.params.port))
 
-        self.video_service = self.s.service("ALVideoDevice")
+        self.video_service = self.session.service("ALVideoDevice")
 
         # Dont actively set default parameters, this causes weird behaviour because the parameters are ususally not at the documented default.
         if self.params.brightness is not None:
@@ -194,9 +194,12 @@ class BaseNaoqiCameraSensor(SICSensor):
         return CompressedImageMessage(np.asarray(im))
 
     def stop(self, *args):
+        """
+        Stop the Naoqi camera sensor.
+        """
+        self.session.close()
+        self._stopped.set()
         super(BaseNaoqiCameraSensor, self).stop(*args)
-        if hasattr(self.video_service, "shutdown"):
-            self.video_service.shutdown()
 
 
 ##################

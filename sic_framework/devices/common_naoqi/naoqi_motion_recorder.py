@@ -247,12 +247,14 @@ class NaoqiMotionRecorderActuator(SICActuator, NaoqiMotionTools):
 
         return SICMessage()
 
+    def stop(self, *args):
+        """
+        Stop the Naoqi motion recorder actuator.
+        """
+        self.session.close()
+        self._stopped.set()
+        super(NaoqiMotionRecorderActuator, self).stop()
+
 
 class NaoqiMotionRecorder(SICConnector):
     component_class = NaoqiMotionRecorderActuator
-
-
-# if __name__ == '__main__':
-#     # c = PepperMotionRecorderActuator()
-#     # c._start()
-#     SICComponentManager([NaoqiMotionRecorderActuator])

@@ -33,6 +33,13 @@ class NaoqiTabletComponent(SICComponent):
         # self.logger.info("url is ", message.url)
         self.tablet_service.showWebview(message.url)
 
+    def stop(self, *args):
+        """
+        Stop the Pepper tablet component.
+        """
+        self.session.close()
+        self._stopped.set()
+        super(NaoqiTabletComponent, self).stop()
 
 class NaoqiTablet(SICConnector):
     component_class = NaoqiTabletComponent

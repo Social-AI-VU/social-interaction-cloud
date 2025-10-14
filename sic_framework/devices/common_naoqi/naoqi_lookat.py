@@ -101,7 +101,11 @@ class NaoqiLookAtComponent(SICComponent):
             self.output_message(NaoJointAngles(["HeadYaw", "HeadPitch"], angles))
 
     def stop(self, *args):
+        """
+        Stop the Naoqi LookAt component.
+        """
         self.session.close()
+        self._stopped.set()
         super(NaoqiLookAtComponent, self).stop(*args)
 
 

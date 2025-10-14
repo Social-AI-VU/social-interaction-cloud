@@ -351,6 +351,18 @@ class DialogflowComponent(SICComponent):
 
         return QueryResult(dict())
 
+    def stop(self):
+        self.message_was_final.set()
+        self.dialogflow_is_init = False
+        try:
+            del self.session_client
+        except AttributeError:
+            pass
+        except Exception as e:
+            self.logger.error("Error deleting session client: {}".format(e))
+        self._stopped.set()
+        super(DialogflowComponent, self).stop()
+
 
 class Dialogflow(SICConnector):
     component_class = DialogflowComponent

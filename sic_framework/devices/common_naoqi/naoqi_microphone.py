@@ -67,9 +67,13 @@ class NaoqiMicrophoneSensor(SICSensor):
         return AudioMessage(self.audio_buffer, sample_rate=self.params.sample_rate)
 
     def stop(self, *args):
+        """
+        Stop the Naoqi microphone sensor.
+        """
         self.audio_service.unsubscribe(self.module_name)
         self.session.unregisterService(self.session_id)
         self.session.close()
+        self._stopped.set()
         super(NaoqiMicrophoneSensor, self).stop(*args)
 
     def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp, inputBuffer):

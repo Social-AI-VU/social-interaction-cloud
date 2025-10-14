@@ -164,6 +164,15 @@ class NaoqiLEDsActuator(SICActuator):
             return NaoGetIntensityReply(self.leds.getIntensity(message.name))
         return SICMessage()
 
+    def stop(self, *args):
+        """
+        Stop the LEDs actuator.
+        """
+        self.leds.close()
+        self.session.close()
+        self._stopped.set()
+        super(NaoqiLEDsActuator, self).stop()
+
 
 class NaoqiLEDs(SICConnector):
     component_class = NaoqiLEDsActuator

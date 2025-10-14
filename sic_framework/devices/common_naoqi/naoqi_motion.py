@@ -233,6 +233,14 @@ class NaoqiMotionActuator(SICActuator):
     def moveToward(self, motion):
         self.motion.moveToward(motion.x, motion.y, motion.theta)
 
+    def stop(self, *args):
+        """
+        Stop the Naoqi motion actuator.
+        """
+        self.session.close()
+        self._stopped.set()
+        super(NaoqiMotionActuator, self).stop()
+
 
 class NaoqiMotion(SICConnector):
     component_class = NaoqiMotionActuator

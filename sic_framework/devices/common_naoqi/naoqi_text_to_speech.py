@@ -124,6 +124,14 @@ class NaoqiTextToSpeechActuator(SICActuator):
             self.tts.say(message.text)
         return SICMessage()
 
+    def stop(self, *args):
+        """
+        Stop the Naoqi text to speech actuator.
+        """
+        self.session.close()
+        self._stopped.set()
+        super(NaoqiTextToSpeechActuator, self).stop()
+
 
 class NaoqiTextToSpeech(SICConnector):
     component_class = NaoqiTextToSpeechActuator
