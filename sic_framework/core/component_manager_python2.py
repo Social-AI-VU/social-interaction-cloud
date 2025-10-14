@@ -274,18 +274,22 @@ class SICComponentManager(object):
         :param component_channel: The id of the component to stop. A string of characters corresponding to the output channel of the component.
         :type component_channel: str
         """
-
+        self.logger.debug("Stopping component {}".format(component_channel), extra={"client_id": self.client_id})
         component = self.active_components[component_channel]
 
         try:
+            self.logger.debug("Calling component's {} stop method".format(component.component_endpoint), extra={"client_id": component.client_id})
             # set stop event to signal the component to stop
             component.stop()
 
             self.logger.debug("Unregistering component's handler threads from Redis", extra={"client_id": component.client_id})
             
+            try:
             # unsubscribe the Component's handler threads from Redis
-            self.redis.unregister_callback(component.message_handler_thread)
-            self.redis.unregister_callback(component.request_handler_thread)
+                self.redis.unregister_callback(component.message_handler_thread)
+                self.redis.unregister_callback(component.request_handler_thread)
+            except Exception as e:
+                self.logger.error("Error unregistering component's handler threads from Redis: {}".format(e), extra={"client_id": component.client_id})
 
             # Join the main thread
             self.component_threads[component_channel]["main"].join()
@@ -303,8 +307,10 @@ class SICComponentManager(object):
                 self.logger.error("Error removing data stream information: {}".format(e), extra={"client_id": component.client_id})
                 raise e
             
+            self.logger.debug("Removing component from active components", extra={"client_id": component.client_id})
             del self.active_components[component_channel]
 
+            self.logger.info("Component {} stopped successfully".format(component.component_endpoint), extra={"client_id": component.client_id})
             return SICSuccessMessage()
         except Exception as e:
             self.logger.error(

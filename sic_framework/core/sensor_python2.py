@@ -63,6 +63,9 @@ class SICSensor(SICComponent):
         while not self._signal_to_stop.is_set():
             output = self.execute()
 
+            if output is None:
+                continue
+
             output._timestamp = self._get_timestamp()
 
             self.output_message(output)

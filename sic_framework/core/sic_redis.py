@@ -266,16 +266,40 @@ class SICRedisConnection:
 
     def unregister_callback(self, callback_thread):
         """
-        Unhook a callback by unsubscribing from Redis and stopping the thread. Will unregister all hooks if
-        multiple hooks are created.
+        Unhook a callback by unsubscribing from Redis and stopping the thread.
 
         :param callback_thread: The CallbackThread to unregister.
         :type callback_thread: CallbackThread
         """
-
-        callback_thread.pubsub.unsubscribe()
-        callback_thread.thread.stop()
-        self._running_callbacks.remove(callback_thread)
+        if callback_thread is None:
+            return
+            
+        try:
+            # Only try to stop the thread if it's still alive
+            # (Calling stop() on an already-stopped thread can hang)
+            if callback_thread.thread.is_alive():
+                # Unsubscribe first to wake up the thread
+                callback_thread.pubsub.unsubscribe()
+                
+                # Stop the thread
+                callback_thread.thread.stop()
+                
+                # Join with timeout to prevent indefinite blocking
+                callback_thread.join(timeout=1.0)
+                
+                # Check if thread is still alive
+                if callback_thread.is_alive():
+                    # Log warning but continue - don't block shutdown
+                    import sys
+                    sys.stderr.write("WARNING: Callback thread {} did not stop within timeout\n".format(callback_thread.name))
+                    sys.stderr.flush()
+            
+            # Remove from running callbacks
+            if callback_thread in self._running_callbacks:
+                self._running_callbacks.remove(callback_thread)
+                
+        except Exception as e:
+            raise e
 
     def send_message(self, channel, message):
         """
