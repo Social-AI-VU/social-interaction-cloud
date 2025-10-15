@@ -18,6 +18,7 @@ Devices
    :maxdepth: 2
 
    api/devices
+   api/device_components
 
 Services
 --------
