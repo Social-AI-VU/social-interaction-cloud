@@ -225,6 +225,13 @@ class WhisperComponent(SICService):
 
         return Transcript(transcript)
 
+    def stop(self):
+        """
+        Stop the WhisperComponent.
+        """
+        self._stopped.set()
+        super(WhisperComponent, self).stop()
+
 
 class SICWhisper(SICConnector):
     """

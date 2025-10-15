@@ -224,6 +224,13 @@ class GPTComponent(SICService):
             )
             return output
 
+    def stop(self):
+        """
+        Stop the GPTComponent.
+        """
+        self._stopped.set()
+        super(GPTComponent, self).stop()
+
 
 class GPT(SICConnector):
     """

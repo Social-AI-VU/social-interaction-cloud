@@ -87,6 +87,13 @@ class FaceDetectionComponent(SICComponent):
 
         return BoundingBoxesMessage(faces)
 
+    def stop(self):
+        """
+        Stop the face detection component.
+        """
+        self._stopped.set()
+        super(FaceDetectionComponent, self).stop()
+
 
 class FaceDetection(SICConnector):
     component_class = FaceDetectionComponent

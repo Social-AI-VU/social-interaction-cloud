@@ -247,6 +247,12 @@ class GoogleSpeechToTextComponent(SICService):
                 self.message_was_final.set()
                 return RecognitionResult(result)
 
+    def stop(self):
+        """
+        Stop the GoogleSpeechToTextComponent.
+        """
+        self._stopped.set()
+        super(GoogleSpeechToTextComponent, self).stop()
 
 class GoogleSpeechToText(SICConnector):
     """
