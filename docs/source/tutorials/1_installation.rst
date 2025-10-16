@@ -115,13 +115,6 @@ Use the following commands within a shell to install the Social Interaction Clou
 
       pip install -U git+https://github.com/lilohuang/PyTurboJPEG.git
 
-📹: Video Tutorial (Windows)
-----------------------------
-
-   .. raw:: html
-
-      <iframe width="560" height="315" src="https://www.youtube.com/embed/iWvUm7mJOA8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
 
 **Upgrading SIC**
 ~~~~~~~~~~~~~~~~~
@@ -351,10 +344,3 @@ If all goes well, a display should pop up showing a bounding box around the dete
 
 **And that's it!**
 Go have some fun with robots, see :doc:`Getting started with the Nao robot <2_intro_to_sic>` and :doc:`Getting started with Franka Emika Research 3 <../getting_started/getting_started_franka>`.
-
-📹: Video Tutorial
-----------------------------
-
-.. raw:: html
-
-   <iframe width="560" height="315" src="https://www.youtube.com/embed/iWvUm7mJOA8?si=-4TuHfi4E-ww2HjM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>

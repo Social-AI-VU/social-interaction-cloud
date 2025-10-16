@@ -112,10 +112,3 @@ Set the stiffness of the limbs to 0.7 so that the motors can move them. Play the
     nao.motion_record.request(PlayRecording(recording))  
 
 A complete script for this tutorial can be found here: `demo_nao_motion_recorder.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/nao/demo_nao_motion_recorder.py>`_.
-
-📹: Video Tutorial (Windows)
-----------------------------
-
-.. raw:: html
-
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/cNphobiMizs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>

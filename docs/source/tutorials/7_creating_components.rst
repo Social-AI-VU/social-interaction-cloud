@@ -55,13 +55,6 @@ Use this flowchart to help you determine which type of component class your comp
 
 Make sure to use predifined messages where possible to ensure interoperability between your component and others. See `SIC standardized pre-defined messages todonew` for an overview.
 
-📹: Video Tutorial (Windows)
-----------------------------
-
-.. raw:: html
-
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/C_y42blplhs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
 
 Extending an Existing Service
 -----------------------------

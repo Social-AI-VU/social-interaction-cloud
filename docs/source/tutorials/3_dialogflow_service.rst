@@ -328,11 +328,3 @@ The output should look something like this:
 And the transcript should be stored in ``transcript.txt``!
 
 When the transcript is done, you might get some errors about google not receiving new request, like ``google.api_core.exceptions.InvalidArgument: 400 Did not receive any new request for 1m.`` We are still working on how to properly end a conversation after it is done, but Google's documentation has little mention of this. If you find it, let us know!
-
-
-📹: Video Tutorial (Windows)
-----------------------------
-
-.. raw:: html
-
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/3w6F60XDmOw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>

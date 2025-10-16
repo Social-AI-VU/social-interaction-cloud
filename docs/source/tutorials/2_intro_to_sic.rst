@@ -48,15 +48,6 @@ To start the camera demo from the terminal, use the following commands:
       cd sic_applications\demos\nao
       python demo_nao_camera.py
 
-
-📹: Video Tutorial (Windows)
-----------------------------
-
-        .. raw:: html
-
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/3jOTnXRdTx0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-        
-
 .. note::
 
     It might take some time to start the demo file if the SIC has never been installed on the robot.
@@ -93,10 +84,3 @@ The goal of SIC is to provide easy to use high level access to devices and servi
     nao = Nao(ip='192.168.0.151') # adjust this to the IP adress of your robot.  
 
     nao.tts.request(NaoqiTextToSpeechRequest("Hello!"))  
-
-📹: Video Tutorial
-----------------------------
-
-.. raw:: html
-
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/3jOTnXRdTx0?si=AYSXonTdId394B8D" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
