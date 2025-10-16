@@ -203,6 +203,13 @@ class Text2SpeechService(SICService):
 
         return SpeechResult(wav_audio=response.audio_content)
 
+    def stop(self):
+        """
+        Stop the Text2SpeechService.
+        """
+        self._stopped.set()
+        super(Text2SpeechService, self).stop()
+
 
 class Text2Speech(SICConnector):
     """

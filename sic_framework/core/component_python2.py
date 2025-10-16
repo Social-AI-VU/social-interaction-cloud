@@ -151,7 +151,7 @@ class SICComponent:
         # communicate the service is set up and listening to its inputs
         self._ready_event.set()
 
-        self.logger.info("Successfully started component {}".format(self.get_component_name()))
+        self.logger.info("Successfully started!")
 
 
     def stop(self, *args):

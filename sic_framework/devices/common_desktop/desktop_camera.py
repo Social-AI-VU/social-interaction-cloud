@@ -9,7 +9,7 @@ from sic_framework.core.sensor_python2 import SICSensor
 
 
 class DesktopCameraConf(SICConfMessage):
-    def __init__(self, fx=1.0, fy=1.0, flip=None, device_id=0):
+    def __init__(self, fx=1.0, fy=1.0, flip=None, device_id=0, flip_rgb=False):
         """
         Sets desktop camera configuration parameters.
 
@@ -27,11 +27,23 @@ class DesktopCameraConf(SICConfMessage):
         self.fx = fx
         self.fy = fy
         self.flip = flip
+        self.flip_rgb = flip_rgb
 
 
 class DesktopCameraSensor(SICSensor):
     def __init__(self, *args, **kwargs):
         super(DesktopCameraSensor, self).__init__(*args, **kwargs)
+        
+        # Set default configuration values if not provided
+        default_conf = self.get_conf()
+        for param in ['device_id', 'fx', 'fy', 'flip']:
+            if not hasattr(self.params, param):
+                setattr(self.params, param, getattr(default_conf, param))
+
+        # If it's a NaoStub, flip the image to RGB
+        if not hasattr(self.params, 'flip_rgb'):
+            setattr(self.params, 'flip_rgb', True)
+
         if platform.system() == "Windows":
             self.cam = cv2.VideoCapture(self.params.device_id, cv2.CAP_DSHOW)
         else:
@@ -52,7 +64,8 @@ class DesktopCameraSensor(SICSensor):
     def execute(self):
         # Check if camera has been released
         if not self.cam.isOpened():
-            self.logger.error("Camera has been released")
+            self.logger.info("Camera has been released")
+            self._signal_to_stop.set()
             return None
         
         ret, frame = self.cam.read()
@@ -75,13 +88,16 @@ class DesktopCameraSensor(SICSensor):
             except cv2.error as e:
                 self.logger.warning("OpenCV flip error: {e}".format(e=e))
                 return None
+        
+        if self.params.flip_rgb:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         return CompressedImageMessage(frame)
 
     def stop(self, *args):
-        super(DesktopCameraSensor, self).stop(*args)
         if hasattr(self, 'cam') and self.cam is not None:
             self.cam.release()
+        super(DesktopCameraSensor, self).stop(*args)
 
 
 class DesktopCamera(SICConnector):

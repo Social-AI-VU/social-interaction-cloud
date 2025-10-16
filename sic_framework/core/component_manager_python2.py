@@ -73,9 +73,10 @@ class SICStopComponentRequest(SICRequest):
     :type component_channel: str
     """
 
-    def __init__(self, component_channel):
+    def __init__(self, component_channel, component_name):
         super(SICStopComponentRequest, self).__init__()
         self.component_channel = component_channel  # str
+        self.component_name = component_name  # str
 
 class SICNotStartedMessage(SICMessage):
     """
@@ -211,9 +212,9 @@ class SICComponentManager(object):
                 ip=self.ip,
                 redis=self.redis
             )
-            self.logger.info("Component {} instantiated".format(component.component_endpoint), extra={"client_id": client_id})
+            self.logger.info("Component {} instantiated".format(component_endpoint), extra={"client_id": client_id})
             self.active_components[component_channel] = component
-            self.logger.info("Component {} added to active components".format(component_channel), extra={"client_id": client_id})
+            self.logger.debug("Component {} added to active components".format(component_channel), extra={"client_id": client_id})
 
             thread = threading.Thread(target=component._start)
             thread.name = component_class.get_component_name()
@@ -225,7 +226,7 @@ class SICComponentManager(object):
             if component._ready_event.is_set() is False:
                 self.logger.error(
                     "Component {} refused to start within {} seconds!".format(
-                        component.get_component_name(),
+                        component_name,
                         component.COMPONENT_STARTUP_TIMEOUT,
                     ), 
                     extra={"client_id": client_id}
@@ -233,12 +234,10 @@ class SICComponentManager(object):
 
             # Store the main thread for the component
             self.component_threads[component_channel]["main"] = thread
-
-            self.logger.debug("Component {} started".format(component.component_endpoint), extra={"client_id": client_id})
             
             # register the datastreams for the component
             try:
-                self.logger.debug("Setting data stream for component {}".format(component.component_endpoint), extra={"client_id": client_id})
+                self.logger.debug("Setting data stream for component {}".format(component_endpoint), extra={"client_id": client_id})
 
                 data_stream_info = {
                     "component_endpoint": component_endpoint,
@@ -248,14 +247,14 @@ class SICComponentManager(object):
                                 
                 self.redis.set_data_stream(component_channel, data_stream_info)
 
-                self.logger.debug("Data stream set for component {}".format(component.component_endpoint), extra={"client_id": client_id})
+                self.logger.debug("Data stream set for component {}".format(component_endpoint), extra={"client_id": client_id})
             except Exception as e:
                 self.logger.error(
-                    "Error setting data stream for component {}: {}".format(component.component_endpoint, e),
+                    "Error setting data stream for component {}: {}".format(component_endpoint, e),
                     extra={"client_id": client_id}
                 )
 
-            self.logger.debug("Component {} started successfully".format(component.component_endpoint), extra={"client_id": client_id})
+            self.logger.info("Component {} started successfully".format(component_endpoint), extra={"client_id": client_id})
             
             return SICComponentStartedMessage()
 
@@ -275,18 +274,22 @@ class SICComponentManager(object):
         :param component_channel: The id of the component to stop. A string of characters corresponding to the output channel of the component.
         :type component_channel: str
         """
-
+        self.logger.debug("Stopping component {}".format(component_channel), extra={"client_id": self.client_id})
         component = self.active_components[component_channel]
 
         try:
+            self.logger.debug("Calling component's {} stop method".format(component.component_endpoint), extra={"client_id": component.client_id})
             # set stop event to signal the component to stop
             component.stop()
 
             self.logger.debug("Unregistering component's handler threads from Redis", extra={"client_id": component.client_id})
             
+            try:
             # unsubscribe the Component's handler threads from Redis
-            self.redis.unregister_callback(component.message_handler_thread)
-            self.redis.unregister_callback(component.request_handler_thread)
+                self.redis.unregister_callback(component.message_handler_thread)
+                self.redis.unregister_callback(component.request_handler_thread)
+            except Exception as e:
+                self.logger.error("Error unregistering component's handler threads from Redis: {}".format(e), extra={"client_id": component.client_id})
 
             # Join the main thread
             self.component_threads[component_channel]["main"].join()
@@ -304,8 +307,10 @@ class SICComponentManager(object):
                 self.logger.error("Error removing data stream information: {}".format(e), extra={"client_id": component.client_id})
                 raise e
             
+            self.logger.debug("Removing component from active components", extra={"client_id": component.client_id})
             del self.active_components[component_channel]
 
+            self.logger.info("Component {} stopped successfully".format(component.component_endpoint), extra={"client_id": component.client_id})
             return SICSuccessMessage()
         except Exception as e:
             self.logger.error(
@@ -506,8 +511,8 @@ class SICComponentManager(object):
                 return self.stop_component(request.component_channel)
             else:
                 self.logger.warning(
-                    "Ignored request to stop component with component channel {} as it is not in the active components".format(
-                        request.component_channel
+                    "Ignored request to stop component {} as it is not in the active components".format(
+                        request.component_name
                     ),
                     extra={"client_id": client_id}
                 )

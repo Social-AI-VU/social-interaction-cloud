@@ -147,6 +147,9 @@ class NaoqiAutonomousActuator(SICActuator):
         return SICMessage
 
     def execute(self, message):
+        """
+        Execute the autonomous actuator.
+        """
         if message == NaoRestRequest:
             self.motion.rest()
         elif message == NaoWakeUpRequest:
@@ -173,6 +176,14 @@ class NaoqiAutonomousActuator(SICActuator):
                 self.basic_awareness.setTrackingMode(message.tracking_mode)
 
         return SICMessage()
+
+    def stop(self, *args):
+        """
+        Stop the autonomous actuator.
+        """
+        self.session.close()
+        self._stopped.set()
+        super(NaoqiAutonomousActuator, self).stop()
 
 
 class NaoqiAutonomous(SICConnector):

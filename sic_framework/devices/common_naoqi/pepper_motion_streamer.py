@@ -159,6 +159,14 @@ class PepperMotionStreamerService(SICComponent, NaoqiMotionTools):
             self.logger.exception(e)
             self.stop()
 
+    def stop(self, *args):
+        """
+        Stop the Pepper motion streamer.
+        """
+        self.session.close()
+        self._stopped.set()
+        super(PepperMotionStreamerService, self).stop()
+
 
 class PepperMotionStreamer(SICConnector):
     component_class = PepperMotionStreamerService

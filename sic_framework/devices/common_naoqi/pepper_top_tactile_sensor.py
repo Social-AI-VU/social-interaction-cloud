@@ -55,8 +55,13 @@ class PepperTopTactileSensor(SICComponent):
         self.ids.append(id)
 
     def stop(self, *args):
+        """
+        Stop the Pepper top tactile sensor.
+        """
         for id in self.ids:
             self.touch.signal.disconnect(id)
+        self.session.close()
+        self._stopped.set()
         super(PepperTopTactileSensor, self).stop()
 
 

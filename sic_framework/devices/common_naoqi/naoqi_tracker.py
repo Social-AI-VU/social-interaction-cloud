@@ -130,6 +130,14 @@ class NaoqiTrackerActuator(SICActuator):
 
         return SICMessage()
 
+    def stop(self, *args):
+        """
+        Stop the Naoqi tracker actuator.
+        """
+        self.session.close()
+        self._stopped.set()
+        super(NaoqiTrackerActuator, self).stop()
+
 
 class NaoqiTracker(SICConnector):
     component_class = NaoqiTrackerActuator

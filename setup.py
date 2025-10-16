@@ -46,6 +46,9 @@ extras_require = {
         "torch",
         "torchvision",
     ],
+    "object-detection": [
+        "ultralytics",
+    ],
     "openai-gpt": [
         "openai>=1.52.2",
         "python-dotenv",
@@ -112,6 +115,7 @@ setup(
             "run-webserver=sic_framework.services.webserver.webserver_component:main",
             "run-google-tts=sic_framework.services.google_tts.google_tts:main",
             "run-google-stt=sic_framework.services.google_stt.google_stt:main",
+            "run-object-detection=sic_framework.services.object_detection:main",
         ],
     },
 )

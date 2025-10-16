@@ -73,6 +73,14 @@ class NaoqiStiffnessActuator(SICActuator, NaoqiMotionTools):
         self.motion.setStiffnesses(joints, request.stiffness)
         return SICMessage()
 
+    def stop(self, *args):
+        """
+        Stop the Naoqi stiffness actuator.
+        """
+        self.session.close()
+        self._stopped.set()
+        super(NaoqiStiffnessActuator, self).stop()
+
 
 class NaoqiStiffness(SICConnector):
     component_class = NaoqiStiffnessActuator

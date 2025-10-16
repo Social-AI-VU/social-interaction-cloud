@@ -60,8 +60,13 @@ class NaoqiButtonSensor(SICComponent):
         self.ids.append(id)
 
     def stop(self, *args):
+        """
+        Stop each touch signal.
+        """
         for id in self.ids:
             self.touch.signal.disconnect(id)
+        self.session.close()
+        self._stopped.set()
         super(NaoqiButtonSensor, self).stop()
 
 
