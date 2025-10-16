@@ -4,10 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "social-interaction-cloud"
-version = "2.1.0"
+version = "2.1.1"
 description = "Social Interaction Cloud Framework"
 readme = "README.md"
 requires-python = ">=3.7"
+
+# For PyPI display (fallback for legacy metadata)
+author = "Mike Ligthart, Landon Brown, Thomas Wiggers, Thomas Orden, Ting-Chia Chiang, and Koen Hindriks"
+author_email = "m.e.u.ligthart@vu.nl"
+
 authors = [
     { name = "Mike Ligthart", email = "m.e.u.ligthart@vu.nl" },
     { name = "Landon Brown"},
