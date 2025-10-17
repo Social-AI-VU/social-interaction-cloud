@@ -3,7 +3,7 @@
 
 📄 SIC Services
 ----------------------------
-The :doc:`Available services <../api/services>` page provides more details about which services are available, how to use them, and how to extend them.
+The :doc:`How to use a service <../api/how_to_use_a_service>` page provides more details about which services are available, how to use them, and how to extend them.
 
 In this example we will use the face detection service to draw a bounding box around a face that is detected in your laptop camera feed. It uses the ``sic_applications/demos`` `demo_desktop_camera_facedetection.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection.py>`_.
 
@@ -15,9 +15,21 @@ The steps to starting Redis have been covered in :doc:`1: Installation and Setup
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Services might need additional dependencies installed before being able to run them. You can install them with the appropriate service tag. For example,
 
-.. code-block:: bash
+**Ubuntu/Debian/Windows**
 
-   pip install --upgrade social-interaction-cloud[face-detection,dialogflow]  
+.. toggle:: Ubuntu/Debian/Windows
+   
+   .. code-block:: bash
+
+      pip install --upgrade social-interaction-cloud[face-detection,dialogflow]  
+
+**MacOS**
+
+.. toggle:: MacOS
+   
+   .. code-block:: bash
+
+      pip install --upgrade 'social-interaction-cloud[face-detection,dialogflow]'
 
 A service can easily be run by opening a new terminal and calling the ``run-service`` command, for example ``run-face-detection`` or ``run-dialogflow``. See the :doc:`Available services <../api/services>`  page for more info about the dependencies and run commands for each service.
 
@@ -25,9 +37,9 @@ Note: the ``--upgrade`` flag ensures the new dependencies are installed if you a
 
 For our example we will start the face-detection service.
 
-**Ubuntu/Debian/MacOS**
+**Ubuntu/Debian**
 
-.. toggle:: Ubuntu/Debian/MacOS
+.. toggle:: Ubuntu/Debian
    
    .. code-block:: bash
 
@@ -37,6 +49,22 @@ For our example we will start the face-detection service.
 
       # First, install all the extra dependencies that this service depends on.  
       pip install --upgrade social-interaction-cloud[face-detection]  
+      
+      # Run the face-detection server  
+      run-face-detection  
+
+**MacOS**
+
+.. toggle:: MacOS
+   
+   .. code-block:: bash
+
+      # Activate the same virtual environment where you pip installed  
+      # social-interaction-cloud in the installation steps (e.g. in sic-applications)  
+      source venv_sic/bin/activate  
+
+      # First, install all the extra dependencies that this service depends on.  
+      pip install --upgrade 'social-interaction-cloud[face-detection]' 
       
       # Run the face-detection server  
       run-face-detection  

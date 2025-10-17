@@ -5,7 +5,10 @@ This page contains information on how to get started with the various robots.
 
 Getting started with the Nao
 ----------------------------------
-For information on how to get started with the Nao, please consult the tutorials section: :doc:`tutorials/2_intro_to_sic`
+.. toctree::
+   :maxdepth: 2
+
+   getting_started/getting_started_nao
 
 
 Getting started with the Franka Emika robot arm

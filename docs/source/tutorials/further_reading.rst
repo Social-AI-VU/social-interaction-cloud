@@ -7,7 +7,7 @@ For more information, see here:
 
 - :doc:`How to get a google dialogflow key <../external_apis/google_dialogflow_key>`
 
-- :doc:`Available services <../architecture/available_services>`
+- :doc:`How to use a service <../api/how_to_use_a_service>`
 
 - :doc:`Getting started with the Franka robot arm <../getting_started/getting_started_franka>`
 

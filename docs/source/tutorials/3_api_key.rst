@@ -32,7 +32,7 @@ Using the Dialogflow component with your computer's microphone
 We're testing your dialogflow connection by running through the `demo_desktop_microphone_dialogflow.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_microphone_dialogflow.py>`_ example.
 
 .. note::
-    Before running ``demo_desktop_microphone_dialogflow.py``, make sure to start the SIC service by running ``run-dialogflow`` in another terminal. You may have to run ``pip install social-interaction-cloud[dialogflow]`` beforehand.
+    Before running ``demo_desktop_microphone_dialogflow.py``, make sure to start the SIC service by running ``run-dialogflow`` in another terminal. You may have to run ``pip install social-interaction-cloud[dialogflow]`` (Ubuntu/Debian/Windows) or ``pip install 'social-interaction-cloud[dialogflow]'`` (MacOS) beforehand.
 
 The code contains detailed comments to explain how everything works. Here, we'll only pick out a few crucial steps.
 

@@ -239,6 +239,14 @@ To start the camera demo from the terminal, use the following commands.
 
 If all goes well, a display should pop up showing you the camera output from your webcam!
 
+.. note::
+   If the camera output is flipped, change the ``flip`` parameter in the ``DesktopCameraConf`` from -1 to 1:
+
+   .. code-block:: python
+
+      conf = DesktopCameraConf(fx=1.0, fy=1.0, flip=1)  
+
+
 And you should get the following output:
 
 .. code-block:: bash
