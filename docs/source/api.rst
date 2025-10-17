@@ -27,3 +27,12 @@ Services
    :maxdepth: 2
 
    api/services 
+
+How to use a service
+--------
+
+.. toctree::
+   :maxdepth: 2
+
+   api/how_to_use_a_service 
+ 

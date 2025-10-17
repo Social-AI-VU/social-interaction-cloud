@@ -1,4 +1,4 @@
-Available services
+How to use a service
 =======================================
 
 The social interaction cloud has many components available for you to speed up creating social interactions with the robots.

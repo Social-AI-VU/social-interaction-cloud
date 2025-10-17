@@ -26,10 +26,3 @@ Processes and Threads
 .. toctree::
 
    architecture/processes_threads
-
-Available services
----------------------
-
-.. toctree::
-
-   architecture/available_services
