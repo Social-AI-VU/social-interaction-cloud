@@ -85,9 +85,13 @@ docs = [
 
 [tool.setuptools]
 package-dir = {"" = "."}
+include-package-data = true
 
 [tool.setuptools.packages.find]
 include = ["sic_framework*"]
+
+[tool.setuptools.package-data]
+"sic_framework.services.face_detection" = ["haarcascade_frontalface_default.xml"]
 
 [project.scripts]
 run-dialogflow = "sic_framework.services.dialogflow:main"
