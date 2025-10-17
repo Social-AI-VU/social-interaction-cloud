@@ -1,0 +1,191 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3: Using the Dialogflow Service &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=4a39c7ea"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="4: Robot Motion" href="4_motion.html" />
+    <link rel="prev" title="2: Using a Service" href="2_service.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-1-installation-and-setup">Tutorial 1: Installation and Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-2-using-a-service">Tutorial 2: Using a Service</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../tutorials.html#tutorial-3-application-with-a-service-requiring-an-api-key">Tutorial 3: Application with a Service Requiring an API key</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">3: Using the Dialogflow Service</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction-to-dialogflow">Introduction to Dialogflow</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-the-dialogflow-component-with-your-computer-s-microphone">Using the Dialogflow component with your computer’s microphone</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-4-robot-motion">Tutorial 4: Robot Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#further-reading">Further reading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">3: Using the Dialogflow Service</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/tutorials/3_api_key.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="using-the-dialogflow-service">
+<h1>3: Using the Dialogflow Service<a class="headerlink" href="#using-the-dialogflow-service" title="Link to this heading"></a></h1>
+<p>This tutorial will guide you through the use of the Dialogflow service. First, we introduce Dialogflow and explain how it works. Then, we look at how to use Dialogflow with the Nao robot. Finally, we introduce a way to use Dialogflow to transcribe audio - this is platform-independent and can thus be used even if you don’t have access to a robot.</p>
+<section id="introduction-to-dialogflow">
+<h2>Introduction to Dialogflow<a class="headerlink" href="#introduction-to-dialogflow" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">dialogflow</span></code> service enables the use of the <a class="reference external" href="https://dialogflow.com/">Google Dialogflow</a> platform within your application.</p>
+<p>Dialogflow is used to translate human speech into intents (<em>intent classification</em>). In other words, not only does it (try to) convert an audio stream into readable text, it also classifies this text into an intent and extracts additional parameters called entities from the text, if specified. For example, an audio stream can be transcribed to the string “I am 15 years old”, and classified as the intent ‘answer_age’ with entity ‘age=15’.</p>
+<p>In order to create a Dialogflow agent, visit <a class="reference external" href="https://dialogflow.cloud.google.com">https://dialogflow.cloud.google.com</a> and log-in with a Google account of choice. Use the ‘Create Agent’ button in the top left to start your first project. For our framework to be able to communicate with this agent, the project ID and a keyfile are required. To get a keyfile read the instructions on <span class="xref std std-doc">Getting a google dialogflow key</span>. Once you have a keyfile, place it inside the conf/google folder in your local repository.</p>
+<p>In Dialogflow, the main items of interest are the <a class="reference external" href="https://cloud.google.com/dialogflow/docs/intents-overview">Intents</a> and the <a class="reference external" href="https://cloud.google.com/dialogflow/docs/entities-overview">Entities</a>. An intent is something you want to recognize from an end-user; here we will show you an example of an intent that is aimed at recognizing someone’s name.</p>
+<a class="reference internal image-reference" href="../_images/intent.png"><img alt="intent creation with Google Dialogflow" class="align-center" src="../_images/intent.png" style="width: 500.0px; height: 350.0px;" />
+</a>
+<p>When creating an intent you can name it anything you like; In this example we go with ‘answer_name’ (seen at the very top). Below ‘Action and parameters’, you should give the name of the intent that will actually be used in your program. Here, we also set that to ‘answer_name’.</p>
+<p>Moreover, it is useful to set a context for the intent. Contexts allow you to define specific states that a conversation must be in for an intent to match. You can also have intents activate contexts to help direct the conversation in future exchanges. Usually though, in a social robotics application, the context is already known. So in this example we match the name of the (input)context with the name of the intent, and thus make it ‘answer_name’ as well. By default, Dialogflow keeps the context active for 5 exchanges; but we can fix this by changing the 5 (at the start of the output context) to a 0.</p>
+<p>Now we arrive at the most important aspect of the intent: the training phrases. Here, you can give the kinds of input strings you would expect; from these, Dialogflow learns the model it will eventually use. You can identify a part of the phrase as a parameter by double-clicking on the relevant word and selecting the appropriate entity from the list. It will then automatically appear below ‘Action and parameters’ as well; the ‘parameter name’ there will be passed in the result (we use ‘name’ here). The system has many built-in entities (like ‘sys.person’), but you can define your own entities as well (even through importing CSV files). Our complete intent example thus looks like this (note: using <code class="docutils literal notranslate"><span class="pre">sys.given-name</span></code> is usually preferred):</p>
+</section>
+<section id="using-the-dialogflow-component-with-your-computer-s-microphone">
+<h2>Using the Dialogflow component with your computer’s microphone<a class="headerlink" href="#using-the-dialogflow-component-with-your-computer-s-microphone" title="Link to this heading"></a></h2>
+<p>We’re testing your dialogflow connection by running through the <a class="reference external" href="https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_microphone_dialogflow.py">demo_desktop_microphone_dialogflow.py</a> example.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Before running <code class="docutils literal notranslate"><span class="pre">demo_desktop_microphone_dialogflow.py</span></code>, make sure to start the SIC service by running <code class="docutils literal notranslate"><span class="pre">run-dialogflow</span></code> in another terminal. You may have to run <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">social-interaction-cloud[dialogflow]</span></code> (Ubuntu/Debian/Windows) or <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'social-interaction-cloud[dialogflow]'</span></code> (MacOS) beforehand.</p>
+</div>
+<p>The code contains detailed comments to explain how everything works. Here, we’ll only pick out a few crucial steps.</p>
+<p>First, we create a dialogflow object:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dialogflow_conf</span> <span class="o">=</span> <span class="n">DialogflowConf</span><span class="p">(</span><span class="n">keyfile_json</span><span class="o">=</span><span class="n">keyfile_json</span><span class="p">,</span> <span class="n">sample_rate_hertz</span><span class="o">=</span><span class="mi">44100</span><span class="p">,</span> <span class="n">language</span><span class="o">=</span><span class="s2">&quot;en&quot;</span><span class="p">)</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">dialogflow</span> <span class="o">=</span> <span class="n">Dialogflow</span><span class="p">(</span><span class="n">conf</span><span class="o">=</span><span class="n">dialogflow_conf</span><span class="p">,</span> <span class="n">input_source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">desktop_mic</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Since we also want something to happen when Dialogflow is triggered, we want to register a callback that will handle that:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">on_dialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">response</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">recognition_result</span><span class="o">.</span><span class="n">is_final</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Transcript: </span><span class="si">{transcript}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">transcript</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">recognition_result</span><span class="o">.</span><span class="n">transcript</span><span class="p">))</span>
+
+<span class="bp">self</span><span class="o">.</span><span class="n">dialogflow</span><span class="o">.</span><span class="n">register_callback</span><span class="p">(</span><span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">on_dialog</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we’re ready to get the intent from dialogflow:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">contexts_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+<span class="n">reply</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dialogflow</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">GetIntentRequest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span> <span class="n">contexts_dict</span><span class="p">))</span>
+
+<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;The detected intent: </span><span class="si">{intent}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">intent</span><span class="o">=</span><span class="n">reply</span><span class="o">.</span><span class="n">intent</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="n">reply</span><span class="o">.</span><span class="n">fulfillment_message</span><span class="p">:</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">reply</span><span class="o">.</span><span class="n">fulfillment_message</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reply: </span><span class="si">{text}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>And that’s it! You should now be able to talk to your computer. See also <a class="reference external" href="https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_microphone_dialogflow.py">the full demo script</a> for a more complete example. Make sure to set the proper keyfile path!
+Next, we’ll cover the basics of robot motion with a Nao robot.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="2_service.html" class="btn btn-neutral float-left" title="2: Using a Service" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="4_motion.html" class="btn btn-neutral float-right" title="4: Robot Motion" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
