@@ -8,5 +8,5 @@ Google Cloud Platform
 .. toctree::
    :maxdepth: 2
 
-   tutorials/6_google_cloud
+   external_apis/google_cloud
    external_apis/google_dialogflow_key
