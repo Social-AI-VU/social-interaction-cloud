@@ -6,21 +6,21 @@ This tutorial shows you how to play system motions, create, save, and replay cus
 📄 Nao Motion Tutorial
 ----------------------------
 
+**Connecting to the Nao**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Your computer must be connected to the same network as the Nao. 
+Make sure the Nao crouches safely in its resting position. Press on its chest button to turn it on. Once it is fully awake, press the chest button again to get its IP address.
+Replace "XXX" with this IP address in the demo script.
+
+.. code-block:: python
+
+    self.nao_ip = "XXX"
+
+
 **Playing Animations and Setting Posture**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-First, import the necessary functions from the SIC framework:
-
-.. code-block:: python
-
-    from sic_framework.devices import Nao  
-    from sic_framework.devices.common_naoqi.naoqi_motion import NaoPostureRequest, NaoqiAnimationRequest  
-
-Connect to the Nao (computer must be connected to the same network):
-
-.. code-block:: python
-
-    nao = Nao(ip="NAO_IP_HERE")
+We're following the ``demo_nao_motion`` script which can be found `here <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/nao/demo_nao_motion.py>`_ and which contains more detailed comments.
+Make sure you are connected to your Nao.
 
 Set posture or play animation:
 
@@ -47,26 +47,8 @@ A complete script for this tutorial can be found here: `demo_nao_motion.py <http
 
 **Recording and Playing Custom Animations**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-First, import the necessary functions from the SIC framework:
-
-.. code-block:: python
-
-    from sic_framework.devices import Nao  
-    from sic_framework.devices.common_naoqi.naoqi_motion_recorder import (  
-        NaoqiMotionRecording,  
-        NaoqiMotionRecorderConf,  
-        PlayRecording,  
-        StartRecording,  
-        StopRecording,  
-    )  
-    from sic_framework.devices.common_naoqi.naoqi_stiffness import Stiffness  
-
-Connect to the Nao (computer must be connected to the same network):
-
-.. code-block:: python
-
-    nao = Nao(ip="NAO_IP_HERE")
+We're following the ``demo_nao_motion_recorder`` script which can be found `here <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/nao/demo_nao_motion_recorder.py>` and which contains more detailed comments.
+Make sure you are connected to your Nao.
 
 Specify which Nao parts you want to record (NOTE: a 'chain' is a group of body parts, or a link of joints). The full list can be found in the `Nao body parts documentation <http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains>`_.
 
@@ -111,4 +93,6 @@ Set the stiffness of the limbs to 0.7 so that the motors can move them. Play the
     recording = NaoqiMotionRecording.load(MOTION_NAME)  
     nao.motion_record.request(PlayRecording(recording))  
 
-A complete script for this tutorial can be found here: `demo_nao_motion_recorder.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/nao/demo_nao_motion_recorder.py>`_.
+**Further reading**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you want some further reading, check out :doc:`this section <./further_reading>`.

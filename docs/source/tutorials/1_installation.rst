@@ -15,9 +15,10 @@ In these instructions we will perform Git operations through a basic terminal an
 **Ubuntu/Debian**
 ~~~~~~~~~~~~~~~~~
 
-Use the following commands within a shell to install the Social Interaction Cloud framework on Ubuntu/Debian.
 
 .. toggle:: Ubuntu/Debian
+
+    Use the following commands within a shell to install the Social Interaction Cloud framework on Ubuntu/Debian.
 
    .. code-block:: bash
 
@@ -44,9 +45,10 @@ Use the following commands within a shell to install the Social Interaction Clou
 **MacOS**
 ~~~~~~~~~
 
-Use the following commands within a shell to install the Social Interaction Cloud framework on MacOS.
 
 .. toggle:: MacOS
+
+    Use the following commands within a shell to install the Social Interaction Cloud framework on MacOS.
 
    .. code-block:: bash
 
@@ -135,14 +137,12 @@ Running any application consists of two (or three) steps:
 
 3. Run your program
 
-We will cover two examples: running an application without a service (step 1 and 3) and with a service (step 1, 2, and 3).
-
-
-**Example 1: Running an application without a service**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-For this example we will show your computer’s camera output on your screen. The code for this example is available in the ``sic_applications/demos`` folder and called `demo_desktop_camera.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera.py>`_. An equivalent example showing Nao’s camera output can be found here :doc:`Intro to SIC <2_intro_to_sic>`.
+We will run through a simple example: displaying your computer's camera feed on your screen.
+The code for this example is available in the ``sic_applications/demos`` folder and called `demo_desktop_camera.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera.py>`_.
 
 **Step 1: starting Redis on your laptop**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 To enable communication between all your devices, we have to start Redis server. Make sure Redis is always up and running when you run any demos.
 
 **Ubuntu/Debian/MacOS**
@@ -203,6 +203,8 @@ To enable communication between all your devices, we have to start Redis server.
 *Could not connect to redis at xxx.xxx.xxx.xxx*: If you have a problem connecting to the Redis server, even after running it in another terminal, it could be that your firewall is blocking communication from the robot. Please turn off your firewall to allow the robot to connect to the Redis server.
 
 **Step 2: running an application**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 To start the camera demo from the terminal, use the following commands.
 
 **Ubuntu/Debian/MacOS**
@@ -249,98 +251,5 @@ And you should get the following output:
    [DesktopCameraSensor 145.108.228.128]: INFO: Starting sensor DesktopCameraSensor  
    [DesktopCameraSensor 145.108.228.128]: INFO: Started component DesktopCameraSensor  
 
-**Example 2: Running an application with a service**
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-In this example we will use the face detection service to draw a bounding box around a face that is detected in your laptop camera feed. It uses the ``sic_applications/demos`` `demo_desktop_camera_facedetection.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection.py>`_.
-
-The :doc:`Available services <../api/services>` page provides more details about which services are available, how to use them, and how to extend them.
-
-**Step 1: starting Redis on your laptop**
-It is the same as in example 1.
-
-**Step 2: run the service**
-Services might need additional dependencies installed before being able to run them. You can install them with the appropriate service tag. For example,
-
-.. code-block:: bash
-
-   pip install --upgrade social-interaction-cloud[face-detection,dialogflow]  
-
-A service can easily be run by opening a new terminal and calling the ``run-service`` command, for example ``run-face-detection`` or ``run-dialogflow``. See the :doc:`Available services <../api/services>`  page for more info about the dependencies and run commands for each service.
-
-Note: the ``--upgrade`` flag ensures the new dependencies are installed if you already have previously installed the social interaction cloud.
-
-For our example we will start the face-detection service.
-
-**Ubuntu/Debian/MacOS**
-
-.. toggle:: Ubuntu/Debian/MacOS
-   
-   .. code-block:: bash
-
-      # Activate the same virtual environment where you pip installed  
-      # social-interaction-cloud in the installation steps (e.g. in sic-applications)  
-      source venv_sic/bin/activate  
-
-      # First, install all the extra dependencies that this service depends on.  
-      pip install --upgrade social-interaction-cloud[face-detection]  
-      
-      # Run the face-detection server  
-      run-face-detection  
-
-**Windows**
-
-.. toggle:: Windows
-
-   .. code-block:: bash
-
-      # Activate the same virtual environment where you pip installed the  
-      # social interaction cloud in the installation steps (e.g. in sic-applications)  
-      source venv_sic/Scripts/activate  
-
-      # First, install all the extra dependencies that this service depends on.  
-      pip install --upgrade social-interaction-cloud[face-detection]  
-
-      # Run the face-detection server  
-      run-face-detection  
-
-If successful, you should get the following output:
-
-.. code-block:: bash
-
-   [SICComponentManager 192.168.2.6]: INFO: Manager on device 192.168.2.6 starting  
-   [SICComponentManager 192.168.2.6]: INFO: Started component manager on ip "192.168.2.6" with components:  
-   [SICComponentManager 192.168.2.6]: INFO:  - FaceDetectionComponent  
-
-**Step 3: running an application**
-Run the demo file `demo_desktop_camera_facedetection.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection.py>`_.
-
-**Ubuntu/Debian/MacOS**
-
-.. toggle:: Ubuntu/Debian/MacOS
-
-   .. code-block:: bash
-
-      # Activate the virtual environment in sic_applications  
-      source venv_sic/bin/activate  
-
-      # Go to sic_applications and the demo script  
-      cd demos/desktop  
-      python demo_desktop_camera_facedetection.py  
-
-**Windows**
-
-.. toggle:: Windows
-
-   .. code-block:: bash
-
-      # Activate the virtual environment in sic_applications  
-      source venv_sic/Scripts/activate  
-
-      # Go to sic_applications and the demo script  
-      cd demos/desktop  
-      python demo_desktop_camera_facedetection.py  
-
-If all goes well, a display should pop up showing a bounding box around the detected face! If the image appears upside down, go to line 34 in ``demo_desktop_camera_facedetection.py`` and change the ``flip parameter`` to -1.
-
 **And that's it!**
-Go have some fun with robots, see :doc:`Getting started with the Nao robot <2_intro_to_sic>` and :doc:`Getting started with Franka Emika Research 3 <../getting_started/getting_started_franka>`.
+To understand how this example works, see the comments in the code. Next, we'll start also using a service!
