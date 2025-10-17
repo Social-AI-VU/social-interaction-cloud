@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "social-interaction-cloud"
-version = "2.1.1"
+version = "2.1.2"
 description = "Social Interaction Cloud Framework"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -12,6 +12,7 @@ requires-python = ">=3.7"
 authors = [
     { name = "Mike Ligthart"},
     { name = "Landon Brown"},
+    { name = "Lilly Schwarzenbach"},
     { name = "Thomas Wiggers"},
     { name = "Thomas Orden"},
     { name = "Ting-Chia Chiang"},
