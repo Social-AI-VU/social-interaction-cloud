@@ -7,9 +7,10 @@ from sic_framework.core.sensor_python2 import SICSensor
 
 
 class MicrophoneConf(SICConfMessage):
-    def __init__(self):
-        self.no_channels = 1
-        self.sample_rate = 44100
+    def __init__(self, channels=1, sample_rate=44100, device_index=None):
+        self.channels = channels
+        self.sample_rate = sample_rate
+        self.device_index = device_index
 
 
 class DesktopMicrophoneSensor(SICSensor):
@@ -20,6 +21,11 @@ class DesktopMicrophoneSensor(SICSensor):
 
         self.device = pyaudio.PyAudio()
 
+        # If no device index specified, use default input device
+        device_index = self.params.device_index
+        if device_index is None:
+            device_index = self.device.get_default_input_device_info()['index']
+
         # open stream using callback (3)
         self.stream = self.device.open(
             format=pyaudio.paInt16,
@@ -27,6 +33,7 @@ class DesktopMicrophoneSensor(SICSensor):
             rate=self.params.sample_rate,
             input=True,
             output=False,
+            input_device_index=device_index,
             frames_per_buffer=int(self.params.sample_rate // 4),  # 250ms chunks
         )
 
