@@ -23,7 +23,7 @@ Services might need additional dependencies installed before being able to run t
 
       pip install --upgrade social-interaction-cloud[face-detection,dialogflow]  
 
-**MacOS**
+**MacOS (if using z-shell)**
 
 .. toggle:: MacOS
    

@@ -26,6 +26,9 @@ extras_require = {
     "dialogflow": [
         "google-cloud-dialogflow",
     ],
+    "dialogflow-cx": [
+        "google-cloud-dialogflow-cx",
+    ],
     "google-stt": [
         "google-cloud-speech",
     ],
