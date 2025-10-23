@@ -26,6 +26,9 @@ extras_require = {
     "dialogflow": [
         "google-cloud-dialogflow",
     ],
+    "dialogflow-cx": [
+        "google-cloud-dialogflow-cx",
+    ],
     "google-stt": [
         "google-cloud-speech",
     ],
@@ -107,6 +110,7 @@ setup(
     entry_points={
         "console_scripts": [
             "run-dialogflow=sic_framework.services.dialogflow:main",
+            "run-dialogflow-cx=sic_framework.services.dialogflow_cx:main",
             "run-face-detection=sic_framework.services.face_detection:main",
             "run-face-detection-dnn=sic_framework.services.face_detection_dnn:main",
             "run-face-recognition=sic_framework.services.face_recognition_dnn:main",

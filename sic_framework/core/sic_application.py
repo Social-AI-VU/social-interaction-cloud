@@ -158,11 +158,13 @@ class SICApplication(object):
             try:
                 connector.stop_component()
             except Exception as e:
-                self.logger.error(
-                    "Error stopping component {name}: {e}".format(
+                self.logger.warning(
+                    "Warning: Error stopping component {name}: {e}".format(
                         name=getattr(connector, "component_endpoint", "unknown"), e=e
                     )
                 )
+                # import traceback
+                # traceback.print_exc()
 
         self.logger.info("All components stopped, stopping logging thread")
         
