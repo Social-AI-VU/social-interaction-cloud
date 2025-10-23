@@ -163,8 +163,8 @@ class SICApplication(object):
                         name=getattr(connector, "component_endpoint", "unknown"), e=e
                     )
                 )
-                import traceback
-                traceback.print_exc()
+                # import traceback
+                # traceback.print_exc()
 
         self.logger.info("All components stopped, stopping logging thread")
         
