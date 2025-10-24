@@ -1,7 +1,7 @@
 3: Using the Dialogflow Service
 =======================================
 
-This tutorial will guide you through the use of the Dialogflow service. First, we introduce Dialogflow and explain how it works. Then, we look at how to use Dialogflow with the Nao robot. Finally, we introduce a way to use Dialogflow to transcribe audio - this is platform-independent and can thus be used even if you don't have access to a robot.
+This tutorial will guide you through the use of the Dialogflow service. First, we introduce Dialogflow and explain how it works. Then, we look at an example of how to use it with your comptuer's microphone.
 
 Introduction to Dialogflow
 ----------------------------
@@ -9,64 +9,90 @@ The ``dialogflow`` service enables the use of the `Google Dialogflow <https://di
 
 Dialogflow is used to translate human speech into intents (*intent classification*). In other words, not only does it (try to) convert an audio stream into readable text, it also classifies this text into an intent and extracts additional parameters called entities from the text, if specified. For example, an audio stream can be transcribed to the string "I am 15 years old", and classified as the intent 'answer_age' with entity 'age=15'.
 
+
+Example: SmallTalk
+----------------------------
 In order to create a Dialogflow agent, visit https://dialogflow.cloud.google.com and log-in with a Google account of choice. Use the 'Create Agent' button in the top left to start your first project. For our framework to be able to communicate with this agent, the project ID and a keyfile are required. To get a keyfile read the instructions on :doc:`Getting a google dialogflow key <../services/google_dialogflow_key>`. Once you have a keyfile, place it inside the conf/google folder in your local repository. 
 
-In Dialogflow, the main items of interest are the `Intents <https://cloud.google.com/dialogflow/docs/intents-overview>`_ and the `Entities <https://cloud.google.com/dialogflow/docs/entities-overview>`_. An intent is something you want to recognize from an end-user; here we will show you an example of an intent that is aimed at recognizing someone’s name.
+Go to the `Google CX page <https://conversational-agents.cloud.google.com/projects>`_ and select the same project that you used to create the keyfile. Click on 'Create agent' and select 'Use prebuilt agent' and then 'SmallTalk'. You can name the agent anything you like. Also change the location to the Netherlands if this is not set by default.
 
-.. image:: ../_static/intent.png
+Now that your agent has been created, you have choice between a playbook structure and a flow structure. A playbook structure is based on generative AI while the flow structure allows for more control. For the purposes of this tutorial, we will use a flow-based agent, so click on the 'flow' tab. You will see a basic flow. The blocks are called pages and frame where you are in the conversation and what agents can recognize.
+
+.. image:: ../_static/dialogflow_cx_flow.png
    :width: 500px
    :height: 350px
    :scale: 100 %
-   :alt: intent creation with Google Dialogflow
+   :alt: Flow interface in Google Dialogflow
    :align: center
 
+If you click on one of these pages (blocks), it will show you its routes which specify the speech patterns and responses that are available at that stage of the conversation as well as the triggers to enter the page.
 
-When creating an intent you can name it anything you like; In this example we go with 'answer_name' (seen at the very top). Below 'Action and parameters', you should give the name of the intent that will actually be used in your program. Here, we also set that to 'answer_name'. 
+.. image:: ../_static/dialogflow_cx_route_with_detail.png
+   :width: 500px
+   :height: 350px
+   :scale: 100 %
+   :alt: Routes in Google Dialogflow
+   :align: center
 
-Moreover, it is useful to set a context for the intent. Contexts allow you to define specific states that a conversation must be in for an intent to match. You can also have intents activate contexts to help direct the conversation in future exchanges. Usually though, in a social robotics application, the context is already known. So in this example we match the name of the (input)context with the name of the intent, and thus make it 'answer_name' as well. By default, Dialogflow keeps the context active for 5 exchanges; but we can fix this by changing the 5 (at the start of the output context) to a 0. 
+The intent determines what we want the agent to recognise and the route determines how we want the agent to respond. To set what the agent will say in response, we consult the fulfillment section:
 
-Now we arrive at the most important aspect of the intent: the training phrases. Here, you can give the kinds of input strings you would expect; from these, Dialogflow learns the model it will eventually use. You can identify a part of the phrase as a parameter by double-clicking on the relevant word and selecting the appropriate entity from the list. It will then automatically appear below ‘Action and parameters' as well; the ‘parameter name’ there will be passed in the result (we use ‘name’ here). The system has many built-in entities (like 'sys.person'), but you can define your own entities as well (even through importing CSV files). Our complete intent example thus looks like this (note: using ``sys.given-name`` is usually preferred):
+.. image:: ../_static/dialogflow_cx_route_fulfillment.png
+   :width: 500px
+   :height: 350px
+   :scale: 100 %
+   :alt: Fulfillment section in route in Google Dialogflow
+   :align: center
 
-Using the Dialogflow component with your computer's microphone
----------------------------------------------------
-We're testing your dialogflow connection by running through the `demo_desktop_microphone_dialogflow.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_microphone_dialogflow.py>`_ example.
+To test the intent, you can press the three dots next to your user and select 'toggle simulator'. That allows you to have a conversation with your agent without having a robot at your disposal or even connecting SIC.
 
-.. note::
-    Before running ``demo_desktop_microphone_dialogflow.py``, make sure to start the SIC service by running ``run-dialogflow`` in another terminal. You may have to run ``pip install social-interaction-cloud[dialogflow]`` (Ubuntu/Debian/Windows) or ``pip install 'social-interaction-cloud[dialogflow]'`` (MacOS) beforehand.
+To train your agent, go into the agent settings, then to 'deterministic flows' and then click on 'train'.
 
-The code contains detailed comments to explain how everything works. Here, we'll only pick out a few crucial steps.
+To use your agent in your SIC project, you need both the agent ID and where the agent is located. You can find this information in the URL: everything between 
 
-First, we create a dialogflow object:
-
-.. code-block:: python
-
-    dialogflow_conf = DialogflowConf(keyfile_json=keyfile_json, sample_rate_hertz=44100, language="en")  
-    self.dialogflow = Dialogflow(conf=dialogflow_conf, input_source=self.desktop_mic)  
-
-Since we also want something to happen when Dialogflow is triggered, we want to register a callback that will handle that:
-
-.. code-block:: python
-
-    def on_dialog(self, message):  
-        if message.response:  
-            if message.response.recognition_result.is_final:  
-                self.logger.info("Transcript: {transcript}".format(transcript=message.response.recognition_result.transcript))  
-    
-    self.dialogflow.register_callback(callback=self.on_dialog)  
-
-Now we're ready to get the intent from dialogflow:
+The location will look something like this: europe-west4, and the agent ID something like this: b7a6bbf1-0246-461f-83bc-11e68d34d67d. Paste this information into the appropriate fields in your SIC project (e.g. in ``demo_nao_dialogflow_cx.py``).
 
 .. code-block:: python
 
-    contexts_dict = {"name": 1}  
-    reply = self.dialogflow.request(GetIntentRequest(self.session_id, contexts_dict))  
-    
-    self.logger.info("The detected intent: {intent}".format(intent=reply.intent))  
-    
-    if reply.fulfillment_message:  
-        text = reply.fulfillment_message  
-        self.logger.info("Reply: {text}".format(text=text))  
+    agent_id = "XXX"  # Replace with your agent ID  
+    location = "XXX"  # Replace with your agent location if different  
 
+We can also have the Nao perform gestures as an accompaniment to the dialogflow routes, e.g.
+
+.. code-block:: python
+
+    if reply.intent == "welcome_intent":  
+        self.logger.info("Welcome intent detected - performing wave gesture")  
+        # Use send_message for non-blocking gesture execution  
+        # This allows the TTS to speak while the gesture is performed  
+        self.nao.motion.request(NaoPostureRequest("Stand", 0.5), block=False)  
+        self.nao.motion.request(NaoqiAnimationRequest("animations/Stand/Gestures/Hey_1"), block=False)  
+
+Before running the demo, install the required dependencies in your SIC project by running the following command in a separate terminal:
+
+.. code-block:: bash
+
+    pip install social-interaction-cloud[dialogflow-cx]
+
+or if you're using z-shell on MacOS:
+
+.. code-block:: bash
+
+    pip install 'social-interaction-cloud[dialogflow-cx]'
+
+Afterwards, run the following command in the terminal to start the dialogflow service:
+
+.. code-block:: bash
+
+    run-dialogflow-cx
+
+Now you can start the demo. 
+
+📹: Video Tutorial
+----------------------------
+
+   .. raw:: html
+
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/2cpiXFD8Pj4?si=QrlUV_FeVgewvzjI" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
     
-And that's it! You should now be able to talk to your computer. See also `the full demo script <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_microphone_dialogflow.py>`_ for a more complete example. Make sure to set the proper keyfile path!
+And that's it! See also `the full demo script <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/nao/demo_nao_dialogflow_cx.py>`_ for a more complete example. Make sure to set the proper keyfile path, Nao IP, location and agent ID!
 Next, we'll cover the basics of robot motion with a Nao robot.

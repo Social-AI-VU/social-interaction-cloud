@@ -260,4 +260,12 @@ And you should get the following output:
    [DesktopCameraSensor 145.108.228.128]: INFO: Started component DesktopCameraSensor  
 
 **And that's it!**
+
+📹: Video Tutorial
+----------------------------
+
+   .. raw:: html
+
+      <iframe width="560" height="315" src="https://www.youtube.com/embed/nwWe2pSOuY4?si=v81VP2X2P2UsATJk" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>    
+
 To understand how this example works, see the comments in the code. Next, we'll start also using a service!
