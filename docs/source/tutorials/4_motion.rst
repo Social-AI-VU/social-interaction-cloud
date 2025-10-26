@@ -93,6 +93,13 @@ Set the stiffness of the limbs to 0.7 so that the motors can move them. Play the
     recording = NaoqiMotionRecording.load(MOTION_NAME)  
     nao.motion_record.request(PlayRecording(recording))  
 
+📹: Video Tutorial
+----------------------------
+
+   .. raw:: html
+
+      <iframe width="560" height="315" src="https://www.youtube.com/embed/7FYppAlqSuE?si=uYDKxA4roJYFl_mp" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 **Further reading**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If you want some further reading, check out :doc:`this section <./further_reading>`.
