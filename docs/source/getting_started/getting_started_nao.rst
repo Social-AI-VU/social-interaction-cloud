@@ -37,8 +37,8 @@ and the documentation from the Nao manufacturer: http://doc.aldebaran.com/2-8/na
 
    .. raw:: html
 
-        <iframe width="560" height="315" src="https://www.youtube.com/embed/S8Rz2vjuA0g?si=UCitT3zigN5UO6rc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/_CbWBzBkAXs?si=n30ishby-nsf_pzT" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        
 Relevant Tutorials
 ----------------------------
 For information on how to get started with the Nao, please consult the tutorials section: :doc:`tutorials/4_motion`
