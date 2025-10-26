@@ -16,12 +16,13 @@ if utils.PYTHON_VERSION_IS_2:
 class StartRecording(SICRequest):
     def __init__(self, joints):
         """
-        Record motion of the selected joints. For more information see robot documentation:
-        For nao: http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains
-        For pepper: http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html
+        Initialize a request to record the motion of selected joints.
 
-        :param joints: One of the robot's "Joint chains" such as ["Body"] or ["LArm", "HeadYaw"]
-        :type joints: list[str]
+        For more information on joint chains, see robot documentation:
+        - Nao: http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains
+        - Pepper: http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html
+
+        :param list[str] joints: One or more joint chains or individual joints (e.g., ["Body"] or ["LArm", "HeadYaw"]).
         """
         super(StartRecording, self).__init__()
         self.joints = joints
@@ -34,24 +35,18 @@ class StopRecording(SICRequest):
 class NaoqiMotionRecording(SICMessage):
     def __init__(self, recorded_joints, recorded_angles, recorded_times):
         """
-        A recording of the robot's motion.
+        Create a motion recording message.
 
-        Example data:
-        recorded_joints = ["HeadYaw", "HeadPitch", "LWrist"]
-        recorded_angles = [ [.13, .21, .25],   # angles in radians for HeadYaw
-                            [.21, .23, .31],   # HeadPitch
-                            [.-1, .0,  .1],   # LWrist
-                          ]
-        recorded_times  = [ [.1, .2, .3],   # time in seconds for when angle should be reached for HeadYaw
-                            [.1, .2, .3],   # HeadPitch
-                            [.1, .2, .3],   # LWrist
-                          ]
-        See http://doc.aldebaran.com/2-1/naoqi/motion/control-joint-api.html#joint-control-api
-        For more examples regarding angleInterpolation() API
+        Example:
+            recorded_joints = ["HeadYaw", "HeadPitch", "LWrist"]
+            recorded_angles = [[0.13, 0.21, 0.25], [0.21, 0.23, 0.31], [-1.0, 0.0, 0.1]]
+            recorded_times  = [[0.1, 0.2, 0.3],  [0.1, 0.2, 0.3],  [0.1, 0.2, 0.3]]
 
-        :param recorded_joints: List of joints (joints like "HeadYaw", not chains such as "Body")
-        :param recorded_angles:
-        :param recorded_times:
+        See: http://doc.aldebaran.com/2-1/naoqi/motion/control-joint-api.html#joint-control-api
+
+        :param list[str] recorded_joints: Joint names (e.g., "HeadYaw"), not chains (e.g., "Body").
+        :param list[list[float]] recorded_angles: Angles per joint, in radians.
+        :param list[list[float]] recorded_times: Target times per angle, in seconds.
         """
         super(NaoqiMotionRecording, self).__init__()
         self.recorded_joints = recorded_joints
@@ -60,25 +55,36 @@ class NaoqiMotionRecording(SICMessage):
 
     def save(self, filename):
         """
-        Save the motion to a file, e.g. wave.motion
-        :param filename: The file name, preferably ending with .motion
+        Save the recording to a file (e.g., "wave.motion").
+
+        :param str filename: Target filename (preferably with .motion extension).
         """
         with open(filename, "wb") as f:
             f.write(self.serialize())
 
     @classmethod
     def load(cls, filename):
+        """
+        Load a motion recording.
+
+        :param str filename: Path to a saved .motion file.
+        :returns: Deserialized motion recording message.
+        :rtype: NaoqiMotionRecording
+        """
         with open(filename, "rb") as f:
             return cls.deserialize(f.read())
 
 
 class PlayRecording(SICRequest):
+    """
+    Request to replay a previously recorded motion.
+    """
     def __init__(self, motion_recording_message, playback_speed=1):
         """
         Play a recorded motion.
-        :param motion_recording_message: a NaoMotionRecording message
-        :param float playback_speed: The speed at which the motion should be played. 1.5 for 1.5x speed an 0.5 for half speed.
 
+        :param NaoqiMotionRecording motion_recording_message: a NaoqiMotionRecording message.
+        :param float playback_speed: Playback speed multiplier (e.g., 1.5 for 1.5x; 0.5 for half speed).
         """
         super(PlayRecording, self).__init__()
         self.motion_recording_message = motion_recording_message
@@ -91,6 +97,9 @@ class PlayRecording(SICRequest):
 
 
 class NaoqiMotionRecorderConf(SICConfMessage):
+    """
+    Configuration for recording and replaying motions.
+    """
     def __init__(
         self,
         replay_stiffness=0.6,
@@ -101,18 +110,17 @@ class NaoqiMotionRecorderConf(SICConfMessage):
         samples_per_second=20,
     ):
         """
-        There is a choice between setAngles, which is an approximation of the motion or
-        angleInterpolation which may not play the motion if it exceeds max body speed.
+        Initialize recorder configuration options.
 
-        Note replay_speed is only used for use_interpolation=False.
-        Note setup_time is only used for use_interpolation=True.
+        There is a choice between `setAngles` (approximate) and `angleInterpolation` (exact but speed-limited).
+
+        Note: `replay_speed` is used only when `use_interpolation=False`.
+        Note: `setup_time` is used only when `use_interpolation=True`.
 
         :param replay_stiffness: Control how much power the robot should use to reach the given joint angles.
-        :param replay_speed: Control how fast the robot should to reach the given joint angles. Only used if
-                             use_interpolation=False
+        :param replay_speed: Control how fast the robot should to reach the given joint angles. 
         :param use_interpolation: Use setAngles if False and angleInterpolation if True.
-        :param setup_time: The time in seconds the robot has to reach the start position of the recording. Only used
-                           when use_interpolation=True.
+        :param setup_time: The time in seconds the robot has to reach the start position of the recording.
         :param use_sensors: If true, sensor angles will be returned, otherwise command angles are used.
         :param samples_per_second: How many times per second the joint positions are sampled.
         """
@@ -156,6 +164,12 @@ class NaoqiMotionRecorderActuator(SICActuator, NaoqiMotionTools):
 
     @staticmethod
     def get_conf():
+        """
+        Return the default configuration for this component.
+
+        :returns: Recorder configuration.
+        :rtype: NaoqiMotionRecorderConf
+        """
         return NaoqiMotionRecorderConf()
 
     @staticmethod
@@ -195,7 +209,6 @@ class NaoqiMotionRecorderActuator(SICActuator, NaoqiMotionTools):
     def reset_recording_variables(self, request):
         """
         Initialize variables that will be populated during recording.
-        :param request:
         """
         self.record_start_time = time.time()
 
@@ -223,7 +236,9 @@ class NaoqiMotionRecorderActuator(SICActuator, NaoqiMotionTools):
             return self.replay_recording(request)
 
     def replay_recording(self, request):
-
+        """
+        Replay a recorded motion.
+        """
         message = request.motion_recording_message
 
         joints = message.recorded_joints
@@ -249,7 +264,7 @@ class NaoqiMotionRecorderActuator(SICActuator, NaoqiMotionTools):
 
     def stop(self, *args):
         """
-        Stop the Naoqi motion recorder actuator.
+        Stop the motion recorder actuator.
         """
         self.session.close()
         self._stopped.set()

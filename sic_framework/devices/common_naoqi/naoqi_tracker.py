@@ -9,15 +9,21 @@ if utils.PYTHON_VERSION_IS_2:
 
 
 class StartTrackRequest(SICRequest):
+    """
+    Request to register a target and start tracking it.
+    """
     def __init__(
         self, target_name, size, mode="Head", effector="None", move_rel_position=None
     ):
         """
-        Request to register a tracking target and track it, see http://doc.aldebaran.com/2-5/naoqi/trackers/index.html
-        :param target_name: name of object to track , e.g. RedBall, Face
-        :param size: size e.g. diameter of ball, width of face (meter)
-        :param mode: tracking mode, default mode is "Head", other options: "WholeBody", "Move", see http://doc.aldebaran.com/2-5/naoqi/trackers/index.html#tracking-modes
-        :param effector: Name of the effector. Could be: "Arms", "LArm", "RArm" or "None".
+        Initialize a start-tracking request.
+
+        See: http://doc.aldebaran.com/2-5/naoqi/trackers/index.html
+
+        :param target_name: Name of the object to track (e.g., RedBall, Face).
+        :param float size: Target size in meters (e.g., ball diameter or face width).
+        :param str mode: Tracking mode default mode is "Head", other options: "WholeBody", "Move". See http://doc.aldebaran.com/2-5/naoqi/trackers/index.html#tracking-modes
+        :param str effector: Effector to use ("Arms", "LArm", "RArm", or "None").
         :param move_rel_position: Set the robot position relative to target in Move mode
         """
         super(StartTrackRequest, self).__init__()
@@ -30,7 +36,7 @@ class StartTrackRequest(SICRequest):
 
 class StopAllTrackRequest(SICRequest):
     """
-    Request to stop the tracker, and unregister all targets
+    Request to stop tracking and unregister all targets.
     """
 
     pass
@@ -39,8 +45,9 @@ class StopAllTrackRequest(SICRequest):
 class RemoveTargetRequest(SICRequest):
     def __init__(self, target_name):
         """
-        Request to remove the target_name
-        :param target_name: name of object to stop tracking
+        Initialize a request to remove a specific tracking target.
+
+        :param str target_name: Name of the target to stop tracking.
         """
         super(RemoveTargetRequest, self).__init__()
         self.target_name = target_name
@@ -48,7 +55,7 @@ class RemoveTargetRequest(SICRequest):
 
 class RemoveAllTargetsRequest(SICRequest):
     """
-    Request to remove all tracking targets
+    Request to remove all tracking targets.
     """
 
     pass
@@ -67,6 +74,12 @@ class NaoqiTrackerActuator(SICActuator):
 
     @staticmethod
     def get_conf():
+        """
+        Return the default configuration for this actuator.
+
+        :returns: Generic configuration message.
+        :rtype: SICConfMessage
+        """
         return SICConfMessage()
 
     @staticmethod
@@ -132,7 +145,7 @@ class NaoqiTrackerActuator(SICActuator):
 
     def stop(self, *args):
         """
-        Stop the Naoqi tracker actuator.
+        Stop the tracker actuator.
         """
         self.session.close()
         self._stopped.set()

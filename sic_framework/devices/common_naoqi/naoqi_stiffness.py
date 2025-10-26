@@ -15,17 +15,17 @@ if utils.PYTHON_VERSION_IS_2:
 class Stiffness(SICRequest):
     def __init__(self, stiffness=0.7, joints="Body", enable_joint_list_generation=True):
         """
-        Control the stiffness of the robot joints. This determines how much force the robot should apply to maintain
-        the command joint angels. For more information see robot documentation:
-        For nao: http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains
-        For pepper: http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html
+        Initialize a stiffness control request.
 
-        :param stiffness: the stiffness to set the joints to.
-        :type stiffness: float
-        :param joints: One of the robot's joints or joint chains such as ["LArm", "HeadYaw"] or ["Body"]
-        :type joints: list[str]
-        :param enable_joint_list_generation: If True, the joint list will be generated from the joint chain.
-        On Pepper, stiffness somehow can't be set at the individual joint level, so setting to False might be needed.
+        Controls how strongly the robot maintains commanded joint angles.
+
+        For more information, see:
+        - Nao: http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains
+        - Pepper: http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html
+
+        :param float stiffness: Stiffness level to set in [0, 1].
+        :param list[str] joints: Joint or joint chain names (e.g., ["Body"], ["HeadYaw", LArm]).
+        :param bool enable_joint_list_generation: If True, joint lists are automatically expanded from chains.
         """
         super(Stiffness, self).__init__()
         self.stiffness = stiffness
@@ -75,7 +75,7 @@ class NaoqiStiffnessActuator(SICActuator, NaoqiMotionTools):
 
     def stop(self, *args):
         """
-        Stop the Naoqi stiffness actuator.
+        Stop the NAOqi stiffness actuator.
         """
         self.session.close()
         self._stopped.set()

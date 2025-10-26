@@ -1,9 +1,16 @@
 class NaoqiMotionTools(object):
+    """
+    Provides utility functions for handling NAOqi robot motion models.
+
+    :ivar str robot_type: Type of robot, either 'nao' or 'pepper'.
+    """
 
     def __init__(self, qi_session):
         """
-        Functions from the previous framework to provide equivalent functionality
-        :param qi_session: A qi.Session() to determine robot type
+        Initialize the motion tools by determining the robot type.
+
+        :param qi.Session qi_session: A qi.Session() instance used to determine robot type.
+        :raises NotImplementedError: If the robot type is not supported.
         """
 
         robot_model_service = qi_session.service("ALRobotModel")
@@ -16,11 +23,12 @@ class NaoqiMotionTools(object):
 
     def generate_joint_list(self, joint_chains):
         """
-        Generates a flat list of valid joints (i.e. present in body_model) from a list of individual joints or joint
-        chains for a given robot.
+        Generate a flat list of valid joints for a given robot based on input joint chains.
 
-        :param joint_chains:
-        :return: list of valid joints
+        :param list[str] joint_chains: List of joint chains or individual joints to resolve.
+        :returns: A flat list of valid joint names for the current robot.
+        :rtype: list[str]
+        :raises ValueError: If a provided joint or chain is not recognized.
         """
         joints = []
         for joint_chain in joint_chains:
@@ -40,13 +48,14 @@ class NaoqiMotionTools(object):
     @property
     def body_model(self):
         """
-        A list of all the joint chains with corresponding joints for the nao and the pepper.
+        Retrieve the mapping of joint chains to their respective joints for the current robot.
 
-        For more information see robot documentation:
-        For nao: http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains
-        For pepper: http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html
+        For more information, see robot documentation:
+        - Nao: http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains
+        - Pepper: http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html
 
-        :return:
+        :returns: Dictionary of joint chains and their associated joints.
+        :rtype: dict[str, list[str]]
         """
         body_model = {
             "nao": {
@@ -112,7 +121,10 @@ class NaoqiMotionTools(object):
     @property
     def all_joints(self):
         """
-        :return: All joints from body_model for current robot.
+        Retrieve all joints available for the current robot.
+
+        :returns: List of all joint names.
+        :rtype: list[str]
         """
         all_joints = []
         for chain in self.body_model["Body"]:

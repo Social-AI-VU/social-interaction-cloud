@@ -1,25 +1,50 @@
 """
 
-TODO this code is unused.
-What is it for exactly anyways?
 """
 
 
 class MotionAffectTransformation:
+    """
+    Apply affect-based transformations to NAOqi motion dictionaries.
+
+    The methods adjust amplitude, timing, posture, and enforce joint limits based on valence/arousal or emotion labels.
+    """
 
     def transform_values(self, motion, valence, arousal):
+        """
+        Transform a motion by applying flow, time, and weight changes based on valence and arousal.
+
+        :param dict motion: Motion dictionary with the shape `{ "motion": { joint_name: {"angles": list[float], "times": list[float]} } }`.
+        :param float valence: Valence value in [-1, 1] influencing amplitude and posture.
+        :param float arousal: Arousal value in [-1, 1] influencing repetition and speed.
+        :returns: The transformed motion dictionary.
+        :rtype: dict
+        """
         motion = self.modify_flow_parameters(motion, valence)
         motion = self.modify_time_parameters(motion, arousal)
         motion = self.modify_weight_parameters(motion, valence, arousal)
         return self.angle_limit(motion)
 
     def transform_label(self, motion, emotion_label):
+        """
+        Transform a motion by first mapping an emotion label to valence/arousal values.
+
+        :param dict motion: Motion dictionary to transform.
+        :param str emotion_label: Discrete emotion label (e.g., "happy", "sad", "angry").
+        :returns: The transformed motion dictionary.
+        :rtype: dict
+        """
         valence, arousal = self.values_from_emotion(emotion_label)
         return self.transform_values(motion, valence, arousal)
 
-    def angle_limit(
-        self, motion
-    ):  # if angle exceeds min or max it is replaced by that value
+    def angle_limit(self, motion):
+        """
+        Clamp joint angles to the robot's physical limits.
+
+        :param dict motion: Motion dictionary to validate and clamp.
+        :returns: The motion dictionary with angles limited to valid ranges.
+        :rtype: dict
+        """
         for jointName in motion["motion"].keys():
             if jointName not in self.hand_joints and jointName not in self.leg_joints:
                 minimum, maximum = self.limit_check(jointName)
@@ -58,6 +83,14 @@ class MotionAffectTransformation:
         return motion
 
     def modify_flow_parameters(self, motion, valence):
+        """
+        Adjust motion amplitudes and blend towards a linear trajectory based on valence.
+
+        :param dict motion: Motion dictionary to modify.
+        :param float valence: Valence value affecting amplitude (positive increases, negative slightly decreases).
+        :returns: The updated motion dictionary.
+        :rtype: dict
+        """
         amplitude = self.amplitude(valence)
         pivot_states = self.pivot_states(motion, self.leg_joints)
         theta_init = pivot_states[0]
@@ -84,6 +117,14 @@ class MotionAffectTransformation:
             return motion
 
     def modify_time_parameters(self, motion, arousal):
+        """
+        Adjust repetition (implicit via angle scaling) and speed (time scaling) based on arousal.
+
+        :param dict motion: Motion dictionary to modify.
+        :param float arousal: Arousal value affecting repetition and speed.
+        :returns: The updated motion dictionary.
+        :rtype: dict
+        """
         repetitions = self.repetition(arousal)
         for jointName in motion["motion"].keys():
             if jointName not in self.leg_joints:
@@ -104,6 +145,15 @@ class MotionAffectTransformation:
         return motion
 
     def modify_weight_parameters(self, motion, valence, arousal):
+        """
+        Add or adjust posture-related joints (e.g., head pitch) based on valence and arousal.
+
+        :param dict motion: Motion dictionary to modify.
+        :param float valence: Valence value influencing posture.
+        :param float arousal: Arousal value influencing posture and added joints.
+        :returns: The updated motion dictionary.
+        :rtype: dict
+        """
         head_pose = self.head_pose(valence, arousal)
         first_joint = list(motion["motion"].keys())[0]
         start_time = motion["motion"][first_joint]["times"][0]
@@ -153,6 +203,14 @@ class MotionAffectTransformation:
 
     @staticmethod
     def pivot_states(motion, ignore_joints):
+        """
+        Collect unique time points across joints, excluding specified joints.
+
+        :param dict motion: Motion dictionary containing joint time arrays.
+        :param list[str] ignore_joints: Joint names to ignore when collecting time points.
+        :returns: Sorted unique list of time points.
+        :rtype: list[float]
+        """
         time_points = []
         for joint_name in motion["motion"].keys():
             if joint_name not in ignore_joints:
@@ -163,6 +221,13 @@ class MotionAffectTransformation:
 
     @staticmethod
     def amplitude(valence):
+        """
+        Map valence to an amplitude scaling factor.
+
+        :param float valence: Valence value in [-1, 1].
+        :returns: Amplitude multiplier (>0).
+        :rtype: float
+        """
         # correlation between amplitude of motion and valence of the affect
         if valence > 0:
             amplitude_factor = 1 + valence
@@ -172,6 +237,15 @@ class MotionAffectTransformation:
 
     @staticmethod
     def repetition(arousal):
+        """
+        Map arousal to a repetition factor. 
+        
+        Positive arousal increases the factor; non-positive returns 1.
+
+        :param float arousal: Arousal value in [-1, 1].
+        :returns: Repetition multiplier (>=1).
+        :rtype: float
+        """
         # positive arousal is associated with an increase in the repetition of the motion
         # negative arousal does not change the repetition of the motion
         if arousal > 0:
@@ -182,6 +256,13 @@ class MotionAffectTransformation:
 
     @staticmethod
     def speed(arousal):
+        """
+        Map arousal to a speed scaling factor for time values.
+
+        :param float arousal: Arousal value in [-1, 1].
+        :returns: Speed multiplier (>0).
+        :rtype: float
+        """
         # speed influences the perceived arousal: increase portrays high arousal,
         # whereas reduction in speed portrays low arousal
         if arousal > 0:
@@ -192,6 +273,16 @@ class MotionAffectTransformation:
 
     @staticmethod
     def head_pose(valence, arousal, up=0.506145, down=0.349066):
+        """
+        Compute a head pitch offset based on valence and arousal.
+
+        :param float valence: Valence value.
+        :param float arousal: Arousal value.
+        :param float up: Maximum upward pitch in radians.
+        :param float down: Maximum downward pitch in radians.
+        :returns: Head pitch offset in radians.
+        :rtype: float
+        """
         # vertical head pose is important for expressing affects in the first and third quadrant
         # pre-defined angels for up and down are set
         #
@@ -205,6 +296,12 @@ class MotionAffectTransformation:
 
     @property
     def leg_joints(self):
+        """
+        Retrieve the list of leg joint names.
+
+        :returns: List of leg joint identifiers.
+        :rtype: list[str]
+        """
         return [
             "LAnklePitch",
             "LAnkleRoll",
@@ -222,10 +319,22 @@ class MotionAffectTransformation:
 
     @property
     def hand_joints(self):
+        """
+        Retrieve the list of hand joint names.
+
+        :returns: List of hand joint identifiers.
+        :rtype: list[str]
+        """
         return ["LHand", "RHand"]
 
     @property
     def upright(self):
+        """
+        Retrieve a posture dictionary for an upright (expanded) stance.
+
+        :returns: Mapping from joint name to target angle in radians.
+        :rtype: dict[str, float]
+        """
         return {  # also called expanded
             "LHipYawPitch": -0.17,
             "LHipRoll": 0.09,
@@ -243,6 +352,12 @@ class MotionAffectTransformation:
 
     @property
     def neutral(self):
+        """
+        Retrieve a posture dictionary for a neutral stance.
+
+        :returns: Mapping from joint name to target angle in radians.
+        :rtype: dict[str, float]
+        """
         return {
             "LHipYawPitch": 0.0,
             "LHipRoll": 0.0,
@@ -260,6 +375,12 @@ class MotionAffectTransformation:
 
     @property
     def bend(self):
+        """
+        Retrieve a posture dictionary for a bent (shrunk) stance.
+
+        :returns: Mapping from joint name to target angle in radians.
+        :rtype: dict[str, float]
+        """
         return {  # also called shrunk
             "LHipYawPitch": 0.0,
             "LHipRoll": 0.0,
@@ -277,6 +398,13 @@ class MotionAffectTransformation:
 
     @staticmethod
     def limit_check(joint):
+        """
+        Look up the minimum and maximum allowed angles for a given joint.
+
+        :param str joint: Joint name to query.
+        :returns: Tuple of (minimum, maximum) allowed angles in radians.
+        :rtype: tuple[float, float]
+        """
         limit_table = {
             "HeadYaw": {"minimum": -2.0857, "maximum": 2.0857},
             "HeadPitch": {"minimum": -0.6720, "maximum": 0.5149},
@@ -307,6 +435,13 @@ class MotionAffectTransformation:
 
     @staticmethod
     def values_from_emotion(emotion_label):
+        """
+        Map an emotion label to its (valence, arousal) pair.
+
+        :param str emotion_label: Emotion label key (e.g., "happy", "sad").
+        :returns: Tuple containing (valence, arousal).
+        :rtype: tuple[float, float]
+        """
         value_table = {
             "excited": {"valence": 0.3, "arousal": 0.8},  # oranje
             "happy": {"valence": 0.9, "arousal": 0.3},  # geel

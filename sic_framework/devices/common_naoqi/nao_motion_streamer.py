@@ -18,6 +18,9 @@ if utils.PYTHON_VERSION_IS_2:
 
 
 class StartStreaming(SICRequest):
+    """
+    Request to start streaming joint positions for specified joints.
+    """
     def __init__(self, joints):
         """
         Start streaming the positions of the selected joints. For more information see robot documentation:
@@ -37,12 +40,24 @@ class StopStreaming(SICRequest):
 
 
 class NaoJointAngles(SICMessage):
+    """
+    Message carrying joint names and their corresponding angles in radians.
+    """
     def __init__(self, joints, angles):
+        """
+        Create a joint-angle message.
+
+        :param list[str] joints: Joint names in the order of the angles.
+        :param list[float] angles: Joint angles in radians.
+        """
         self.joints = joints
         self.angles = angles
 
 
 class NaoMotionStreamerConf(SICConfMessage):
+    """
+    Configuration for the NAOqi motion streaming service.
+    """
     def __init__(
         self,
         stiffness=0.6,
@@ -52,13 +67,15 @@ class NaoMotionStreamerConf(SICConfMessage):
         samples_per_second=20,
     ):
         """
-        :param stiffness: Control how much power the robot should use to reach the given joint angles
-        :param speed: Set the fraction of the maximum speed used to reach the target position.
-        :param stream_stiffness: Control the stiffness of the robot when streaming its joint positions.
+        Initialize configuration options for motion streaming.
+
+        :param float stiffness: Control how much power the robot should use to reach the given joint angles
+        :param float speed: Set the fraction of the maximum speed used to reach the target position.
+        :param float stream_stiffness: Control the stiffness of the robot when streaming its joint positions.
         Note: Use stiffness, not stream_stiffness,  to control the stiffness of the robot when consuming a stream of
         joint postions.
-        :param use_sensors: If true, sensor angles will be returned, otherwise command angles are used.
-        :param samples_per_second: How many times per second the joint positions are sampled.
+        :param bool use_sensors: If true, sensor angles will be returned, otherwise command angles are used.
+        :param int samples_per_second: How many times per second the joint positions are sampled.
         """
         SICConfMessage.__init__(self)
         self.stiffness = stiffness
@@ -69,7 +86,19 @@ class NaoMotionStreamerConf(SICConfMessage):
 
 
 class NaoqiMotionStreamerService(SICComponent, NaoqiMotionTools):
+    """
+    Stream NAOqi joint angles and process control requests.
+
+    This component connects to a local NAOqi session, exposes start/stop streaming requests,
+    and publishes `NaoJointAngles` messages at the requested rate.
+    """
     def __init__(self, *args, **kwargs):
+        """
+        Set up the NAOqi session, motion service, and streaming thread.
+
+        :param Any args: Positional arguments passed to the component base.
+        :param Any kwargs: Keyword arguments passed to the component base.
+        """
         SICComponent.__init__(self, *args, **kwargs)
 
         self.session = qi.Session()
@@ -93,13 +122,32 @@ class NaoqiMotionStreamerService(SICComponent, NaoqiMotionTools):
 
     @staticmethod
     def get_conf():
+        """
+        Return the default configuration for this component.
+
+        :returns: Default configuration instance.
+        :rtype: NaoMotionStreamerConf
+        """
         return NaoMotionStreamerConf()
 
     @staticmethod
     def get_inputs():
+        """
+        List the message and request types accepted by this component.
+
+        :returns: Supported inputs.
+        :rtype: list[type]
+        """
         return [NaoJointAngles, StartStreaming, StopStreaming]
 
     def on_request(self, request):
+        """
+        Handle start/stop streaming requests.
+
+        :param SICRequest request: Incoming request instance.
+        :returns: Acknowledgement message.
+        :rtype: SICMessage
+        """
         if request == StartStreaming:
             self.joints = self.generate_joint_list(request.joints)
             self.do_streaming.set()
@@ -110,7 +158,11 @@ class NaoqiMotionStreamerService(SICComponent, NaoqiMotionTools):
             return SICMessage()
 
     def on_message(self, message):
+        """
+        Apply stiffness if needed and forward desired joint angles to the robot.
 
+        :param NaoJointAngles message: Message containing joint names and desired angles.
+        """
         if self.stiffness != self.params.stiffness:
             self.motion.setStiffnesses(self.joints, self.params.stiffness)
             self.stiffness = self.params.stiffness
@@ -119,9 +171,22 @@ class NaoqiMotionStreamerService(SICComponent, NaoqiMotionTools):
 
     @staticmethod
     def get_output():
+        """
+        Declare the message type produced by this component.
+
+        :returns: Output message class.
+        :rtype: type
+        """
         return NaoJointAngles
 
     def stream_joints(self):
+        """
+        Background loop: sample joint angles and publish them at the configured rate.
+
+        The loop respects `do_streaming` and component stop signals.
+
+        :raises Exception: Logged and triggers `stop()` on unexpected errors.
+        """
         # Set the stiffness value of a list of joint chain.
         # For Nao joint chains are: Head, RArm, LArm, RLeg, LLeg
         try:
@@ -151,7 +216,10 @@ class NaoqiMotionStreamerService(SICComponent, NaoqiMotionTools):
 
     def stop(self, *args):
         """
-        Stop the motion streamer.
+        Stop the motion streamer, closing the NAOqi session and the component.
+
+        :returns: None
+        :rtype: None
         """
         self.session.close()
         self._stopped.set()
@@ -159,6 +227,9 @@ class NaoqiMotionStreamerService(SICComponent, NaoqiMotionTools):
 
 
 class NaoqiMotionStreamer(SICConnector):
+    """
+    Connector binding to `NaoqiMotionStreamerService`.
+    """
     component_class = NaoqiMotionStreamerService
 
 

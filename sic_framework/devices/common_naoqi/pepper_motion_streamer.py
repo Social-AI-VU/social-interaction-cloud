@@ -18,15 +18,18 @@ if utils.PYTHON_VERSION_IS_2:
 
 
 class StartStreaming(SICRequest):
+    """
+    Request to start streaming joint positions for specified joints.
+    """
     def __init__(self, joints):
         """
-        Start streaming the positions of the selected joints. For more information see robot documentation:
-        For nao: http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains
-        For pepper: http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html
+        Initialize a request to start streaming positions for selected joints.
 
+        For more information on joint chains, see robot documentation:
+        - Nao: http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains
+        - Pepper: http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html
 
-        :param joints: One of the robot's "Joint chains" such as ["Body"] or ["LArm", "HeadYaw"]
-        :type joints: list[str]
+        :param list[str] joints: One or more joint chains or individual joints (e.g., ["Body"] or ["LArm", "HeadYaw"]).
         """
         super(StartStreaming, self).__init__()
         self.joints = joints
@@ -37,12 +40,20 @@ class StopStreaming(SICRequest):
 
 class PepperMotionStream(SICMessage):
     def __init__(self, joints, angles, velocity):
+        """
+        :param list[str] joints: Joint names in the order of the angles.
+        :param list[float] angles: Joint angles in radians.
+        :param velocity
+        """
         self.joints = joints
         self.angles = angles
         self.velocity = velocity
 
 
 class PepperMotionStreamerConf(SICConfMessage):
+    """
+    Configuration for the Pepper motion streaming service.
+    """
     def __init__(
         self,
         stiffness=0.6,
@@ -52,13 +63,14 @@ class PepperMotionStreamerConf(SICConfMessage):
         samples_per_second=20,
     ):
         """
-        :param stiffness: Control how much power the robot should use to reach the given joint angles
-        :param speed: Set the fraction of the maximum speed used to reach the target position.
-        :param stream_stiffness: Control the stiffness of the robot when streaming its joint positions.
         Note: Use stiffness, not stream_stiffness,  to control the stiffness of the robot when consuming a stream of
         joint postions.
-        :param use_sensors: If true, sensor angles will be returned, otherwise command angles are used.
-        :param samples_per_second: How many times per second the joint positions are sampled.
+
+        :param float stiffness: Control how much power the robot should use to reach the given joint angles
+        :param float speed: Set the fraction of the maximum speed used to reach the target position.
+        :param stream_stiffness: Control the stiffness of the robot when streaming its joint positions.
+        :param bool use_sensors: If true, sensor angles will be returned, otherwise command angles are used.
+        :param int samples_per_second: How many times per second the joint positions are sampled.
         """
         SICConfMessage.__init__(self)
         self.stiffness = stiffness
@@ -93,6 +105,12 @@ class PepperMotionStreamerService(SICComponent, NaoqiMotionTools):
 
     @staticmethod
     def get_conf():
+        """
+        Return the default configuration for this component.
+
+        :returns: Default configuration instance.
+        :rtype: PepperMotionStreamerConf
+        """
         return PepperMotionStreamerConf()
 
     @staticmethod

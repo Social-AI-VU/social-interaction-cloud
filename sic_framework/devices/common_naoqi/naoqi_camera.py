@@ -44,19 +44,33 @@ class NaoqiCameraConf(SICConfMessage):
         manual_focus_value=None,
     ):
         """
-        params can be found at http://doc.aldebaran.com/2-8/family/nao_technical/video_naov6.html#naov6-video
-        and also
-        http://doc.aldebaran.com/2-1/family/robots/video_robot.html
+        Initialize camera configuration and optional device parameters.
 
-        Camera ID:
-        0 - TopCamera
-        1 - BottomCamera
+        For parameter meaning and defaults, see:
+        - http://doc.aldebaran.com/2-8/family/nao_technical/video_naov6.html#naov6-video
+        - http://doc.aldebaran.com/2-1/family/robots/video_robot.html
 
-        Resolution ID:
-        1  -  320x240px
-        2  -  640x480px
-        3  -  1280x960px
-        4  -  2560x1920px
+        :param str naoqi_ip: NAOqi host IP.
+        :param int port: NAOqi TCP port.
+        :param int cam_id: Camera ID to use.
+        :param int res_id: Resolution ID.
+        :param int fps: Target frames per second.
+        :param Optional[int] brightness: Camera brightness.
+        :param Optional[int] contrast: Camera contrast.
+        :param Optional[int] saturation: Camera color saturation.
+        :param Optional[int] hue: Camera hue adjustment.
+        :param Optional[int] gain: Camera gain level.
+        :param Optional[int] hflip: Horizontal flip toggle.
+        :param Optional[int] vflip: Vertical flip toggle.
+        :param Optional[int] auto_exposition: Auto exposure toggle.
+        :param Optional[int] auto_white_bal: Auto white balance toggle.
+        :param Optional[int] manual_exposure_val: Manual exposure value.
+        :param Optional[int] auto_exp_algo: Auto exposure algorithm.
+        :param Optional[int] sharpness: Image sharpness.
+        :param Optional[int] back_light_comp: Backlight compensation toggle.
+        :param Optional[int] auto_focus: Auto focus toggle.
+        :param Optional[int] manual_focus_value: Manual focus value.
+
 
         Parameter Defaults:
         brightness: 55
@@ -101,6 +115,7 @@ class NaoqiCameraConf(SICConfMessage):
 
 class BaseNaoqiCameraSensor(SICSensor):
     def __init__(self, *args, **kwargs):
+
         super(BaseNaoqiCameraSensor, self).__init__(*args, **kwargs)
 
         self.session = qi.Session()
@@ -171,17 +186,41 @@ class BaseNaoqiCameraSensor(SICSensor):
 
     @staticmethod
     def get_conf():
+        """
+        Return the default configuration for a single camera sensor.
+
+        :returns: Camera configuration instance.
+        :rtype: NaoqiCameraConf
+        """
         return NaoqiCameraConf()
 
     @staticmethod
     def get_inputs():
+        """
+        Declare that the sensor does not accept input messages.
+
+        :returns: Empty list.
+        :rtype: list
+        """
         return []
 
     @staticmethod
     def get_output():
+        """
+        Declare the output message type produced by this sensor.
+
+        :returns: Compressed image message class.
+
+        """
         return CompressedImageMessage
 
     def execute(self):
+        """
+        Grab one image frame from the NAOqi camera and return it.
+
+        :returns: Compressed image containing the RGB frame as a NumPy array.
+        :rtype: CompressedImageMessage
+        """
         # get the actual image from the NaoImage type
         naoImage = self.video_service.getImageRemote(self.videoClient)
         imageWidth = naoImage[0]
@@ -195,7 +234,8 @@ class BaseNaoqiCameraSensor(SICSensor):
 
     def stop(self, *args):
         """
-        Stop the Naoqi camera sensor.
+        Stop the camera sensor by closing the NAOqi session and the component.
+
         """
         self.session.close()
         self._stopped.set()
@@ -213,6 +253,12 @@ class NaoqiTopCameraSensor(BaseNaoqiCameraSensor):
 
     @staticmethod
     def get_conf():
+        """
+        Return the default configuration for the top camera.
+
+        :returns: Configuration with cam_id=0 and res_id=1.
+        :rtype: NaoqiCameraConf
+        """
         return NaoqiCameraConf(cam_id=0, res_id=1)
 
 
@@ -226,11 +272,20 @@ class NaoqiTopCamera(SICConnector):
 
 
 class NaoqiBottomCameraSensor(BaseNaoqiCameraSensor):
+    """
+    Sensor for the NAO bottom camera (cam_id=1).
+    """
     def __init__(self, *args, **kwargs):
         super(NaoqiBottomCameraSensor, self).__init__(*args, **kwargs)
 
     @staticmethod
     def get_conf():
+        """
+        Return the default configuration for the bottom camera.
+
+        :returns: Configuration with cam_id=1 and res_id=1.
+        :rtype: NaoqiCameraConf
+        """
         return NaoqiCameraConf(cam_id=1, res_id=1)
 
 
@@ -247,11 +302,18 @@ class StereoImageMessage(SICMessage):
     _compress_images = True
 
     def __init__(self, left, right):
+        """
+        Create a stereo image message.
+
+        :param numpy.ndarray left: Left image array.
+        :param numpy.ndarray right: Right image array.
+        """
         self.left_image = left
         self.right_image = right
 
 
 class NaoStereoCameraConf(NaoqiCameraConf):
+
     def __init__(
         self,
         calib_params=None,
@@ -264,6 +326,7 @@ class NaoStereoCameraConf(NaoqiCameraConf):
         convert_bw=True,
         use_calib=True,
     ):
+
         super(NaoStereoCameraConf, self).__init__(
             naoqi_ip, port, cam_id, res_id, color_id, fps
         )  # TODO: correct?
@@ -283,6 +346,7 @@ class NaoStereoCameraConf(NaoqiCameraConf):
 
 
 class StereoPepperCameraSensor(BaseNaoqiCameraSensor):
+
     def __init__(self, *args, **kwargs):
         super(StereoPepperCameraSensor, self).__init__(*args, **kwargs)
 
@@ -304,6 +368,13 @@ class StereoPepperCameraSensor(BaseNaoqiCameraSensor):
         )
 
     def undistort(self, img):
+        """
+        Remove lens distortion using intrinsic matrix and distortion coefficients.
+
+        :param numpy.ndarray img: Image to undistort.
+        :returns: Undistorted image.
+        :rtype: numpy.ndarray
+        """
         assert self.params.K is not None, "Calibration parameter K not set"
         assert self.params.D is not None, "Calibration parameter D not set"
         return cv2.undistort(
@@ -311,11 +382,28 @@ class StereoPepperCameraSensor(BaseNaoqiCameraSensor):
         )
 
     def warp(self, img, is_left):
+        """
+        Apply perspective warp using rectification homography.
+
+        :param numpy.ndarray img: Image to warp.
+        :param bool is_left: Selects H1 for left and H2 for right.
+        :returns: Warped image.
+        :rtype: numpy.ndarray
+        :raises AssertionError: If `H1` or `H2` is missing.
+        """
         H_matrix = self.params.H1 if is_left else self.params.H2
         assert H_matrix is not None, "Calibration parameter H1 or H2 not set"
         return cv2.warpPerspective(img, H_matrix, img.shape[::-1])
 
     def rectify(self, img, is_left):
+        """
+        Undistort and warp an image for rectification.
+
+        :param numpy.ndarray img: Image to rectify.
+        :param bool is_left: Whether this is a left frame.
+        :returns: Rectified image.
+        :rtype: numpy.ndarray
+        """
         if len(img.shape) == 2:
             return self.warp(self.undistort(img), is_left)
 
@@ -329,6 +417,7 @@ class StereoPepperCameraSensor(BaseNaoqiCameraSensor):
         return img
 
     def execute(self):
+
         # Get the regular stereo image
         img_message = super(StereoPepperCameraSensor, self).execute().image
 
@@ -350,10 +439,16 @@ class StereoPepperCameraSensor(BaseNaoqiCameraSensor):
 
     @staticmethod
     def get_output():
+        """
+        Declare the output message type for this sensor.
+
+        :returns: StereoImageMessage type.
+        """
         return StereoImageMessage
 
 
 class StereoPepperCamera(SICConnector):
+
     component_class = StereoPepperCameraSensor
 
 
@@ -363,17 +458,26 @@ class StereoPepperCamera(SICConnector):
 
 
 class DepthPepperCameraSensor(BaseNaoqiCameraSensor):
+
     def __init__(self, *args, **kwargs):
         super(DepthPepperCameraSensor, self).__init__(*args, **kwargs)
 
     @staticmethod
     def get_conf():
+        """
+        Return the default configuration for the depth camera.
+
+        :returns: Configuration with cam_id=2 and res_id=10.
+        :rtype: NaoqiCameraConf
+        """
         return NaoqiCameraConf(cam_id=2, res_id=10)
 
 
 class DepthPepperCamera(SICConnector):
+
     component_class = DepthPepperCameraSensor
 
 
+# Example: run the top and bottom camera sensors directly.
 if __name__ == "__main__":
     SICComponentManager([NaoqiTopCameraSensor, NaoqiBottomCameraSensor])

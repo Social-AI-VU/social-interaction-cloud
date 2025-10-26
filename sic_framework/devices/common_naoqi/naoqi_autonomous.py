@@ -14,8 +14,9 @@ if utils.PYTHON_VERSION_IS_2:
 
 class NaoBlinkingRequest(SICRequest):
     """
-    Enable or disable autonomous blinking.
-    value - boolean to enable/disable autonomous blinking
+    Request to enable or disable autonomous blinking.
+
+    :param bool value: True to enable, False to disable autonomous blinking.
     """
 
     def __init__(self, value):
@@ -25,8 +26,9 @@ class NaoBlinkingRequest(SICRequest):
 
 class NaoBackgroundMovingRequest(SICRequest):
     """
-    Enable or disable autonomous background moving.
-    value - boolean to enable/disable background moving
+    Request to enable or disable autonomous background movement.
+
+    :param bool value: True to enable, False to disable background movement.
     """
 
     def __init__(self, value):
@@ -36,8 +38,9 @@ class NaoBackgroundMovingRequest(SICRequest):
 
 class NaoListeningMovementRequest(SICRequest):
     """
-    Enable or disable slight movements showing that the robot is listening.
-    value - boolean to enable/disable
+    Request to enable or disable listening movements (small motions indicating attention).
+
+    :param bool value: True to enable, False to disable listening movements.
     """
 
     def __init__(self, value):
@@ -47,9 +50,11 @@ class NaoListeningMovementRequest(SICRequest):
 
 class NaoSpeakingMovementRequest(SICRequest):
     """
-    Enable or disable autonomously movements during speech of the robot.
-    value - boolean to enable/disable
-    mode - string to determine speaking movement mode. 2 options: "random" or "contextual", see http://doc.aldebaran.com/2-5/naoqi/interaction/autonomousabilities/alspeakingmovement.html#speaking-movement-mode
+    Request to enable or disable autonomous speaking movements.
+
+    :param bool value: True to enable, False to disable.
+    :param str mode: Speaking movement mode ("random" or "contextual").
+    :raises ValueError: If mode is not one of the supported options. see http://doc.aldebaran.com/2-5/naoqi/interaction/autonomousabilities/alspeakingmovement.html#speaking-movement-mode
     """
 
     def __init__(self, value, mode=None):
@@ -59,26 +64,23 @@ class NaoSpeakingMovementRequest(SICRequest):
 
 
 class NaoRestRequest(SICRequest):
-    """
-    Go to the rest position. It is good practise to do this when not using the robot, to allow the motors to cool and
-    reduce wear on the robot.
-    """
+
 
     pass
 
 
 class NaoWakeUpRequest(SICRequest):
-    """
-    The robot wakes up: sets Motor on and, if needed, goes to initial position.
-    Enable FullyEngaged mode to appear alive.
-    """
+
 
     pass
 
 class NaoSetAutonomousLifeRequest(SICRequest):
     """
-    Set limited state changes in AutonomousLife. For futher details, see: http://doc.aldebaran.com/2-5/ref/life/state_machine_management.html#autonomouslife-states.
-    state - string to set the state of the robot. Options: "solitary", "interactive", "safeguard", "disabled"
+    Request to set the state of the Autonomous Life module.
+
+    For further details, see: http://doc.aldebaran.com/2-5/ref/life/state_machine_management.html#autonomouslife-states
+
+    :param str state: Target state ("solitary", "interactive", "safeguard", or "disabled").
     """
 
     def __init__(self, state="solitary"):
@@ -88,11 +90,12 @@ class NaoSetAutonomousLifeRequest(SICRequest):
 
 class NaoBasicAwarenessRequest(SICRequest):
     """
-    Enable or disable basic awareness.
-    value - boolean to enable/disable basic awareness
-    stimulus_detection - list of tuples with (name, bool) to enable / disable stimulus detection for the given stimulus name, see http://doc.aldebaran.com/2-5/naoqi/interaction/autonomousabilities/albasicawareness.html#albasicawareness-stimuli-types
-    engagement_mode - string to value engagement mode, see http://doc.aldebaran.com/2-5/naoqi/interaction/autonomousabilities/albasicawareness.html#albasicawareness-engagement-modes
-    tracking_mode - string to value tracking mode, see http://doc.aldebaran.com/2-5/naoqi/interaction/autonomousabilities/albasicawareness.html#albasicawareness-tracking-modes
+    Request to enable or disable basic awareness and configure its parameters.
+
+    :param bool value: True to enable, False to disable basic awareness.
+    :param list[tuple[str, bool]] stimulus_detection: Optional list of (stimulus_name, enable) tuples.
+    :param str engagement_mode: Engagement mode setting.
+    :param str tracking_mode: Tracking mode setting.
     """
 
     def __init__(
@@ -107,8 +110,11 @@ class NaoBasicAwarenessRequest(SICRequest):
 
 class NaoqiAutonomousActuator(SICActuator):
     """
-    Wrapper class for sevaral Naoqi autonomous abilities, see http://doc.aldebaran.com/2-5/ref/life/autonomous_abilities_management.html?highlight=autonomous%20life
-    Also implements wakeUp and rest requests.
+    Actuator managing NAOqi autonomous abilities.
+
+    Provides an interface for enabling or disabling autonomous features like blinking, awareness, and background movements, as well as wakeUp and rest actions.
+
+    :ivar qi.Session session: Connection to the NAOqi framework.
     """
 
     def __init__(self, *args, **kwargs):
@@ -148,7 +154,12 @@ class NaoqiAutonomousActuator(SICActuator):
 
     def execute(self, message):
         """
-        Execute the autonomous actuator.
+        Execute the given autonomous ability request.
+
+        :param SICRequest message: Request specifying which autonomous ability to adjust.
+        :returns: Acknowledgement message after execution.
+        :rtype: SICMessage
+        :raises Exception: If a requested service or mode is invalid.
         """
         if message == NaoRestRequest:
             self.motion.rest()
@@ -179,7 +190,7 @@ class NaoqiAutonomousActuator(SICActuator):
 
     def stop(self, *args):
         """
-        Stop the autonomous actuator.
+        Stop the actuator and close the NAOqi session.
         """
         self.session.close()
         self._stopped.set()

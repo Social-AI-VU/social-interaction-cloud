@@ -23,10 +23,12 @@ class NaoqiLookAtConf(SICConfMessage):
         self, camera_index=0, camera_y_max=480, camera_x_max=640, mirror_x=False
     ):
         """
-        :param camera_index:
-        :param camera_y_max:
-        :param camera_x_max:
-        :param mirror_x: Mirror the coordinate in the horizontal axis.
+        Initialize LookAt configuration.
+
+        :param int camera_index: 
+        :param int camera_y_max: 
+        :param int camera_x_max: 
+        :param bool mirror_x: Mirror the horizontal angle sign.
         """
         self.camera_index = camera_index  # 0 = top, 1 = bottom
         self.camera_y_max = camera_y_max
@@ -37,13 +39,20 @@ class NaoqiLookAtConf(SICConfMessage):
 
 class LookAtMessage(SICMessage):
     """
-    Make the robot look at the normalized image coordinates.
-    range [0, 1.0]
+    Message requesting the robot to look at normalized image coordinates.
+
+    Coordinates are in range [0.0, 1.0], where (0,0) is top-left.
     """
 
     _compress_images = False
 
     def __init__(self, x, y):
+        """
+        Create a LookAt request message.
+
+        :param float x: Horizontal normalized coordinate in [0.0, 1.0].
+        :param float y: Vertical normalized coordinate in [0.0, 1.0].
+        """
         self.x = x
         self.y = y
 
@@ -61,6 +70,12 @@ class NaoqiLookAtComponent(SICComponent):
 
     @staticmethod
     def get_conf():
+        """
+        Return the default configuration for this component.
+
+        :returns: Default LookAt configuration.
+        :rtype: NaoqiLookAtConf
+        """
         return NaoqiLookAtConf()
 
     @staticmethod
@@ -72,6 +87,9 @@ class NaoqiLookAtComponent(SICComponent):
         return AudioMessage
 
     def on_message(self, message):
+        """
+        :param SICMessage message: Incoming message (`LookAtMessage` or `BoundingBoxesMessage`).
+        """
         x, y = None, None
         if message == BoundingBoxesMessage:
             # track the most confident boundingbox
@@ -102,7 +120,7 @@ class NaoqiLookAtComponent(SICComponent):
 
     def stop(self, *args):
         """
-        Stop the Naoqi LookAt component.
+        Stop the LookAt component.
         """
         self.session.close()
         self._stopped.set()

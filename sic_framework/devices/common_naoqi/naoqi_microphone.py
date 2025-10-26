@@ -22,6 +22,11 @@ class NaoqiMicrophoneSensor(SICSensor):
     COMPONENT_STARTUP_TIMEOUT = 4
 
     def __init__(self, *args, **kwargs):
+        """
+        :param Any args: Positional arguments passed to the base class.
+        :param Any kwargs: Keyword arguments passed to the base class.
+        :raises RuntimeError: If the callback service cannot be registered.
+        """
         super(NaoqiMicrophoneSensor, self).__init__(*args, **kwargs)
 
         self.session = qi.Session()
@@ -49,10 +54,20 @@ class NaoqiMicrophoneSensor(SICSensor):
 
     @staticmethod
     def get_conf():
+        """
+        Return the default configuration for this sensor.
+
+        :returns: Microphone configuration instance.
+        :rtype: NaoqiMicrophoneConf
+        """
         return NaoqiMicrophoneConf()
 
     @staticmethod
     def get_inputs():
+        """
+        :returns: Empty list.
+        :rtype: list
+        """
         return []
 
     @staticmethod
@@ -68,7 +83,7 @@ class NaoqiMicrophoneSensor(SICSensor):
 
     def stop(self, *args):
         """
-        Stop the Naoqi microphone sensor.
+        Stop the microphone sensor.
         """
         self.audio_service.unsubscribe(self.module_name)
         self.session.unregisterService(self.session_id)
@@ -77,13 +92,6 @@ class NaoqiMicrophoneSensor(SICSensor):
         super(NaoqiMicrophoneSensor, self).stop(*args)
 
     def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp, inputBuffer):
-        """
-        This function is registered by the self.session.registerService(self) call.
-        :param nbOfChannels:
-        :param nbOfSamplesByChannel:
-        :param timeStamp:
-        :param inputBuffer:
-        """
         self.audio_buffer = inputBuffer
         self.naoqi_timestamp = timeStamp
         self.new_sound_data_available.set()

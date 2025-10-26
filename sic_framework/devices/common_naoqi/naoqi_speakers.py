@@ -17,7 +17,13 @@ if utils.PYTHON_VERSION_IS_2:
 
 
 class NaoqiSpeakersConf(SICConfMessage):
+    """
+    Configuration for the NAOqi speaker component.
+    """
     def __init__(self):
+        """
+        Initialize default audio configuration values for the NAOqi speaker component.
+        """
         self.no_channels = 1
         self.sample_rate = 16000
         self.index = -1
@@ -25,6 +31,9 @@ class NaoqiSpeakersConf(SICConfMessage):
 
 class NaoqiSpeakerComponent(SICComponent):
     def __init__(self, *args, **kwargs):
+        """
+        Initialize the NAOqi speaker component and connect to ALAudioDevice and ALAudioPlayer.
+        """
         super(NaoqiSpeakerComponent, self).__init__(*args, **kwargs)
 
         self.session = qi.Session()
@@ -37,6 +46,12 @@ class NaoqiSpeakerComponent(SICComponent):
 
     @staticmethod
     def get_conf():
+        """
+        Return the default configuration for this component.
+
+        :returns: Default speaker configuration.
+        :rtype: NaoqiSpeakersConf
+        """
         return NaoqiSpeakersConf()
 
     @staticmethod
@@ -78,7 +93,7 @@ class NaoqiSpeakerComponent(SICComponent):
 
     def stop(self, *args):
         """
-        Stop the Naoqi speaker component.
+        Stop the NAOqi speaker component.
         """
         self.session.close()
         self._stopped.set()

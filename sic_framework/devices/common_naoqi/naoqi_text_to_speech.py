@@ -12,6 +12,9 @@ if utils.PYTHON_VERSION_IS_2:
 
 # @dataclass
 class NaoqiTextToSpeechRequest(SICRequest):
+    """
+    Request the robot to say a given text using text-to-speech.
+    """
     def __init__(
         self,
         text,
@@ -23,9 +26,10 @@ class NaoqiTextToSpeechRequest(SICRequest):
         volume=None,
     ):
         """
-        Request the nao to say something
-        :param text: object
-        :param language: "English" or "Dutch" or see http://doc.aldebaran.com/2-8/family/nao_technical/languages_naov6.html#language-codes-naov6
+        Initialize a text-to-speech request.
+
+        :param str text: Text to be spoken.
+        :param str language: "English" or "Dutch" or see http://doc.aldebaran.com/2-8/family/nao_technical/languages_naov6.html#language-codes-naov6
         :param animated: Use animated text to speech, e.g. perform some gestures while talking
         """
         super(NaoqiTextToSpeechRequest, self).__init__()
@@ -42,6 +46,11 @@ class NaoqiTextToSpeechRequest(SICRequest):
 
 # @dataclass
 class NaoqiTextToSpeechConf(SICConfMessage):
+    """
+    Configuration for the NAOqi text-to-speech engine.
+
+    Defines default voice parameters such as language, volume, pitch, and speed.
+    """
     def __init__(
         self,
         language="English",
@@ -51,18 +60,18 @@ class NaoqiTextToSpeechConf(SICConfMessage):
         pitch_shift=None,
     ):
         """
-        Set the parameters for the text to speech engine. If None, the default NAOqi values are used.
-        See http://doc.aldebaran.com/2-4/naoqi/audio/altexttospeech-api.html#ALTextToSpeechProxy::setParameter__ssCR.floatCR
+        Initialize default parameters for the text-to-speech configuration.
 
-        :param language: see http://doc.aldebaran.com/2-8/family/nao_technical/languages_naov6.html#language-codes-naov6
-        :param volume: Sets the current gain applied to the signal synthesized by the text to speech engine if not None.
-        :type volume: float
-        :param pitch: Applies a pitch shift to the voice. Range is [1.0 - 4.0]. 0 disables the effect.
-        :type pitch: int [50 - 100]
-        :param pitch_shift: Applies a pitch shift to the voice. Range is [1.0 - 4.0]. 0 disables the effect.
-        :type pitch_shift: float
-        :param speed: sets the current voice speed. The default value is 100.
-        :type speed: int [50 - 400]
+        If None, the default NAOqi values are used. 
+
+        See also:
+        http://doc.aldebaran.com/2-4/naoqi/audio/altexttospeech-api.html#ALTextToSpeechProxy::setParameter__ssCR.floatCR
+
+        :param str language: Language to use "English" or "Dutch" or see http://doc.aldebaran.com/2-8/family/nao_technical/languages_naov6.html#language-codes-naov6
+        :param float volume: Sets the current gain applied to the signal synthesized by the text to speech engine if not None.
+        :param int pitch: Applies a pitch shift to the voice. Range is  [50 - 100]. 
+        :param float pitch_shift: Applies a pitch shift to the voice. Range is [1.0 - 4.0]. 0 disables the effect.
+        :param int speed: sets the current voice speed. The default value is 100. Range is [50 - 400]
         """
         super(SICConfMessage, self).__init__()
 
@@ -104,6 +113,12 @@ class NaoqiTextToSpeechActuator(SICActuator):
 
     @staticmethod
     def get_conf():
+        """
+        Return the default configuration for this actuator.
+
+        :returns: Default text-to-speech configuration.
+        :rtype: NaoqiTextToSpeechConf
+        """
         return NaoqiTextToSpeechConf()
 
     @staticmethod
@@ -115,6 +130,15 @@ class NaoqiTextToSpeechActuator(SICActuator):
         return SICMessage
 
     def execute(self, message):
+        """
+        Execute the text-to-speech request.
+
+        Applies message-specific parameters, then speaks using ALTextToSpeech or ALAnimatedSpeech.
+
+        :param NaoqiTextToSpeechRequest message: Request containing speech parameters and text.
+        :returns: Acknowledgement message after speaking.
+        :rtype: SICMessage
+        """
         # Set tts parameters for current request
         self.set_params(message)
 
@@ -126,7 +150,7 @@ class NaoqiTextToSpeechActuator(SICActuator):
 
     def stop(self, *args):
         """
-        Stop the Naoqi text to speech actuator.
+        Stop the text-to-speech actuator.
         """
         self.session.close()
         self._stopped.set()
