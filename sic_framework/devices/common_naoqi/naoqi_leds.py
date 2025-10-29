@@ -185,7 +185,6 @@ class NaoqiLEDsActuator(SICActuator):
         Stop the LEDs actuator, close the NAOqi session, and release resources.
 
         """
-        self.leds.close()
         self.session.close()
         self._stopped.set()
         super(NaoqiLEDsActuator, self).stop()
