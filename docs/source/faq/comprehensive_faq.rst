@@ -64,6 +64,30 @@ Could not connect to component
    3. You are using the desktop or robot components directly. Use the Nao(ip=...)/Pepper(ip=...)/Desktop() wrappers which will start the components for you.
 
 
+Cannot connect to robot from IDE terminal
+-----------------------------------------
+
+.. toggle::
+
+   **Problem:** Cannot connect to NAO or Pepper robots when running scripts from an IDE terminal (e.g. VSCode), but connection works fine from standalone terminal.
+
+   **Solution:**
+   
+   Some IDEs such as VSCode sandbox terminal permissions, which can prevent SSH connections to robots. Try one of these solutions:
+
+   **Option 1:** Run the script with ``sudo`` from within VSCode:
+
+   .. code-block:: bash
+
+      sudo python3 your_script.py
+
+   **Option 2:** Run your script from a standalone terminal (outside VSCode) instead of the integrated terminal.
+
+   .. note::
+      The permission sandboxing is a security feature of VSCode. If the standalone terminal works,
+      the issue is specifically related to VSCode's terminal permissions, not your network or robot configuration.
+
+
 Windows WSL Connection Issues
 ------------------------------
 
