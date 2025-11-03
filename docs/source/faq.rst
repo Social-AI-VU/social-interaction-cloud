@@ -11,3 +11,4 @@ If your question is not answered here, feel free to post to the `troubleshooting
    :maxdepth: 2
 
    faq/comprehensive_faq
+   faq/version_management

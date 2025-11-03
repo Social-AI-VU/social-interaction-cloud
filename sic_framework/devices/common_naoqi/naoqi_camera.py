@@ -221,23 +221,39 @@ class BaseNaoqiCameraSensor(SICSensor):
         :returns: Compressed image containing the RGB frame as a NumPy array.
         :rtype: CompressedImageMessage
         """
-        # get the actual image from the NaoImage type
-        naoImage = self.video_service.getImageRemote(self.videoClient)
-        imageWidth = naoImage[0]
-        imageHeight = naoImage[1]
-        array = naoImage[6]
-        image_string = str(bytearray(array))
+        try:
+            # get the actual image from the NaoImage type
+            naoImage = self.video_service.getImageRemote(self.videoClient)
+            imageWidth = naoImage[0]
+            imageHeight = naoImage[1]
+            array = naoImage[6]
+            image_string = str(bytearray(array))
 
-        # Create a PIL Image from our pixel array.
-        im = Image.frombytes("RGB", (imageWidth, imageHeight), image_string)
-        return CompressedImageMessage(np.asarray(im))
+            # Create a PIL Image from our pixel array.
+            im = Image.frombytes("RGB", (imageWidth, imageHeight), image_string)
+            return CompressedImageMessage(np.asarray(im))
+        except Exception as e:
+            if self._stopped.is_set() or self._signal_to_stop.is_set():
+                return
+            else:
+                raise e
 
     def stop(self, *args):
         """
         Stop the camera sensor by closing the NAOqi session and the component.
-
         """
-        self.session.close()
+        self._signal_to_stop.set()
+        try:
+            if hasattr(self, 'videoClient') and self.videoClient:
+                self.video_service.unsubscribe(self.videoClient)
+        except Exception as e:
+            print("Error unsubscribing from camera: {}".format(e))
+        
+        try:
+            self.session.close()
+        except Exception as e:
+            print("Error closing session: {}".format(e))
+            
         self._stopped.set()
         super(BaseNaoqiCameraSensor, self).stop(*args)
 

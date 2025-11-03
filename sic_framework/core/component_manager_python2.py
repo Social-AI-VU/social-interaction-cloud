@@ -314,7 +314,7 @@ class SICComponentManager(object):
             return SICSuccessMessage()
         except Exception as e:
             self.logger.error(
-                "Error stopping component: {}".format(e),
+                "Error stopping component {}: {}".format(component.component_endpoint, e),
                 extra={"client_id": component.client_id}
             )
             return SICFailureMessage(e)
@@ -483,11 +483,12 @@ class SICComponentManager(object):
             # reply to the request if the component manager can start the component
             if request.component_name in self.component_classes:
                 self.logger.info(
-                    "Handling request to start component for client {}".format(
+                    "Handling request to start component {} for client {}".format(
+                        request.component_name,
                         client_id
                     ),
                     extra={"client_id": client_id}
-                )
+                )   
 
                 return self.start_component(request)
             else:
@@ -502,7 +503,8 @@ class SICComponentManager(object):
         if is_sic_instance(request, SICStopComponentRequest):
             # reply to the request if the component manager can stop the component
             self.logger.info(
-                "Handling request to stop component for client {}".format(
+                "Handling request to stop component {} for client {}".format(
+                    request.component_name,
                     client_id
                 ),
                 extra={"client_id": client_id}
