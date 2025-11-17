@@ -66,8 +66,12 @@ class NaoqiSpeakerComponent(SICComponent):
         self.play_sound(message)
 
     def on_request(self, request):
-        self.play_sound(request)
-        return SICMessage()
+        if request.is_stream:
+            self.stream_sound(request)
+            return SICMessage()
+        else:
+            self.play_sound(request)
+            return SICMessage()
 
     def play_sound(self, message):
         bytestream = message.waveform
@@ -90,6 +94,23 @@ class NaoqiSpeakerComponent(SICComponent):
         wav_file.writeframes(bytestream)
         # Launchs the playing of a file
         self.audio_player_service.playFile(tmp_file)
+
+    def stream_sound(self, message):
+        self.audio_service.setParameter("outputSampleRate", message.sample_rate)
+        pcm = message.waveform  # bytes, 16-bit stereo PCM
+
+        total_bytes = len(pcm)
+        nb_frames = total_bytes // 4   # 4 bytes per stereo frame
+
+        MAX_FRAMES_PER_CALL = 16384
+
+        if nb_frames <= MAX_FRAMES_PER_CALL:
+            ok = self.audio_service.sendRemoteBufferToOutput(nb_frames, pcm)
+            if not ok:
+                self.logger.error("Pepper rejected audio chunk!")
+        else:
+            # Too big, fallback to file-based playback
+            self.play_sound(message)
 
     def stop(self, *args):
         """
