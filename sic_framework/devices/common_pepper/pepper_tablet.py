@@ -6,6 +6,7 @@ if utils.PYTHON_VERSION_IS_2:
     import qi
     from naoqi import ALProxy
 
+import time
 
 class UrlMessage(SICMessage):
     """
@@ -56,57 +57,23 @@ class ClearDisplayMessage(SICMessage):
         super(ClearDisplayMessage, self).__init__()
 
 
-class DisplayImageMessage(SICMessage):
-    """
-    Message containing a path to an image on Pepper's tablet to display.
-    """
-
-    def __init__(self, image_path):
-        """
-        Initialize image display message.
-
-        :param str image_path: Path to the image accessible from Pepper's tablet.
-        """
-        super(DisplayImageMessage, self).__init__()
-        self.image_path = image_path
-
-
-class ShowVideoMessage(SICMessage):
-    """
-    Message containing a path to a video on Pepper's tablet to play.
-    """
-
-    def __init__(self, video_path, start_time=0.0):
-        """
-        Initialize video display message.
-
-        :param str video_path: Path to the video accessible from Pepper's tablet.
-        :param float start_time: Optional start time in seconds.
-        """
-        super(ShowVideoMessage, self).__init__()
-        self.video_path = video_path
-        self.start_time = start_time or 0.0
-
-
 class NaoqiTabletComponent(SICComponent):
     """
     Component for controlling Pepper's tablet display.
     
     Provides access to Pepper's built-in tablet screen through NAOqi's ALTabletService.
     Accepts :class:`UrlMessage` requests to display web content on the tablet.
-    
-    The tablet can display any web content, including:
-    
-    - Static HTML pages
-    - Interactive web applications
-    - Images and videos
-    - Custom UI elements
-    
+
+    The tablet may need to be configured with a Wi-Fi network before it can be used.
+
+    For information on the available methods (not implemented yet), please refer to the NAOqi ALTabletService API documentation:
+    http://doc.aldebaran.com/2-5/naoqi/core/altabletservice-api.html
+        
     Example usage::
     
         from sic_framework.devices.common_pepper.pepper_tablet import UrlMessage
         
-        pepper.tablet_display_url.request(UrlMessage("http://example.com"))
+        pepper.tablet.send_message(UrlMessage("http://example.com"))
     
     .. note::
         The tablet requires active network connectivity to load external URLs.
@@ -125,7 +92,7 @@ class NaoqiTabletComponent(SICComponent):
 
         self.session = qi.Session()
         self.session.connect("tcp://127.0.0.1:9559")
-        self.tablet_service = self.session.service("ALTabletService", "127.0.0.1", "9559")
+        self.tablet_service = self.session.service("ALTabletService")
 
     @staticmethod
     def get_inputs():
@@ -135,7 +102,7 @@ class NaoqiTabletComponent(SICComponent):
         :returns: List containing supported message types.
         :rtype: list
         """
-        return [UrlMessage, WifiConnectRequest, ClearDisplayMessage, DisplayImageMessage, ShowVideoMessage]
+        return [UrlMessage, WifiConnectRequest, ClearDisplayMessage]
 
     @staticmethod
     def get_output():
@@ -164,10 +131,8 @@ class NaoqiTabletComponent(SICComponent):
             )
         elif isinstance(message, ClearDisplayMessage):
             self.clear_display()
-        elif isinstance(message, DisplayImageMessage):
-            self.display_image(message.image_path)
-        elif isinstance(message, ShowVideoMessage):
-            self.show_video(message.video_path, message.start_time)
+        else:
+            self.logger.error("Unsupported message type: %s", type(message))
 
     def on_request(self, request):
         """
@@ -192,7 +157,10 @@ class NaoqiTabletComponent(SICComponent):
         
         :param str url: The URL to display on the tablet.
         """
-        self.logger.debug("Showing webview: %s", url)
+        self.logger.debug("Awakening webview before displaying URL.")
+        self.tablet_service.showWebview()
+        time.sleep(3)
+        self.logger.debug("Displaying webview: %s", url)
         self.tablet_service.showWebview(url)
 
     def wifi_connect(self, network_name, network_password, network_type):
@@ -202,17 +170,11 @@ class NaoqiTabletComponent(SICComponent):
         :param str network_name: SSID of the Wi-Fi network.
         :param str network_password: Password/key for the Wi-Fi network.
         :param str network_type: Security type ("open", "wep", "wpa", "wpa2").
-        :raises ValueError: If required parameters are missing or invalid.
         :raises RuntimeError: If the tablet service fails to configure Wi-Fi.
         """
         self.logger.debug("Connecting to Wi-Fi network: %s", network_name)
         self.logger.debug("Network password: %s", network_password)
         self.logger.debug("Network type: %s", network_type)
-
-        self.logger.debug("Network name type: %s", type(network_name))
-
-        # if network_name == "" or not isinstance(network_name, str):
-        #     raise ValueError("network_name must be a non-empty string.")
 
         security_aliases = {
             "": "open",
@@ -259,55 +221,6 @@ class NaoqiTabletComponent(SICComponent):
         except Exception as exc:
             raise RuntimeError("Failed to clear tablet display: {}".format(exc))
 
-    def display_image(self, image_path):
-        """
-        Display an image stored on Pepper's tablet.
-
-        :param str image_path: Path or URL to the image.
-        :raises ValueError: If the image_path is invalid.
-        :raises RuntimeError: If the image cannot be displayed.
-        """
-        # if not image_path or not isinstance(image_path, str):
-        #     raise ValueError("image_path must be a non-empty string.")
-
-        try:
-            # showImage can accept either local app resource paths or URLs.
-            self.tablet_service.showImage(image_path)
-        except Exception as exc:
-            raise RuntimeError("Failed to display image '{}': {}".format(image_path, exc))
-
-    def show_video(self, video_path, start_time=0.0):
-        """
-        Play a video stored on Pepper's tablet.
-
-        :param str video_path: Path or URL to the video.
-        :param float start_time: Start time in seconds to begin playback.
-        :raises ValueError: If the video_path is invalid.
-        :raises RuntimeError: If the video cannot be played.
-        """
-        # if not video_path or not isinstance(video_path, str):
-        #     raise ValueError("video_path must be a non-empty string.")
-
-        if start_time is None:
-            start_time = 0.0
-
-        try:
-            start_time = float(start_time)
-        except (TypeError, ValueError):
-            raise ValueError("start_time must be a number representing seconds.")
-
-        try:
-            # playVideo expects a URL or app resource path.
-            self.tablet_service.playVideo(video_path)
-
-            if start_time > 0:
-                milliseconds = int(max(0.0, start_time) * 1000)
-                self.tablet_service.pauseVideo()
-                self.tablet_service.seekVideo(milliseconds)
-                self.tablet_service.resumeVideo()
-        except Exception as exc:
-            raise RuntimeError("Failed to play video '{}': {}".format(video_path, exc))
-
     def stop(self, *args):
         """
         Stop the component and clean up resources.
@@ -326,7 +239,7 @@ class NaoqiTablet(SICConnector):
     Connector for accessing Pepper's tablet display.
     
     Provides a high-level interface to the :class:`NaoqiTabletComponent`.
-    Access this through the Pepper device's ``tablet_display_url`` property.
+    Access this through the Pepper device's ``tablet`` property.
     """
     component_class = NaoqiTabletComponent
 
