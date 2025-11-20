@@ -1,6 +1,9 @@
 from __future__ import print_function
 
 from abc import ABCMeta, abstractmethod
+import os
+import posixpath
+import shlex
 
 from sic_framework.core import sic_redis, utils
 from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage, SICStopServerRequest
@@ -239,6 +242,76 @@ class Naoqi(SICDeviceManager):
         if status != 0:
             self.logger.error("Failed to stop device, exit code: {status}".format(status=status))
             self.logger.error(stderr.read().decode("utf-8"))
+
+    def upload_file(self, local_path, remote_path):
+        """
+        Upload a file to the Naoqi device using SCP.
+
+        :param local_path: Path to the local file to upload.
+        :type local_path: str
+        :param remote_path: Destination path on the robot. Must be under /home/nao.
+        :type remote_path: str
+
+        :raises ValueError: If the local file does not exist or the remote path is invalid.
+        :raises RuntimeError: If SCP is unavailable, the SSH connection is missing, or the upload fails.
+        """
+        if not local_path or not isinstance(local_path, str):
+            raise ValueError("A valid local_path string is required.")
+
+        if not remote_path or not isinstance(remote_path, str):
+            raise ValueError("A valid remote_path string is required.")
+
+        if not os.path.isfile(local_path):
+            raise ValueError("Local path '{}' does not exist or is not a file.".format(local_path))
+
+        if not remote_path.startswith("/home/nao"):
+            raise ValueError("Destination path must start with '/home/nao'. Provided: '{}'".format(remote_path))
+
+        if not self.SCPClient:
+            raise RuntimeError("SCPClient is not available. Cannot upload file.")
+
+        if not hasattr(self, "ssh"):
+            raise RuntimeError("SSH connection has not been initialized. Cannot upload file.")
+
+        remote_is_dir = remote_path.endswith("/") or remote_path == "/home/nao"
+        if remote_is_dir:
+            remote_dir = remote_path
+            remote_file_path = posixpath.join(remote_dir, os.path.basename(local_path))
+        else:
+            remote_dir = posixpath.dirname(remote_path) or "/home/nao"
+            remote_file_path = remote_path
+
+        if not remote_dir.startswith("/home/nao"):
+            raise ValueError("Destination directory must remain within '/home/nao'. Computed: '{}'".format(remote_dir))
+
+        mkdir_cmd = "mkdir -p {}".format(shlex.quote(remote_dir))
+        _, _, stderr, status = self.ssh_command(mkdir_cmd)
+        if status != 0:
+            error_output = stderr.read().decode("utf-8")
+            raise RuntimeError(
+                "Failed to create remote directory '{}': {}".format(remote_dir, error_output.strip())
+            )
+
+        # ensure destination file does not already exist
+        check_cmd = "test -e {}".format(shlex.quote(remote_file_path))
+        _, _, _, status = self.ssh_command(check_cmd)
+        if status == 0:
+            self.logger.info(
+                "Skipping upload: destination file '%s' already exists on the Naoqi device.",
+                remote_file_path,
+            )
+            return
+
+        try:
+            with self.SCPClient(self.ssh.get_transport()) as scp:
+                destination = remote_dir if remote_is_dir else remote_file_path
+                scp.put(local_path, destination)
+        except Exception as exc:
+            raise RuntimeError(
+                "Failed to upload '{}' to '{}': {}".format(local_path, remote_file_path, exc)
+            )
+
+        self.logger.info("Uploaded '{}' to '{}' on the Naoqi device.".format(local_path, remote_file_path))
 
     @property
     def top_camera(self):
