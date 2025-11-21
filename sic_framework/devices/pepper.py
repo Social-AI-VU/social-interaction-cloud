@@ -82,6 +82,7 @@ class Pepper(Naoqi):
     def __init__(
         self,
         ip,
+        sic_version=None,
         stereo_camera_conf=None,
         depth_camera_conf=None,
         pepper_motion_conf=None,
@@ -96,6 +97,7 @@ class Pepper(Naoqi):
             # device path is where this script is located on the actual Pepper machine
             device_path="/home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework/devices",
             test_device_path="/home/nao/sic_in_test/social-interaction-cloud/sic_framework/devices",
+            sic_version=sic_version,
             **kwargs
         )
 
@@ -128,18 +130,7 @@ class Pepper(Naoqi):
         else:
             self.logger.info("SIC is already installed, checking versions")
 
-            # this command should get the version of SIC currently installed on the local machine, on all OSes including Windows
-            try:
-                from pkg_resources import DistributionNotFound, get_distribution
-
-                cur_version = get_distribution("social-interaction-cloud").version
-            except DistributionNotFound:
-                self.logger.error(
-                    "Failed to find the 'social-interaction-cloud' package locally. Ensure it is installed using pip."
-                )
-                raise RuntimeError(
-                    "Package 'social-interaction-cloud' is not installed locally. Please install it using pip."
-                )
+            desired_version = self._get_desired_sic_version()
 
             # get the version of SIC installed on Pepper
             pepper_version = ""
@@ -151,14 +142,14 @@ class Pepper(Naoqi):
                     break
 
             self.logger.info("SIC version on Pepper: {}".format(pepper_version))
-            self.logger.info("SIC local version: {}".format(cur_version))
+            self.logger.info("Desired SIC version: {}".format(desired_version))
 
-            if pepper_version == cur_version:
+            if pepper_version == desired_version:
                 self.logger.info("SIC already installed on Pepper and versions match")
                 return True
             else:
                 self.logger.warning(
-                    "SIC is installed on Pepper but does not match the local version! Reinstalling SIC on Pepper"
+                    "SIC is installed on Pepper but does not match the desired version! Reinstalling SIC on Pepper"
                 )
                 self.logger.warning(
                     "(Check to make sure you also have the latest version of SIC installed!)"
@@ -175,6 +166,8 @@ class Pepper(Naoqi):
         3. pip install --no-deps git repo
         4. install dependencies from _LIBS_TO_INSTALL
         """
+        desired_version = self._get_desired_sic_version()
+
         _, stdout, stderr, exit_status = self.ssh_command(
             """
                     rm -rf /home/nao/framework;
@@ -184,15 +177,18 @@ class Pepper(Naoqi):
 
                     mkdir /home/nao/sic_framework_2;
                     cd /home/nao/sic_framework_2;
-                    curl -L -o sic_repo.zip https://github.com/Social-AI-VU/social-interaction-cloud/archive/refs/heads/main.zip;
+                    curl -L -o sic_repo.zip https://github.com/Social-AI-VU/social-interaction-cloud/archive/refs/tags/v{version}.zip;
                     unzip sic_repo.zip;
+                    mv social-interaction-cloud-{version} social-interaction-cloud-main;
                     cd /home/nao/sic_framework_2/social-interaction-cloud-main;
                     pip install --user -e . --no-deps;
                                         
                     if pip list | grep -w 'social-interaction-cloud' > /dev/null 2>&1 ; then
                         echo "SIC successfully installed"
                     fi;
-                    """
+                    """.format(
+                version=desired_version
+            )
         )
 
         if not "SIC successfully installed" in stdout.read().decode():
@@ -327,6 +323,35 @@ class Pepper(Naoqi):
             )
             return True
 
+    def _get_desired_sic_version(self):
+        """
+        Determine which SIC version should be installed on Pepper.
+
+        Preference order:
+        1. Explicit `sic_version` provided during construction.
+        2. Local `social-interaction-cloud` package version.
+        """
+        if hasattr(self, "_resolved_sic_version"):
+            return self._resolved_sic_version
+
+        if getattr(self, "sic_version", None):
+            version = self.sic_version
+        else:
+            try:
+                from pkg_resources import DistributionNotFound, get_distribution
+
+                version = get_distribution("social-interaction-cloud").version
+            except DistributionNotFound:
+                self.logger.error(
+                    "Failed to find the 'social-interaction-cloud' package locally. Ensure it is installed using pip."
+                )
+                raise RuntimeError(
+                    "Package 'social-interaction-cloud' is not installed locally. Please install it using pip."
+                )
+
+        self._resolved_sic_version = version
+        return version
+
     @property
     def stereo_camera(self):
         return self._get_connector(StereoPepperCamera)
@@ -336,7 +361,7 @@ class Pepper(Naoqi):
         return self._get_connector(DepthPepperCamera)
 
     @property
-    def tablet_display_url(self):
+    def tablet(self):
         return self._get_connector(NaoqiTablet)
 
     def motion_streaming(self, input_source=None):
