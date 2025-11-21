@@ -10,9 +10,10 @@ class SpeakersConf(SICConfMessage):
     Parameters for speakers go here.
     """
 
-    def __init__(self, sample_rate=44100, channels=1):
+    def __init__(self, sample_rate=44100, channels=1, device_index=None):
         self.sample_rate = sample_rate
         self.channels = channels
+        self.device_index = device_index
 
 
 class DesktopSpeakersActuator(SICActuator):
@@ -29,6 +30,7 @@ class DesktopSpeakersActuator(SICActuator):
             rate=self.params.sample_rate,
             input=False,
             output=True,
+            output_device_index=self.params.device_index,
         )
 
     @staticmethod
