@@ -480,12 +480,13 @@ class Audio(object):
     You can convert to and from .wav files using the built-in module https://docs.python.org/2/library/wave.html
     """
 
-    def __init__(self, waveform, sample_rate):
+    def __init__(self, waveform, sample_rate, is_stream=False):
         self.sample_rate = sample_rate
         assert isinstance(waveform, bytes) or isinstance(
             waveform, bytearray
         ), "Waveform must be a byte array"
         self.waveform = waveform
+        self.is_stream = is_stream
 
 
 class AudioMessage(Audio, SICMessage):
