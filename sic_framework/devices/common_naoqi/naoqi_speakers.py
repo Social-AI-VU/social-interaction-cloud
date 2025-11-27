@@ -63,7 +63,10 @@ class NaoqiSpeakerComponent(SICComponent):
         return SICMessage
 
     def on_message(self, message):
-        self.play_sound(message)
+        if message.is_stream:
+            self.stream_sound(message)
+        else:
+            self.play_sound(message)
 
     def on_request(self, request):
         if request.is_stream:
