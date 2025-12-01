@@ -85,6 +85,11 @@ extras_require = {
         "sphinx-rtd-theme",
         "sphinx-copybutton",
     ],
+    "voice-detection": [
+        "torch",
+        "torchaudio",
+        "numpy",
+    ],
 }
 
 setup(
@@ -120,6 +125,7 @@ setup(
             "run-google-tts=sic_framework.services.google_tts.google_tts:main",
             "run-google-stt=sic_framework.services.google_stt.google_stt:main",
             "run-object-detection=sic_framework.services.object_detection:main",
+            "run-voice-detection=sic_framework.services.voice_detection:main",
         ],
     },
 )
