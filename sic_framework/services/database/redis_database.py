@@ -2,9 +2,9 @@ from datetime import datetime
 from typing import Optional
 
 import redis
-from redis.exceptions import ResponseError, OutOfMemoryError, DataError, RedisError
+from redis.exceptions import OutOfMemoryError, DataError, RedisError
 
-from sic_framework import SICConfMessage, SICComponentManager, SICMessage, SICRequest
+from sic_framework import SICConfMessage, SICComponentManager, SICMessage, SICRequest, SICSuccessMessage
 from sic_framework.core.component_python2 import SICComponent
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.utils import is_sic_instance
@@ -39,7 +39,7 @@ class RedisDatabaseConf(SICConfMessage):
         self.developer_id = developer_id
 
 
-class SetUsermodelValuesMessage(SICMessage):
+class SetUsermodelValuesRequest(SICRequest):
 
     def __init__(self, user_id: str | int, keyvalues: dict) -> None:
         """
@@ -50,7 +50,7 @@ class SetUsermodelValuesMessage(SICMessage):
             user_id: the ID of the user (i.e. interactant)
             keyvalues: dictionary with all the key value pairs e.g. {'key_1': 'value_1', 'key_2': 'value_2'}
         """
-        super(SICMessage, self).__init__()
+        super(SICRequest, self).__init__()
         self.user_id = user_id
         self.keyvalues = keyvalues
 
@@ -70,7 +70,7 @@ class GetUsermodelValuesRequest(SICRequest):
         self.keys = keys
 
 
-class DeleteUsermodelValuesMessage(SICMessage):
+class DeleteUsermodelValuesRequest(SICRequest):
 
     def __init__(self, user_id: str | int, keys: list) -> None:
         """
@@ -80,7 +80,7 @@ class DeleteUsermodelValuesMessage(SICMessage):
             user_id: the ID of the user (i.e. interactant)
             keys: list of keys of which the values need to be deleted
         """
-        super(SICMessage, self).__init__()
+        super(SICRequest, self).__init__()
         self.user_id = user_id
         self.keys = keys
 
@@ -111,7 +111,7 @@ class GetUsermodelRequest(SICRequest):
         self.user_id = user_id
 
 
-class DeleteUserMessage(SICMessage):
+class DeleteUserRequest(SICRequest):
 
     def __init__(self, user_id: str | int) -> None:
         """
@@ -120,11 +120,11 @@ class DeleteUserMessage(SICMessage):
         Args:
             user_id: the ID of the user (i.e. interactant)
         """
-        super(SICMessage, self).__init__()
+        super(SICRequest, self).__init__()
         self.user_id = user_id
 
 
-class UsermodelKeyValues(SICMessage):
+class UsermodelKeyValuesMessage(SICMessage):
 
     def __init__(self, user_id: str | int, keyvalues: dict) -> None:
         """
@@ -140,7 +140,7 @@ class UsermodelKeyValues(SICMessage):
         self.keyvalues = keyvalues
 
 
-class UsermodelKeys(SICMessage):
+class UsermodelKeysMessage(SICMessage):
 
     def __init__(self, user_id: str | int, keys: list) -> None:
         """
@@ -198,6 +198,7 @@ class RedisDatabaseComponent(SICComponent):
 
         # Fail fast: catch config/network issues early
         self.redis.ping()
+        self.logger.info("Database connection established")
 
         self.keyspace_manager = StoreKeyspace(namespace=self.params.namespace,
                                               version=self.params.version,
@@ -205,66 +206,62 @@ class RedisDatabaseComponent(SICComponent):
 
     @staticmethod
     def get_inputs():
-        return [SetUsermodelValuesMessage, GetUsermodelValuesRequest, DeleteUsermodelValuesMessage,
-                GetUsermodelKeysRequest, GetUsermodelRequest, DeleteUserMessage]
+        return [SetUsermodelValuesRequest, GetUsermodelValuesRequest, DeleteUsermodelValuesRequest,
+                GetUsermodelKeysRequest, GetUsermodelRequest, DeleteUserRequest]
 
     @staticmethod
     def get_output():
-        return [UsermodelKeyValues, UsermodelKeys]
+        return [SICSuccessMessage, UsermodelKeyValuesMessage, UsermodelKeysMessage]
 
     @staticmethod
     def get_conf():
         return RedisDatabaseConf()
 
     def on_message(self, message):
+        self.output_message(self.handle_database_actions(message))
+
+    def on_request(self, request):
+        return self.handle_database_actions(request)
+
+    def handle_database_actions(self, request):
+        self.logger.debug(f"Request received: {request}")
         try:
-            if is_sic_instance(message, SetUsermodelValuesMessage):
+            if is_sic_instance(request, SetUsermodelValuesRequest):
                 # If new user, first create it
-                redis_key_user = self.keyspace_manager.user(message.user_id)
+                redis_key_user = self.keyspace_manager.user(request.user_id)
                 timestamp = str(datetime.now())
 
                 if not self.redis.exists(redis_key_user):
                     self.redis.hset(redis_key_user, mapping={'creation_data': timestamp})
 
                 # Store all key value pairs in the user model
-                self.redis.hset(self.keyspace_manager.user_model(message.user_id),
-                                mapping=message.keyvalues)
-            elif is_sic_instance(message, DeleteUsermodelValuesMessage):
-                self.redis.hdel(self.keyspace_manager.user_model(message.user_id), message.keys)
-            elif is_sic_instance(message, DeleteUserMessage):
+                self.redis.hset(self.keyspace_manager.user_model(request.user_id),
+                                mapping=request.keyvalues)
+                return SICSuccessMessage()
+            elif is_sic_instance(request, DeleteUsermodelValuesRequest):
+                self.redis.hdel(self.keyspace_manager.user_model(request.user_id), request.keys)
+                return SICSuccessMessage()
+            elif is_sic_instance(request, DeleteUserRequest):
                 # Find all keys associated with this user
-                all_keys = list(self.redis.scan_iter(match=f'{self.keyspace_manager.user(message.user_id)}:*'))
+                all_keys = list(self.redis.scan_iter(match=f'{self.keyspace_manager.user(request.user_id)}:*'))
                 # Delete all entries
                 self.redis.delete(*all_keys)
-            else:
-                self.logger.error("Unknown message type: {}".format(type(message)))
-        except OutOfMemoryError as e:
-            self.logger.error("Redis store is out of memory")
-            self.logger.error("Error details: {}".format(e))
-        except DataError as e:
-            self.logger.error("Invalid data for Redis operation:")
-            self.logger.error("Error details: {}".format(e))
-        except RedisError as e:
-            self.logger.error("A redis error occurred:")
-            self.logger.error("Error details: {}".format(e))
-
-    def on_request(self, request):
-        try:
+                return SICSuccessMessage()
             if is_sic_instance(request, GetUsermodelValuesRequest):
                 # Retrieve user model values with keys
                 values = self.redis.hmget(self.keyspace_manager.user_model(request.user_id),
                                           request.keys)
                 # Link values to appropriate keys before returning the results
-                return UsermodelKeyValues(user_id=request.user_id,
-                                          keyvalues=zip(request.keys, values))
+                return UsermodelKeyValuesMessage(user_id=request.user_id,
+                                                 keyvalues=zip(request.keys, values))
 
             if is_sic_instance(request, GetUsermodelKeysRequest):
                 keys = self.redis.hkeys(self.keyspace_manager.user_model(request.user_id))
-                return UsermodelKeys(user_id=request.user_id, keys=keys)
+                return UsermodelKeysMessage(user_id=request.user_id, keys=keys)
 
             if is_sic_instance(request, GetUsermodelRequest):
                 keyvalues = self.redis.hgetall(self.keyspace_manager.user_model(request.user_id))
-                return UsermodelKeyValues(user_id=request.user_id, keyvalues=keyvalues)
+                return UsermodelKeyValuesMessage(user_id=request.user_id, keyvalues=keyvalues)
 
             self.logger.error("Unknown request type: {}".format(type(request)))
         except OutOfMemoryError as e:
