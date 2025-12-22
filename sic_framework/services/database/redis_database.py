@@ -50,7 +50,7 @@ class SetUsermodelValuesRequest(SICRequest):
             user_id: the ID of the user (i.e. interactant)
             keyvalues: dictionary with all the key value pairs e.g. {'key_1': 'value_1', 'key_2': 'value_2'}
         """
-        super(SICRequest, self).__init__()
+        super().__init__()
         self.user_id = user_id
         self.keyvalues = keyvalues
 
@@ -65,7 +65,7 @@ class GetUsermodelValuesRequest(SICRequest):
             user_id: the ID of the user (i.e. interactant)
             keys: list of keys of which the values need to be retrieved
         """
-        super(SICRequest, self).__init__()
+        super().__init__()
         self.user_id = user_id
         self.keys = keys
 
@@ -80,7 +80,7 @@ class DeleteUsermodelValuesRequest(SICRequest):
             user_id: the ID of the user (i.e. interactant)
             keys: list of keys of which the values need to be deleted
         """
-        super(SICRequest, self).__init__()
+        super().__init__()
         self.user_id = user_id
         self.keys = keys
 
@@ -94,7 +94,7 @@ class GetUsermodelKeysRequest(SICRequest):
         Args:
             user_id: the ID of the user (i.e. interactant)
         """
-        super(SICRequest, self).__init__()
+        super().__init__()
         self.user_id = user_id
 
 
@@ -107,7 +107,7 @@ class GetUsermodelRequest(SICRequest):
         Args:
             user_id: the ID of the user (i.e. interactant)
         """
-        super(SICRequest, self).__init__()
+        super().__init__()
         self.user_id = user_id
 
 
@@ -120,7 +120,7 @@ class DeleteUserRequest(SICRequest):
         Args:
             user_id: the ID of the user (i.e. interactant)
         """
-        super(SICRequest, self).__init__()
+        super().__init__()
         self.user_id = user_id
 
 
@@ -135,7 +135,7 @@ class UsermodelKeyValuesMessage(SICMessage):
             user_id: the ID of the user (i.e. interactant)
             keyvalues: dictionary with all the key value pairs e.g. {'key_1': 'value_1', 'key_2': 'value_2'}
         """
-        super(SICMessage, self).__init__()
+        super().__init__()
         self.user_id = user_id
         self.keyvalues = keyvalues
 
@@ -151,7 +151,7 @@ class UsermodelKeysMessage(SICMessage):
             user_id: the ID of the user (i.e. interactant)
             keys: list containing all the user model keys.
         """
-        super(SICMessage, self).__init__()
+        super().__init__()
         self.user_id = user_id
         self.keys = keys
 
@@ -198,7 +198,6 @@ class RedisDatabaseComponent(SICComponent):
 
         # Fail fast: catch config/network issues early
         self.redis.ping()
-        self.logger.info("Database connection established")
 
         self.keyspace_manager = StoreKeyspace(namespace=self.params.namespace,
                                               version=self.params.version,
@@ -224,7 +223,6 @@ class RedisDatabaseComponent(SICComponent):
         return self.handle_database_actions(request)
 
     def handle_database_actions(self, request):
-        self.logger.debug(f"Request received: {request}")
         try:
             if is_sic_instance(request, SetUsermodelValuesRequest):
                 # If new user, first create it
@@ -253,7 +251,7 @@ class RedisDatabaseComponent(SICComponent):
                                           request.keys)
                 # Link values to appropriate keys before returning the results
                 return UsermodelKeyValuesMessage(user_id=request.user_id,
-                                                 keyvalues=zip(request.keys, values))
+                                                 keyvalues=dict(zip(request.keys, values)))
 
             if is_sic_instance(request, GetUsermodelKeysRequest):
                 keys = self.redis.hkeys(self.keyspace_manager.user_model(request.user_id))
