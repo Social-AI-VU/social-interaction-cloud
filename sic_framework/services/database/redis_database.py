@@ -364,6 +364,13 @@ class RedisDatabaseComponent(SICComponent):
         self.redis.delete(*all_keys)
         return SICSuccessMessage()
 
+    def stop(self):
+        """
+        Stop the RedisDatabaseComponent.
+        """
+        self._stopped.set()
+        super().stop()
+
 
 class RedisDatabase(SICConnector):
     """Connector for Redis database component"""
