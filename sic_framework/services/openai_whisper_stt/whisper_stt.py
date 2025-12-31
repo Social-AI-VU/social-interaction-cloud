@@ -120,8 +120,8 @@ class WhisperComponent(SICService):
         super(WhisperComponent, self).__init__(*args, **kwargs)
 
         # self.model = whisper.load_model("base.en")
-        if self.params.openai_key:
-            self.client = OpenAI(api_key=self.params.openai_key)
+        if self.params.api_key:
+            self.client = OpenAI(api_key=self.params.api_key)
 
         self.recognizer = sr.Recognizer()
 
@@ -195,7 +195,7 @@ class WhisperComponent(SICService):
             phrase_time_limit=request.phrase_time_limit,
         )
         self.logger.debug("Transcribing")
-        if self.params.openai_key:
+        if self.params.api_key:
             wav_data = io.BytesIO(audio.get_wav_data())
             wav_data.name = "SpeechRecognition_audio.wav"
             response = self.client.audio.transcriptions.create(
