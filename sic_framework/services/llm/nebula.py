@@ -10,7 +10,9 @@ from sic_framework import SICComponentManager
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import SICMessage, SICRequest
 from sic_framework.core.service_python2 import SICService
-from sic_framework.services.llm import LLMRequest, LLMResponse, LLMConf
+from sic_framework.core.utils import is_sic_instance
+from sic_framework.services.llm import LLMRequest, LLMResponse, LLMConf, AvailableModelsRequest
+from sic_framework.services.llm.llm_messages import AvailableModels
 
 
 class NebulaComponent(SICService):
@@ -110,7 +112,7 @@ class NebulaComponent(SICService):
         # output = self.get_openai_response(message.text)
         # self.output_message(output)
 
-    def on_request(self, request):
+    def on_request(self, request: SICRequest):
         """
         Handle requests for GPT text generation.
 
@@ -123,11 +125,8 @@ class NebulaComponent(SICService):
         :return: GPTResponse with generated text and token usage, or error message for invalid requests
         :rtype: GPTResponse or SICMessage
         """
-        if not isinstance(request, LLMRequest):
-            self.logger.error("Invalid request type: %s", type(request))
-            return SICMessage("Invalid request type: %s", type(request))
-        else:
-            output = self.get_nebula_response(
+        if is_sic_instance(request, LLMRequest):
+            return self.get_nebula_response(
                 request.prompt,
                 context_messages=request.context_messages,
                 system_message=request.system_message,
@@ -135,7 +134,11 @@ class NebulaComponent(SICService):
                 temp=request.temp,
                 max_tokens=request.max_tokens
             )
-            return output
+        elif is_sic_instance(request, AvailableModelsRequest):
+            return AvailableModels([model.id for model in self.client.models.list().data])
+        else:
+            self.logger.error("Invalid request type: %s", type(request))
+            return SICMessage("Invalid request type: %s", type(request))
 
     def stop(self):
         """

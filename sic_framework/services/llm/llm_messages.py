@@ -119,3 +119,21 @@ class LLMRequest(SICRequest):
 
 class GPTRequest(LLMRequest):
     """OpenAI-specific LLM request."""
+
+
+class AvailableModelsRequest(SICRequest):
+    """
+    Request message for getting all available models of the LLM service.
+    """
+
+
+class AvailableModels(SICMessage):
+    """
+    All available models of the LLM service.
+    """
+    def __init__(self, models: list[str] = None):
+        """
+        param models: list of available models of the LLM service.
+        """
+        super().__init__()
+        self.models = models
