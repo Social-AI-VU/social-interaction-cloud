@@ -96,6 +96,7 @@ class NebulaComponent(SICService):
             return LLMResponse(content, num_tokens, response.usage)
         return LLMResponse(content, num_tokens)
 
+
     def on_message(self, message):
         """
         Handle input messages.

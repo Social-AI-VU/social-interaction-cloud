@@ -26,7 +26,7 @@ class LLMConf(SICConfMessage):
         self.temp = temp
         self.max_tokens = max_tokens
         self.system_message = system_message
-        self.usage_data = return_usage_data
+        self.return_usage_data = return_usage_data
 
 
 class GPTConf(LLMConf):
@@ -77,6 +77,7 @@ class LLMResponse(SICMessage):
         super().__init__()
         self.response = response
         self.num_tokens = num_tokens
+        self.usage_data = usage_data
 
 
 class GPTResponse(LLMResponse):
