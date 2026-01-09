@@ -131,6 +131,7 @@ setup(
             "run-object-detection=sic_framework.services.object_detection:main",
             "run-voice-detection=sic_framework.services.voice_detection:main",
             "run-nebula=sic_framework.services.llm.nebula:main",
+            "run-database-redis=sic_framework.services.database.redis_database:main",
         ],
     },
 )
