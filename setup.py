@@ -126,6 +126,7 @@ setup(
             "run-google-stt=sic_framework.services.google_stt.google_stt:main",
             "run-object-detection=sic_framework.services.object_detection:main",
             "run-voice-detection=sic_framework.services.voice_detection:main",
+            "run-database-redis=sic_framework.services.database.redis_database:main",
         ],
     },
 )
