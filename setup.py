@@ -90,6 +90,10 @@ extras_require = {
         "torchaudio",
         "numpy",
     ],
+    "nebula": [
+        "openai>=1.52.2",
+        "python-dotenv",
+    ],
 }
 
 setup(
@@ -119,13 +123,14 @@ setup(
             "run-face-detection=sic_framework.services.face_detection:main",
             "run-face-detection-dnn=sic_framework.services.face_detection_dnn:main",
             "run-face-recognition=sic_framework.services.face_recognition_dnn:main",
-            "run-gpt=sic_framework.services.openai_gpt:main",
+            "run-gpt=sic_framework.services.llm.openai_gpt:main",
             "run-whisper=sic_framework.services.openai_whisper_stt:main",
             "run-webserver=sic_framework.services.webserver.webserver_component:main",
             "run-google-tts=sic_framework.services.google_tts.google_tts:main",
             "run-google-stt=sic_framework.services.google_stt.google_stt:main",
             "run-object-detection=sic_framework.services.object_detection:main",
             "run-voice-detection=sic_framework.services.voice_detection:main",
+            "run-nebula=sic_framework.services.llm.nebula:main",
             "run-database-redis=sic_framework.services.database.redis_database:main",
         ],
     },
