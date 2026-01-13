@@ -125,7 +125,7 @@ setup(
             "run-face-recognition=sic_framework.services.face_recognition_dnn:main",
             "run-gpt=sic_framework.services.llm.openai_gpt:main",
             "run-whisper=sic_framework.services.openai_whisper_stt:main",
-            "run-webserver=sic_framework.services.webserver.webserver_component:main",
+            "run-webserver=sic_framework.services.webserver.webserver_service:main",
             "run-google-tts=sic_framework.services.google_tts.google_tts:main",
             "run-google-stt=sic_framework.services.google_stt.google_stt:main",
             "run-object-detection=sic_framework.services.object_detection:main",
