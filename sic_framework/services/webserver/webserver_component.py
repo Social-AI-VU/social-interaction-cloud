@@ -5,8 +5,8 @@ import threading
 from flask import Flask, render_template_string
 from flask_socketio import SocketIO, emit
 
-from sic_framework import SICComponentManager, SICService
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework import SICComponentManager
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import SICConfMessage, SICMessage
 from sic_framework.core.utils import is_sic_instance
@@ -38,7 +38,7 @@ class WebserverConf(SICConfMessage):
         self.port = port
 
 
-class WebserverComponent(SICComponent):
+class WebserverComponent(SICService):
 
     def __init__(self, *args, **kwargs):
 

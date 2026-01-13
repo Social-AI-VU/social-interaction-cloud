@@ -20,7 +20,7 @@ from google.oauth2.service_account import Credentials
 from six.moves import queue
 
 from sic_framework import SICComponentManager
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
     AudioMessage,
@@ -212,7 +212,7 @@ class DialogflowCXConf(SICConfMessage):
             self.api_endpoint = api_endpoint
 
 
-class DialogflowCXComponent(SICComponent):
+class DialogflowCXComponent(SICService):
     """
     Dialogflow CX (Conversational Agents) Component for SIC Framework.
     

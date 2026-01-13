@@ -15,7 +15,7 @@ from google.oauth2.service_account import Credentials
 from six.moves import queue
 
 from sic_framework import SICComponentManager
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
     AudioMessage,
@@ -165,7 +165,7 @@ class DialogflowConf(SICConfMessage):
         self.timeout = timeout
 
 
-class DialogflowComponent(SICComponent):
+class DialogflowComponent(SICService):
     """
     Notes:
         This service listens to both AudioMessages and GetIntentRequests.

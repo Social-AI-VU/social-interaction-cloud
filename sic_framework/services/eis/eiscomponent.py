@@ -5,7 +5,7 @@ import json
 import numpy as np
 from subprocess import call
 from sic_framework import SICComponentManager
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import\
     (SICConfMessage, SICMessage, SICRequest, TextMessage, TextRequest)
@@ -66,7 +66,7 @@ class EISReply(SICMessage):
         self.text = text
 
 
-class EISComponent(SICComponent):
+class EISComponent(SICService):
     """
     EIS SICAction
     """

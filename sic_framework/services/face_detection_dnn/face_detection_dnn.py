@@ -11,7 +11,7 @@ from numpy import array
 
 from sic_framework.core import sic_logging
 from sic_framework.core.component_manager_python2 import SICComponentManager
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
     BoundingBox,
@@ -22,7 +22,6 @@ from sic_framework.core.message_python2 import (
     SICMessage,
     SICRequest,
 )
-from sic_framework.core.service_python2 import SICService
 from sic_framework.services.face_detection_dnn.utils_importable.datasets import (
     letterbox,
 )
@@ -76,7 +75,7 @@ https://github.com/derronqi/yolov7-face/tree/main
 """
 
 
-class DNNFaceDetectionComponent(SICComponent):
+class DNNFaceDetectionComponent(SICService):
     COMPONENT_STARTUP_TIMEOUT = 10
     model_path = None
 
