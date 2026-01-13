@@ -1,3 +1,10 @@
+"""
+Webserver service for the Social Interaction Cloud.
+
+This service provides a web server that can be used to serve static files and dynamic content.
+It also provides a SocketIO server that can be used to communicate with the frontend.
+"""
+
 import os
 import threading
 import logging
@@ -12,10 +19,6 @@ from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import SICConfMessage, SICMessage
 from sic_framework.core.utils import is_sic_instance
 
-
-# -----------------------------------------------------------------------------
-# Messages (consolidated from other files)
-# -----------------------------------------------------------------------------
 
 class TranscriptMessage(SICMessage):
     """Message containing speech transcript to be displayed."""
@@ -44,11 +47,6 @@ class ButtonClicked(SICMessage):
     def __init__(self, button):
         self.button = button
 
-
-# -----------------------------------------------------------------------------
-# Configuration
-# -----------------------------------------------------------------------------
-
 class WebserverConf(SICConfMessage):
     def __init__(
         self,
@@ -76,11 +74,6 @@ class WebserverConf(SICConfMessage):
         self.static_dir = static_dir
         self.ssl_cert = ssl_cert
         self.ssl_key = ssl_key
-
-
-# -----------------------------------------------------------------------------
-# Component
-# -----------------------------------------------------------------------------
 
 class WebserverComponent(SICService):
     def __init__(self, *args, **kwargs):
@@ -206,10 +199,6 @@ class WebserverComponent(SICService):
             pass # Often fails if already stopped or not started
         super(WebserverComponent, self).stop(*args)
 
-    # -------------------------------------------------------------------------
-    # SIC Inputs/Outputs
-    # -------------------------------------------------------------------------
-
     @staticmethod
     def get_conf():
         return WebserverConf()
@@ -222,11 +211,6 @@ class WebserverComponent(SICService):
     @staticmethod
     def get_output():
         return ButtonClicked
-
-    def execute(self, inputs):
-        # We process inputs immediately in on_message (reactive), 
-        # so execute is just a placeholder for SICService compliance.
-        return None
 
     def on_message(self, message):
         """Handle incoming SIC messages and forward to Web via SocketIO."""
