@@ -15,6 +15,7 @@ import tempfile
 import os
 import weakref
 import time
+import queue
 from sic_framework.core.sic_redis import SICRedisConnection
 
 class SICApplication(object):
@@ -57,6 +58,10 @@ class SICApplication(object):
         
         self.shutdown_event = threading.Event()
         self.client_ip = utils.get_ip_adress()
+
+        # Background exception handling
+        self._background_exception_queue = queue.Queue()
+        self._background_exception_event = threading.Event()
 
         # Initialize logger (will be available immediately)
         self.logger = sic_logging.get_sic_logger(
@@ -105,9 +110,31 @@ class SICApplication(object):
 
     def get_redis_instance(self):
         """Return the shared Redis connection for this process."""
+        self.check_health()
         if self._redis is None:
             self._redis = SICRedisConnection()
         return self._redis
+
+    def report_background_exception(self, exception):
+        """
+        Report an exception that occurred in a background thread (e.g. device monitor).
+        This signals the main thread to stop.
+        """
+        self.logger.error("Background exception reported: {}".format(exception))
+        self._background_exception_queue.put(exception)
+        self._background_exception_event.set()
+        # Trigger shutdown immediately
+        self.shutdown_event.set()
+
+    def check_health(self):
+        """
+        Check if any background errors have occurred. 
+        Should be called periodically by the main loop or blocking calls.
+        """
+        if self._background_exception_event.is_set():
+            if not self._background_exception_queue.empty():
+                exc = self._background_exception_queue.get()
+                raise exc
 
     def setup(self):
         """
@@ -138,20 +165,21 @@ class SICApplication(object):
             self.shutdown_event.set()
 
         self.logger.info("Stopping devices")
-        # devices_to_stop = list(self._active_devices)
-        # for device in devices_to_stop:
-        #     try:
-        #         device.stop_device()
-        #     except Exception as e:
-        #         self.logger.error("Error stopping device {name}: {e}".format(name=device.name, e=e))
+
+        devices_to_stop = list(self._active_devices)
+        for device in devices_to_stop:
+            try:
+                device.stop_device()
+            except Exception as e:
+                self.logger.error("Error stopping device {name}: {e}".format(name=device.name, e=e))
 
         self.logger.info("Stopping components (found {count} components)".format(count=len(self._active_connectors)))
         connectors_to_stop = list(self._active_connectors)
         for i, connector in enumerate(connectors_to_stop):
             # Skip if this connector belongs to a device we already stopped
-            # if any(connector in device._connectors for device in devices_to_stop):
-            #     self.logger.debug("Skipping connector {name} as it belongs to a device we already stopped".format(name=connector.component_endpoint))
-            #     continue
+            if any(connector in device._connectors for device in devices_to_stop):
+                self.logger.debug("Skipping connector {name} as it belongs to a device we already stopped".format(name=connector.component_endpoint))
+                continue
             
             connector_name = getattr(connector, "component_endpoint", "unknown")
             self.logger.info("Stopping component {i}/{total}: {name}".format(i=i+1, total=len(connectors_to_stop), name=connector_name))
@@ -186,4 +214,3 @@ class SICApplication(object):
         atexit.register(self.exit_handler)
         signal.signal(signal.SIGINT, self.exit_handler)
         signal.signal(signal.SIGTERM, self.exit_handler)
-

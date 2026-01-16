@@ -355,9 +355,11 @@ class SICDeviceManager(object):
                             threading.main_thread().is_alive()
                             and not self.stop_event.is_set()
                         ):
-                            raise DeviceExecutionError(
+                            # Report to main application instead of just raising in void
+                            exc = DeviceExecutionError(
                                 "Remote SIC program has stopped unexpectedly.\nSee sic.log for details"
                             )
+                            self.app.report_background_exception(exc)
 
                 thread = threading.Thread(target=monitor_call, daemon=True)
                 thread.name = "remote_SIC_process_monitor"
