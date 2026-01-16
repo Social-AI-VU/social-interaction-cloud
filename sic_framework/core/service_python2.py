@@ -13,6 +13,7 @@ from sic_framework.core.utils import is_sic_instance
 
 from . import sic_logging
 from .message_python2 import SICConfMessage, SICMessage
+from sic_framework.core.exceptions import MessageAlignmentError
 
 
 class MessageQueue(collections.deque):
@@ -161,7 +162,7 @@ class SICService(SICComponent):
         If multiple channels contain the same type, give them an index in the service_input dict.
 
         If the buffers do not contain an aligned set of messages, a PopMessageException is raised.
-        :raises: PopMessageException
+        :raises: MessageAlignmentError
         :return: tuple of dictionary of messages and the shared timestamp
         """
 
@@ -180,14 +181,14 @@ class SICService(SICComponent):
             )
         except IndexError:
             # Not all buffers are full, so do not pop messages
-            raise PopMessageException(
+            raise MessageAlignmentError(
                 "Could not collect aligned input data from buffers, not all buffers filled"
             )
 
         # Buffers are created dynamically, based on the source components. Only start executing once
         # we have at least one buffer per message type
         if len(self._input_buffers) != len(self.get_inputs()):
-            raise PopMessageException("Not enough buffer has been created yet")
+            raise MessageAlignmentError("Not enough buffer has been created yet")
 
         # Second, we go through each buffer and check if we can find a message that is within the time difference
         # threshold. Duplicate input types are in separate buffers based on their _previous_component attribute.
@@ -211,7 +212,7 @@ class SICService(SICComponent):
                     break
             else:
                 # the timestamps across all buffers did not align within the threshold, so do not pop messages
-                raise PopMessageException(
+                raise MessageAlignmentError(
                     "Could not collect aligned input data from buffers, no matching timestamps"
                 )
 
@@ -265,7 +266,7 @@ class SICService(SICComponent):
             # and we will have to wait for new data
             try:
                 messages, timestamp = self._pop_messages()
-            except PopMessageException:
+            except MessageAlignmentError:
                 self.logger.debug(
                     "Did not pop messages from buffers."
                 )

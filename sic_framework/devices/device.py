@@ -9,6 +9,13 @@ from abc import abstractmethod
 
 from sic_framework.core import sic_logging, utils
 from sic_framework.core.connector import SICConnector
+from sic_framework.core.exceptions import (
+    DeviceConnectionError,
+    DeviceReservationError,
+    DeviceInstallationError,
+    DeviceExecutionError,
+    DeviceAuthError,
+)
 from sic_framework.core.sic_application import SICApplication
 
 
@@ -109,7 +116,7 @@ class SICDeviceManager(object):
                 passwords = [passwords]
 
             if not utils.ping_server(self.device_ip, port=self.port, timeout=3):
-                raise RuntimeError(
+                raise DeviceConnectionError(
                     "Could not connect to device on ip {}. Please check if it is reachable.".format(
                         self.device_ip
                     )
@@ -136,7 +143,7 @@ class SICDeviceManager(object):
                 ):
                     pass
             else:
-                raise paramiko.ssh_exception.AuthenticationException(
+                raise DeviceAuthError(
                     "Could not authenticate to device, please check ip adress and/or credentials. (Username: {} Passwords: {})".format(
                         username, passwords
                     )
@@ -173,12 +180,12 @@ class SICDeviceManager(object):
                 self.logger.info("The other client is not connected to SIC, releasing the device")
                 self._redis.remove_client(other_client_id)
             else:
-                raise Exception("Device {} is already reserved by another client".format(self.device_ip))
+                raise DeviceReservationError("Device {} is already reserved by another client".format(self.device_ip))
 
         self.logger.info("Reserving device {}".format(self.device_ip))
         reservation_result = self._redis.set_reservation(self.device_ip, self._client_id)
         if reservation_result != 1:
-            raise Exception("Reservation for device {} failed: {}".format(self.device_ip, reservation_result))
+            raise DeviceReservationError("Reservation for device {} failed: {}".format(self.device_ip, reservation_result))
         else:
             self.logger.info("Device {} has been reserved for this client".format(self.device_ip))
 
@@ -273,7 +280,7 @@ class SICDeviceManager(object):
             err = stderr.readlines()
             if len(err) > 0:
                 self.logger.error("".join(err))
-                raise RuntimeError(
+                raise DeviceInstallationError(
                     "\n\nError while extracting library on remote device. Please consult manual installation instructions."
                 )
 
@@ -348,7 +355,7 @@ class SICDeviceManager(object):
                             threading.main_thread().is_alive()
                             and not self.stop_event.is_set()
                         ):
-                            raise RuntimeError(
+                            raise DeviceExecutionError(
                                 "Remote SIC program has stopped unexpectedly.\nSee sic.log for details"
                             )
 
@@ -438,7 +445,7 @@ class SICDeviceManager(object):
                     )
                 )
                 self.logger.error(err)
-                raise RuntimeError("Error while downloading library on remote device.")
+                raise DeviceInstallationError("Error while downloading library on remote device.")
 
         # install the library
         stdin, stdout, stderr, exit_status = self.ssh_command(
@@ -453,7 +460,7 @@ class SICDeviceManager(object):
                 )
             )
             self.logger.error(err)
-            raise RuntimeError(
+            raise DeviceInstallationError(
                 "Error while installing library on remote device. Please consult manual installation instructions."
             )
         else:
@@ -487,7 +494,7 @@ class SICDeviceManager(object):
                     self.device_ip, conf=conf, **kwargs
                 )
             except TimeoutError as e:
-                raise TimeoutError(
+                raise DeviceConnectionError(
                     "Could not connect to {} on device {}.".format(
                         component_connector.component_class.get_component_name(),
                         self.device_ip,

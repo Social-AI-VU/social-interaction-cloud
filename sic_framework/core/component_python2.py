@@ -11,6 +11,7 @@ from abc import ABCMeta, abstractmethod
 import six
 
 from sic_framework.core.utils import is_sic_instance
+from sic_framework.core.exceptions import ComponentRequestError
 from . import sic_logging, utils
 from .message_python2 import (
     SICConfMessage,
@@ -324,7 +325,7 @@ class SICComponent:
         if not is_sic_instance(request, SICControlRequest):
             return self.on_request(request)
 
-        raise TypeError("Unknown request type {}".format(type(request)))
+        raise ComponentRequestError("Unknown request type {}".format(type(request)))
 
     def _parse_conf(self, conf):
         """

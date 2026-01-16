@@ -37,6 +37,7 @@ from sic_framework.devices.common_pepper.pepper_left_bumper_sensor import (
 )
 from sic_framework.devices.device import SICLibrary
 from sic_framework.devices.naoqi_shared import *
+from sic_framework.core.exceptions import DeviceInstallationError
 
 # this is where dependency binaries are downloaded to on the Pepper machine
 _LIB_DIRECTORY = "/home/nao/sic_framework_2/social-interaction-cloud-main/lib"
@@ -192,7 +193,7 @@ class Pepper(Naoqi):
         )
 
         if not "SIC successfully installed" in stdout.read().decode():
-            raise Exception(
+            raise DeviceInstallationError(
                 "Failed to install sic. Standard error stream from install command: {}".format(
                     stderr.read().decode()
                 )
@@ -308,7 +309,7 @@ class Pepper(Naoqi):
             )
 
             if exit_status != 0:
-                raise RuntimeError("Failed to install social-interaction-cloud")
+                raise DeviceInstallationError("Failed to install social-interaction-cloud")
 
         if self.test_repo:
             self.logger.info("Installing test repo on Pepper")
