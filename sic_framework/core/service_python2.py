@@ -88,7 +88,7 @@ class SICMessageDictionary:
             )
 
         if source_component is None:
-            # No filter — return the first (should be only one)
+            # No filter, return the first (should be only one)
             return messages[0]
 
         # Filter by source component
