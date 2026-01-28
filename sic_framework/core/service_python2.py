@@ -5,6 +5,7 @@ This module contains the SICService class, which is the base class for all servi
 """
 
 import collections
+import logging
 import threading
 from abc import ABCMeta
 from threading import Event
@@ -220,6 +221,9 @@ class SICService(SICComponent):
 
     def _log_buffer_state(self):
         """Log current buffer sizes for debugging."""
+        # Only log if the logger is enabled for DEBUG
+        if not self.logger.isEnabledFor(logging.DEBUG):
+            return
         buffer_sizes = [(key, len(buf)) for key, buf in self._input_buffers.items()]
         self.logger.debug("Input buffer sizes: {}".format(buffer_sizes))
 
