@@ -3,7 +3,7 @@ import time
 from ultralytics import YOLO
 
 from sic_framework.core.component_manager_python2 import SICComponentManager
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
     BoundingBox,
@@ -47,7 +47,7 @@ class ObjectDetectionConf(SICConfMessage):
 """
 Yolov11 object detection based on ultralytics: https://docs.ultralytics.com/tasks/detect/
 """
-class ObjectDetectionComponent(SICComponent):
+class ObjectDetectionComponent(SICService):
 
     def __init__(self, *args, **kwargs):
         super(ObjectDetectionComponent, self).__init__(*args, **kwargs)

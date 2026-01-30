@@ -1,5 +1,5 @@
 from sic_framework import SICComponentManager, SICConfMessage
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
     BoundingBox,
@@ -18,7 +18,7 @@ class DummyConf(SICConfMessage):
         self.my_parameter = my_parameter
 
 
-class ExampleComponent(SICComponent):
+class ExampleComponent(SICService):
     """
     Dummy SICAction
     """

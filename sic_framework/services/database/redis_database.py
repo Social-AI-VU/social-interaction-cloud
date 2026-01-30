@@ -5,7 +5,7 @@ import redis
 from redis.exceptions import OutOfMemoryError, DataError, RedisError
 
 from sic_framework import SICConfMessage, SICComponentManager, SICMessage, SICRequest, SICSuccessMessage
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.utils import is_sic_instance
 
@@ -246,7 +246,7 @@ class StoreKeyspace:
         return f"{self.user(user_id)}:model"
 
 
-class RedisDatabaseComponent(SICComponent):
+class RedisDatabaseComponent(SICService):
     """
     Explanation of the Redis Database Component
     TODO: write explanation

@@ -10,7 +10,7 @@ import torch.amp
 from huggingface_hub import get_token as get_hf_token
 
 from sic_framework import SICComponentManager
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
     AudioMessage,
@@ -101,7 +101,7 @@ class DiarizationResult(SICMessage):
         self.speaker_timestamps = speaker_timestamps
 
 
-class STMSortformerComponent(SICComponent):
+class STMSortformerComponent(SICService):
     """
     This SICComponent:
         - Takes streaming audio as input from any device
