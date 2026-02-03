@@ -178,6 +178,13 @@ class Pepper(Naoqi):
 
                     mkdir /home/nao/sic_framework_2;
                     cd /home/nao/sic_framework_2;
+                    
+                    # Ensure curl has a CA bundle available
+                    if [ ! -f /home/nao/cacert.pem ]; then
+                        curl -k -o /home/nao/cacert.pem https://curl.se/ca/cacert.pem;
+                    fi;
+                    echo 'cacert = "/home/nao/cacert.pem"' > ~/.curlrc;
+
                     curl -L -o sic_repo.zip https://github.com/Social-AI-VU/social-interaction-cloud/archive/refs/tags/v{version}.zip;
                     unzip sic_repo.zip;
                     mv social-interaction-cloud-{version} social-interaction-cloud-main;

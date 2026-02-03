@@ -91,6 +91,13 @@ class SICComponent:
         # _stopped is set when the component has stopped
         self._stopped = threading.Event()
 
+        # Track in-flight message/request handlers to avoid cleaning up resources
+        # while callbacks are still executing.
+        self._active_calls_lock = threading.Lock()
+        self._active_calls = 0
+        self._no_active_calls = threading.Event()
+        self._no_active_calls.set()
+
         # Components constrained to one input, request_reply, output channel
         self.input_channel = input_channel
         self.component_channel = component_channel
@@ -171,6 +178,9 @@ class SICComponent:
         stopped = self._stopped.wait(timeout=self.COMPONENT_STOP_TIMEOUT)
         if stopped:
             self.logger.debug("Component's _stopped event set successfully")
+            # Wait briefly for any in-flight request/message callbacks to finish
+            # before cleaning up resources.
+            self._no_active_calls.wait(timeout=self.COMPONENT_STOP_TIMEOUT)
             try:
                 self._cleanup()
             except Exception as e:
@@ -325,7 +335,11 @@ class SICComponent:
                 )
                 return None
 
-        return self.on_message(message)
+        self._begin_active_call()
+        try:
+            return self.on_message(message)
+        finally:
+            self._end_active_call()
 
     def _handle_request(self, request):
         """
@@ -346,9 +360,32 @@ class SICComponent:
             return SICPongMessage()
 
         if not is_sic_instance(request, SICControlRequest):
-            return self.on_request(request)
+            self._begin_active_call()
+            try:
+                return self.on_request(request)
+            finally:
+                self._end_active_call()
 
         raise ComponentRequestError("Unknown request type {}".format(type(request)))
+
+    def _begin_active_call(self):
+        try:
+            with self._active_calls_lock:
+                self._active_calls += 1
+                if self._active_calls == 1:
+                    self._no_active_calls.clear()
+        except Exception:
+            pass
+
+    def _end_active_call(self):
+        try:
+            with self._active_calls_lock:
+                if self._active_calls > 0:
+                    self._active_calls -= 1
+                if self._active_calls == 0:
+                    self._no_active_calls.set()
+        except Exception:
+            pass
 
     def _parse_conf(self, conf):
         """

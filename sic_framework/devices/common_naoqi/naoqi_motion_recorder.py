@@ -265,12 +265,15 @@ class NaoqiMotionRecorderActuator(SICActuator, NaoqiMotionTools):
         return SICMessage()
 
     def stop(self, *args):
-        """
-        Stop the motion recorder actuator.
-        """
-        self.session.close()
+        # No long-running worker loop; mark stopped immediately so cleanup runs.
         self._stopped.set()
-        super(NaoqiMotionRecorderActuator, self).stop()
+        super(NaoqiMotionRecorderActuator, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class NaoqiMotionRecorder(SICConnector):

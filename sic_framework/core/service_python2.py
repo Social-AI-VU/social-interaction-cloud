@@ -320,8 +320,9 @@ class SICService(SICComponent):
 
             self._process_and_output(messages, timestamp)
 
+        # Signal to the framework that the service's worker loop has exited.
+        self._stopped.set()
         self.logger.debug("Stopped listening")
-        self.stop()
 
     def _wait_for_new_data(self):
         """
