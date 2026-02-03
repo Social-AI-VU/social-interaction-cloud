@@ -1,6 +1,7 @@
 import queue
 import threading
 from datetime import datetime
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +11,7 @@ import torch.amp
 from huggingface_hub import get_token as get_hf_token
 
 from sic_framework import SICComponentManager
+from sic_framework.core.exceptions import SICModelFileNotFoundError
 from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
@@ -33,6 +35,11 @@ except ImportError:
     raise SystemExit(
         """Please use `pip install "git+https://github.com/NVIDIA/NeMo.git@main#egg=nemo_toolkit[asr]"` to use the Sortformer diarization"""
     )
+
+_DATA_DIR = Path(__file__).resolve().parent / "data"
+_HF_MODEL_FILES_URL = "https://huggingface.co/nvidia/diar_streaming_sortformer_4spk-v2/tree/main"
+_DEFAULT_LOCAL_MODEL_PATH = _DATA_DIR / "diar_streaming_sortformer_4spk-v2.nemo"
+_DEFAULT_MODEL_YAML_PATH = _DATA_DIR / "diar_streaming_sortformer_4spk-v2_dihard3-dev.yaml"
 
 
 class STMSortformerConf(SICConfMessage):
@@ -59,8 +66,8 @@ class STMSortformerConf(SICConfMessage):
 
     def __init__(
         self,
-        local_model="./data/diar_streaming_sortformer_4spk-v2.nemo",
-        model_yaml="./data/diar_streaming_sortformer_4spk-v2_dihard3-dev.yaml",
+        local_model=None,
+        model_yaml=None,
         CHUNK_SIZE=3,
         RIGHT_CONTEXT=1,
         FIFO_SIZE=188,
@@ -68,8 +75,12 @@ class STMSortformerConf(SICConfMessage):
         SPEAKER_CACHE_SIZE=188,
     ):
         super(SICConfMessage, self).__init__()
-        self.local_model = local_model
-        self.model_yaml = model_yaml
+        self.local_model = (
+            str(_DEFAULT_LOCAL_MODEL_PATH) if local_model is None else local_model
+        )
+        self.model_yaml = (
+            str(_DEFAULT_MODEL_YAML_PATH) if model_yaml is None else model_yaml
+        )
         self.CHUNK_SIZE = CHUNK_SIZE
         self.RIGHT_CONTEXT = RIGHT_CONTEXT
         self.FIFO_SIZE = FIFO_SIZE
@@ -141,9 +152,34 @@ class STMSortformerComponent(SICService):
                 "nvidia/diar_streaming_sortformer_4spk-v2"
             )
         else:
+            # The service expects a local .nemo checkpoint when no HF token is present.
+            # Resolve relative paths against this service's `data/` directory so the
+            # current working directory doesn't matter.
+            local_model_path = Path(self.params.local_model)
+            if not local_model_path.is_absolute():
+                candidate = _DATA_DIR / local_model_path.name
+                if candidate.exists():
+                    local_model_path = candidate
+
+            if not local_model_path.exists():
+                raise SICModelFileNotFoundError(
+                    (
+                        "Can't find Streaming Sortformer model checkpoint (.nemo).\n\n"
+                        "Download `diar_streaming_sortformer_4spk-v2.nemo` from:\n"
+                        f"{_HF_MODEL_FILES_URL}\n\n"
+                        "and place it in:\n"
+                        f"{_DATA_DIR}\n\n"
+                        "Expected file path:\n"
+                        f"{_DEFAULT_LOCAL_MODEL_PATH}\n"
+                    ),
+                    missing_path=str(local_model_path),
+                )
+
             self.diar_model = SortformerEncLabelModel.restore_from(
-                restore_path=self.params.local_model,
-                map_location=torch.device("cuda"),
+                restore_path=str(local_model_path),
+                map_location=torch.device(
+                    "cuda" if torch.cuda.is_available() else "cpu"
+                ),
                 strict=False,
             )
 
@@ -574,5 +610,12 @@ class STMSortformer(SICConnector):
     component_class = STMSortformerComponent
 
 
+def main():
+    """
+    Run a ComponentManager that can start the Streaming Sortformer diarization Component.
+    """
+    SICComponentManager([STMSortformerComponent], name="StreamingSortformer")
+
+
 if __name__ == "__main__":
-    SICComponentManager([STMSortformerComponent], name="Streaming Sortformer")
+    main()

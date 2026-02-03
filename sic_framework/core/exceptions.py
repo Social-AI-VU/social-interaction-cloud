@@ -95,3 +95,15 @@ class SICRemoteError(SICError):
 class SICRedisError(SICError):
     """Raised when there is an issue communicating with Redis."""
     pass
+
+
+class SICModelFileNotFoundError(SICError, FileNotFoundError):
+    """
+    Raised when a required model/checkpoint file cannot be found locally.
+
+    Subclasses FileNotFoundError so it can be handled as a standard filesystem error.
+    """
+
+    def __init__(self, message: str, *, missing_path: str | None = None):
+        super().__init__(message)
+        self.missing_path = missing_path

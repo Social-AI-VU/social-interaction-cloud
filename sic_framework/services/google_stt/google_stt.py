@@ -229,7 +229,9 @@ class GoogleSpeechToTextComponent(SICService):
 
         for response in responses:
             if self._signal_to_stop.is_set():
-                break
+                # Shutdown: ensure we still return a SICMessage reply to satisfy the
+                # Redis request-handler contract.
+                return RecognitionResult(dict())
 
             if not response.results:
                 continue
@@ -250,6 +252,10 @@ class GoogleSpeechToTextComponent(SICService):
                 # stop the generator function and return the final result
                 self.message_was_final.set()
                 return RecognitionResult(result)
+
+        # If the streaming iterator ended (or we broke out) without a final result,
+        # still return a valid SICMessage to avoid request-handler assertion errors.
+        return RecognitionResult(dict())
 
     def stop(self, *args):
         """
