@@ -118,7 +118,6 @@ class AlignmentError(Exception):
     """Raised when input messages cannot be time-aligned."""
     pass
 
-
 class SICService(SICComponent):
     """
     Base class for services that process and transform data.

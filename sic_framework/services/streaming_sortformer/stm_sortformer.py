@@ -130,8 +130,9 @@ class STMSortformerComponent(SICService):
         self._init_streaming_state()
         self._configure_batching_params()
         # Start thread
-        t = threading.Thread(target=self._streaming_diarization_thd)
-        t.start()
+        self._diar_thread = threading.Thread(target=self._streaming_diarization_thd)
+        self._diar_thread.daemon = True
+        self._diar_thread.start()
 
     def _load_model(self):
         hf_token = get_hf_token()
@@ -260,12 +261,19 @@ class STMSortformerComponent(SICService):
         return speaker_timestamps
 
     def _streaming_diarization_thd(self):
-        while True:
-            stream_chunk = self.stream_queue.get()
-            if stream_chunk is None or stream_chunk.size == 0:
+        while not self._signal_to_stop.is_set():
+            try:
+                stream_chunk = self.stream_queue.get(timeout=0.1)
+            except queue.Empty:
                 continue
-            else:
-                self.stream_buffer = np.concatenate([self.stream_buffer, stream_chunk])
+
+            # Sentinel to stop thread
+            if stream_chunk is None:
+                break
+            if getattr(stream_chunk, "size", 0) == 0:
+                continue
+
+            self.stream_buffer = np.concatenate([self.stream_buffer, stream_chunk])
 
             base_start_global = self.processed_until
             base_end_global = base_start_global + self.chunk_size
@@ -370,12 +378,46 @@ class STMSortformerComponent(SICService):
         :raises NotImplementedError: If the request type is unsupported
         """
         if is_sic_instance(request, GetDiarizationRequest):
-            preds, speaker_timestamps = self.results_queue.get()
-            return DiarizationResult(
-                predictions=preds, speaker_timestamps=speaker_timestamps
-            )
+            while not self._signal_to_stop.is_set():
+                try:
+                    preds, speaker_timestamps = self.results_queue.get(timeout=0.1)
+                    if preds is None:
+                        break
+                    return DiarizationResult(
+                        predictions=preds, speaker_timestamps=speaker_timestamps
+                    )
+                except queue.Empty:
+                    continue
+
+            # Stopping: return an empty result
+            try:
+                empty_preds = torch.zeros(
+                    (1, 0, self.diar_model.sortformer_modules.n_spk), device=self.device
+                )
+            except Exception:
+                empty_preds = torch.zeros((1, 0, 0))
+            return DiarizationResult(predictions=empty_preds, speaker_timestamps=[])
         else:
             raise NotImplementedError("Unknown request type {}".format(type(request)))
+
+    def stop(self, *args):
+        # Unblock background thread and any waiting request.
+        try:
+            self.stream_queue.put_nowait(None)
+        except Exception:
+            pass
+        try:
+            self.results_queue.put_nowait((None, []))
+        except Exception:
+            pass
+        super(STMSortformerComponent, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            if getattr(self, "_diar_thread", None) is not None:
+                self._diar_thread.join(timeout=2)
+        except Exception:
+            pass
 
 
 class STMSortformerUtils:

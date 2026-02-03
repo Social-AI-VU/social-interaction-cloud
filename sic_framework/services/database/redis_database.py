@@ -364,12 +364,19 @@ class RedisDatabaseComponent(SICService):
         self.redis.delete(*all_keys)
         return SICSuccessMessage()
 
-    def stop(self):
+    def stop(self, *args):
         """
         Stop the RedisDatabaseComponent.
         """
-        self._stopped.set()
-        super().stop()
+        super(RedisDatabaseComponent, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            r = getattr(self, "redis", None)
+            if r is not None and hasattr(r, "close"):
+                r.close()
+        except Exception:
+            pass
 
 
 class RedisDatabase(SICConnector):

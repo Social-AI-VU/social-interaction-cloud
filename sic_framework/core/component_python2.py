@@ -179,12 +179,24 @@ class SICComponent:
         if stopped:
             self.logger.debug("Component's _stopped event set successfully")
             # Wait briefly for any in-flight request/message callbacks to finish
-            # before cleaning up resources.
-            self._no_active_calls.wait(timeout=self.COMPONENT_STOP_TIMEOUT)
+            # before cleaning up resources. If callbacks don't drain, skip cleanup
+            # to avoid races (same principle as waiting for `_stopped`).
+            drained = True
             try:
-                self._cleanup()
-            except Exception as e:
-                self.logger.error("Error during component cleanup: {}".format(e))
+                drained = self._no_active_calls.wait(timeout=self.COMPONENT_STOP_TIMEOUT)
+            except Exception:
+                drained = False
+
+            if drained:
+                try:
+                    self._cleanup()
+                except Exception as e:
+                    self.logger.error("Error during component cleanup: {}".format(e))
+            else:
+                self.logger.warning(
+                    "Component still has active callbacks after stop timeout; "
+                    "skipping cleanup to avoid race conditions"
+                )
         else:
             self.logger.warning(
                 "Component's _stopped event was not set within the specified timeout time; "

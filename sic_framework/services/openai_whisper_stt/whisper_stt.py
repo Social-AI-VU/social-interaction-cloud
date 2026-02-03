@@ -6,6 +6,7 @@ This service uses the OpenAI Whisper model to transcribe audio to text.
 
 import io
 import queue
+import threading
 
 import numpy as np
 import speech_recognition as sr
@@ -86,8 +87,9 @@ class RemoteAudioDevice(sr.AudioSource):
         :param queue: The queue for the audio.
         :type queue: queue.Queue
         """
-        def __init__(self):
+        def __init__(self, stop_event=None):
             self.queue = queue.Queue()
+            self.stop_event = stop_event
 
         def clear(self):
             with self.queue.mutex:
@@ -97,16 +99,22 @@ class RemoteAudioDevice(sr.AudioSource):
             self.queue.put(bytes)
 
         def read(self, n_bytes):
-            # todo check n_bytes equeals chunk_size
-            return self.queue.get()
+            # todo check n_bytes equals chunk_size
+            while True:
+                if self.stop_event is not None and self.stop_event.is_set():
+                    return b""
+                try:
+                    return self.queue.get(timeout=0.1)
+                except queue.Empty:
+                    continue
 
-    def __init__(self, sample_rate=16000, sample_width=2, chunk_size=2730):
+    def __init__(self, sample_rate=16000, sample_width=2, chunk_size=2730, stop_event=None):
 
         self.SAMPLE_RATE = sample_rate
         self.SAMPLE_WIDTH = sample_width
 
         self.CHUNK = chunk_size
-        self.stream = self.Stream()
+        self.stream = self.Stream(stop_event=stop_event)
 
 
 class WhisperComponent(SICService):
@@ -125,7 +133,8 @@ class WhisperComponent(SICService):
 
         self.recognizer = sr.Recognizer()
 
-        self.source = RemoteAudioDevice()
+        self._stream_stop_event = threading.Event()
+        self.source = RemoteAudioDevice(stop_event=self._stream_stop_event)
 
         self.parameters_are_inferred = False
 
@@ -225,12 +234,25 @@ class WhisperComponent(SICService):
 
         return Transcript(transcript)
 
-    def stop(self):
+    def stop(self, *args):
         """
         Stop the WhisperComponent.
         """
-        self._stopped.set()
-        super(WhisperComponent, self).stop()
+        try:
+            self._stream_stop_event.set()
+            # Unblock any waiting reads.
+            self.source.stream.write(b"")
+        except Exception:
+            pass
+        super(WhisperComponent, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            client = getattr(self, "client", None)
+            if client is not None and hasattr(client, "close"):
+                client.close()
+        except Exception:
+            pass
 
 
 class SICWhisper(SICConnector):
