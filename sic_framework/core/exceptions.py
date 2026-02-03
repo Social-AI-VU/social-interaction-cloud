@@ -51,6 +51,9 @@ class UnknownMessageTypeError(MessageError):
     """Raised when a handler receives a message type it doesn't know how to process."""
     pass
 
+class AlignmentError(Exception):
+    """Raised when input messages cannot be time-aligned."""
+    pass
 
 # -----------------------------------------------------------------------------
 # Device Errors

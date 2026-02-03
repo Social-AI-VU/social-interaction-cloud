@@ -15,7 +15,7 @@ from sic_framework.core.utils import is_sic_instance
 
 from . import sic_logging
 from .message_python2 import SICConfMessage, SICMessage
-from sic_framework.core.exceptions import MessageAlignmentError
+from sic_framework.core.exceptions import AlignmentError
 
 
 class MessageQueue(collections.deque):
@@ -113,10 +113,6 @@ class SICMessageDictionary:
             # Object is SICConnector, not SICComponent
             return component.component_class.get_component_name()
 
-
-class AlignmentError(Exception):
-    """Raised when input messages cannot be time-aligned."""
-    pass
 
 class SICService(SICComponent):
     """
