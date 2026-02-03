@@ -9,8 +9,11 @@ import os
 import threading
 import logging
 import time
+import subprocess
+import re
+from io import BytesIO
 
-from flask import Flask, render_template, render_template_string
+from flask import Flask, jsonify, render_template, render_template_string, request, send_file
 from flask_socketio import SocketIO, emit
 
 from sic_framework import SICComponentManager
@@ -55,7 +58,12 @@ class WebserverConf(SICConfMessage):
         templates_dir: str = None,
         static_dir: str = None,
         ssl_cert: str = None,
-        ssl_key: str = None
+        ssl_key: str = None,
+        ephemeral: bool = False,
+        tunnel_enable: bool = False,
+        tunnel_provider: str = "cloudflared",
+        tunnel_executable: str = None,
+        tunnel_args: list = None,
     ):
         """
         Configuration for the unified Webserver Component.
@@ -67,13 +75,19 @@ class WebserverConf(SICConfMessage):
         :param ssl_cert: Path to SSL certificate file (optional).
         :param ssl_key: Path to SSL private key file (optional).
         """
-        super(WebserverConf, self).__init__()
+        super(WebserverConf, self).__init__(ephemeral=ephemeral)
         self.host = host
         self.port = port
         self.templates_dir = templates_dir
         self.static_dir = static_dir
         self.ssl_cert = ssl_cert
         self.ssl_key = ssl_key
+        # Optional public tunnel for cross-network access.
+        # Requires an installed tunnel binary (e.g., `cloudflared` or `ngrok`) on the machine running the component.
+        self.tunnel_enable = tunnel_enable
+        self.tunnel_provider = tunnel_provider
+        self.tunnel_executable = tunnel_executable
+        self.tunnel_args = tunnel_args
 
 class WebserverComponent(SICService):
     def __init__(self, *args, **kwargs):
@@ -108,6 +122,10 @@ class WebserverComponent(SICService):
         # Internal state
         self.input_text = ""
         self.transcript = ""
+        self._latest_webinfo = {}
+        self.public_url = None
+        self._tunnel_process = None
+        self._tunnel_thread = None
 
         # 3. Register SocketIO Events
         self.register_socket_events()
@@ -116,6 +134,83 @@ class WebserverComponent(SICService):
         self.server_thread = threading.Thread(target=self.start_web_app)
         self.server_thread.daemon = True
         self.server_thread.start()
+
+        # 5. Optional tunnel thread
+        if getattr(self.params, "tunnel_enable", False):
+            self._tunnel_thread = threading.Thread(target=self._start_tunnel, daemon=True)
+            self._tunnel_thread.start()
+
+    def _start_tunnel(self):
+        # Give Flask a moment to bind the port.
+        time.sleep(1.0)
+
+        provider = (getattr(self.params, "tunnel_provider", None) or "cloudflared").strip().lower()
+        exe = getattr(self.params, "tunnel_executable", None)
+        args = getattr(self.params, "tunnel_args", None)
+
+        if provider == "cloudflared":
+            exe = exe or "cloudflared"
+            default_args = ["tunnel", "--url", f"http://localhost:{self.params.port}", "--no-autoupdate"]
+            cmd = [exe] + (args if isinstance(args, list) and args else default_args)
+        elif provider == "ngrok":
+            exe = exe or "ngrok"
+            default_args = ["http", str(self.params.port), "--log", "stdout"]
+            cmd = [exe] + (args if isinstance(args, list) and args else default_args)
+        else:
+            self.logger.error(f"Unknown tunnel_provider: {provider}")
+            return
+
+        try:
+            self.logger.info(f"Starting tunnel: {' '.join(cmd)}")
+            self._tunnel_process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to start tunnel process: {e}")
+            self._tunnel_process = None
+            return
+
+        # NOTE: tunnel tools often print unrelated URLs (docs/terms/etc).
+        # Only accept URLs that look like actual public tunnel endpoints.
+        url_regex = re.compile(r"(https?://[^\s]+)")
+        trycloudflare_regex = re.compile(r"(https?://[a-z0-9-]+\.trycloudflare\.com)", re.IGNORECASE)
+        ngrok_regex = re.compile(r"(https?://[a-z0-9-]+\.(?:ngrok-free\.app|ngrok\.app|ngrok\.io))", re.IGNORECASE)
+        try:
+            assert self._tunnel_process.stdout is not None
+            for line in self._tunnel_process.stdout:
+                line = line.strip()
+                if not line:
+                    continue
+                self.logger.info(f"[tunnel] {line}")
+
+                if self.public_url is None:
+                    candidate = None
+                    if provider == "cloudflared":
+                        m = trycloudflare_regex.search(line)
+                        if m:
+                            candidate = m.group(1).rstrip(").,;\"'")
+                    elif provider == "ngrok":
+                        m = ngrok_regex.search(line)
+                        if m:
+                            candidate = m.group(1).rstrip(").,;\"'")
+                        else:
+                            # Fallback: take the first URL, but only if it looks like an ngrok domain.
+                            m2 = url_regex.search(line)
+                            if m2 and "ngrok" in m2.group(1).lower():
+                                candidate = m2.group(1).rstrip(").,;\"'")
+
+                    if candidate:
+                        self.public_url = candidate
+
+                    if self.public_url:
+                        self._latest_webinfo["tunnel_url"] = self.public_url
+                        self.logger.info(f"Tunnel public URL: {self.public_url}")
+        except Exception as e:
+            self.logger.error(f"Tunnel monitoring failed: {e}")
 
     def start_web_app(self):
         """Start the Flask-SocketIO server."""
@@ -155,6 +250,74 @@ class WebserverComponent(SICService):
                 return render_template("index.html")
             except Exception:
                 return "<h1>SIC Webserver Running</h1><p>No index.html found.</p>"
+
+        @self.app.route("/api/webinfo/<label>", methods=["GET"])
+        def api_webinfo(label):
+            # Simple polling endpoint for clients that don't use Socket.IO.
+            return jsonify({"label": label, "message": self._latest_webinfo.get(label)})
+
+        @self.app.route("/api/tunnel", methods=["GET"])
+        def api_tunnel():
+            return jsonify(
+                {
+                    "enabled": bool(getattr(self.params, "tunnel_enable", False)),
+                    "provider": getattr(self.params, "tunnel_provider", None),
+                    "url": self.public_url,
+                }
+            )
+
+        @self.app.route("/api/qr", methods=["GET"])
+        def api_qr():
+            """
+            Generate a QR code PNG for the provided data or latest WebInfo label.
+
+            Query params:
+              - data: string to encode (preferred)
+              - label: key in latest webinfo dict (fallback)
+              - scale: integer scale factor (optional, default 6)
+            """
+            data = request.args.get("data", default=None, type=str)
+            if not data:
+                label = request.args.get("label", default=None, type=str)
+                if label:
+                    val = self._latest_webinfo.get(label)
+                    if val is not None:
+                        data = str(val)
+
+            if not data:
+                return jsonify({"error": "missing data"}), 400
+
+            try:
+                import qrcode  # type: ignore
+            except Exception:
+                return jsonify({"error": "missing python package: qrcode"}), 503
+
+            scale = request.args.get("scale", default=6, type=int)
+            if scale < 1:
+                scale = 1
+            if scale > 20:
+                scale = 20
+
+            try:
+                qr = qrcode.QRCode(box_size=scale, border=2)
+                qr.add_data(data)
+                qr.make(fit=True)
+                img = qr.make_image(fill_color="black", back_color="white")
+                buf = BytesIO()
+                img.save(buf, format="PNG")
+                buf.seek(0)
+                return send_file(buf, mimetype="image/png", download_name="qr.png", max_age=0)
+            except Exception as e:
+                return jsonify({"error": f"qr generation failed: {e}"}), 500
+
+        @self.app.route("/api/buttonClick", methods=["POST"])
+        def api_button_click():
+            data = request.get_json(silent=True)
+            if data is None:
+                data = request.form.to_dict() if request.form else {}
+            self.logger.info(f"API button click: {data}")
+            self.output_message(ButtonClicked(button=data))
+            return ("", 204)
 
         @self.app.route("/<path:filename>")
         def serve_page(filename):
@@ -197,6 +360,14 @@ class WebserverComponent(SICService):
             self.socketio.stop()
         except Exception:
             pass # Often fails if already stopped or not started
+
+        if self._tunnel_process is not None:
+            try:
+                self._tunnel_process.terminate()
+            except Exception:
+                pass
+            self._tunnel_process = None
+
         super(WebserverComponent, self).stop(*args)
 
     @staticmethod
@@ -234,6 +405,7 @@ class WebserverComponent(SICService):
 
         elif is_sic_instance(message, WebInfoMessage):
             self.logger.info(f"WebInfo {message.label}: {message.message}")
+            self._latest_webinfo[message.label] = message.message
             self.socketio.emit(message.label, message.message)
 
         elif is_sic_instance(message, SetTurnMessage):

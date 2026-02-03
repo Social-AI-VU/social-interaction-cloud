@@ -55,7 +55,7 @@ class SICStartComponentRequest(SICRequest):
     :type conf: SICConfMessage
     """
 
-    def __init__(self, component_name, endpoint, input_channel, component_channel, request_reply_channel, client_id, conf=None):
+    def __init__(self, component_name, endpoint, input_channel, component_channel, request_reply_channel, client_id, conf=None, ephemeral=False):
         super(SICStartComponentRequest, self).__init__()
         self.component_name = component_name  # str
         self.endpoint = endpoint
@@ -64,6 +64,7 @@ class SICStartComponentRequest(SICRequest):
         self.request_reply_channel = request_reply_channel
         self.client_id = client_id
         self.conf = conf  # SICConfMessage
+        self.ephemeral = bool(ephemeral)
 
 class SICStopComponentRequest(SICRequest):
     """
@@ -73,10 +74,11 @@ class SICStopComponentRequest(SICRequest):
     :type component_channel: str
     """
 
-    def __init__(self, component_channel, component_name):
+    def __init__(self, component_channel, component_name, client_id=""):
         super(SICStopComponentRequest, self).__init__()
         self.component_channel = component_channel  # str
         self.component_name = component_name  # str
+        self.client_id = client_id  # str
 
 class SICNotStartedMessage(SICMessage):
     """
@@ -115,6 +117,8 @@ class SICComponentManager(object):
         self.client_id = client_id
 
         self.active_components = {}
+        # Per-component lifecycle metadata (e.g., ephemeral ownership).
+        self.active_component_meta = {}
         self.component_threads = collections.defaultdict(dict)
         self.component_classes = {
             cls.get_component_name(): cls for cls in component_classes
@@ -190,8 +194,24 @@ class SICComponentManager(object):
         component_channel = request.component_channel
         request_reply_channel = request.request_reply_channel
         conf = request.conf
+        ephemeral = bool(getattr(request, "ephemeral", False))
 
         component_class = self.component_classes[component_name]  # SICComponent object
+
+        # If the component channel is already active, and the new start requests an ephemeral
+        # instance, stop the old one so we don't reuse stale in-memory state.
+        if component_channel in self.active_components and ephemeral:
+            try:
+                self.logger.info(
+                    "Ephemeral start requested; stopping existing component on channel {}".format(component_channel),
+                    extra={"client_id": client_id},
+                )
+                self.stop_component(component_channel)
+            except Exception as e:
+                self.logger.warning(
+                    "Failed to stop existing component for ephemeral restart: {}".format(e),
+                    extra={"client_id": client_id},
+                )
 
         component = None
 
@@ -214,6 +234,11 @@ class SICComponentManager(object):
             )
             self.logger.info("Component {} instantiated".format(component_endpoint), extra={"client_id": client_id})
             self.active_components[component_channel] = component
+            self.active_component_meta[component_channel] = {
+                "ephemeral": ephemeral,
+                "owner_client_id": client_id,
+                "started_at": time.time(),
+            }
             self.logger.debug("Component {} added to active components".format(component_channel), extra={"client_id": client_id})
 
             thread = threading.Thread(target=component._start)
@@ -309,6 +334,8 @@ class SICComponentManager(object):
             
             self.logger.debug("Removing component from active components", extra={"client_id": component.client_id})
             del self.active_components[component_channel]
+            if component_channel in self.active_component_meta:
+                del self.active_component_meta[component_channel]
 
             self.logger.info("Component {} stopped successfully".format(component.component_endpoint), extra={"client_id": component.client_id})
             return SICSuccessMessage()
@@ -510,6 +537,16 @@ class SICComponentManager(object):
                 extra={"client_id": client_id}
             )
             if request.component_channel in self.active_components:
+                meta = self.active_component_meta.get(request.component_channel, {})
+                if meta.get("ephemeral") and meta.get("owner_client_id") and getattr(request, "client_id", ""):
+                    if request.client_id != meta.get("owner_client_id"):
+                        self.logger.warning(
+                            "Ignored stop request for ephemeral component {} from non-owner client {}".format(
+                                request.component_name, request.client_id
+                            ),
+                            extra={"client_id": client_id},
+                        )
+                        return SICIgnoreRequestMessage()
                 return self.stop_component(request.component_channel)
             else:
                 self.logger.warning(

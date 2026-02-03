@@ -187,7 +187,11 @@ class SICConnector(object):
         """
 
         self.logger.debug("Connector sending StopComponentRequest to ComponentManager")
-        stop_result = self._redis.request(self.component_ip, SICStopComponentRequest(self.component_channel, self.component_name), timeout=5)
+        stop_result = self._redis.request(
+            self.component_ip,
+            SICStopComponentRequest(self.component_channel, self.component_name, client_id=self.app.client_ip),
+            timeout=5,
+        )
         if stop_result is None:
             self.logger.error("Stop request timed out")
             raise TimeoutError("Stop request timed out")
@@ -243,6 +247,7 @@ class SICConnector(object):
             ),
         )
 
+        ephemeral = bool(getattr(self._conf, "ephemeral", False)) if self._conf is not None else False
         component_request = SICStartComponentRequest(
             component_name=self.component_class.get_component_name(),
             endpoint=self.component_endpoint,
@@ -251,6 +256,7 @@ class SICConnector(object):
             request_reply_channel=self.request_reply_channel,
             client_id=self.app.client_ip,
             conf=self._conf,
+            ephemeral=ephemeral,
         )
 
         try:
