@@ -471,6 +471,8 @@ class PepperMotionStreamerService(SICService, NaoqiMotionTools):
                 self.output_message(PepperMotionStream(self.joints, angles, velocity))
 
                 time.sleep(1 / float(self.samples_per_second))
+                
+            self._stopped.set()
         except Exception as e:
             self.logger.exception(e)
             self.stop()

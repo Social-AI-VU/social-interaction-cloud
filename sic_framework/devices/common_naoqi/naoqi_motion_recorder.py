@@ -201,6 +201,8 @@ class NaoqiMotionRecorderActuator(SICActuator, NaoqiMotionTools):
                     self.recorded_times[joint_idx].append(time_delta)
 
                 time.sleep(1 / float(self.samples_per_second))
+                
+            self._stopped.set()
 
         except Exception as e:
             self.logger.exception(e)
