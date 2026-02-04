@@ -446,7 +446,8 @@ class Alphamini(SICDeviceManager):
 
         self.stop_cmd = """
             echo 'Killing all previous robot wrapper processes';
-            pkill -f "python {alphamini_device}"
+            # pkill returns 1 when no process matched; treat that as success.
+            pkill -f "python {alphamini_device}" || true
         """.format(
             alphamini_device=self.device_path
         )
@@ -526,8 +527,7 @@ class Alphamini(SICDeviceManager):
         self._redis.request(self.device_ip, SICStopServerRequest())
 
         # make sure the process is killed
-        stdin, stdout, stderr = self.ssh_command(self.stop_cmd)
-        status = stdout.channel.recv_exit_status()
+        stdin, stdout, stderr, status = self.ssh_command(self.stop_cmd)
         if status != 0:
             self.logger.error("Failed to stop device, exit code: {status}".format(status=status))
             self.logger.error(stderr.read().decode("utf-8"))

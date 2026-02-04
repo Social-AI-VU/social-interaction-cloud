@@ -344,16 +344,19 @@ class SICDeviceManager(object):
                                 output=stdout.read().decode("utf-8")
                             )
                         )
-                        self.logger.error(
-                            "SSH command error: {error}".format(
-                                error=stderr.read().decode("utf-8")
+                        error_text = stderr.read().decode("utf-8")
+                        if error_text.strip():
+                            self.logger.error(
+                                "SSH command error: {error}".format(error=error_text)
                             )
-                        )
+                        else:
+                            self.logger.debug("SSH command error: (none)")
 
                         # if remote thread exits before local main thread, report to user.
                         if (
                             threading.main_thread().is_alive()
                             and not self.stop_event.is_set()
+                            and not getattr(self.app, "shutdown_event", threading.Event()).is_set()
                         ):
                             # Report to main application instead of just raising in void
                             exc = DeviceExecutionError(

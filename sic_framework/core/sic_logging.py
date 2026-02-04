@@ -17,6 +17,12 @@ from . import utils
 from .message_python2 import SICMessage
 from sic_framework.core.exceptions import SICRemoteError
 
+try:
+    BrokenPipeError
+except NameError:
+    # Python 2 doesn't define BrokenPipeError; treat it as an IOError.
+    BrokenPipeError = IOError
+
 ANSI_CODE_REGEX = re.compile(r'\033\[[0-9;]*m')
 
 # loglevel interpretation, mostly follows python's defaults

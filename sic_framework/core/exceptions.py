@@ -5,6 +5,13 @@ This module defines the exception hierarchy for the Social Interaction Cloud (SI
 Centralizing exceptions allows for consistent error handling and better documentation.
 """
 
+# Python 2 compatibility: FileNotFoundError does not exist.
+try:
+    FileNotFoundError  # type: ignore[name-defined]
+except NameError:
+    class FileNotFoundError(IOError):
+        pass
+
 class SICError(Exception):
     """Base class for all SIC framework exceptions."""
     pass
@@ -104,6 +111,6 @@ class SICModelFileNotFoundError(SICError, FileNotFoundError):
     Subclasses FileNotFoundError so it can be handled as a standard filesystem error.
     """
 
-    def __init__(self, message: str, *, missing_path: str | None = None):
-        super().__init__(message)
+    def __init__(self, message, missing_path=None):
+        super(SICModelFileNotFoundError, self).__init__(message)
         self.missing_path = missing_path

@@ -337,11 +337,12 @@ class VoiceDetectionComponent(SICService):
 
         return None
 
-    def stop(self, *args):
+    def stop(self):
         """
         Stop the VoiceDetectionComponent.
         """
-        super(VoiceDetectionComponent, self).stop(*args)
+        self._stopped.set()
+        super(VoiceDetectionComponent, self).stop()
 
 
 class VoiceDetection(SICConnector):
