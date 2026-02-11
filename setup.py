@@ -121,7 +121,6 @@ setup(
             "run-dialogflow=sic_framework.services.dialogflow:main",
             "run-dialogflow-cx=sic_framework.services.dialogflow_cx:main",
             "run-face-detection=sic_framework.services.face_detection:main",
-            "run-face-detection-dnn=sic_framework.services.face_detection_dnn:main",
             "run-face-recognition=sic_framework.services.face_recognition_dnn:main",
             "run-gpt=sic_framework.services.llm.openai_gpt:main",
             "run-whisper=sic_framework.services.openai_whisper_stt:main",
