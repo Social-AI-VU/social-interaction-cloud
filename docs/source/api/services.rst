@@ -58,11 +58,6 @@ Web Services
 Utility Services
 ----------------
 
-.. automodule:: sic_framework.services.installation_verifier
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: sic_framework.services.eis
    :members:
    :undoc-members:
