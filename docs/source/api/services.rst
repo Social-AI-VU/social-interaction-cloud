@@ -29,11 +29,6 @@ Computer Vision Services
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: sic_framework.services.object_tracking
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: sic_framework.services.depth_estimation
    :members:
    :undoc-members:
