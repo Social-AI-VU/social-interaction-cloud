@@ -20,7 +20,6 @@ sic_framework.egg-info/
 social_interaction_cloud.egg-info/
 
 # Ignore model files
-sic_framework/services/face_recognition_dnn/resnet50_ft_weight_old.pt
 *.pt
 *.nemo
 
