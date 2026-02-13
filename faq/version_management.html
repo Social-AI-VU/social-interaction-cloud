@@ -1,0 +1,233 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Version Management and Rollback &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Contribution" href="../contributions.html" />
+    <link rel="prev" title="Comprehensive FAQ" href="comprehensive_faq.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../faq.html">FAQ</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="comprehensive_faq.html">Comprehensive FAQ</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Version Management and Rollback</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#checking-your-current-version">Checking Your Current Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installing-a-specific-version">Installing a Specific Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rolling-back-to-a-previous-version">Rolling Back to a Previous Version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#managing-versions-on-robots-nao-pepper">Managing Versions on Robots (NAO/Pepper)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#best-practices">Best Practices</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../faq.html">FAQ</a></li>
+      <li class="breadcrumb-item active">Version Management and Rollback</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/faq/version_management.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="version-management-and-rollback">
+<h1>Version Management and Rollback<a class="headerlink" href="#version-management-and-rollback" title="Link to this heading"></a></h1>
+<p>This guide covers how to manage SIC versions in your applications, including checking versions,
+rolling back to previous versions, and managing versions on robots.</p>
+<section id="checking-your-current-version">
+<h2>Checking Your Current Version<a class="headerlink" href="#checking-your-current-version" title="Link to this heading"></a></h2>
+<p>To check what version of SIC you currently have installed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>show<span class="w"> </span>social-interaction-cloud
+</pre></div>
+</div>
+<p>This will display information including the version number:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Name: social-interaction-cloud
+Version: 1.2.3
+...
+</pre></div>
+</div>
+<p>Alternatively, in Python:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pkg_resources</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_distribution</span>
+<span class="n">version</span> <span class="o">=</span> <span class="n">get_distribution</span><span class="p">(</span><span class="s2">&quot;social-interaction-cloud&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">version</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SIC version: </span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="installing-a-specific-version">
+<h2>Installing a Specific Version<a class="headerlink" href="#installing-a-specific-version" title="Link to this heading"></a></h2>
+<p>To install a specific version of SIC, use pip with version pinning:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install a specific version</span>
+pip<span class="w"> </span>install<span class="w"> </span>social-interaction-cloud<span class="o">==</span><span class="m">1</span>.2.3
+
+<span class="c1"># Or upgrade/downgrade to a specific version</span>
+pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>social-interaction-cloud<span class="o">==</span><span class="m">1</span>.2.3
+</pre></div>
+</div>
+</section>
+<section id="rolling-back-to-a-previous-version">
+<h2>Rolling Back to a Previous Version<a class="headerlink" href="#rolling-back-to-a-previous-version" title="Link to this heading"></a></h2>
+<p>If you need to rollback to a previous version, follow these steps:</p>
+<p><strong>Step 1: Find Available Versions</strong></p>
+<p>Check available versions on PyPI:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>index<span class="w"> </span>versions<span class="w"> </span>social-interaction-cloud
+</pre></div>
+</div>
+<p>Or visit <a class="reference external" href="https://pypi.org/project/social-interaction-cloud/#history">https://pypi.org/project/social-interaction-cloud/#history</a></p>
+<p><strong>Step 2: Uninstall Current Version</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>uninstall<span class="w"> </span>social-interaction-cloud
+</pre></div>
+</div>
+<p><strong>Step 3: Install Target Version</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Replace 1.2.3 with your desired version</span>
+pip<span class="w"> </span>install<span class="w"> </span>social-interaction-cloud<span class="o">==</span><span class="m">1</span>.2.3
+</pre></div>
+</div>
+<p><strong>Step 4: Verify Installation</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>show<span class="w"> </span>social-interaction-cloud
+</pre></div>
+</div>
+</section>
+<section id="managing-versions-on-robots-nao-pepper">
+<h2>Managing Versions on Robots (NAO/Pepper)<a class="headerlink" href="#managing-versions-on-robots-nao-pepper" title="Link to this heading"></a></h2>
+<p>When you connect to a NAO or Pepper robot, SIC automatically manages version synchronization.</p>
+<p><strong>How It Works:</strong></p>
+<ol class="arabic simple">
+<li><p>SIC checks if the framework is installed on the robot</p></li>
+<li><p>Compares the robot’s version with your local version</p></li>
+<li><p>If versions don’t match, automatically reinstalls on the robot</p></li>
+</ol>
+<p><strong>NAO Robots:</strong> Install the matching version from PyPI
+<strong>Pepper Robots:</strong> Download from GitHub’s <code class="docutils literal notranslate"><span class="pre">main</span></code> branch</p>
+<p><strong>Using a Specific Version on NAO:</strong></p>
+<p>NAO robots will automatically match your local version. Simply install the desired version locally:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install the specific version you want on your local machine</span>
+pip<span class="w"> </span>install<span class="w"> </span>social-interaction-cloud<span class="o">==</span><span class="m">1</span>.2.3
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># NAO will automatically install the same version (1.2.3) from PyPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices</span><span class="w"> </span><span class="kn">import</span> <span class="n">Nao</span>
+
+<span class="n">nao</span> <span class="o">=</span> <span class="n">Nao</span><span class="p">(</span><span class="s2">&quot;10.0.0.100&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Always use virtual environments</strong> to isolate different project versions</p></li>
+<li><p><strong>Pin versions</strong> in <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> for reproducibility</p></li>
+<li><p><strong>Document which version</strong> you’re using in your project README</p></li>
+<li><p><strong>Test after upgrading</strong> to ensure backward compatibility</p></li>
+<li><p><strong>Keep local and robot versions in sync</strong> to avoid unexpected behavior</p></li>
+</ol>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Rolling back to very old versions may cause compatibility issues with newer
+Python versions or operating systems. Always test thoroughly after version changes.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="comprehensive_faq.html" class="btn btn-neutral float-left" title="Comprehensive FAQ" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../contributions.html" class="btn btn-neutral float-right" title="Contribution" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,559 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.pepper &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.pepper</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.pepper</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_function</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.component_manager_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICComponentManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.naoqi_camera</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DepthPepperCamera</span><span class="p">,</span>
+    <span class="n">DepthPepperCameraSensor</span><span class="p">,</span>
+    <span class="n">StereoPepperCamera</span><span class="p">,</span>
+    <span class="n">StereoPepperCameraSensor</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_pepper.pepper_motion_streamer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PepperMotionStreamer</span><span class="p">,</span>
+    <span class="n">PepperMotionStreamerService</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_pepper.pepper_tablet</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">NaoqiTablet</span><span class="p">,</span>
+    <span class="n">NaoqiTabletComponent</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_pepper.pepper_top_tactile_sensor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PepperTopTactile</span><span class="p">,</span>
+    <span class="n">PepperTopTactileSensor</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_pepper.pepper_back_bumper_sensor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PepperBackBumper</span><span class="p">,</span>
+    <span class="n">PepperBackBumperSensor</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_pepper.pepper_right_bumper_sensor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PepperRightBumper</span><span class="p">,</span>
+    <span class="n">PepperRightBumperSensor</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_pepper.pepper_left_bumper_sensor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PepperLeftBumper</span><span class="p">,</span>
+    <span class="n">PepperLeftBumperSensor</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.device</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICLibrary</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.naoqi_shared</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeviceInstallationError</span>
+
+<span class="c1"># this is where dependency binaries are downloaded to on the Pepper machine</span>
+<span class="n">_LIB_DIRECTORY</span> <span class="o">=</span> <span class="s2">&quot;/home/nao/sic_framework_2/social-interaction-cloud-main/lib&quot;</span>
+
+<span class="n">_LIBS_TO_INSTALL</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">SICLibrary</span><span class="p">(</span>
+        <span class="s2">&quot;redis&quot;</span><span class="p">,</span>
+        <span class="n">lib_path</span><span class="o">=</span><span class="s2">&quot;/home/nao/sic_framework_2/social-interaction-cloud-main/lib/redis&quot;</span><span class="p">,</span>
+        <span class="n">lib_install_cmd</span><span class="o">=</span><span class="s2">&quot;pip install --user redis-3.5.3-py2.py3-none-any.whl&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">SICLibrary</span><span class="p">(</span>
+        <span class="s2">&quot;PyTurboJPEG&quot;</span><span class="p">,</span>
+        <span class="n">lib_path</span><span class="o">=</span><span class="s2">&quot;/home/nao/sic_framework_2/social-interaction-cloud-main/lib/libturbojpeg/PyTurboJPEG-master&quot;</span><span class="p">,</span>
+        <span class="n">lib_install_cmd</span><span class="o">=</span><span class="s2">&quot;pip install --user .&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">SICLibrary</span><span class="p">(</span>
+        <span class="s2">&quot;Pillow&quot;</span><span class="p">,</span>
+        <span class="n">download_cmd</span><span class="o">=</span><span class="s2">&quot;curl -O https://files.pythonhosted.org/packages/3a/ec/82d468c17ead94734435c7801ec77069926f337b6aeae1be0a07a24bb024/Pillow-6.2.2-cp27-cp27mu-manylinux1_i686.whl&quot;</span><span class="p">,</span>
+        <span class="n">lib_path</span><span class="o">=</span><span class="n">_LIB_DIRECTORY</span><span class="p">,</span>
+        <span class="n">lib_install_cmd</span><span class="o">=</span><span class="s2">&quot;pip install --user Pillow-6.2.2-cp27-cp27mu-manylinux1_i686.whl&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">SICLibrary</span><span class="p">(</span>
+        <span class="s2">&quot;six&quot;</span><span class="p">,</span>
+        <span class="n">download_cmd</span><span class="o">=</span><span class="s2">&quot;curl -O https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl&quot;</span><span class="p">,</span>
+        <span class="n">lib_path</span><span class="o">=</span><span class="n">_LIB_DIRECTORY</span><span class="p">,</span>
+        <span class="n">lib_install_cmd</span><span class="o">=</span><span class="s2">&quot;pip install --user six-1.17.0-py2.py3-none-any.whl&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">SICLibrary</span><span class="p">(</span>
+        <span class="s2">&quot;numpy&quot;</span><span class="p">,</span>
+        <span class="n">download_cmd</span><span class="o">=</span><span class="s2">&quot;curl -O https://files.pythonhosted.org/packages/fd/54/aee23cfc1cdca5064f9951eefd3c5b51cff0cecb37965d4910779ef6b792/numpy-1.16.6-cp27-cp27mu-manylinux1_i686.whl&quot;</span><span class="p">,</span>
+        <span class="n">req_version</span><span class="o">=</span><span class="s2">&quot;1.16&quot;</span><span class="p">,</span>
+        <span class="n">lib_path</span><span class="o">=</span><span class="n">_LIB_DIRECTORY</span><span class="p">,</span>
+        <span class="n">lib_install_cmd</span><span class="o">=</span><span class="s2">&quot;pip install --user numpy-1.16.6-cp27-cp27mu-manylinux1_i686.whl&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="Pepper">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.pepper.Pepper">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Pepper</span><span class="p">(</span><span class="n">Naoqi</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrapper for Pepper device to easily access its components (connectors)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Pepper.__init__">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.pepper.Pepper.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ip</span><span class="p">,</span>
+        <span class="n">sic_version</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">stereo_camera_conf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">depth_camera_conf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">pepper_motion_conf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">ip</span><span class="p">,</span>
+            <span class="n">robot_type</span><span class="o">=</span><span class="s2">&quot;pepper&quot;</span><span class="p">,</span>
+            <span class="n">venv</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">username</span><span class="o">=</span><span class="s2">&quot;nao&quot;</span><span class="p">,</span>
+            <span class="n">passwords</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;pepper&quot;</span><span class="p">,</span> <span class="s2">&quot;nao&quot;</span><span class="p">],</span>
+            <span class="c1"># device path is where this script is located on the actual Pepper machine</span>
+            <span class="n">device_path</span><span class="o">=</span><span class="s2">&quot;/home/nao/sic_framework_2/social-interaction-cloud-main/sic_framework/devices&quot;</span><span class="p">,</span>
+            <span class="n">test_device_path</span><span class="o">=</span><span class="s2">&quot;/home/nao/sic_in_test/social-interaction-cloud/sic_framework/devices&quot;</span><span class="p">,</span>
+            <span class="n">sic_version</span><span class="o">=</span><span class="n">sic_version</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="p">[</span><span class="n">StereoPepperCamera</span><span class="p">]</span> <span class="o">=</span> <span class="n">stereo_camera_conf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="p">[</span><span class="n">DepthPepperCamera</span><span class="p">]</span> <span class="o">=</span> <span class="n">depth_camera_conf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="p">[</span><span class="n">PepperMotionStreamer</span><span class="p">]</span> <span class="o">=</span> <span class="n">pepper_motion_conf</span></div>
+
+
+<div class="viewcode-block" id="Pepper.check_sic_install">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.pepper.Pepper.check_sic_install">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_sic_install</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs a script on Pepper to see if the sic_framework folder is there.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">exit_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                pip show social-interaction-cloud;</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">remote_stdout</span> <span class="o">=</span> <span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">exit_status</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># sic is not installed</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="s2">&quot;sic_in_test&quot;</span> <span class="ow">in</span> <span class="n">remote_stdout</span><span class="p">:</span>
+            <span class="c1"># test version of SIC is installed</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Test version of SIC is installed, uninstalling and reinstalling latest version&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;SIC is already installed, checking versions&quot;</span><span class="p">)</span>
+
+            <span class="n">desired_version</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_desired_sic_version</span><span class="p">()</span>
+
+            <span class="c1"># get the version of SIC installed on Pepper</span>
+            <span class="n">pepper_version</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">remote_stdout</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;Version:&quot;</span><span class="p">):</span>
+                    <span class="n">pepper_version</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">break</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;SIC version on Pepper: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pepper_version</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Desired SIC version: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">desired_version</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">pepper_version</span> <span class="o">==</span> <span class="n">desired_version</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;SIC already installed on Pepper and versions match&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;SIC is installed on Pepper but does not match the desired version! Reinstalling SIC on Pepper&quot;</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;(Check to make sure you also have the latest version of SIC installed!)&quot;</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="Pepper.sic_install">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.pepper.Pepper.sic_install">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sic_install</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Installs SIC on the Pepper</span>
+
+<span class="sd">        This function:</span>
+<span class="sd">        1. gets rid of old directories for clean install</span>
+<span class="sd">        2. curl github repository</span>
+<span class="sd">        3. pip install --no-deps git repo</span>
+<span class="sd">        4. install dependencies from _LIBS_TO_INSTALL</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">desired_version</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_desired_sic_version</span><span class="p">()</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="n">exit_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                    rm -rf /home/nao/framework;</span>
+<span class="sd">                    if [ -d /home/nao/sic_framework_2 ]; then</span>
+<span class="sd">                        rm -rf /home/nao/sic_framework_2;</span>
+<span class="sd">                    fi;</span>
+
+<span class="sd">                    mkdir /home/nao/sic_framework_2;</span>
+<span class="sd">                    cd /home/nao/sic_framework_2;</span>
+<span class="sd">                    </span>
+<span class="sd">                    # Ensure curl has a CA bundle available</span>
+<span class="sd">                    if [ ! -f /home/nao/cacert.pem ]; then</span>
+<span class="sd">                        curl -k -o /home/nao/cacert.pem https://curl.se/ca/cacert.pem;</span>
+<span class="sd">                    fi;</span>
+<span class="sd">                    echo &#39;cacert = &quot;/home/nao/cacert.pem&quot;&#39; &gt; ~/.curlrc;</span>
+
+<span class="sd">                    curl -L -o sic_repo.zip https://github.com/Social-AI-VU/social-interaction-cloud/archive/refs/tags/v{version}.zip;</span>
+<span class="sd">                    unzip sic_repo.zip;</span>
+<span class="sd">                    mv social-interaction-cloud-{version} social-interaction-cloud-main;</span>
+<span class="sd">                    cd /home/nao/sic_framework_2/social-interaction-cloud-main;</span>
+<span class="sd">                    pip install --user -e . --no-deps;</span>
+<span class="sd">                                        </span>
+<span class="sd">                    if pip list | grep -w &#39;social-interaction-cloud&#39; &gt; /dev/null 2&gt;&amp;1 ; then</span>
+<span class="sd">                        echo &quot;SIC successfully installed&quot;</span>
+<span class="sd">                    fi;</span>
+<span class="sd">                    &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">version</span><span class="o">=</span><span class="n">desired_version</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;SIC successfully installed&quot;</span> <span class="ow">in</span> <span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">DeviceInstallationError</span><span class="p">(</span>
+                <span class="s2">&quot;Failed to install sic. Standard error stream from install command: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Installing package dependencies...&quot;</span><span class="p">)</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">stdout_pip_freeze</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">exit_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span><span class="s2">&quot;pip freeze&quot;</span><span class="p">)</span>
+        <span class="n">installed_libs</span> <span class="o">=</span> <span class="n">stdout_pip_freeze</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">lib</span> <span class="ow">in</span> <span class="n">_LIBS_TO_INSTALL</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Checking if library </span><span class="si">{}</span><span class="s2"> is installed...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lib</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_if_lib_installed</span><span class="p">(</span><span class="n">installed_libs</span><span class="p">,</span> <span class="n">lib</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;Library </span><span class="si">{}</span><span class="s2"> is NOT installed, installing now...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lib</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">install_lib</span><span class="p">(</span><span class="n">lib</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Pepper.create_test_environment">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.pepper.Pepper.create_test_environment">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_test_environment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a test environment on the Pepper</span>
+
+<span class="sd">        To use test environment, you must pass in a repo to the device initialization. For example:</span>
+<span class="sd">        - Pepper(ip, dev_test=True, test_repo=PATH_TO_REPO) OR</span>
+<span class="sd">        - Pepper(ip, dev_test=True)</span>
+
+<span class="sd">        If you do not pass in a repo, it will assume the repo to test is already installed in a test environment on the Pepper.</span>
+
+<span class="sd">        Instead of creating a virtual environment, we will just copy the repo over to the test directory</span>
+<span class="sd">        and install from there.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">uninstall_old_repo</span><span class="p">():</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Uninstall the old version of social-interaction-cloud on Alphamini</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">exit_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                pip uninstall social-interaction-cloud -y</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">install_new_repo</span><span class="p">():</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Install the new repo on Pepper</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+            <span class="c1"># zip up dev repo and scp over</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Zipping up dev repo&quot;</span><span class="p">)</span>
+            <span class="n">zipped_path</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">zip_directory</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">test_repo</span><span class="p">)</span>
+            <span class="n">zipped_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_repo</span> <span class="o">+</span> <span class="s2">&quot;.zip&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Zipped path: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">zipped_path</span><span class="p">))</span>
+
+            <span class="c1"># get the basename of the repo</span>
+            <span class="n">repo_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">test_repo</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Removing old sic_in_test folder on Pepper&quot;</span><span class="p">)</span>
+
+            <span class="c1"># create the sic_in_test folder on Nao</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">exit_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                cd ~;</span>
+<span class="sd">                rm -rf sic_in_test;</span>
+<span class="sd">                mkdir sic_in_test;</span>
+<span class="sd">                &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">repo_name</span><span class="o">=</span><span class="n">repo_name</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Transferring zip file over to Pepper&quot;</span><span class="p">)</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">progress4_callback</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">sent</span><span class="p">,</span> <span class="n">peername</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="se">\r</span><span class="s2">(</span><span class="si">{}</span><span class="s2">:</span><span class="si">{}</span><span class="s2">) </span><span class="si">{}</span><span class="s2"> progress: </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">peername</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="n">peername</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                        <span class="n">filename</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
+                        <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">sent</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">size</span><span class="p">))</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span>
+                    <span class="p">),</span>
+                    <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="c1">#  scp transfer file over</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">SCPClient</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">get_transport</span><span class="p">(),</span> <span class="n">progress4</span><span class="o">=</span><span class="n">progress4_callback</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">scp</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">scp</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">zipped_path</span><span class="p">,</span> <span class="s2">&quot;/home/nao/sic_in_test/&quot;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                        <span class="s2">&quot;Error transferring zip file over to Pepper: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="k">raise</span> <span class="n">e</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Unzipping repo and installing on Pepper&quot;</span><span class="p">)</span>
+
+            <span class="n">_</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">exit_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                cd ~/sic_in_test;</span>
+<span class="sd">                unzip {repo_name};</span>
+<span class="sd">                cd {repo_name};</span>
+<span class="sd">                pip install --user -e . --no-deps;</span>
+<span class="sd">                &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">repo_name</span><span class="o">=</span><span class="n">repo_name</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="c1"># check to see if the repo was installed successfully</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">exit_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                pip show social-interaction-cloud;</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">exit_status</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">DeviceInstallationError</span><span class="p">(</span><span class="s2">&quot;Failed to install social-interaction-cloud&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_repo</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Installing test repo on Pepper&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;This process may take a minute or two... Please hold tight!&quot;</span>
+            <span class="p">)</span>
+            <span class="n">uninstall_old_repo</span><span class="p">()</span>
+            <span class="n">install_new_repo</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;No test repo provided, assuming test repo is already installed&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="Pepper._get_desired_sic_version">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.pepper.Pepper._get_desired_sic_version">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_desired_sic_version</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine which SIC version should be installed on Pepper.</span>
+
+<span class="sd">        Preference order:</span>
+<span class="sd">        1. Explicit `sic_version` provided during construction.</span>
+<span class="sd">        2. Local `social-interaction-cloud` package version.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_resolved_sic_version&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolved_sic_version</span>
+
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;sic_version&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">version</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sic_version</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">pkg_resources</span><span class="w"> </span><span class="kn">import</span> <span class="n">DistributionNotFound</span><span class="p">,</span> <span class="n">get_distribution</span>
+
+                <span class="n">version</span> <span class="o">=</span> <span class="n">get_distribution</span><span class="p">(</span><span class="s2">&quot;social-interaction-cloud&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">version</span>
+            <span class="k">except</span> <span class="n">DistributionNotFound</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Failed to find the &#39;social-interaction-cloud&#39; package locally. Ensure it is installed using pip.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s2">&quot;Package &#39;social-interaction-cloud&#39; is not installed locally. Please install it using pip.&quot;</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resolved_sic_version</span> <span class="o">=</span> <span class="n">version</span>
+        <span class="k">return</span> <span class="n">version</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stereo_camera</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">StereoPepperCamera</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">depth_camera</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">DepthPepperCamera</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tablet</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiTablet</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Pepper.motion_streaming">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.pepper.Pepper.motion_streaming">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">motion_streaming</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_source</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">PepperMotionStreamer</span><span class="p">,</span> <span class="n">input_source</span><span class="o">=</span><span class="n">input_source</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tactile_sensor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">PepperTopTactile</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">back_bumper</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">PepperBackBumper</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">right_bumper</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">PepperRightBumper</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">left_bumper</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">PepperLeftBumper</span><span class="p">)</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--redis_ip&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;IP address where Redis is running&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--client_id&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Client that is using this device&quot;</span>
+    <span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;DB_IP&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">redis_ip</span>
+
+    <span class="n">pepper_components</span> <span class="o">=</span> <span class="n">shared_naoqi_components</span> <span class="o">+</span> <span class="p">[</span>
+        <span class="c1"># NaoqiLookAtComponent,</span>
+        <span class="n">NaoqiTabletComponent</span><span class="p">,</span>
+        <span class="n">DepthPepperCameraSensor</span><span class="p">,</span>
+        <span class="n">StereoPepperCameraSensor</span><span class="p">,</span>
+        <span class="n">PepperMotionStreamerService</span><span class="p">,</span>
+        <span class="n">PepperTopTactileSensor</span><span class="p">,</span>
+        <span class="n">PepperBackBumperSensor</span><span class="p">,</span>
+        <span class="n">PepperRightBumperSensor</span><span class="p">,</span>
+        <span class="n">PepperLeftBumperSensor</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="n">SICComponentManager</span><span class="p">(</span><span class="n">pepper_components</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">client_id</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Pepper&quot;</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

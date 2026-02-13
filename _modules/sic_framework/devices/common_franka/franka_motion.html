@@ -1,0 +1,317 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.common_franka.franka_motion &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.common_franka.franka_motion</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.common_franka.franka_motion</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICComponentManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConnector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICRequest</span><span class="p">,</span> <span class="n">SICMessage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.actuator_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICActuator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_sic_instance</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">panda_py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">panda_py</span><span class="w"> </span><span class="kn">import</span> <span class="n">controllers</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">panda_py</span><span class="w"> </span><span class="kn">import</span> <span class="n">libfranka</span>
+
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<div class="viewcode-block" id="FrankaPoseRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaPoseRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FrankaPoseRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A request for obtaining the current end-effector (EE) pose relative to the robot base frame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="FrankaPoseRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaPoseRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FrankaPoseRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span> <span class="o">=</span> <span class="n">stream</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="FrankaPose">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaPose">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FrankaPose</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A SICMessage containing end-effector (EE) position and orientation in robot base frame</span>
+
+<span class="sd">    :param position: end-effector position in robot base frame</span>
+<span class="sd">    :param orientation: end-effector orientation (quaternion) in robot base frame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="FrankaPose.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaPose.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">orientation</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">position</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orientation</span> <span class="o">=</span> <span class="n">orientation</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="FrankaGripperGraspRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaGripperGraspRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FrankaGripperGraspRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A SICRequest to command the gripper to grasp an object with a force-controlled command.</span>
+
+<span class="sd">    see the api documentation for more details: https://jeanelsner.github.io/panda-py/panda_py.libfranka.html#panda_py.libfranka.Gripper.grasp</span>
+
+<span class="sd">    :param width: The distance between the fingers in meters. The width must be between 0.0 and 0.085 m.</span>
+<span class="sd">    :param speed: The speed of the gripper in meters per second. The speed must be between 0 and 0.1 m/s.</span>
+<span class="sd">    :param force: The gripping force in Newton. The force must be between 5 and 70 N.</span>
+<span class="sd">    :param epsilon_inner: The inner tolerance for the grasp width in meters.</span>
+<span class="sd">    :param epsilon_outer: The outer tolerance for the grasp width in meters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="FrankaGripperGraspRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaGripperGraspRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">epsilon_inner</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span> <span class="n">epsilon_outer</span><span class="o">=</span><span class="mf">0.005</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="n">speed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">force</span> <span class="o">=</span> <span class="n">force</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epsilon_inner</span> <span class="o">=</span> <span class="n">epsilon_inner</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epsilon_outer</span> <span class="o">=</span> <span class="n">epsilon_outer</span></div>
+</div>
+
+
+<div class="viewcode-block" id="FrankaGripperMoveRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaGripperMoveRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FrankaGripperMoveRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A SICRequest to command the gripper to move to a specific width.</span>
+
+<span class="sd">    see the api documentation for more details: https://jeanelsner.github.io/panda-py/panda_py.libfranka.html#panda_py.libfranka.Gripper.move</span>
+
+<span class="sd">    :param width: The distance between the fingers in meters. The width must be between 0.0 and 0.085 m.</span>
+<span class="sd">    :param speed: The speed of the gripper in meters per second. The speed must be between 0 and 0.1 m/s.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="FrankaGripperMoveRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaGripperMoveRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="n">speed</span></div>
+</div>
+
+
+<span class="c1"># TODO maybe an actuator is not a correct name here</span>
+<div class="viewcode-block" id="FrankaMotionActuator">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaMotionActuator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FrankaMotionActuator</span><span class="p">(</span><span class="n">SICActuator</span><span class="p">):</span>
+<div class="viewcode-block" id="FrankaMotionActuator.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaMotionActuator.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FrankaMotionActuator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">hostname</span> <span class="o">=</span> <span class="s2">&quot;172.16.0.2&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">panda</span> <span class="o">=</span> <span class="n">panda_py</span><span class="o">.</span><span class="n">Panda</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
+        <span class="c1"># here we set the controller to Cartesian Impedance, which only requires position and orientation to control the end effector (EE)</span>
+        <span class="c1"># see more details: https://jeanelsner.github.io/panda-py/panda_py.controllers.html#panda_py.controllers.CartesianImpedance.set_control</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ctrl</span> <span class="o">=</span> <span class="n">controllers</span><span class="o">.</span><span class="n">CartesianImpedance</span><span class="p">(</span><span class="n">filter_coeff</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">panda</span><span class="o">.</span><span class="n">start_controller</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ctrl</span><span class="p">)</span>
+
+        <span class="c1"># gripper object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gripper</span> <span class="o">=</span> <span class="n">libfranka</span><span class="o">.</span><span class="n">Gripper</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
+
+        <span class="c1"># for streaming thread</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_streaming</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stream_thread</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+    <span class="c1"># it&#39;s the EE pose we want to send to set_control</span>
+<div class="viewcode-block" id="FrankaMotionActuator.get_inputs">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaMotionActuator.get_inputs">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_inputs</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">FrankaPose</span><span class="p">,</span>
+            <span class="n">FrankaGripperGraspRequest</span><span class="p">,</span>
+            <span class="n">FrankaGripperMoveRequest</span><span class="p">,</span>
+            <span class="n">FrankaPoseRequest</span>
+        <span class="p">]</span></div>
+
+
+    <span class="c1"># it&#39;s outputting the current EE pose from _start_streaming</span>
+<div class="viewcode-block" id="FrankaMotionActuator.get_output">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaMotionActuator.get_output">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_output</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">FrankaPose</span></div>
+
+
+<div class="viewcode-block" id="FrankaMotionActuator.on_message">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaMotionActuator.on_message">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">is_sic_instance</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">FrankaPose</span><span class="p">):</span>
+            <span class="c1"># move EE to given pose (wrt robot base frame)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ctrl</span><span class="o">.</span><span class="n">set_control</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">orientation</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FrankaMotionActuator.execute">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaMotionActuator.execute">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">is_sic_instance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">FrankaPoseRequest</span><span class="p">):</span>
+            <span class="c1"># if steaming is set to True, send current EE pose continuously to the output channel</span>
+            <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">stream</span><span class="p">:</span>
+                <span class="c1"># start background thread only once</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_streaming</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_streaming</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_stream_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+                        <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_stream_loop</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_stream_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pose</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">is_sic_instance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">FrankaGripperGraspRequest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Grasping with width: </span><span class="si">{}</span><span class="s2">, speed: </span><span class="si">{}</span><span class="s2">, force: </span><span class="si">{}</span><span class="s2">, epsilon_inner: </span><span class="si">{}</span><span class="s2">, epsilon_outer: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">speed</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">force</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">epsilon_inner</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">epsilon_outer</span><span class="p">))</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">gripper</span><span class="o">.</span><span class="n">grasp</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">speed</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">force</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">epsilon_inner</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">epsilon_outer</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_sic_instance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">FrankaGripperMoveRequest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gripper</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">speed</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="FrankaMotionActuator.get_pose">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaMotionActuator.get_pose">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pose</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># retrieve the current end-effector position and orientation in the robot base frame.</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">panda</span><span class="o">.</span><span class="n">get_position</span><span class="p">()</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">panda</span><span class="o">.</span><span class="n">get_orientation</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">FrankaPose</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="n">q</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_stream_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_streaming</span><span class="p">:</span>
+            <span class="n">pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pose</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_message</span><span class="p">(</span><span class="n">pose</span><span class="p">)</span>
+            <span class="c1"># sleep for a short time to avoid flooding the output channel</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="mi">500</span><span class="p">)</span>  <span class="c1"># stream at 500 Hz</span></div>
+
+
+
+<div class="viewcode-block" id="FrankaMotion">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion.FrankaMotion">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FrankaMotion</span><span class="p">(</span><span class="n">SICConnector</span><span class="p">):</span>
+    <span class="n">component_class</span> <span class="o">=</span> <span class="n">FrankaMotionActuator</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">SICComponentManager</span><span class="p">([</span><span class="n">FrankaMotionActuator</span><span class="p">])</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

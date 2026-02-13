@@ -1,0 +1,529 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.naoqi_shared &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.naoqi_shared</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.naoqi_shared</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_function</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">posixpath</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shlex</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">sic_redis</span><span class="p">,</span> <span class="n">utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICPingRequest</span><span class="p">,</span> <span class="n">SICPongMessage</span><span class="p">,</span> <span class="n">SICStopServerRequest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">MAGIC_STARTED_COMPONENT_MANAGER_TEXT</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.nao_motion_streamer</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.naoqi_autonomous</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.naoqi_button</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">NaoqiButton</span><span class="p">,</span>
+    <span class="n">NaoqiButtonSensor</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.naoqi_camera</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.naoqi_leds</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.naoqi_lookat</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">NaoqiLookAt</span><span class="p">,</span>
+    <span class="n">NaoqiLookAtComponent</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.naoqi_microphone</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.naoqi_motion</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.naoqi_motion_recorder</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.naoqi_speakers</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.naoqi_stiffness</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.naoqi_text_to_speech</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.naoqi_tracker</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">NaoqiTracker</span><span class="p">,</span>
+    <span class="n">NaoqiTrackerActuator</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.device</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICDeviceManager</span>
+
+<span class="n">shared_naoqi_components</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">NaoqiTopCameraSensor</span><span class="p">,</span>
+    <span class="n">NaoqiBottomCameraSensor</span><span class="p">,</span>
+    <span class="n">NaoqiMicrophoneSensor</span><span class="p">,</span>
+    <span class="n">NaoqiMotionActuator</span><span class="p">,</span>
+    <span class="n">NaoqiTextToSpeechActuator</span><span class="p">,</span>
+    <span class="n">NaoqiMotionRecorderActuator</span><span class="p">,</span>
+    <span class="n">NaoqiStiffnessActuator</span><span class="p">,</span>
+    <span class="n">NaoqiAutonomousActuator</span><span class="p">,</span>
+    <span class="n">NaoqiLEDsActuator</span><span class="p">,</span>
+    <span class="n">NaoqiSpeakerComponent</span><span class="p">,</span>
+    <span class="n">NaoqiButtonSensor</span><span class="p">,</span>
+    <span class="n">NaoqiTrackerActuator</span><span class="p">,</span>
+    <span class="n">NaoqiLookAtComponent</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="Naoqi">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.naoqi_shared.Naoqi">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Naoqi</span><span class="p">(</span><span class="n">SICDeviceManager</span><span class="p">):</span>
+    <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">ABCMeta</span>
+
+<div class="viewcode-block" id="Naoqi.__init__">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.naoqi_shared.Naoqi.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ip</span><span class="p">,</span>
+        <span class="n">robot_type</span><span class="p">,</span>
+        <span class="n">venv</span><span class="p">,</span>
+        <span class="n">device_path</span><span class="p">,</span>
+        <span class="n">sic_version</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">dev_test</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">test_device_path</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">test_repo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">bypass_install</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">top_camera_conf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">bottom_camera_conf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">mic_conf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">motion_conf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">tts_conf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">motion_record_conf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">motion_stream_conf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">stiffness_conf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">speaker_conf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">lookat_conf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">username</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">passwords</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">ip</span><span class="p">,</span>
+            <span class="n">sic_version</span><span class="o">=</span><span class="n">sic_version</span><span class="p">,</span>
+            <span class="n">username</span><span class="o">=</span><span class="n">username</span><span class="p">,</span>
+            <span class="n">passwords</span><span class="o">=</span><span class="n">passwords</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Set the component configs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="p">[</span><span class="n">NaoqiTopCamera</span><span class="p">]</span> <span class="o">=</span> <span class="n">top_camera_conf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="p">[</span><span class="n">NaoqiBottomCamera</span><span class="p">]</span> <span class="o">=</span> <span class="n">bottom_camera_conf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="p">[</span><span class="n">NaoqiMicrophone</span><span class="p">]</span> <span class="o">=</span> <span class="n">mic_conf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="p">[</span><span class="n">NaoqiMotion</span><span class="p">]</span> <span class="o">=</span> <span class="n">motion_conf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="p">[</span><span class="n">NaoqiTextToSpeech</span><span class="p">]</span> <span class="o">=</span> <span class="n">tts_conf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="p">[</span><span class="n">NaoqiMotionRecorder</span><span class="p">]</span> <span class="o">=</span> <span class="n">motion_record_conf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="p">[</span><span class="n">NaoqiMotionStreamer</span><span class="p">]</span> <span class="o">=</span> <span class="n">motion_stream_conf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="p">[</span><span class="n">NaoqiStiffness</span><span class="p">]</span> <span class="o">=</span> <span class="n">stiffness_conf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="p">[</span><span class="n">NaoqiSpeaker</span><span class="p">]</span> <span class="o">=</span> <span class="n">speaker_conf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="p">[</span><span class="n">NaoqiLookAt</span><span class="p">]</span> <span class="o">=</span> <span class="n">lookat_conf</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">robot_type</span> <span class="o">=</span> <span class="n">robot_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dev_test</span> <span class="o">=</span> <span class="n">dev_test</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">test_repo</span> <span class="o">=</span> <span class="n">test_repo</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bypass_install</span> <span class="o">=</span> <span class="n">bypass_install</span>
+
+        <span class="k">assert</span> <span class="n">robot_type</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="s2">&quot;nao&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pepper&quot;</span><span class="p">,</span>
+        <span class="p">],</span> <span class="s2">&quot;Robot type must be either &#39;nao&#39; or &#39;pepper&#39;&quot;</span>
+
+        <span class="n">redis_hostname</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">sic_redis</span><span class="o">.</span><span class="n">get_redis_db_ip_password</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">redis_hostname</span> <span class="o">==</span> <span class="s2">&quot;127.0.0.1&quot;</span> <span class="ow">or</span> <span class="n">redis_hostname</span> <span class="o">==</span> <span class="s2">&quot;localhost&quot;</span><span class="p">:</span>
+            <span class="c1"># get own public ip address for the device to use</span>
+            <span class="n">redis_hostname</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_ip_adress</span><span class="p">()</span>
+
+        <span class="c1"># set start and stop scripts</span>
+        <span class="k">if</span> <span class="n">dev_test</span><span class="p">:</span>
+            <span class="n">robot_wrapper_file</span> <span class="o">=</span> <span class="n">test_device_path</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">robot_type</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">robot_wrapper_file</span> <span class="o">=</span> <span class="n">device_path</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">robot_type</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_cmd</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;            </span>
+<span class="s2">            # export environment variables so that it can find the naoqi library</span>
+<span class="s2">            export PYTHONPATH=/opt/aldebaran/lib/python2.7/site-packages;</span>
+<span class="s2">            export LD_LIBRARY_PATH=/opt/aldebaran/lib/naoqi;</span>
+
+<span class="s2">            python2 </span><span class="si">{robot_wrapper_file}</span><span class="s2">.py --redis_ip=</span><span class="si">{redis_host}</span><span class="s2"> --client_id=</span><span class="si">{client_id}</span><span class="s2">;</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">robot_wrapper_file</span><span class="o">=</span><span class="n">robot_wrapper_file</span><span class="p">,</span> <span class="n">redis_host</span><span class="o">=</span><span class="n">redis_hostname</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_client_id</span>
+        <span class="p">)</span>
+
+        <span class="c1"># if this robot is expected to have a virtual environment, activate it</span>
+        <span class="k">if</span> <span class="n">dev_test</span> <span class="ow">and</span> <span class="n">venv</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start_cmd</span> <span class="o">=</span> <span class="p">(</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            source ~/.test_venv/bin/activate;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_cmd</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">venv</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start_cmd</span> <span class="o">=</span> <span class="p">(</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            source ~/.venv_sic/bin/activate;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+                <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_cmd</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_cmd</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            echo &#39;Killing all previous robot wrapper processes&#39;;</span>
+<span class="s2">            # pkill returns 1 when no process matched; treat that as success.</span>
+<span class="s2">            pkill -f &quot;python2 </span><span class="si">{robot_wrapper_file}</span><span class="s2">.py&quot; || true</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">robot_wrapper_file</span><span class="o">=</span><span class="n">robot_wrapper_file</span>
+        <span class="p">)</span>
+
+        <span class="c1"># stop SIC</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stop_cmd</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Checking to see if SIC is installed on remote device...&quot;</span><span class="p">)</span>
+        <span class="c1"># make sure SIC is installed</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dev_test</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">create_test_environment</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">bypass_install</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_sic_install</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;SIC is already installed on Naoqi device </span><span class="si">{}</span><span class="s2">! starting SIC...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;SIC is not installed on Naoqi device </span><span class="si">{}</span><span class="s2">, installing now&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sic_install</span><span class="p">()</span>
+
+        <span class="c1"># start SIC</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Starting SIC on </span><span class="si">{}</span><span class="s2"> with redis ip </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">robot_type</span><span class="p">,</span> <span class="n">redis_hostname</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_sic</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Naoqi.check_sic_install">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.naoqi_shared.Naoqi.check_sic_install">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_sic_install</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Naos and Peppers have different ways of verifying SIC is installed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Naoqi.sic_install">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.naoqi_shared.Naoqi.sic_install">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sic_install</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Naos and Peppers have different ways of installing SIC.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Naoqi.run_sic">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.naoqi_shared.Naoqi.run_sic">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_sic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Starts SIC on the device.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_cmd</span><span class="p">,</span> <span class="n">create_thread</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">get_pty</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;Attempting to ping remote ComponentManager to see if it has started&quot;</span>
+        <span class="p">)</span>
+
+        <span class="c1"># try to ping remote ComponentManager to see if it has started</span>
+        <span class="n">ping_tries</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ping_tries</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">,</span> <span class="n">SICPingRequest</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_PING_TIMEOUT</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">True</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">response</span> <span class="o">==</span> <span class="n">SICPongMessage</span><span class="p">():</span>
+                    <span class="k">break</span>
+            <span class="k">except</span> <span class="ne">TimeoutError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s2">&quot;ComponentManager on ip </span><span class="si">{}</span><span class="s2"> hasn&#39;t started yet... retrying ping </span><span class="si">{}</span><span class="s2"> more times&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">,</span> <span class="n">ping_tries</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">i</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;Could not start SIC on remote device</span><span class="se">\n</span><span class="s2">See sic.log for details&quot;</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;ComponentManager on ip </span><span class="si">{}</span><span class="s2"> has started!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Naoqi.stop_device">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.naoqi_shared.Naoqi.stop_device">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop_device</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stops the device and all its components.</span>
+
+<span class="sd">        Makes sure the process is killed and the device is stopped.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Mark that we&#39;re intentionally stopping the remote process so the</span>
+        <span class="c1"># SSH monitor thread doesn&#39;t report it as &quot;unexpected&quot;.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="c1"># send StopRequest to ComponentManager</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">,</span> <span class="n">SICStopServerRequest</span><span class="p">())</span>
+
+        <span class="c1"># make sure the process is killed</span>
+        <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stop_cmd</span><span class="p">)</span>
+        <span class="c1"># Some SSH servers/channels may not provide an exit status (-1). If there is</span>
+        <span class="c1"># no stderr output, treat it as a best-effort stop during shutdown.</span>
+        <span class="n">err</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">err</span> <span class="o">=</span> <span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">err</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">status</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="n">status</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">err</span><span class="o">.</span><span class="n">strip</span><span class="p">()):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to stop device, exit code: </span><span class="si">{status}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">err</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Naoqi.upload_file">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.naoqi_shared.Naoqi.upload_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">upload_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_path</span><span class="p">,</span> <span class="n">remote_path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Upload a file to the Naoqi device using SCP.</span>
+
+<span class="sd">        :param local_path: Path to the local file to upload.</span>
+<span class="sd">        :type local_path: str</span>
+<span class="sd">        :param remote_path: Destination path on the robot. Must be under /home/nao.</span>
+<span class="sd">        :type remote_path: str</span>
+
+<span class="sd">        :raises ValueError: If the local file does not exist or the remote path is invalid.</span>
+<span class="sd">        :raises RuntimeError: If SCP is unavailable, the SSH connection is missing, or the upload fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">local_path</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">local_path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;A valid local_path string is required.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">remote_path</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">remote_path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;A valid remote_path string is required.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">local_path</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Local path &#39;</span><span class="si">{}</span><span class="s2">&#39; does not exist or is not a file.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">local_path</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">remote_path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;/home/nao&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Destination path must start with &#39;/home/nao&#39;. Provided: &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">remote_path</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">SCPClient</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;SCPClient is not available. Cannot upload file.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;ssh&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;SSH connection has not been initialized. Cannot upload file.&quot;</span><span class="p">)</span>
+
+        <span class="n">remote_is_dir</span> <span class="o">=</span> <span class="n">remote_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">remote_path</span> <span class="o">==</span> <span class="s2">&quot;/home/nao&quot;</span>
+        <span class="k">if</span> <span class="n">remote_is_dir</span><span class="p">:</span>
+            <span class="n">remote_dir</span> <span class="o">=</span> <span class="n">remote_path</span>
+            <span class="n">remote_file_path</span> <span class="o">=</span> <span class="n">posixpath</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">remote_dir</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">local_path</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">remote_dir</span> <span class="o">=</span> <span class="n">posixpath</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">remote_path</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;/home/nao&quot;</span>
+            <span class="n">remote_file_path</span> <span class="o">=</span> <span class="n">remote_path</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">remote_dir</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;/home/nao&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Destination directory must remain within &#39;/home/nao&#39;. Computed: &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">remote_dir</span><span class="p">))</span>
+
+        <span class="n">mkdir_cmd</span> <span class="o">=</span> <span class="s2">&quot;mkdir -p </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">remote_dir</span><span class="p">))</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span><span class="n">mkdir_cmd</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">error_output</span> <span class="o">=</span> <span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;Failed to create remote directory &#39;</span><span class="si">{}</span><span class="s2">&#39;: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">remote_dir</span><span class="p">,</span> <span class="n">error_output</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="p">)</span>
+
+        <span class="c1"># ensure destination file does not already exist</span>
+        <span class="n">check_cmd</span> <span class="o">=</span> <span class="s2">&quot;test -e </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">remote_file_path</span><span class="p">))</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span><span class="n">check_cmd</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Skipping upload: destination file &#39;</span><span class="si">%s</span><span class="s2">&#39; already exists on the Naoqi device.&quot;</span><span class="p">,</span>
+                <span class="n">remote_file_path</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">SCPClient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">get_transport</span><span class="p">())</span> <span class="k">as</span> <span class="n">scp</span><span class="p">:</span>
+                <span class="n">destination</span> <span class="o">=</span> <span class="n">remote_dir</span> <span class="k">if</span> <span class="n">remote_is_dir</span> <span class="k">else</span> <span class="n">remote_file_path</span>
+                <span class="n">scp</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">local_path</span><span class="p">,</span> <span class="n">destination</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;Failed to upload &#39;</span><span class="si">{}</span><span class="s2">&#39; to &#39;</span><span class="si">{}</span><span class="s2">&#39;: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">local_path</span><span class="p">,</span> <span class="n">remote_file_path</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Uploaded &#39;</span><span class="si">{}</span><span class="s2">&#39; to &#39;</span><span class="si">{}</span><span class="s2">&#39; on the Naoqi device.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">local_path</span><span class="p">,</span> <span class="n">remote_file_path</span><span class="p">))</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">top_camera</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiTopCamera</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bottom_camera</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiBottomCamera</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiMicrophone</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">motion</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiMotion</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiTextToSpeech</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">motion_record</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiMotionRecorder</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stiffness</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiStiffness</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">autonomous</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiAutonomous</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">leds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiLEDs</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">speaker</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiSpeaker</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">buttons</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiButton</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tracker</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiTracker</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">look_at</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_connector</span><span class="p">(</span><span class="n">NaoqiLookAt</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;logfile&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

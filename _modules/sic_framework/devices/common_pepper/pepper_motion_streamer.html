@@ -1,0 +1,702 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.common_pepper.pepper_motion_streamer &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.common_pepper.pepper_motion_streamer</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.common_pepper.pepper_motion_streamer</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SICComponentManager</span><span class="p">,</span>
+    <span class="n">SICConfMessage</span><span class="p">,</span>
+    <span class="n">SICMessage</span><span class="p">,</span>
+    <span class="n">SICRequest</span><span class="p">,</span>
+    <span class="n">utils</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.component_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICComponent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConnector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.common_naoqi_motion</span><span class="w"> </span><span class="kn">import</span> <span class="n">NaoqiMotionTools</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.service_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICService</span>
+
+<span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">PYTHON_VERSION_IS_2</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">qi</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">naoqi</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALProxy</span>
+
+
+<div class="viewcode-block" id="StartStreaming">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.StartStreaming">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StartStreaming</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to start streaming joint positions.</span>
+<span class="sd">    </span>
+<span class="sd">    Begins continuous sampling and broadcasting of the specified joint chains&#39;</span>
+<span class="sd">    positions at the configured sample rate.</span>
+<span class="sd">    </span>
+<span class="sd">    :ivar list joints: Joint chains to stream (e.g., [&quot;Body&quot;], [&quot;LArm&quot;, &quot;RArm&quot;, &quot;Head&quot;]).</span>
+<span class="sd">    </span>
+<span class="sd">    See NAOqi documentation for joint chain definitions:</span>
+<span class="sd">    </span>
+<span class="sd">    - NAO: http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains</span>
+<span class="sd">    - Pepper: http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="StartStreaming.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.StartStreaming.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">joints</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize start streaming request.</span>
+<span class="sd">        </span>
+<span class="sd">        :param list joints: Joint chain names to stream. Common chains include &quot;Body&quot;,</span>
+<span class="sd">            &quot;Head&quot;, &quot;LArm&quot;, &quot;RArm&quot;, &quot;LLeg&quot;, &quot;RLeg&quot; (Pepper has wheels, not legs).</span>
+<span class="sd">        :type joints: list[str]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">StartStreaming</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">joints</span> <span class="o">=</span> <span class="n">joints</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="StopStreaming">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.StopStreaming">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StopStreaming</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to stop streaming joint positions.</span>
+<span class="sd">    </span>
+<span class="sd">    Halts the continuous sampling and broadcasting of joint positions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="SetLockedJointsRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.SetLockedJointsRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SetLockedJointsRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to set which joint chains should be locked.</span>
+<span class="sd">    </span>
+<span class="sd">    Locked joints maintain stiffness=1.0 and their angles are frozen, preventing</span>
+<span class="sd">    motion streaming from changing them. This is useful for puppeteering with</span>
+<span class="sd">    selective joint locking.</span>
+<span class="sd">    </span>
+<span class="sd">    :ivar list locked_joints: Joint chain names to lock (e.g., [&quot;LArm&quot;, &quot;RArm&quot;]).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="SetLockedJointsRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.SetLockedJointsRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">locked_joints</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize locked joints request.</span>
+<span class="sd">        </span>
+<span class="sd">        :param list locked_joints: Joint chains to lock. Use chain names like</span>
+<span class="sd">            &quot;LArm&quot;, &quot;RArm&quot;, &quot;Head&quot; (not individual joint names).</span>
+<span class="sd">        :type locked_joints: list[str]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SetLockedJointsRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span> <span class="o">=</span> <span class="n">locked_joints</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="GetLockedJointsRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.GetLockedJointsRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GetLockedJointsRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to retrieve the current list of locked joint chains.</span>
+<span class="sd">    </span>
+<span class="sd">    :returns: LockedJointsResponse containing the currently locked joint chains.</span>
+<span class="sd">    :rtype: LockedJointsResponse</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="ClearLockedJointsRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.ClearLockedJointsRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ClearLockedJointsRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to unlock all joints and clear stored locked angles.</span>
+<span class="sd">    </span>
+<span class="sd">    Removes all joint locking constraints, allowing full motion streaming control.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="LockedJointsResponse">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.LockedJointsResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LockedJointsResponse</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Response containing the current list of locked joint chains.</span>
+<span class="sd">    </span>
+<span class="sd">    :ivar list locked_joints: Currently locked joint chain names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="LockedJointsResponse.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.LockedJointsResponse.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">locked_joints</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize locked joints response.</span>
+<span class="sd">        </span>
+<span class="sd">        :param list locked_joints: List of currently locked joint chains.</span>
+<span class="sd">        :type locked_joints: list[str]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LockedJointsResponse</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span> <span class="o">=</span> <span class="n">locked_joints</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PepperMotionStream">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStream">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PepperMotionStream</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Message containing Pepper&#39;s current joint angles and base velocity.</span>
+<span class="sd">    </span>
+<span class="sd">    This message is published by the motion streamer at the configured sample</span>
+<span class="sd">    rate and contains complete motion state information.</span>
+<span class="sd">    </span>
+<span class="sd">    :ivar list joints: List of joint names.</span>
+<span class="sd">    :ivar list angles: Joint angles in radians, corresponding to joints list.</span>
+<span class="sd">    :ivar tuple velocity: Base velocity as (vx, vy, vtheta) in (m/s, m/s, rad/s).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="PepperMotionStream.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStream.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">joints</span><span class="p">,</span> <span class="n">angles</span><span class="p">,</span> <span class="n">velocity</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize motion stream message.</span>
+<span class="sd">        </span>
+<span class="sd">        :param list joints: Joint names being streamed.</span>
+<span class="sd">        :type joints: list[str]</span>
+<span class="sd">        :param list angles: Current angles in radians for each joint.</span>
+<span class="sd">        :type angles: list[float]</span>
+<span class="sd">        :param tuple velocity: Robot base velocity (vx, vy, vtheta).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PepperMotionStream</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">joints</span> <span class="o">=</span> <span class="n">joints</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angles</span> <span class="o">=</span> <span class="n">angles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span> <span class="o">=</span> <span class="n">velocity</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PepperMotionStreamerConf">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStreamerConf">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PepperMotionStreamerConf</span><span class="p">(</span><span class="n">SICConfMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Configuration for Pepper motion streamer component.</span>
+<span class="sd">    </span>
+<span class="sd">    Controls the behavior of the motion streamer including stiffness, speed,</span>
+<span class="sd">    sampling rate, and joint locking configuration.</span>
+<span class="sd">    </span>
+<span class="sd">    :ivar float stiffness: Stiffness for consuming motion streams [0.0-1.0].</span>
+<span class="sd">    :ivar float speed: Speed fraction for reaching target positions [0.0-1.0].</span>
+<span class="sd">    :ivar float stream_stiffness: Stiffness when producing motion streams [0.0-1.0].</span>
+<span class="sd">    :ivar bool use_sensors: If True, read sensor angles; if False, read command angles.</span>
+<span class="sd">    :ivar int samples_per_second: Streaming frequency in Hz.</span>
+<span class="sd">    :ivar list locked_joints: Initial list of locked joint chains.</span>
+<span class="sd">    </span>
+<span class="sd">    .. note::</span>
+<span class="sd">        - Use ``stiffness`` to control force when Pepper receives motion commands</span>
+<span class="sd">        - Use ``stream_stiffness`` to control stiffness when Pepper is being moved manually</span>
+<span class="sd">        - For puppeteering, set stream_stiffness=0.0 on the puppet (source robot)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="PepperMotionStreamerConf.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStreamerConf.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">stiffness</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+        <span class="n">speed</span><span class="o">=</span><span class="mf">0.75</span><span class="p">,</span>
+        <span class="n">stream_stiffness</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">use_sensors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">samples_per_second</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+        <span class="n">locked_joints</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize motion streamer configuration.</span>
+<span class="sd">        </span>
+<span class="sd">        :param float stiffness: Motor power for consuming streams [0.0-1.0].</span>
+<span class="sd">            Higher values provide more force. Defaults to 0.6.</span>
+<span class="sd">        :param float speed: Movement speed fraction [0.0-1.0]. Defaults to 0.75.</span>
+<span class="sd">        :param float stream_stiffness: Stiffness when producing streams [0.0-1.0].</span>
+<span class="sd">            Use 0.0 for manual manipulation. Defaults to 0.</span>
+<span class="sd">        :param bool use_sensors: Read sensor (True) vs command (False) angles.</span>
+<span class="sd">            Defaults to False.</span>
+<span class="sd">        :param int samples_per_second: Streaming rate in Hz. Defaults to 20.</span>
+<span class="sd">        :param list locked_joints: Joint chains to lock with stiffness=1.0.</span>
+<span class="sd">            These joints won&#39;t be affected by incoming motion streams. Defaults to None.</span>
+<span class="sd">        :type locked_joints: list[str] or None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">SICConfMessage</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stiffness</span> <span class="o">=</span> <span class="n">stiffness</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="n">speed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream_stiffness</span> <span class="o">=</span> <span class="n">stream_stiffness</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_sensors</span> <span class="o">=</span> <span class="n">use_sensors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">samples_per_second</span> <span class="o">=</span> <span class="n">samples_per_second</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span> <span class="o">=</span> <span class="n">locked_joints</span> <span class="ow">or</span> <span class="p">[]</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PepperMotionStreamerService">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStreamerService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PepperMotionStreamerService</span><span class="p">(</span><span class="n">SICService</span><span class="p">,</span> <span class="n">NaoqiMotionTools</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Service component for Pepper motion streaming.</span>
+<span class="sd">    </span>
+<span class="sd">    Provides bidirectional motion streaming capabilities:</span>
+<span class="sd">    </span>
+<span class="sd">    - Produces motion streams by reading Pepper&#39;s joint angles and velocity</span>
+<span class="sd">    - Consumes motion streams by setting Pepper&#39;s joints to received angles</span>
+<span class="sd">    - Supports selective joint locking for advanced control scenarios</span>
+<span class="sd">    </span>
+<span class="sd">    This component runs a background thread that continuously samples joint</span>
+<span class="sd">    positions at the configured rate when streaming is active. It can also</span>
+<span class="sd">    receive and execute motion commands from external sources.</span>
+<span class="sd">    </span>
+<span class="sd">    The component handles both joint-level control and base movement, making</span>
+<span class="sd">    it suitable for full-body teleoperation and puppeteering applications.</span>
+<span class="sd">    </span>
+<span class="sd">    .. note::</span>
+<span class="sd">        All operations are thread-safe, with proper synchronization between</span>
+<span class="sd">        the streaming thread and request handlers.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="PepperMotionStreamerService.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStreamerService.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the motion streamer service.</span>
+<span class="sd">        </span>
+<span class="sd">        Sets up NAOqi session, motion service, joint mappings, and starts the</span>
+<span class="sd">        background streaming thread.</span>
+<span class="sd">        </span>
+<span class="sd">        :param args: Variable length argument list passed to parent.</span>
+<span class="sd">        :param kwargs: Arbitrary keyword arguments passed to parent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">SICService</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">qi</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;tcp://127.0.0.1:9559&quot;</span><span class="p">)</span>
+
+        <span class="n">NaoqiMotionTools</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qi_session</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALMotion&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">samples_per_second</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">samples_per_second</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">do_streaming</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+
+        <span class="c1"># A list of joint names (not chains)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">joints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_joint_list</span><span class="p">([</span><span class="s2">&quot;Body&quot;</span><span class="p">])</span>
+        
+        <span class="c1"># Locked joint chains that should maintain stiffness=1.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">locked_joints</span><span class="p">)</span>
+        <span class="c1"># Store the angles for locked joints</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locked_angles</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Chain to joint mapping for Pepper</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chain_to_joints</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;LArm&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;LShoulderPitch&quot;</span><span class="p">,</span> <span class="s2">&quot;LShoulderRoll&quot;</span><span class="p">,</span> <span class="s2">&quot;LElbowYaw&quot;</span><span class="p">,</span> <span class="s2">&quot;LElbowRoll&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;RArm&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;RShoulderPitch&quot;</span><span class="p">,</span> <span class="s2">&quot;RShoulderRoll&quot;</span><span class="p">,</span> <span class="s2">&quot;RElbowYaw&quot;</span><span class="p">,</span> <span class="s2">&quot;RElbowRoll&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;Head&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;HeadYaw&quot;</span><span class="p">,</span> <span class="s2">&quot;HeadPitch&quot;</span><span class="p">]</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stream_motion</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream_thread</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_component_name</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="PepperMotionStreamerService.get_conf">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStreamerService.get_conf">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_conf</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get default configuration for this component.</span>
+<span class="sd">        </span>
+<span class="sd">        :returns: Default configuration instance.</span>
+<span class="sd">        :rtype: PepperMotionStreamerConf</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">PepperMotionStreamerConf</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="PepperMotionStreamerService.get_inputs">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStreamerService.get_inputs">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_inputs</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get list of input message types this component accepts.</span>
+<span class="sd">        </span>
+<span class="sd">        :returns: List of accepted message types including motion streams and control requests.</span>
+<span class="sd">        :rtype: list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">PepperMotionStream</span><span class="p">,</span> <span class="n">StartStreaming</span><span class="p">,</span> <span class="n">StopStreaming</span><span class="p">,</span> <span class="n">SetLockedJointsRequest</span><span class="p">,</span> <span class="n">GetLockedJointsRequest</span><span class="p">,</span> <span class="n">ClearLockedJointsRequest</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="PepperMotionStreamerService._get_joints_in_locked_chains">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStreamerService._get_joints_in_locked_chains">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_joints_in_locked_chains</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get all individual joint names that belong to locked chains.</span>
+<span class="sd">        </span>
+<span class="sd">        Expands locked chain names (e.g., &quot;LArm&quot;) into their constituent joint</span>
+<span class="sd">        names (e.g., [&quot;LShoulderPitch&quot;, &quot;LShoulderRoll&quot;, &quot;LElbowYaw&quot;, &quot;LElbowRoll&quot;]).</span>
+<span class="sd">        </span>
+<span class="sd">        :returns: Individual joint names in locked chains.</span>
+<span class="sd">        :rtype: list[str]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">locked_individual_joints</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">chain</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">chain</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">chain_to_joints</span><span class="p">:</span>
+                <span class="n">locked_individual_joints</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">chain_to_joints</span><span class="p">[</span><span class="n">chain</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">locked_individual_joints</span></div>
+
+
+<div class="viewcode-block" id="PepperMotionStreamerService.on_request">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStreamerService.on_request">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Handle control requests for the motion streamer.</span>
+<span class="sd">        </span>
+<span class="sd">        Processes various request types to control streaming behavior and</span>
+<span class="sd">        manage joint locking state.</span>
+<span class="sd">        </span>
+<span class="sd">        :param request: The incoming request (StartStreaming, StopStreaming,</span>
+<span class="sd">            SetLockedJointsRequest, GetLockedJointsRequest, or ClearLockedJointsRequest).</span>
+<span class="sd">        :returns: Acknowledgment or response data.</span>
+<span class="sd">        :rtype: SICMessage or LockedJointsResponse</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">request</span> <span class="o">==</span> <span class="n">StartStreaming</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">joints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_joint_list</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">joints</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">do_streaming</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">request</span> <span class="o">==</span> <span class="n">StopStreaming</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">do_streaming</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span>
+            
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">SetLockedJointsRequest</span><span class="p">):</span>
+            <span class="c1"># Get the new list of locked joints</span>
+            <span class="n">new_locked_joints</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">locked_joints</span><span class="p">)</span>
+            
+            <span class="c1"># Clear locked angles for joints that are no longer locked</span>
+            <span class="n">new_locked_individual_joints</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">chain</span> <span class="ow">in</span> <span class="n">new_locked_joints</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">chain</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">chain_to_joints</span><span class="p">:</span>
+                    <span class="n">new_locked_individual_joints</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">chain_to_joints</span><span class="p">[</span><span class="n">chain</span><span class="p">])</span>
+            
+            <span class="c1"># Remove angles for joints that are no longer locked</span>
+            <span class="k">for</span> <span class="n">joint</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">locked_angles</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="k">if</span> <span class="n">joint</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">new_locked_individual_joints</span><span class="p">:</span>
+                    <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked_angles</span><span class="p">[</span><span class="n">joint</span><span class="p">]</span>
+            
+            <span class="c1"># Update locked joints list</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span> <span class="o">=</span> <span class="n">new_locked_joints</span>
+            
+            <span class="c1"># Set stiffness=1.0 for newly locked chains and store their current angles</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setStiffnesses</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+                <span class="c1"># Store current angles for locked joints</span>
+                <span class="k">if</span> <span class="n">new_locked_individual_joints</span><span class="p">:</span>
+                    <span class="n">current_angles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">getAngles</span><span class="p">(</span><span class="n">new_locked_individual_joints</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">use_sensors</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">locked_angles</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">new_locked_individual_joints</span><span class="p">,</span> <span class="n">current_angles</span><span class="p">)))</span>
+            <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span>
+            
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">GetLockedJointsRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">LockedJointsResponse</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span><span class="p">))</span>
+            
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">ClearLockedJointsRequest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">locked_angles</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="PepperMotionStreamerService.on_message">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStreamerService.on_message">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute motion from incoming PepperMotionStream message.</span>
+<span class="sd">        </span>
+<span class="sd">        Applies the received joint angles and base velocity to the robot,</span>
+<span class="sd">        respecting locked joint constraints. Locked joints maintain their</span>
+<span class="sd">        stored angles instead of following the stream.</span>
+<span class="sd">        </span>
+<span class="sd">        The method:</span>
+<span class="sd">        </span>
+<span class="sd">        1. Sets appropriate stiffness for locked vs non-locked joints</span>
+<span class="sd">        2. Overrides locked joint angles with stored values</span>
+<span class="sd">        3. Applies joint angles at configured speed</span>
+<span class="sd">        4. Executes base movement with received velocity</span>
+<span class="sd">        </span>
+<span class="sd">        :param PepperMotionStream message: Motion stream containing joint angles</span>
+<span class="sd">            and base velocity to apply.</span>
+<span class="sd">        </span>
+<span class="sd">        .. note::</span>
+<span class="sd">            Locked joints are set to stiffness=1.0 and maintain their frozen</span>
+<span class="sd">            angles, while non-locked joints follow the incoming stream.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get all individual joints that belong to locked chains</span>
+        <span class="n">locked_individual_joints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_joints_in_locked_chains</span><span class="p">()</span>
+        
+        <span class="c1"># Set stiffness for non-locked joints</span>
+        <span class="n">non_locked_joints</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">joints</span> <span class="k">if</span> <span class="n">j</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">locked_individual_joints</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">non_locked_joints</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setStiffnesses</span><span class="p">(</span><span class="n">non_locked_joints</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">stiffness</span><span class="p">)</span>
+        
+        <span class="c1"># Set stiffness for locked chains (chain-level calls that work on Pepper)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setStiffnesses</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+        <span class="c1"># For locked joints, override the streamed angles with their locked angles</span>
+        <span class="n">modified_joints</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">modified_angles</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">joint</span><span class="p">,</span> <span class="n">angle</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">joints</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">angles</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">joint</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked_angles</span><span class="p">:</span>
+                <span class="c1"># Use stored locked angle - this will be sent continuously to maintain position</span>
+                <span class="n">modified_joints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">joint</span><span class="p">)</span>
+                <span class="n">modified_angles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">locked_angles</span><span class="p">[</span><span class="n">joint</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Use normal streamed angle</span>
+                <span class="n">modified_joints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">joint</span><span class="p">)</span>
+                <span class="n">modified_angles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+        
+        <span class="c1"># Send all angles (locked joints get their frozen angles, others get streamed angles)</span>
+        <span class="k">if</span> <span class="n">modified_joints</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setAngles</span><span class="p">(</span><span class="n">modified_joints</span><span class="p">,</span> <span class="n">modified_angles</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">speed</span><span class="p">)</span>
+
+        <span class="c1"># also move the base of the robot</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">velocity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PepperMotionStreamerService.get_output">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStreamerService.get_output">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_output</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the output message type this component produces.</span>
+<span class="sd">        </span>
+<span class="sd">        :returns: PepperMotionStream class.</span>
+<span class="sd">        :rtype: type</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">PepperMotionStream</span></div>
+
+
+<div class="viewcode-block" id="PepperMotionStreamerService.stream_motion">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStreamerService.stream_motion">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stream_motion</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Background thread for continuous motion streaming.</span>
+<span class="sd">        </span>
+<span class="sd">        Runs in a separate thread, continuously sampling joint angles and robot</span>
+<span class="sd">        velocity at the configured rate when streaming is active. Publishes</span>
+<span class="sd">        :class:`PepperMotionStream` messages containing the current robot state.</span>
+<span class="sd">        </span>
+<span class="sd">        The thread:</span>
+<span class="sd">        </span>
+<span class="sd">        1. Waits for streaming to be enabled (StartStreaming request)</span>
+<span class="sd">        2. Ensures locked joints maintain stiffness=1.0</span>
+<span class="sd">        3. Captures current angles for all joints (including locked ones)</span>
+<span class="sd">        4. Reads robot base velocity</span>
+<span class="sd">        5. Publishes complete motion state</span>
+<span class="sd">        6. Sleeps to maintain configured sample rate</span>
+<span class="sd">        </span>
+<span class="sd">        .. note::</span>
+<span class="sd">            **Thread Lifecycle**: Started in ``__init__()``, runs until component is stopped</span>
+<span class="sd">            via ``_signal_to_stop``. Uses ``do_streaming`` event to pause/resume without</span>
+<span class="sd">            destroying the thread.</span>
+<span class="sd">            </span>
+<span class="sd">            **Error Handling**: Logs exceptions and triggers component shutdown on critical errors.</span>
+<span class="sd">            </span>
+<span class="sd">            **Locked Joints**: Locked joints have their angles captured and stored on first</span>
+<span class="sd">            sample after locking. These frozen angles are included in the stream to maintain</span>
+<span class="sd">            locked positions on consumer robots.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_signal_to_stop</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+
+                <span class="c1"># check both do_streaming and _signal_to_stop periodically</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">do_streaming</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_streaming</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+                    <span class="k">continue</span>
+                
+                <span class="c1"># Ensure locked chains maintain stiffness=1.0 and store their angles if not already stored</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setStiffnesses</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">locked_joints</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+                    <span class="c1"># Store current angles for locked joints if not already stored</span>
+                    <span class="n">locked_individual_joints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_joints_in_locked_chains</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">joint</span> <span class="ow">in</span> <span class="n">locked_individual_joints</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">joint</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked_angles</span><span class="p">:</span>
+                            <span class="n">angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">getAngles</span><span class="p">([</span><span class="n">joint</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">use_sensors</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">locked_angles</span><span class="p">[</span><span class="n">joint</span><span class="p">]</span> <span class="o">=</span> <span class="n">angle</span>
+
+                <span class="c1"># Get angles for all joints (including locked ones)</span>
+                <span class="n">angles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">getAngles</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">joints</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">use_sensors</span><span class="p">)</span>
+
+                <span class="n">velocity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">getRobotVelocity</span><span class="p">()</span>
+                
+                <span class="bp">self</span><span class="o">.</span><span class="n">output_message</span><span class="p">(</span><span class="n">PepperMotionStream</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">joints</span><span class="p">,</span> <span class="n">angles</span><span class="p">,</span> <span class="n">velocity</span><span class="p">))</span>
+
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">samples_per_second</span><span class="p">))</span>
+                
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stopped</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="PepperMotionStreamer">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_pepper.pepper_motion_streamer.PepperMotionStreamer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PepperMotionStreamer</span><span class="p">(</span><span class="n">SICConnector</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Connector for accessing Pepper&#39;s motion streaming capabilities.</span>
+<span class="sd">    </span>
+<span class="sd">    Provides a high-level interface to the :class:`PepperMotionStreamerService` component.</span>
+<span class="sd">    Access this through the Pepper device&#39;s ``motion_streaming()`` method.</span>
+<span class="sd">    </span>
+<span class="sd">    This connector supports both producing and consuming motion streams, enabling</span>
+<span class="sd">    bidirectional teleoperation and puppeteering scenarios.</span>
+<span class="sd">    </span>
+<span class="sd">    Example usage::</span>
+<span class="sd">    </span>
+<span class="sd">        # Simple streaming:</span>
+<span class="sd">        pepper.motion_streaming().request(StartStreaming([&quot;Head&quot;, &quot;RArm&quot;, &quot;LArm&quot;]))</span>
+<span class="sd">        </span>
+<span class="sd">        # Puppeteering (connect two robots):</span>
+<span class="sd">        puppet_stream = puppet.motion_streaming()</span>
+<span class="sd">        performer_stream = performer.motion_streaming(input_source=puppet_stream)</span>
+<span class="sd">        puppet_stream.request(StartStreaming([&quot;Head&quot;, &quot;RArm&quot;, &quot;LArm&quot;]))</span>
+<span class="sd">        </span>
+<span class="sd">        # With joint locking:</span>
+<span class="sd">        pepper.motion_streaming().request(SetLockedJointsRequest([&quot;RArm&quot;]))</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">component_class</span> <span class="o">=</span> <span class="n">PepperMotionStreamerService</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">SICComponentManager</span><span class="p">([</span><span class="n">PepperMotionStreamerService</span><span class="p">])</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

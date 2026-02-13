@@ -1,0 +1,324 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.common_naoqi.naoqi_tracker &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.common_naoqi.naoqi_tracker</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.common_naoqi.naoqi_tracker</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework</span><span class="w"> </span><span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.actuator_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICActuator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.component_manager_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICComponentManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConnector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConfMessage</span><span class="p">,</span> <span class="n">SICMessage</span><span class="p">,</span> <span class="n">SICRequest</span>
+
+<span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">PYTHON_VERSION_IS_2</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">qi</span>
+
+
+<div class="viewcode-block" id="StartTrackRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.StartTrackRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StartTrackRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to register a target and start tracking it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="StartTrackRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.StartTrackRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">target_name</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;Head&quot;</span><span class="p">,</span> <span class="n">effector</span><span class="o">=</span><span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="n">move_rel_position</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize a start-tracking request.</span>
+
+<span class="sd">        See: http://doc.aldebaran.com/2-5/naoqi/trackers/index.html</span>
+
+<span class="sd">        :param target_name: Name of the object to track (e.g., RedBall, Face).</span>
+<span class="sd">        :param float size: Target size in meters (e.g., ball diameter or face width).</span>
+<span class="sd">        :param str mode: Tracking mode default mode is &quot;Head&quot;, other options: &quot;WholeBody&quot;, &quot;Move&quot;. See http://doc.aldebaran.com/2-5/naoqi/trackers/index.html#tracking-modes</span>
+<span class="sd">        :param str effector: Effector to use (&quot;Arms&quot;, &quot;LArm&quot;, &quot;RArm&quot;, or &quot;None&quot;).</span>
+<span class="sd">        :param move_rel_position: Set the robot position relative to target in Move mode</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">StartTrackRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_name</span> <span class="o">=</span> <span class="n">target_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effector</span> <span class="o">=</span> <span class="n">effector</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">move_rel_position</span> <span class="o">=</span> <span class="n">move_rel_position</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="StopAllTrackRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.StopAllTrackRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StopAllTrackRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to stop tracking and unregister all targets.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="RemoveTargetRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.RemoveTargetRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RemoveTargetRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<div class="viewcode-block" id="RemoveTargetRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.RemoveTargetRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize a request to remove a specific tracking target.</span>
+
+<span class="sd">        :param str target_name: Name of the target to stop tracking.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RemoveTargetRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_name</span> <span class="o">=</span> <span class="n">target_name</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="RemoveAllTargetsRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.RemoveAllTargetsRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RemoveAllTargetsRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to remove all tracking targets.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiTrackerActuator">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.NaoqiTrackerActuator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiTrackerActuator</span><span class="p">(</span><span class="n">SICActuator</span><span class="p">):</span>
+<div class="viewcode-block" id="NaoqiTrackerActuator.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.NaoqiTrackerActuator.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiTrackerActuator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">qi</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;tcp://127.0.0.1:9559&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALTracker&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">posture</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALRobotPosture&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALMotion&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiTrackerActuator.get_conf">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.NaoqiTrackerActuator.get_conf">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_conf</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the default configuration for this actuator.</span>
+
+<span class="sd">        :returns: Generic configuration message.</span>
+<span class="sd">        :rtype: SICConfMessage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">SICConfMessage</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NaoqiTrackerActuator.get_inputs">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.NaoqiTrackerActuator.get_inputs">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_inputs</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">StartTrackRequest</span><span class="p">,</span>
+            <span class="n">StopAllTrackRequest</span><span class="p">,</span>
+            <span class="n">RemoveTargetRequest</span><span class="p">,</span>
+            <span class="n">RemoveAllTargetsRequest</span><span class="p">,</span>
+        <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="NaoqiTrackerActuator.get_output">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.NaoqiTrackerActuator.get_output">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_output</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">SICMessage</span></div>
+
+
+<div class="viewcode-block" id="NaoqiTrackerActuator.execute">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.NaoqiTrackerActuator.execute">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">request</span> <span class="o">==</span> <span class="n">StartTrackRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Start TrackRequest for </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">target_name</span><span class="p">))</span>
+            <span class="c1"># add target to track</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">registerTarget</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">target_name</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+            <span class="c1"># set mode</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">setMode</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+            <span class="c1"># for Move and WholeBody modes, the robot must be in a standing posture, ready to move</span>
+            <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;Move&quot;</span> <span class="ow">or</span> <span class="n">request</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;WholeBody&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">posture</span><span class="o">.</span><span class="n">goToPosture</span><span class="p">(</span><span class="s2">&quot;Stand&quot;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;Move&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">move_rel_position</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s2">&quot;The relative position is not passed, &quot;</span>
+                        <span class="s2">&quot;the value is either the default [0, 0, 0, 0, 0, 0] if never set &quot;</span>
+                        <span class="s2">&quot;or the previous value passed&quot;</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s2">&quot;Get relative position </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">getRelativePosition</span><span class="p">()</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">setRelativePosition</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">move_rel_position</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s2">&quot;Get relative position </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">getRelativePosition</span><span class="p">()</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+            <span class="c1"># set effector</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">setEffector</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">effector</span><span class="p">)</span>
+            <span class="c1"># start tracker</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">target_name</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">request</span> <span class="o">==</span> <span class="n">StopAllTrackRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Stop TrackRequest&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">stopTracker</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">unregisterAllTargets</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">setEffector</span><span class="p">(</span><span class="s2">&quot;None&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">posture</span><span class="o">.</span><span class="n">goToPosture</span><span class="p">(</span><span class="s2">&quot;Stand&quot;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">rest</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">request</span> <span class="o">==</span> <span class="n">RemoveTargetRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Unregister target </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">target_name</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">unregisterTarget</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">target_name</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">request</span> <span class="o">==</span> <span class="n">RemoveAllTargetsRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tracker</span><span class="o">.</span><span class="n">unregisterAllTargets</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NaoqiTrackerActuator.stop">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.NaoqiTrackerActuator.stop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="c1"># No long-running worker loop; mark stopped immediately so cleanup runs.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stopped</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiTrackerActuator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiTracker">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_tracker.NaoqiTracker">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiTracker</span><span class="p">(</span><span class="n">SICConnector</span><span class="p">):</span>
+    <span class="n">component_class</span> <span class="o">=</span> <span class="n">NaoqiTrackerActuator</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">SICComponentManager</span><span class="p">([</span><span class="n">NaoqiTrackerActuator</span><span class="p">])</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

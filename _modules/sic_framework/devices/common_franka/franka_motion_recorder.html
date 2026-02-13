@@ -1,0 +1,383 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.common_franka.franka_motion_recorder &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.common_franka.franka_motion_recorder</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.common_franka.franka_motion_recorder</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">panda_py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">panda_py</span><span class="w"> </span><span class="kn">import</span> <span class="n">controllers</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICComponentManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.actuator_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICActuator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConnector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SICRequest</span><span class="p">,</span>
+    <span class="n">SICMessage</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Instead of using ROS, we use panda_py, which provides lightweight Python bindings for the Panda,</span>
+<span class="sd">enabling direct control of Franka using libfranka. More details can be found here: https://github.com/JeanElsner/panda-py</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="StartTeachingRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.StartTeachingRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StartTeachingRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A request to start teaching mode</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="StopTeachingRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.StopTeachingRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StopTeachingRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A request to stop teaching mode</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="StartRecordingRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.StartRecordingRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StartRecordingRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Record motion of the joints, For more information see documentation</span>
+<span class="sd">    https://github.com/JeanElsner/panda-py</span>
+
+<span class="sd">    :param frequency: Number of data points recorded per second. Higher values capture finer motion detail</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="StartRecordingRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.StartRecordingRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frequency</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">StartRecordingRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">frequency</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="StopRecordingRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.StopRecordingRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StopRecordingRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A request to stop recording joint motion.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="GoHomeRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.GoHomeRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GoHomeRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A request to move the robot to its home position.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="PlayRecordingRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.PlayRecordingRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PlayRecordingRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Play recorded joint positions and joint velocities.</span>
+
+<span class="sd">    :param joint_recording: Object contains PandaJointsRecording.</span>
+<span class="sd">    :param frequency: Number of data points recorded per second. This frequency should match how the initial trajectory was recorded/collected</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="PlayRecordingRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.PlayRecordingRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">joint_recording</span><span class="p">,</span> <span class="n">frequency</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PlayRecordingRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recorded_joints_pos</span> <span class="o">=</span> <span class="n">joint_recording</span><span class="o">.</span><span class="n">recorded_joints_pos</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recorded_joints_vel</span> <span class="o">=</span> <span class="n">joint_recording</span><span class="o">.</span><span class="n">recorded_joints_vel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">frequency</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PandaJointsRecording">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.PandaJointsRecording">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PandaJointsRecording</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A SICMessage containing recorded joint positions and velocities.</span>
+
+<span class="sd">    :param recorded_joints_pos: List of 7-element arrays representing recorded joint positions.</span>
+<span class="sd">    :param recorded_joints_vel: List of 7-element arrays representing recorded joint velocities.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="PandaJointsRecording.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.PandaJointsRecording.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recorded_joints_pos</span><span class="p">,</span> <span class="n">recorded_joints_vel</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recorded_joints_pos</span> <span class="o">=</span> <span class="n">recorded_joints_pos</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recorded_joints_vel</span> <span class="o">=</span> <span class="n">recorded_joints_vel</span></div>
+
+
+<div class="viewcode-block" id="PandaJointsRecording.save">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.PandaJointsRecording.save">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save the recorded joint positions and velocities to a file.</span>
+
+<span class="sd">        :param filename: The name of the file to save. In demo, it ends with &quot;.motion&quot;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="PandaJointsRecording.load">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.PandaJointsRecording.load">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load recorded joint positions and velocities from a &quot;.motion&quot;.</span>
+
+<span class="sd">        :param filename: The name of the file to load.</span>
+<span class="sd">        :return: An instance of PandaJointsRecording containing joint positions and velocities data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="FrankaMotionRecorderActuator">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.FrankaMotionRecorderActuator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FrankaMotionRecorderActuator</span><span class="p">(</span><span class="n">SICActuator</span><span class="p">):</span>
+<div class="viewcode-block" id="FrankaMotionRecorderActuator.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.FrankaMotionRecorderActuator.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">SICActuator</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">panda</span> <span class="o">=</span> <span class="n">panda_py</span><span class="o">.</span><span class="n">Panda</span><span class="p">(</span><span class="s2">&quot;172.16.0.2&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recorded_joints_pos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recorded_joints_vel</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recording</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">record_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">record_motion</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">record_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="FrankaMotionRecorderActuator.get_inputs">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.FrankaMotionRecorderActuator.get_inputs">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_inputs</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">StartRecordingRequest</span><span class="p">,</span> <span class="n">StopRecordingRequest</span><span class="p">,</span> <span class="n">StartTeachingRequest</span><span class="p">,</span> <span class="n">StopTeachingRequest</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="FrankaMotionRecorderActuator.record_motion">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.FrankaMotionRecorderActuator.record_motion">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">record_motion</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Record joint motion when recording event is set.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_signal_to_stop</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">recording</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">recording</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+                    <span class="k">continue</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">recorded_joints_pos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">panda</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span><span class="o">.</span><span class="n">q</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">recorded_joints_vel</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">panda</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span><span class="o">.</span><span class="n">dq</span><span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">frequency</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stopped</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="FrankaMotionRecorderActuator.reset_recording_variables">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.FrankaMotionRecorderActuator.reset_recording_variables">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_recording_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reset recorded joint positions and velocities and set the recording frequency.</span>
+
+<span class="sd">        :param request: The StartRecordingRequest containing the desired recording frequency.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recorded_joints_pos</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recorded_joints_vel</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequency</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">frequency</span></div>
+
+
+<div class="viewcode-block" id="FrankaMotionRecorderActuator.replay_recording">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.FrankaMotionRecorderActuator.replay_recording">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">replay_recording</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Replay recorded joint positions and velocities.</span>
+
+<span class="sd">        :param request: The PlayRecordingRequest containing recorded joint positions and velocities.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># here we set the controller to Joint Position, which requires joint positions and velocities to control the joints</span>
+        <span class="c1"># see more details: https://jeanelsner.github.io/panda-py/panda_py.controllers.html#panda_py.controllers.JointPosition.set_control</span>
+        <span class="n">ctrl</span> <span class="o">=</span> <span class="n">controllers</span><span class="o">.</span><span class="n">JointPosition</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">panda</span><span class="o">.</span><span class="n">start_controller</span><span class="p">(</span><span class="n">ctrl</span><span class="p">)</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">panda</span><span class="o">.</span><span class="n">create_context</span><span class="p">(</span><span class="n">frequency</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">frequency</span><span class="p">,</span> <span class="n">max_runtime</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span> <span class="k">as</span> <span class="n">ctx</span><span class="p">:</span>
+            <span class="k">while</span> <span class="n">ctx</span><span class="o">.</span><span class="n">ok</span><span class="p">()</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">recorded_joints_pos</span><span class="p">):</span>
+                <span class="n">ctrl</span><span class="o">.</span><span class="n">set_control</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">recorded_joints_pos</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">request</span><span class="o">.</span><span class="n">recorded_joints_vel</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="FrankaMotionRecorderActuator.execute">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.FrankaMotionRecorderActuator.execute">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">request</span> <span class="o">==</span> <span class="n">StartRecordingRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_recording_variables</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">recording</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">request</span> <span class="o">==</span> <span class="n">StopRecordingRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">recording</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">recording</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Stop recording&quot;</span><span class="p">)</span>
+            <span class="c1"># print(len(self.recorded_joints_vel))</span>
+            <span class="c1"># print(len(self.recorded_joints_pos))</span>
+            <span class="k">return</span> <span class="n">PandaJointsRecording</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">recorded_joints_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">recorded_joints_vel</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">request</span> <span class="o">==</span> <span class="n">StartTeachingRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">panda</span><span class="o">.</span><span class="n">teaching_mode</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">request</span> <span class="o">==</span> <span class="n">StopTeachingRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">panda</span><span class="o">.</span><span class="n">teaching_mode</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">request</span> <span class="o">==</span> <span class="n">GoHomeRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">panda</span><span class="o">.</span><span class="n">move_to_start</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">request</span> <span class="o">==</span> <span class="n">PlayRecordingRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">replay_recording</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="FrankaMotionRecorder">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_franka.franka_motion_recorder.FrankaMotionRecorder">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FrankaMotionRecorder</span><span class="p">(</span><span class="n">SICConnector</span><span class="p">):</span>
+    <span class="n">component_class</span> <span class="o">=</span> <span class="n">FrankaMotionRecorderActuator</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">SICComponentManager</span><span class="p">([</span><span class="n">FrankaMotionRecorderActuator</span><span class="p">])</span>
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

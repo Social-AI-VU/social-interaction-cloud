@@ -1,0 +1,687 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.common_naoqi.naoqi_motion &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.common_naoqi.naoqi_motion</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.common_naoqi.naoqi_motion</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">six</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICComponentManager</span><span class="p">,</span> <span class="n">SICService</span><span class="p">,</span> <span class="n">utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.actuator_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICActuator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConnector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConfMessage</span><span class="p">,</span> <span class="n">SICMessage</span><span class="p">,</span> <span class="n">SICRequest</span>
+
+<span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">PYTHON_VERSION_IS_2</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">qi</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">naoqi</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALProxy</span>
+
+
+<div class="viewcode-block" id="NaoqiMoveRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMoveRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiMoveRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make the robot move at the given velocity, in the specified direction vector in m/s, where theta indicates rotation.</span>
+<span class="sd">    x - velocity along X-axis (forward), in meters per second. Use negative values for backward motion</span>
+<span class="sd">    y - velocity along Y-axis (side), in meters per second. Use positive values to go to the left</span>
+<span class="sd">    theta - velocity around Z-axis, in radians per second. Use negative values to turn clockwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NaoqiMoveRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMoveRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiMoveRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoqiMoveToRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMoveToRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiMoveToRequest</span><span class="p">(</span><span class="n">NaoqiMoveRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make the robot move to a given point in space relative to the robot, where theta indicates rotation.</span>
+<span class="sd">    x -  Distance along the X axis (forward) in meters.</span>
+<span class="sd">    y - Distance along the Y axis (side) in meters.</span>
+<span class="sd">    theta - Rotation around the Z axis in radians [-3.1415 to 3.1415].</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiMoveTowardRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMoveTowardRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiMoveTowardRequest</span><span class="p">(</span><span class="n">NaoqiMoveRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Makes the robot move at the given normalized velocity.</span>
+<span class="sd">    x - normalized, unitless, velocity along X-axis. +1 and -1 correspond to the maximum velocity in the forward and backward directions, respectively.</span>
+<span class="sd">    y - normalized, unitless, velocity along Y-axis. +1 and -1 correspond to the maximum velocity in the left and right directions, respectively.</span>
+<span class="sd">    theta - normalized, unitless, velocity around Z-axis. +1 and -1 correspond to the maximum velocity in the counterclockwise and clockwise directions, respectively.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NaoqiMoveTowardRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMoveTowardRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiMoveTowardRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">):</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALMotion&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">moveToward</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiGetRobotVelocityRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiGetRobotVelocityRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiGetRobotVelocityRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return (vx [m/s], vy [m/s], vth [rad/s]) in the world frame.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALMotion&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">getRobotVelocity</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiCollisionProtectionRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiCollisionProtectionRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiCollisionProtectionRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Enable / disable Pepper&#39;s external-collision protection.</span>
+<span class="sd">    target in {&quot;Move&quot;,&quot;Arms&quot;,&quot;All&quot;,&quot;LArm&quot;,&quot;RArm&quot;}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NaoqiCollisionProtectionRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiCollisionProtectionRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">&quot;All&quot;</span><span class="p">,</span> <span class="n">enable</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiCollisionProtectionRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable</span> <span class="o">=</span> <span class="n">target</span><span class="p">,</span> <span class="n">enable</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">):</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALMotion&quot;</span><span class="p">)</span>\
+               <span class="o">.</span><span class="n">setExternalCollisionProtectionEnabled</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">enable</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiMoveArmsEnabledRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMoveArmsEnabledRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiMoveArmsEnabledRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Tell NAOqi&#39;s walking controller to (not) move the arms.</span>
+<span class="sd">    On NAOqi &gt;= 2.4 the method is setMoveArmsEnabled; on older firmware it is</span>
+<span class="sd">    setWalkArmsEnabled, so we try both.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NaoqiMoveArmsEnabledRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMoveArmsEnabledRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">left_enable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">right_enable</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiMoveArmsEnabledRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">left_enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">right_enable</span> <span class="o">=</span> <span class="n">left_enable</span><span class="p">,</span> <span class="n">right_enable</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>  <span class="c1"># NAOqi &gt;= 2.4</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALMotion&quot;</span><span class="p">)</span>\
+                   <span class="o">.</span><span class="n">setMoveArmsEnabled</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left_enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">right_enable</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>  <span class="c1"># NAOqi 2.3 / 2.1</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALMotion&quot;</span><span class="p">)</span>\
+                   <span class="o">.</span><span class="n">setWalkArmsEnabled</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left_enable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">right_enable</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiIdlePostureRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiIdlePostureRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiIdlePostureRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<div class="viewcode-block" id="NaoqiIdlePostureRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiIdlePostureRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">joints</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Control idle behaviour. This is the robot behaviour when no user commands are sent.</span>
+<span class="sd">        There are three idle control modes:</span>
+<span class="sd">          No idle control: in this mode, when no user command is sent to the robot, it does not move.</span>
+<span class="sd">          Idle posture control: in this mode, the robot automatically comes back to a reference posture, then stays at</span>
+<span class="sd">                                that posture until a user command is sent.</span>
+<span class="sd">          Breathing control: in this mode, the robot plays a breathing animation in loop.</span>
+
+<span class="sd">        See also NaoqiBreathingRequest.</span>
+
+<span class="sd">        http://doc.aldebaran.com/2-4/naoqi/motion/idle.html</span>
+<span class="sd">        :param joints: The chain name, one of [&quot;Body&quot;, &quot;Legs&quot;, &quot;Arms&quot;, &quot;LArm&quot;, &quot;RArm&quot; or &quot;Head&quot;].</span>
+<span class="sd">        :type joints: str</span>
+<span class="sd">        :param value: True or False</span>
+<span class="sd">        :type value: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiIdlePostureRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">joints</span> <span class="o">=</span> <span class="n">joints</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoqiBreathingRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiBreathingRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiBreathingRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<div class="viewcode-block" id="NaoqiBreathingRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiBreathingRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">joints</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Control Breathing behaviour. This is the robot behaviour when no user commands are sent.</span>
+<span class="sd">        There are three idle control modes:</span>
+<span class="sd">          No idle control: in this mode, when no user command is sent to the robot, it does not move.</span>
+<span class="sd">          Idle posture control: in this mode, the robot automatically comes back to a reference posture, then stays at</span>
+<span class="sd">                                that posture until a user command is sent.</span>
+<span class="sd">          Breathing control: in this mode, the robot plays a breathing animation in loop.</span>
+
+<span class="sd">        See also NaoqiIdlePostureRequest.</span>
+
+<span class="sd">        http://doc.aldebaran.com/2-4/naoqi/motion/idle.html</span>
+<span class="sd">        :param joints: The chain name, one of [&quot;Body&quot;, &quot;Legs&quot;, &quot;Arms&quot;, &quot;LArm&quot;, &quot;RArm&quot; or &quot;Head&quot;].</span>
+<span class="sd">        :type joints: str</span>
+<span class="sd">        :param value: True or False</span>
+<span class="sd">        :type value: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiBreathingRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">joints</span> <span class="o">=</span> <span class="n">joints</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoPostureRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoPostureRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoPostureRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make the robot go to a predefined posture.</span>
+<span class="sd">    Options:</span>
+<span class="sd">    [&quot;Crouch&quot;, &quot;LyingBack&quot; &quot;LyingBelly&quot;, &quot;Sit&quot;, &quot;SitRelax&quot;, &quot;Stand&quot;, &quot;StandInit&quot;, &quot;StandZero&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NaoPostureRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoPostureRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_posture</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="mf">0.4</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoPostureRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;Crouch&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LyingBack&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LyingBelly&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Sit&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;SitRelax&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Stand&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;StandInit&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;StandZero&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="k">assert</span> <span class="n">target_posture</span> <span class="ow">in</span> <span class="n">options</span><span class="p">,</span> <span class="s2">&quot;Invalid pose </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">target_posture</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_posture</span> <span class="o">=</span> <span class="n">target_posture</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="n">speed</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoqiAnimationRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiAnimationRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiAnimationRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make the robot play predefined animation. Either the short or full name as a string will work.</span>
+<span class="sd">    See: http://doc.aldebaran.com/2-4/naoqi/motion/alanimationplayer-advanced.html#animationplayer-list-behaviors-nao</span>
+
+<span class="sd">    Nao Examples:</span>
+<span class="sd">        animations/Sit/BodyTalk/BodyTalk_1</span>
+<span class="sd">        animations/Stand/Gestures/Hey_1</span>
+<span class="sd">        Enthusiastic_4</span>
+
+<span class="sd">    Pepper Examples:</span>
+<span class="sd">        Hey_3</span>
+<span class="sd">        animations/Stand/Gestures/ShowSky_5</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NaoqiAnimationRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiAnimationRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">animation_path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param animation_path: the animation name or path</span>
+<span class="sd">        :type animation_path: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiAnimationRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">animation_path</span> <span class="o">=</span> <span class="n">animation_path</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoqiSmartStiffnessRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiSmartStiffnessRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiSmartStiffnessRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Enable or Disable the smart stiffness reflex for all the joints (True by default).</span>
+<span class="sd">    see: http://doc.aldebaran.com/2-4/naoqi/motion/reflexes-smart-stiffness.html</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NaoqiSmartStiffnessRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiSmartStiffnessRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enable</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param enable: True or False</span>
+<span class="sd">        :type enable: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiSmartStiffnessRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enable</span> <span class="o">=</span> <span class="n">enable</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PepperPostureRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.PepperPostureRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PepperPostureRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make the robot go to a predefined posture.</span>
+<span class="sd">    Options:</span>
+<span class="sd">    [&quot;Crouch&quot;, &quot;LyingBack&quot; &quot;LyingBelly&quot;, &quot;Sit&quot;, &quot;SitRelax&quot;, &quot;Stand&quot;, &quot;StandInit&quot;, &quot;StandZero&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PepperPostureRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.PepperPostureRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_posture</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="mf">0.4</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PepperPostureRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Crouch&quot;</span><span class="p">,</span> <span class="s2">&quot;Stand&quot;</span><span class="p">,</span> <span class="s2">&quot;StandInit&quot;</span><span class="p">,</span> <span class="s2">&quot;StandZero&quot;</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">target_posture</span> <span class="ow">in</span> <span class="n">options</span><span class="p">,</span> <span class="s2">&quot;Invalid pose </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">target_posture</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_posture</span> <span class="o">=</span> <span class="n">target_posture</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="n">speed</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoqiGetAnglesRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiGetAnglesRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiGetAnglesRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request the current angles of specified joints from the robot.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        names (list of str): List of joint names to query (e.g., [&quot;LShoulderPitch&quot;, &quot;RShoulderRoll&quot;]).</span>
+<span class="sd">        use_sensors (bool): If True, return the actual sensor values; if False, return the commanded values.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list of float: The angles (in radians) for the specified joints, in the same order as &#39;names&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NaoqiGetAnglesRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiGetAnglesRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">use_sensors</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiGetAnglesRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="n">names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_sensors</span> <span class="o">=</span> <span class="n">use_sensors</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALMotion&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">getAngles</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_sensors</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiSetAnglesRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiSetAnglesRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiSetAnglesRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set the angles of specified joints on the robot.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        names (list of str): List of joint names to set (e.g., [&quot;LShoulderPitch&quot;, &quot;RShoulderRoll&quot;]).</span>
+<span class="sd">        angles (list of float): List of target angles (in radians) for the specified joints, in the same order as &#39;names&#39;.</span>
+<span class="sd">        speed (float): Fraction of maximum speed to use (0.0 to 1.0). Default is 0.5.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NaoqiSetAnglesRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiSetAnglesRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">angles</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiSetAnglesRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="n">names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angles</span> <span class="o">=</span> <span class="n">angles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="n">speed</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALMotion&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setAngles</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">angles</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiVelocityResponse">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiVelocityResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiVelocityResponse</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Response message containing robot velocity.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NaoqiVelocityResponse.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiVelocityResponse.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiVelocityResponse</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoqiAnglesResponse">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiAnglesResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiAnglesResponse</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Response message containing joint angles.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NaoqiAnglesResponse.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiAnglesResponse.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">angles</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiAnglesResponse</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="n">names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angles</span> <span class="o">=</span> <span class="n">angles</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoqiSetAnglesResponse">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiSetAnglesResponse">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiSetAnglesResponse</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Response message confirming joint angles were set.&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NaoqiSetAnglesResponse.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiSetAnglesResponse.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">angles</span><span class="p">,</span> <span class="n">speed</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiSetAnglesResponse</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="n">names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angles</span> <span class="o">=</span> <span class="n">angles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="n">speed</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiMotionActuator</span><span class="p">(</span><span class="n">SICActuator</span><span class="p">):</span>
+<div class="viewcode-block" id="NaoqiMotionActuator.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">SICActuator</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">qi</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;tcp://127.0.0.1:9559&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALMotion&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">posture</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALRobotPosture&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">animation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALAnimationPlayer&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.moveToward">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.moveToward">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">moveToward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">motion</span><span class="p">):</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">motion</span><span class="p">,</span> <span class="s2">&quot;move_config&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">cfg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>            <span class="c1"># collision protection / custom options</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">moveToward</span><span class="p">(</span><span class="n">motion</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>                          <span class="c1"># simple 3-argument call</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">moveToward</span><span class="p">(</span><span class="n">motion</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.get_inputs">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.get_inputs">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_inputs</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">NaoPostureRequest</span><span class="p">,</span>
+            <span class="n">NaoqiMoveRequest</span><span class="p">,</span>
+            <span class="n">NaoqiMoveToRequest</span><span class="p">,</span>
+            <span class="n">NaoqiMoveTowardRequest</span><span class="p">,</span>
+            <span class="n">NaoqiGetRobotVelocityRequest</span><span class="p">,</span>
+            <span class="n">NaoqiCollisionProtectionRequest</span><span class="p">,</span>
+            <span class="n">NaoqiGetAnglesRequest</span><span class="p">,</span>
+            <span class="n">NaoqiSetAnglesRequest</span><span class="p">,</span>
+            <span class="n">NaoqiMoveArmsEnabledRequest</span><span class="p">,</span>
+        <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.get_output">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.get_output">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_output</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">SICMessage</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.execute">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.execute">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="c1"># locomotion</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">NaoqiMoveTowardRequest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">moveToward</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">NaoqiMoveToRequest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">moveTo</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">NaoqiMoveRequest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+        <span class="c1"># posture &amp; animation</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="p">(</span><span class="n">NaoPostureRequest</span><span class="p">,</span> <span class="n">PepperPostureRequest</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">goToPosture</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">NaoqiAnimationRequest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_animation</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+        <span class="c1"># misc</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">NaoqiIdlePostureRequest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setIdlePostureEnabled</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">joints</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">NaoqiBreathingRequest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setBreathEnabled</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">joints</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">NaoqiSmartStiffnessRequest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setSmartStiffnessEnabled</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">enable</span><span class="p">)</span>
+            <span class="c1"># sometimes it doesn&#39;t work in the first try, so double check</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">getSmartStiffnessEnabled</span><span class="p">()</span> <span class="o">!=</span> <span class="n">request</span><span class="o">.</span><span class="n">enable</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setSmartStiffnessEnabled</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">enable</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">NaoqiGetRobotVelocityRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">getRobotVelocity</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">NaoqiCollisionProtectionRequest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setCollisionProtection</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">NaoqiMoveArmsEnabledRequest</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setMoveArmsEnabled</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">NaoqiGetAnglesRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_angles</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">names</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">use_sensors</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">NaoqiSetAnglesRequest</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_angles</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">names</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">angles</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">speed</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.goToPosture">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.goToPosture">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">goToPosture</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">motion</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">posture</span><span class="o">.</span><span class="n">goToPosture</span><span class="p">(</span><span class="n">motion</span><span class="o">.</span><span class="n">target_posture</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">speed</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.run_animation">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.run_animation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_animation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">motion</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">animation</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">motion</span><span class="o">.</span><span class="n">animation_path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.move">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.move">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">motion</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">motion</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.moveTo">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.moveTo">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">moveTo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">motion</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">moveTo</span><span class="p">(</span><span class="n">motion</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">motion</span><span class="o">.</span><span class="n">theta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.getRobotVelocity">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.getRobotVelocity">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">getRobotVelocity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get robot velocity and return as a message with x, y, theta attributes.&quot;&quot;&quot;</span>
+        <span class="n">velocity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">getRobotVelocity</span><span class="p">()</span>
+        <span class="c1"># Create a message with the velocity values</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">NaoqiVelocityResponse</span><span class="p">(</span><span class="n">velocity</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">velocity</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">velocity</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">msg</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.get_angles">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.get_angles">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_angles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">use_sensors</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">angles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">getAngles</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">use_sensors</span><span class="p">)</span>
+        <span class="c1"># Create a message with the angles</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">NaoqiAnglesResponse</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">angles</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">msg</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.set_angles">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.set_angles">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_angles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">angles</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set joint angles and return a confirmation message.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setAngles</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">angles</span><span class="p">,</span> <span class="n">speed</span><span class="p">)</span>
+        <span class="c1"># Create a response message with the set angles, following the same pattern as get_angles</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">NaoqiSetAnglesResponse</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">angles</span><span class="p">,</span> <span class="n">speed</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">msg</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.setCollisionProtection">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.setCollisionProtection">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setCollisionProtection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set collision protection for the specified target.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setExternalCollisionProtectionEnabled</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">enable</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.setMoveArmsEnabled">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.setMoveArmsEnabled">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setMoveArmsEnabled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set whether the walking controller should move the arms.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>  <span class="c1"># NAOqi &gt;= 2.4</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setMoveArmsEnabled</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">left_enable</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">right_enable</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>  <span class="c1"># NAOqi 2.3 / 2.1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setWalkArmsEnabled</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">left_enable</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">right_enable</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionActuator.stop">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotionActuator.stop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stop the NAOqi motion actuator.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stopped</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiMotionActuator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiMotion">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_motion.NaoqiMotion">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiMotion</span><span class="p">(</span><span class="n">SICConnector</span><span class="p">):</span>
+    <span class="n">component_class</span> <span class="o">=</span> <span class="n">NaoqiMotionActuator</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">SICComponentManager</span><span class="p">([</span><span class="n">NaoqiMotionActuator</span><span class="p">])</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

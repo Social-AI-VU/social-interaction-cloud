@@ -1,0 +1,824 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.core.sic_redis &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.core.sic_redis</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.core.sic_redis</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">sic_redis.py</span>
+
+<span class="sd">A wrapper around Redis to provide a simpler interface for sending SICMessages, using two different APIs. </span>
+<span class="sd">The non-blocking (asynchronous) API is used for messages which are simply broadcasted and do not require a reply.</span>
+<span class="sd">The blocking (synchronous) API is used for requests, from which a reply is expected when the action is completed.</span>
+
+<span class="sd">Example Usage:</span>
+
+<span class="sd">Non-blocking (asynchronous)::</span>
+
+<span class="sd">    ## DEVICE A</span>
+<span class="sd">    r.register_message_handler(&quot;my_channel&quot;, do_something_fn)</span>
+
+<span class="sd">    ## DEVICE B</span>
+<span class="sd">    r.send_message(&quot;my_channel&quot;, SICMessage(&quot;abc&quot;))</span>
+
+
+<span class="sd">Blocking (synchronous)::</span>
+
+<span class="sd">    ## DEVICE A</span>
+<span class="sd">    def do_reply(channel, request):</span>
+<span class="sd">        return SICMessage()</span>
+
+<span class="sd">    r.register_request_handler(&quot;my_channel&quot;, do_reply)</span>
+
+<span class="sd">    ## DEVICE B</span>
+<span class="sd">    reply = r.request(&quot;my_channel&quot;, NamedRequest(&quot;req_handling&quot;), timeout=5)</span>
+<span class="sd">    </span>
+<span class="sd">    # here the reply is received and stored in the variable &#39;reply&#39;.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">atexit</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">redis</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">six</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">six.moves</span><span class="w"> </span><span class="kn">import</span> <span class="n">queue</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICMessage</span><span class="p">,</span> <span class="n">SICRequest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_sic_instance</span>
+
+<div class="viewcode-block" id="CallbackThread">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.CallbackThread">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CallbackThread</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A thread that is used to listen to a channel and call a function when a message is received.</span>
+
+<span class="sd">    :param function: The function to call when a message is received.</span>
+<span class="sd">    :type function: function</span>
+<span class="sd">    :param pubsub: The pubsub object to listen to.</span>
+<span class="sd">    :type pubsub: redis.pubsub.PubSub</span>
+<span class="sd">    :param thread: The thread itself</span>
+<span class="sd">    :type thread: threading.Thread</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="CallbackThread.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.CallbackThread.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">function</span><span class="p">,</span> <span class="n">pubsub</span><span class="p">,</span> <span class="n">thread</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">function</span> <span class="o">=</span> <span class="n">function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pubsub</span> <span class="o">=</span> <span class="n">pubsub</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thread</span> <span class="o">=</span> <span class="n">thread</span></div>
+
+
+<div class="viewcode-block" id="CallbackThread.join">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.CallbackThread.join">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">join</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Join the thread.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thread</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CallbackThread.is_alive">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.CallbackThread.is_alive">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_alive</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if the underlying thread is still alive.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: True if the thread is still alive, False otherwise</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">()</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="nd">@name</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thread</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">value</span></div>
+
+
+<span class="c1"># keep track of all redis instances, so we can close them on exit</span>
+<span class="n">_sic_redis_instances</span> <span class="o">=</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="get_redis_db_ip_password">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.get_redis_db_ip_password">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_redis_db_ip_password</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the Redis database IP and password from environment variables. If not set, use default values.</span>
+
+<span class="sd">    :return: The Redis database IP and password.</span>
+<span class="sd">    :rtype: tuple[str, str]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">host</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DB_IP&quot;</span><span class="p">,</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">)</span>
+    <span class="n">password</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DB_PASS&quot;</span><span class="p">,</span> <span class="s2">&quot;changemeplease&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">host</span><span class="p">,</span> <span class="n">password</span></div>
+
+
+
+<div class="viewcode-block" id="SICRedisConnection">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICRedisConnection</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A custom version of Redis that provides a clear blocking and non-blocking API.</span>
+
+<span class="sd">    :param parent_name: The name of the module that uses this Redis connection, for easier debugging.</span>
+<span class="sd">    :type parent_name: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SICRedisConnection.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stopping</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running_callbacks</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># hash map of data streams</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_stream_map</span> <span class="o">=</span> <span class="s2">&quot;cache:data_streams&quot;</span>
+
+        <span class="c1"># hash map of component reservations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reservation_map</span> <span class="o">=</span> <span class="s2">&quot;cache:reservations&quot;</span>
+
+        <span class="c1"># we assume that a password is required</span>
+        <span class="n">host</span><span class="p">,</span> <span class="n">password</span> <span class="o">=</span> <span class="n">get_redis_db_ip_password</span><span class="p">()</span>
+
+        <span class="c1"># Let&#39;s try to connect first without TLS / working without TLS facilitates simple use of redis-cli</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="p">(</span>
+                <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> 
+                <span class="n">ssl</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span>
+                <span class="n">socket_timeout</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>  <span class="c1"># 1 second timeout for socket operations</span>
+                <span class="n">socket_connect_timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span>  <span class="c1"># 5 second timeout for connection</span>
+                <span class="n">retry_on_timeout</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Retry on timeout errors</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">AuthenticationError</span><span class="p">:</span>
+            <span class="c1"># redis is running without a password, do not supply it.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="p">(</span>
+                <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> 
+                <span class="n">ssl</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">socket_timeout</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                <span class="n">socket_connect_timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span>
+                <span class="n">retry_on_timeout</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ConnectionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Must be a connection error; so now let&#39;s try to connect with TLS</span>
+            <span class="n">ssl_ca_certs</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;cert.pem&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;TLS required. Looking for certificate here:&quot;</span><span class="p">,</span>
+                <span class="n">ssl_ca_certs</span><span class="p">,</span>
+                <span class="s2">&quot;(Source error </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="p">(</span>
+                <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> 
+                <span class="n">ssl</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+                <span class="n">ssl_ca_certs</span><span class="o">=</span><span class="n">ssl_ca_certs</span><span class="p">,</span> 
+                <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span>
+                <span class="n">socket_timeout</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                <span class="n">socket_connect_timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span>
+                <span class="n">retry_on_timeout</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ConnectionError</span><span class="p">:</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;Could not connect to redis at </span><span class="si">{}</span><span class="s2"> </span><span class="se">\n\n</span><span class="s2"> Have you started redis? Use: `redis-server conf/redis/redis.conf`&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">host</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="c1"># six.raise_from(e, None) # unsupported on some peppers</span>
+            <span class="n">six</span><span class="o">.</span><span class="n">reraise</span><span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="c1"># To be set by any component that requires exceptions in the callback threads to be logged to somewhere</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent_logger</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">_sic_redis_instances</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_pubsub_message</span><span class="p">(</span><span class="n">pubsub_msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert a Redis pub/sub message to a SICMessage (sub)class.</span>
+
+<span class="sd">        :param pubsub_msg: The Redis pubsub message to convert.</span>
+<span class="sd">        :type pubsub_msg: dict</span>
+<span class="sd">        :return: The SICMessage (sub)class.</span>
+<span class="sd">        :rtype: SICMessage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">type_</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">pubsub_msg</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">],</span>
+            <span class="n">pubsub_msg</span><span class="p">[</span><span class="s2">&quot;channel&quot;</span><span class="p">],</span>
+            <span class="n">pubsub_msg</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">type_</span> <span class="o">==</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">SICMessage</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">message</span>
+
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="SICRedisConnection.register_message_handler">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.register_message_handler">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_message_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">ignore_requests</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Subscribe a callback function to one or more channels, start a thread to monitor for new messages.</span>
+<span class="sd">        </span>
+<span class="sd">        By default, ignores SICRequests. Registering request handlers calls this function but sets ignore_requests to False.</span>
+
+<span class="sd">        :param callback: a function expecting a SICMessage and a channel argument to process the messages received on `channel`</span>
+<span class="sd">        :type callback: function</span>
+<span class="sd">        :param channels: channel or channels to listen to.</span>
+<span class="sd">        :type channels: str or list[str]</span>
+<span class="sd">        :param ignore_requests: Flag to control whether the message handler should also trigger the callback if the</span>
+<span class="sd">                                message is a SICRequest</span>
+<span class="sd">        :type ignore_requests: bool</span>
+<span class="sd">        :return: The CallbackThread object containing the the thread that is listening to the channel.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># convert single channel case to list of channels case</span>
+        <span class="n">channels</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">str_if_bytes</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">):</span>
+            <span class="n">channels</span> <span class="o">=</span> <span class="p">[</span><span class="n">channels</span><span class="p">]</span>
+
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">channels</span><span class="p">),</span> <span class="s2">&quot;Must provide at least one channel&quot;</span>
+
+        <span class="c1"># ignore subscribers messages as to not trigger the callback with useless information</span>
+        <span class="n">pubsub</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">pubsub</span><span class="p">(</span><span class="n">ignore_subscribe_messages</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># unpack pubsub message to SICMessage</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">wrapped_callback</span><span class="p">(</span><span class="n">pubsub_msg</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">sic_message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_pubsub_message</span><span class="p">(</span><span class="n">pubsub_msg</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">ignore_requests</span> <span class="ow">and</span> <span class="n">is_sic_instance</span><span class="p">(</span><span class="n">sic_message</span><span class="p">,</span> <span class="n">SICRequest</span><span class="p">):</span>
+                    <span class="k">return</span>
+
+                <span class="k">return</span> <span class="n">callback</span><span class="p">(</span><span class="n">sic_message</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c1"># Errors in a remote thread fail silently, so explicitly catch anything and log to the user.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_logger</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">parent_logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">e</span>
+
+        <span class="n">channels</span> <span class="o">=</span> <span class="p">[</span><span class="n">utils</span><span class="o">.</span><span class="n">str_if_bytes</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">channels</span><span class="p">]</span>
+
+        <span class="n">pubsub</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">wrapped_callback</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">channels</span><span class="p">})</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">exception_handler</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">pubsub</span><span class="p">,</span> <span class="n">thread</span><span class="p">):</span>
+            <span class="c1"># Ignore the exception if the main program is already stopping (which trigger ValueErrors)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">stopping</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">e</span>
+
+        <span class="c1"># sleep_time is how often the thread checks if the connection is still alive (and checks the stop condition),</span>
+        <span class="c1"># if it is 0.0 it can never time out. It can receive messages much faster, so lets be nice to the CPU with 0.1.</span>
+        <span class="k">if</span> <span class="n">six</span><span class="o">.</span><span class="n">PY3</span><span class="p">:</span>
+            <span class="n">thread</span> <span class="o">=</span> <span class="n">pubsub</span><span class="o">.</span><span class="n">run_in_thread</span><span class="p">(</span>
+                <span class="n">sleep_time</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exception_handler</span><span class="o">=</span><span class="n">exception_handler</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># python2 does not support the exception_handler parameter, but it&#39;s not as important to provide a clean exit on the robots</span>
+            <span class="n">thread</span> <span class="o">=</span> <span class="n">pubsub</span><span class="o">.</span><span class="n">run_in_thread</span><span class="p">(</span><span class="n">sleep_time</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">thread</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+        <span class="n">c</span> <span class="o">=</span> <span class="n">CallbackThread</span><span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">pubsub</span><span class="o">=</span><span class="n">pubsub</span><span class="p">,</span> <span class="n">thread</span><span class="o">=</span><span class="n">thread</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">c</span></div>
+
+
+<div class="viewcode-block" id="SICRedisConnection.unregister_callback">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.unregister_callback">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unregister_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback_thread</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Unhook a callback by unsubscribing from Redis and stopping the thread.</span>
+
+<span class="sd">        :param callback_thread: The CallbackThread to unregister.</span>
+<span class="sd">        :type callback_thread: CallbackThread</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">callback_thread</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+            
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Only try to stop the thread if it&#39;s still alive</span>
+            <span class="c1"># (Calling stop() on an already-stopped thread can hang)</span>
+            <span class="k">if</span> <span class="n">callback_thread</span><span class="o">.</span><span class="n">thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+                <span class="c1"># Unsubscribe first to wake up the thread</span>
+                <span class="n">callback_thread</span><span class="o">.</span><span class="n">pubsub</span><span class="o">.</span><span class="n">unsubscribe</span><span class="p">()</span>
+                
+                <span class="c1"># Stop the thread</span>
+                <span class="n">callback_thread</span><span class="o">.</span><span class="n">thread</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+                
+                <span class="c1"># Join with timeout to prevent indefinite blocking</span>
+                <span class="n">callback_thread</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+                
+                <span class="c1"># Check if thread is still alive</span>
+                <span class="k">if</span> <span class="n">callback_thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+                    <span class="c1"># Log warning but continue - don&#39;t block shutdown</span>
+                    <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;WARNING: Callback thread </span><span class="si">{}</span><span class="s2"> did not stop within timeout</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">callback_thread</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+            
+            <span class="c1"># Remove from running callbacks</span>
+            <span class="k">if</span> <span class="n">callback_thread</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running_callbacks</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_running_callbacks</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">callback_thread</span><span class="p">)</span>
+                
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span></div>
+
+
+<div class="viewcode-block" id="SICRedisConnection.send_message">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.send_message">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">send_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a SICMessage on the provided channel to any subscribers.</span>
+
+<span class="sd">        :param channel: The Redis pubsub channel to communicate on.</span>
+<span class="sd">        :type channel: str</span>
+<span class="sd">        :param message: The message to send.</span>
+<span class="sd">        :type message: SICMessage</span>
+<span class="sd">        :return: The number of subscribers that received the message.</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stopping</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span> <span class="c1"># silently ignore messages if the application is stopping</span>
+        
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">message</span><span class="p">,</span> <span class="n">SICMessage</span>
+        <span class="p">),</span> <span class="s2">&quot;Message must inherit from SICMessage (got </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">message</span><span class="p">))</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Let&#39;s check if we should serialize; we don&#39;t if the message is from EISComponent and needs to be sent to an</span>
+            <span class="c1"># agent alien to SIC (who presumably does not understand Pickle objects)...</span>
+            <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">get_previous_component_name</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;EISComponent&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">serialize</span><span class="p">())</span>
+        <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">TimeoutError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Log timeout but don&#39;t crash the audio stream</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_logger</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parent_logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Redis publish timeout for channel </span><span class="si">{channel}</span><span class="s2">: </span><span class="si">{e}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">,</span> <span class="n">e</span><span class="o">=</span><span class="n">e</span><span class="p">))</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Log other errors but don&#39;t crash the audio stream</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_logger</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parent_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Redis publish error for channel </span><span class="si">{channel}</span><span class="s2">: </span><span class="si">{e}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">,</span> <span class="n">e</span><span class="o">=</span><span class="n">e</span><span class="p">))</span>
+            <span class="k">return</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="SICRedisConnection.request">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.request">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a request, and wait for the reply on the same channel. If the reply takes longer than</span>
+<span class="sd">        `timeout` seconds to arrive, a TimeoutError is raised. If block is set to false, the reply is</span>
+<span class="sd">        ignored and the function returns immediately.</span>
+
+<span class="sd">        :param channel: The Redis pubsub channel to communicate on.</span>
+<span class="sd">        :type channel: str</span>
+<span class="sd">        :param request: The SICRequest</span>
+<span class="sd">        :type request: SICRequest</span>
+<span class="sd">        :param timeout: Timeout in seconds in case the reply takes too long.</span>
+<span class="sd">        :type timeout: float</span>
+<span class="sd">        :param block: If false, immediately returns None after sending the request.</span>
+<span class="sd">        :type block: bool</span>
+<span class="sd">        :return: the SICMessage reply</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">_request_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid request id for request </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">get_message_name</span><span class="p">())</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Set up a callback to listen to the same channel, where we expect the reply.</span>
+        <span class="c1"># Once we have the reply the queue passes the data back to this thread and the</span>
+        <span class="c1"># event signals we have received the reply. Subscribe first, as to not miss it</span>
+        <span class="c1"># if the reply is faster than our subscription.</span>
+        <span class="n">done</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">await_reply</span><span class="p">(</span><span class="n">reply</span><span class="p">):</span>
+            <span class="c1"># If not our own request but is a SICMessage with the right id, then it is the reply</span>
+            <span class="c1"># we are waiting for</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="ow">not</span> <span class="n">is_sic_instance</span><span class="p">(</span><span class="n">reply</span><span class="p">,</span> <span class="n">SICRequest</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">reply</span><span class="o">.</span><span class="n">_request_id</span> <span class="o">==</span> <span class="n">request</span><span class="o">.</span><span class="n">_request_id</span>
+            <span class="p">):</span>
+                <span class="n">q</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">reply</span><span class="p">)</span>
+                <span class="n">done</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">block</span><span class="p">:</span>
+            <span class="n">callback_thread</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">register_message_handler</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">await_reply</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;SICRedisConnection_request_await_reply&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">request</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">block</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">done</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">done</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">TimeoutError</span><span class="p">(</span>
+                    <span class="s2">&quot;Waiting for reply to </span><span class="si">{}</span><span class="s2"> to request timed out&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">request</span><span class="o">.</span><span class="n">get_message_name</span><span class="p">()</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="c1"># cleanup by unsubscribing and stopping the subscriber thread</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unregister_callback</span><span class="p">(</span><span class="n">callback_thread</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">q</span><span class="o">.</span><span class="n">get</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SICRedisConnection.register_request_handler">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.register_request_handler">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_request_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Register a function to listen to SICRequest&#39;s (and ignore SICMessages). Handler must return a SICMessage as a reply.</span>
+<span class="sd">        Will block receiving new messages until the callback is finished.</span>
+
+<span class="sd">        :param channel: The Redis pubsub channel to communicate on.</span>
+<span class="sd">        :type channel: str</span>
+<span class="sd">        :param callback: function to run upon receiving a SICRequest. Must return a SICMessage reply</span>
+<span class="sd">        :type callback: function</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">wrapped_callback</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">is_sic_instance</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">SICRequest</span><span class="p">):</span>
+                <span class="n">reply</span> <span class="o">=</span> <span class="n">callback</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+                <span class="k">assert</span> <span class="ow">not</span> <span class="n">is_sic_instance</span><span class="p">(</span><span class="n">reply</span><span class="p">,</span> <span class="n">SICRequest</span><span class="p">)</span> <span class="ow">and</span> <span class="n">is_sic_instance</span><span class="p">(</span>
+                    <span class="n">reply</span><span class="p">,</span> <span class="n">SICMessage</span>
+                <span class="p">),</span> <span class="p">(</span>
+                    <span class="s2">&quot;Request handler callback must return a SICMessage but not SICRequest, &quot;</span>
+                    <span class="s2">&quot;received: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">reply</span><span class="p">))</span>
+                <span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_reply</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">reply</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">register_message_handler</span><span class="p">(</span>
+            <span class="n">channel</span><span class="p">,</span> <span class="n">wrapped_callback</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">ignore_requests</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICRedisConnection.time">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.time">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the current time from the Redis server.</span>
+
+<span class="sd">        :return: The current time in seconds since the Unix epoch.</span>
+<span class="sd">        :rtype: tuple[int, int]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">time</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SICRedisConnection.close">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.close">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Cleanup function to stop listening to all callback channels and disconnect Redis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># prevent closing the Redis connection if already stopping</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stopping</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stopping</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running_callbacks</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">():</span>
+                    <span class="c1"># print(&quot;REDIS SHUTDOWN: Unsubscribing callback thread {}&quot;.format(c.name))</span>
+                    <span class="n">c</span><span class="o">.</span><span class="n">pubsub</span><span class="o">.</span><span class="n">unsubscribe</span><span class="p">()</span>
+                    <span class="n">c</span><span class="o">.</span><span class="n">thread</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+                    <span class="n">c</span><span class="o">.</span><span class="n">thread</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;REDIS SHUTDOWN: Error stopping callback thread </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="c1"># print(&quot;REDIS SHUTDOWN: Closing Redis connection&quot;)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SICRedisConnection._reply">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection._reply">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">reply</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a reply to a specific request. This is done by sending a SICMessage to the same channel, where</span>
+<span class="sd">        the requesting thread/client is waiting for the reply.</span>
+
+<span class="sd">        Called by request handlers.</span>
+
+<span class="sd">        :param channel: The Redis pubsub channel to communicate on.</span>
+<span class="sd">        :type channel: str</span>
+<span class="sd">        :param request: The SICRequest</span>
+<span class="sd">        :type request: SICRequest</span>
+<span class="sd">        :param reply: The SICMessage reply to send back to the requesting client.</span>
+<span class="sd">        :type reply: SICMessage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># auto-reply to the request if the request id is not set. Used for example when a service manager</span>
+        <span class="c1"># does not want to reply to a request, so a reply is returned but its not a reply to the request</span>
+        <span class="k">if</span> <span class="n">reply</span><span class="o">.</span><span class="n">_request_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">reply</span><span class="o">.</span><span class="n">_request_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">_request_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">reply</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Cleanup function to stop listening to all callback channels and disconnect Redis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># we can no longer unregister_message_handler as python is shutting down, but we can still stop</span>
+        <span class="c1"># any remaining threads.</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running_callbacks</span><span class="p">:</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">thread</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+<div class="viewcode-block" id="SICRedisConnection.parse_pubsub_message">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.parse_pubsub_message">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_pubsub_message</span><span class="p">(</span><span class="n">pubsub_msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert a redis pub/sub message to a SICMessage (sub)class.</span>
+<span class="sd">        :param pubsub_msg:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">type_</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">pubsub_msg</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">],</span>
+            <span class="n">pubsub_msg</span><span class="p">[</span><span class="s2">&quot;channel&quot;</span><span class="p">],</span>
+            <span class="n">pubsub_msg</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">type_</span> <span class="o">==</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">SICMessage</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">message</span>
+
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+    
+<div class="viewcode-block" id="SICRedisConnection.get_data_stream_map">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.get_data_stream_map">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_data_stream_map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the data stream map from redis.</span>
+
+<span class="sd">        Returns a dictionary of data stream id to data stream information.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hgetall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_stream_map</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SICRedisConnection.get_reservation_map">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.get_reservation_map">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_reservation_map</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the reservation map from redis.</span>
+
+<span class="sd">        Returns a dictionary of component id to client id.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hgetall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reservation_map</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SICRedisConnection.get_data_stream">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.get_data_stream">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_data_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_stream_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a specific data stream from redis.</span>
+
+<span class="sd">        Returns the data stream as a dictionary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Since the data stream is stored as a string in redis, we need to convert it back to a dictionary</span>
+        <span class="n">raw_data_stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_stream_map</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">data_stream_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">raw_data_stream</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SICRedisConnection.get_reservation">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.get_reservation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_reservation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a specific reservation from redis.</span>
+
+<span class="sd">        Returns the client id that has reserved the device.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">utils</span><span class="o">.</span><span class="n">str_if_bytes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reservation_map</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">device_id</span><span class="p">))</span></div>
+
+    
+<div class="viewcode-block" id="SICRedisConnection.set_data_stream">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.set_data_stream">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_data_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_stream_id</span><span class="p">,</span> <span class="n">data_stream_info</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a data stream in redis.</span>
+
+<span class="sd">        :param data_stream_id: The id of the data stream</span>
+<span class="sd">        :param data_stream_info: A dictionary containing the component id, input channel, and the client id its associated with</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Redis hashes are flat (only key-value pairs), so we need to convert the data stream to a string</span>
+        <span class="n">data_stream_info</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">data_stream_id</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data_stream_info</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_stream_map</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="n">data_stream_info</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SICRedisConnection.unset_data_stream">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.unset_data_stream">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unset_data_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_stream_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove a data stream in redis.</span>
+
+<span class="sd">        :param data_stream_id: The id of the data stream</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hdel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_stream_map</span><span class="p">,</span> <span class="n">data_stream_id</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SICRedisConnection.set_reservation">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.set_reservation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_reservation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_id</span><span class="p">,</span> <span class="n">client_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a reservation for a component in redis.</span>
+
+<span class="sd">        :param device_id: The id of the device</span>
+<span class="sd">        :param client_id: The id of the client reserving the component</span>
+<span class="sd">        :return: The number of keys set</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">reservation</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">device_id</span><span class="p">:</span> <span class="n">client_id</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reservation_map</span><span class="p">,</span> <span class="n">mapping</span><span class="o">=</span><span class="n">reservation</span><span class="p">)</span></div>
+
+
+        
+<div class="viewcode-block" id="SICRedisConnection.unset_reservation">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.unset_reservation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unset_reservation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove a reservation for a device in redis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">hdel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reservation_map</span><span class="p">,</span> <span class="n">device_id</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SICRedisConnection.remove_client">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.remove_client">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove a client&#39;s reservations and data streams from redis.</span>
+
+<span class="sd">        Used if a client disconnects from the SIC server and their reservations and data streams are not removed properly.</span>
+
+<span class="sd">        :param client_id: The id of the client</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># delete all the reservations for the client</span>
+        <span class="n">reservations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reservation_map</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">cur_device_id</span><span class="p">,</span> <span class="n">cur_client_id</span> <span class="ow">in</span> <span class="n">reservations</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">cur_device_id</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">str_if_bytes</span><span class="p">(</span><span class="n">cur_device_id</span><span class="p">)</span>
+            <span class="n">cur_client_id</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">str_if_bytes</span><span class="p">(</span><span class="n">cur_client_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cur_client_id</span> <span class="o">==</span> <span class="n">client_id</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unset_reservation</span><span class="p">(</span><span class="n">cur_device_id</span><span class="p">)</span>
+        
+        <span class="c1"># delete all the data streams for the client</span>
+        <span class="n">data_streams</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_data_stream_map</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">data_stream_id</span> <span class="ow">in</span> <span class="n">data_streams</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">data_stream_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_data_stream</span><span class="p">(</span><span class="n">data_stream_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">data_stream_info</span><span class="p">[</span><span class="s2">&quot;client_id&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">client_id</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">unset_data_stream</span><span class="p">(</span><span class="n">data_stream_id</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+    
+<div class="viewcode-block" id="SICRedisConnection.ping_client">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_redis.SICRedisConnection.ping_client">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ping_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Ping a client to see if they are still connected.</span>
+
+<span class="sd">        :param client_id: The id of the client</span>
+<span class="sd">        :return: True if the client is connected, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">keyphrase</span><span class="o">=</span><span class="s2">&quot;sic:logging:</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">client_id</span><span class="p">)</span>
+        <span class="c1"># get list of all clients connected to the SIC server</span>
+        <span class="n">all_channels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">execute_command</span><span class="p">(</span><span class="s2">&quot;PUBSUB&quot;</span><span class="p">,</span> <span class="s2">&quot;CHANNELS&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">all_channels</span><span class="p">:</span>
+            <span class="n">channel_name</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">str_if_bytes</span><span class="p">(</span><span class="n">channel</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">keyphrase</span> <span class="ow">in</span> <span class="n">channel_name</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+</div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="k">pass</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

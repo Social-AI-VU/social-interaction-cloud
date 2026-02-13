@@ -1,0 +1,243 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2: Using a Service &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="3: Using the Dialogflow Service" href="3_api_key.html" />
+    <link rel="prev" title="1: Installation and Setup" href="1_installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-1-installation-and-setup">Tutorial 1: Installation and Setup</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../tutorials.html#tutorial-2-using-a-service">Tutorial 2: Using a Service</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">2: Using a Service</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sic-services">📄 SIC Services</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-3-application-with-a-service-requiring-an-api-key">Tutorial 3: Application with a Service Requiring an API key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-4-robot-motion">Tutorial 4: Robot Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#further-reading">Further reading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">2: Using a Service</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/tutorials/2_service.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="using-a-service">
+<h1>2: Using a Service<a class="headerlink" href="#using-a-service" title="Link to this heading"></a></h1>
+<section id="sic-services">
+<h2>📄 SIC Services<a class="headerlink" href="#sic-services" title="Link to this heading"></a></h2>
+<p>The <a class="reference internal" href="../api/how_to_use_a_service.html"><span class="doc">How to use a service</span></a> page provides more details about which services are available, how to use them, and how to extend them.</p>
+<p>In this example we will use the face detection service to draw a bounding box around a face that is detected in your laptop camera feed. It uses the <code class="docutils literal notranslate"><span class="pre">sic_applications/demos</span></code> <a class="reference external" href="https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection.py">demo_desktop_camera_facedetection.py</a>.</p>
+<section id="step-1-starting-redis-on-your-laptop">
+<h3><strong>Step 1: starting Redis on your laptop</strong><a class="headerlink" href="#step-1-starting-redis-on-your-laptop" title="Link to this heading"></a></h3>
+<p>The steps to starting Redis have been covered in <a class="reference internal" href="1_installation.html"><span class="doc">1: Installation and Setup</span></a></p>
+</section>
+<section id="step-2-run-the-service">
+<h3><strong>Step 2: run the service</strong><a class="headerlink" href="#step-2-run-the-service" title="Link to this heading"></a></h3>
+<p>Services might need additional dependencies installed before being able to run them. You can install them with the appropriate service tag. For example,</p>
+<p><strong>Ubuntu/Debian/Windows</strong></p>
+<div class="toggle docutils container">
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>social-interaction-cloud<span class="o">[</span>face-detection,dialogflow<span class="o">]</span>
+</pre></div>
+</div>
+</div>
+<p><strong>MacOS (if using z-shell)</strong></p>
+<div class="toggle docutils container">
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span><span class="s1">&#39;social-interaction-cloud[face-detection,dialogflow]&#39;</span>
+</pre></div>
+</div>
+</div>
+<p>A service can easily be run by opening a new terminal and calling the <code class="docutils literal notranslate"><span class="pre">run-service</span></code> command, for example <code class="docutils literal notranslate"><span class="pre">run-face-detection</span></code> or <code class="docutils literal notranslate"><span class="pre">run-dialogflow</span></code>. See the <a class="reference internal" href="../api/services.html"><span class="doc">Available services</span></a>  page for more info about the dependencies and run commands for each service.</p>
+<p>Note: the <code class="docutils literal notranslate"><span class="pre">--upgrade</span></code> flag ensures the new dependencies are installed if you already have previously installed the social interaction cloud.</p>
+<p>For our example we will start the face-detection service.</p>
+<p><strong>Ubuntu/Debian</strong></p>
+<div class="toggle docutils container">
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Activate the same virtual environment where you pip installed</span>
+<span class="c1"># social-interaction-cloud in the installation steps (e.g. in sic-applications)</span>
+<span class="nb">source</span><span class="w"> </span>venv_sic/bin/activate
+
+<span class="c1"># First, install all the extra dependencies that this service depends on.</span>
+pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>social-interaction-cloud<span class="o">[</span>face-detection<span class="o">]</span>
+
+<span class="c1"># Run the face-detection server</span>
+run-face-detection
+</pre></div>
+</div>
+</div>
+<p><strong>MacOS</strong></p>
+<div class="toggle docutils container">
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Activate the same virtual environment where you pip installed</span>
+<span class="c1"># social-interaction-cloud in the installation steps (e.g. in sic-applications)</span>
+<span class="nb">source</span><span class="w"> </span>venv_sic/bin/activate
+
+<span class="c1"># First, install all the extra dependencies that this service depends on.</span>
+pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span><span class="s1">&#39;social-interaction-cloud[face-detection]&#39;</span>
+
+<span class="c1"># Run the face-detection server</span>
+run-face-detection
+</pre></div>
+</div>
+</div>
+<p><strong>Windows</strong></p>
+<div class="toggle docutils container">
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Activate the same virtual environment where you pip installed the</span>
+<span class="c1"># social interaction cloud in the installation steps (e.g. in sic-applications)</span>
+<span class="nb">source</span><span class="w"> </span>venv_sic/Scripts/activate
+
+<span class="c1"># First, install all the extra dependencies that this service depends on.</span>
+pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>social-interaction-cloud<span class="o">[</span>face-detection<span class="o">]</span>
+
+<span class="c1"># Run the face-detection server</span>
+run-face-detection
+</pre></div>
+</div>
+</div>
+<p>If successful, you should get the following output:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>SICComponentManager<span class="w"> </span><span class="m">192</span>.168.2.6<span class="o">]</span>:<span class="w"> </span>INFO:<span class="w"> </span>Manager<span class="w"> </span>on<span class="w"> </span>device<span class="w"> </span><span class="m">192</span>.168.2.6<span class="w"> </span>starting
+<span class="o">[</span>SICComponentManager<span class="w"> </span><span class="m">192</span>.168.2.6<span class="o">]</span>:<span class="w"> </span>INFO:<span class="w"> </span>Started<span class="w"> </span>component<span class="w"> </span>manager<span class="w"> </span>on<span class="w"> </span>ip<span class="w"> </span><span class="s2">&quot;192.168.2.6&quot;</span><span class="w"> </span>with<span class="w"> </span>components:
+<span class="o">[</span>SICComponentManager<span class="w"> </span><span class="m">192</span>.168.2.6<span class="o">]</span>:<span class="w"> </span>INFO:<span class="w">  </span>-<span class="w"> </span>FaceDetectionComponent
+</pre></div>
+</div>
+<p><strong>Step 3: running an application</strong>
+Run the demo file <a class="reference external" href="https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection.py">demo_desktop_camera_facedetection.py</a>.</p>
+<p><strong>Ubuntu/Debian/MacOS</strong></p>
+<div class="toggle docutils container">
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Activate the virtual environment in sic_applications</span>
+<span class="nb">source</span><span class="w"> </span>venv_sic/bin/activate
+
+<span class="c1"># Go to sic_applications and the demo script</span>
+<span class="nb">cd</span><span class="w"> </span>demos/desktop
+python<span class="w"> </span>demo_desktop_camera_facedetection.py
+</pre></div>
+</div>
+</div>
+<p><strong>Windows</strong></p>
+<div class="toggle docutils container">
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Activate the virtual environment in sic_applications</span>
+<span class="nb">source</span><span class="w"> </span>venv_sic/Scripts/activate
+
+<span class="c1"># Go to sic_applications and the demo script</span>
+<span class="nb">cd</span><span class="w"> </span>demos/desktop
+python<span class="w"> </span>demo_desktop_camera_facedetection.py
+</pre></div>
+</div>
+</div>
+<p>If all goes well, a display should pop up showing a bounding box around the detected face! If the image appears upside down, go to line 34 in <code class="docutils literal notranslate"><span class="pre">demo_desktop_camera_facedetection.py</span></code> and change the <code class="docutils literal notranslate"><span class="pre">flip</span> <span class="pre">parameter</span></code> to -1.
+To understand how this example works, see the comments in the code. Next, we’ll cover using a service that requires an API key.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="1_installation.html" class="btn btn-neutral float-left" title="1: Installation and Setup" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="3_api_key.html" class="btn btn-neutral float-right" title="3: Using the Dialogflow Service" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,413 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.common_naoqi.nao_motion_streamer &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.common_naoqi.nao_motion_streamer</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.common_naoqi.nao_motion_streamer</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SICComponentManager</span><span class="p">,</span>
+    <span class="n">SICConfMessage</span><span class="p">,</span>
+    <span class="n">SICMessage</span><span class="p">,</span>
+    <span class="n">SICRequest</span><span class="p">,</span>
+    <span class="n">utils</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.component_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICComponent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConnector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.service_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICService</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.common_naoqi_motion</span><span class="w"> </span><span class="kn">import</span> <span class="n">NaoqiMotionTools</span>
+
+<span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">PYTHON_VERSION_IS_2</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">qi</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">naoqi</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALProxy</span>
+
+
+<div class="viewcode-block" id="StartStreaming">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.StartStreaming">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StartStreaming</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to start streaming joint positions for specified joints.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="StartStreaming.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.StartStreaming.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">joints</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Start streaming the positions of the selected joints. For more information see robot documentation:</span>
+<span class="sd">        For nao: http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains</span>
+<span class="sd">        For pepper: http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html</span>
+
+
+<span class="sd">        :param joints: One of the robot&#39;s &quot;Joint chains&quot; such as [&quot;Body&quot;] or [&quot;LArm&quot;, &quot;HeadYaw&quot;]</span>
+<span class="sd">        :type joints: list[str]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">StartStreaming</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">joints</span> <span class="o">=</span> <span class="n">joints</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="StopStreaming">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.StopStreaming">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StopStreaming</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="NaoJointAngles">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoJointAngles">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoJointAngles</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Message carrying joint names and their corresponding angles in radians.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NaoJointAngles.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoJointAngles.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">joints</span><span class="p">,</span> <span class="n">angles</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a joint-angle message.</span>
+
+<span class="sd">        :param list[str] joints: Joint names in the order of the angles.</span>
+<span class="sd">        :param list[float] angles: Joint angles in radians.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">joints</span> <span class="o">=</span> <span class="n">joints</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angles</span> <span class="o">=</span> <span class="n">angles</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoMotionStreamerConf">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoMotionStreamerConf">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoMotionStreamerConf</span><span class="p">(</span><span class="n">SICConfMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Configuration for the NAOqi motion streaming service.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NaoMotionStreamerConf.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoMotionStreamerConf.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">stiffness</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+        <span class="n">speed</span><span class="o">=</span><span class="mf">0.75</span><span class="p">,</span>
+        <span class="n">stream_stiffness</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">use_sensors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">samples_per_second</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize configuration options for motion streaming.</span>
+
+<span class="sd">        :param float stiffness: Control how much power the robot should use to reach the given joint angles</span>
+<span class="sd">        :param float speed: Set the fraction of the maximum speed used to reach the target position.</span>
+<span class="sd">        :param float stream_stiffness: Control the stiffness of the robot when streaming its joint positions.</span>
+<span class="sd">        Note: Use stiffness, not stream_stiffness,  to control the stiffness of the robot when consuming a stream of</span>
+<span class="sd">        joint postions.</span>
+<span class="sd">        :param bool use_sensors: If true, sensor angles will be returned, otherwise command angles are used.</span>
+<span class="sd">        :param int samples_per_second: How many times per second the joint positions are sampled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">SICConfMessage</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stiffness</span> <span class="o">=</span> <span class="n">stiffness</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="n">speed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream_stiffness</span> <span class="o">=</span> <span class="n">stream_stiffness</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_sensors</span> <span class="o">=</span> <span class="n">use_sensors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">samples_per_second</span> <span class="o">=</span> <span class="n">samples_per_second</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoqiMotionStreamerService">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoqiMotionStreamerService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiMotionStreamerService</span><span class="p">(</span><span class="n">SICService</span><span class="p">,</span> <span class="n">NaoqiMotionTools</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stream NAOqi joint angles and process control requests.</span>
+
+<span class="sd">    This component connects to a local NAOqi session, exposes start/stop streaming requests,</span>
+<span class="sd">    and publishes `NaoJointAngles` messages at the requested rate.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NaoqiMotionStreamerService.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoqiMotionStreamerService.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set up the NAOqi session, motion service, and streaming thread.</span>
+
+<span class="sd">        :param Any args: Positional arguments passed to the component base.</span>
+<span class="sd">        :param Any kwargs: Keyword arguments passed to the component base.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">SICService</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">qi</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;tcp://127.0.0.1:9559&quot;</span><span class="p">)</span>
+
+        <span class="n">NaoqiMotionTools</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qi_session</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALMotion&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stiffness</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">samples_per_second</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">samples_per_second</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">do_streaming</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+
+        <span class="c1"># A list of joint names (not chains)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">joints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_joint_list</span><span class="p">([</span><span class="s2">&quot;Body&quot;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stream_joints</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream_thread</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_component_name</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionStreamerService.get_conf">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoqiMotionStreamerService.get_conf">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_conf</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the default configuration for this component.</span>
+
+<span class="sd">        :returns: Default configuration instance.</span>
+<span class="sd">        :rtype: NaoMotionStreamerConf</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">NaoMotionStreamerConf</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionStreamerService.get_inputs">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoqiMotionStreamerService.get_inputs">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_inputs</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List the message and request types accepted by this component.</span>
+
+<span class="sd">        :returns: Supported inputs.</span>
+<span class="sd">        :rtype: list[type]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">NaoJointAngles</span><span class="p">,</span> <span class="n">StartStreaming</span><span class="p">,</span> <span class="n">StopStreaming</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionStreamerService.on_request">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoqiMotionStreamerService.on_request">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Handle start/stop streaming requests.</span>
+
+<span class="sd">        :param SICRequest request: Incoming request instance.</span>
+<span class="sd">        :returns: Acknowledgement message.</span>
+<span class="sd">        :rtype: SICMessage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">request</span> <span class="o">==</span> <span class="n">StartStreaming</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">joints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_joint_list</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">joints</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">do_streaming</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">request</span> <span class="o">==</span> <span class="n">StopStreaming</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">do_streaming</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionStreamerService.on_message">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoqiMotionStreamerService.on_message">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Apply stiffness if needed and forward desired joint angles to the robot.</span>
+
+<span class="sd">        :param NaoJointAngles message: Message containing joint names and desired angles.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stiffness</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">stiffness</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setStiffnesses</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">joints</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">stiffness</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stiffness</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">stiffness</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setAngles</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">joints</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">angles</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">speed</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionStreamerService.get_output">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoqiMotionStreamerService.get_output">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_output</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Declare the message type produced by this component.</span>
+
+<span class="sd">        :returns: Output message class.</span>
+<span class="sd">        :rtype: type</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">NaoJointAngles</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionStreamerService.stream_joints">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoqiMotionStreamerService.stream_joints">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stream_joints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Background loop: sample joint angles and publish them at the configured rate.</span>
+
+<span class="sd">        The loop respects `do_streaming` and component stop signals.</span>
+
+<span class="sd">        :raises Exception: Logged and triggers `stop()` on unexpected errors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Set the stiffness value of a list of joint chain.</span>
+        <span class="c1"># For Nao joint chains are: Head, RArm, LArm, RLeg, LLeg</span>
+        <span class="k">try</span><span class="p">:</span>
+
+            <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_signal_to_stop</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+
+                <span class="c1"># check both do_streaming and _signal_to_stop periodically</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">do_streaming</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_streaming</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+                    <span class="k">continue</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stiffness</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setStiffnesses</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">joints</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">stiffness</span> <span class="o">=</span> <span class="mi">0</span>
+
+                <span class="n">angles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">getAngles</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">joints</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">use_sensors</span>
+                <span class="p">)</span>  <span class="c1"># use_sensors=False</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">output_message</span><span class="p">(</span><span class="n">NaoJointAngles</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">joints</span><span class="p">,</span> <span class="n">angles</span><span class="p">))</span>
+
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">samples_per_second</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stopped</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionStreamerService.stop">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoqiMotionStreamerService.stop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stop the motion streamer, closing the NAOqi session and the component.</span>
+
+<span class="sd">        :returns: None</span>
+<span class="sd">        :rtype: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Do not set `_stopped` here: it is set by the streaming thread when it exits.</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiMotionStreamerService</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiMotionStreamer">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.nao_motion_streamer.NaoqiMotionStreamer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiMotionStreamer</span><span class="p">(</span><span class="n">SICConnector</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Connector binding to `NaoqiMotionStreamerService`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">component_class</span> <span class="o">=</span> <span class="n">NaoqiMotionStreamerService</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">SICComponentManager</span><span class="p">([</span><span class="n">NaoqiMotionStreamerService</span><span class="p">])</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

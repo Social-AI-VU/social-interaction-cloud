@@ -1,0 +1,854 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.core.message_python2 &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.core.message_python2</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.core.message_python2</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">message_python2.py</span>
+
+<span class="sd">This module contains the SICMessage class, which is the base class for all messages in the SIC framework.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">six</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">utils</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">six</span><span class="o">.</span><span class="n">PY3</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">cPickle</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pickle</span>
+
+    <span class="c1"># Set path manually on pepper and nao</span>
+    <span class="n">lib_turbo_jpeg_path</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;/&quot;</span>
+        <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="o">*</span><span class="vm">__file__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">)[:</span><span class="o">-</span><span class="mi">3</span><span class="p">])</span>
+        <span class="o">+</span> <span class="s2">&quot;/lib/libturbojpeg/lib32/libturbojpeg.so.0&quot;</span>
+    <span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">lib_turbo_jpeg_path</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">turbojpeg</span><span class="w"> </span><span class="kn">import</span> <span class="n">TurboJPEG</span>
+
+    <span class="n">turbojpeg</span> <span class="o">=</span> <span class="n">TurboJPEG</span><span class="p">(</span><span class="n">lib_turbo_jpeg_path</span><span class="p">)</span>
+<span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">ImportError</span><span class="p">):</span>
+    <span class="c1"># fall back to PIL in case TurboJPEG is not installed</span>
+    <span class="c1"># PIL _can_ use turbojpeg, but can also fall back to a slower libjpeg</span>
+    <span class="c1"># it is recommended to install turbojpeg</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Turbojpeg not found, falling back to PIL&quot;</span><span class="p">)</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+
+<div class="viewcode-block" id="FakeTurboJpeg">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.FakeTurboJpeg">[docs]</a>
+    <span class="k">class</span><span class="w"> </span><span class="nc">FakeTurboJpeg</span><span class="p">:</span>
+<div class="viewcode-block" id="FakeTurboJpeg.encode">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.FakeTurboJpeg.encode">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">):</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+            <span class="n">image</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;JPEG&quot;</span><span class="p">)</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">output</span><span class="o">.</span><span class="n">read</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="FakeTurboJpeg.decode">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.FakeTurboJpeg.decode">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="nb">bytes</span><span class="p">))</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">image</span><span class="p">)[:,</span> <span class="p">:,</span> <span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">image</span></div>
+</div>
+
+
+    <span class="n">turbojpeg</span> <span class="o">=</span> <span class="n">FakeTurboJpeg</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="SICMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICMessage</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The abstract message structure to pass messages around the SIC framework. Supports python types, numpy arrays</span>
+<span class="sd">    and JPEG compression using libturbo-jpeg.</span>
+
+<span class="sd">    :param _compress_images: Whether to compress images.</span>
+<span class="sd">    :type _compress_images: bool</span>
+<span class="sd">    :param _request_id: The request id of the message.</span>
+<span class="sd">    :type _request_id: int</span>
+<span class="sd">    :param _timestamp: The timestamp of the message.</span>
+<span class="sd">    :type _timestamp: float</span>
+<span class="sd">    :param _previous_component_name: The name of the previous component that created the message.</span>
+<span class="sd">    :type _previous_component_name: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># timestamp of the creation date of the data at its origin, e.g. camera, but not face detection (as it uses the</span>
+    <span class="c1"># camera data, and should be aligned with data from the same creation time.</span>
+    <span class="n">_timestamp</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># A string with the name of the previous component that created it, used to differentiate messages of the same type.</span>
+    <span class="n">_previous_component_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">__NP_VALUES</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">__JPEG_VALUES</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">__SIC_MESSAGES</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">_compress_images</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1"># this request id must be set when the message is sent as a reply to a SICRequest</span>
+    <span class="n">_request_id</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="SICMessage.get_message_name">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICMessage.get_message_name">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_message_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The pretty name of this message class.</span>
+
+<span class="sd">        :return: The name of the message class.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span></div>
+
+
+<div class="viewcode-block" id="SICMessage.deserialize">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICMessage.deserialize">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deserialize</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">byte_string</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert object from its bytes representation, compatible between python2 and python3 and</span>
+<span class="sd">        with support for numpy arrays.</span>
+
+<span class="sd">        :param byte_string: The byte string to deserialize.</span>
+<span class="sd">        :type byte_string: bytes</span>
+<span class="sd">        :return: The deserialized object.</span>
+<span class="sd">        :rtype: object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Read pickle object</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_pickle_load</span><span class="p">(</span><span class="n">byte_string</span><span class="p">)</span>
+
+        <span class="c1"># Decompress SICMessage bytes to SICMessage</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">__SIC_MESSAGES</span><span class="p">:</span>
+            <span class="n">field_val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field_val</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+                <span class="n">field_val</span> <span class="o">=</span> <span class="n">field_val</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;latin1&quot;</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">SICMessage</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">field_val</span><span class="p">))</span>
+
+        <span class="c1"># Decompress numpy bytes to numpy arrays</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">__NP_VALUES</span><span class="p">:</span>
+            <span class="n">field_val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field_val</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+                <span class="n">field_val</span> <span class="o">=</span> <span class="n">field_val</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;latin1&quot;</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">_base2np</span><span class="p">(</span><span class="n">field_val</span><span class="p">))</span>
+
+        <span class="c1"># Decompress JPEG images to numpy arrays</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">__JPEG_VALUES</span><span class="p">:</span>
+            <span class="n">field_val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field_val</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+                <span class="n">field_val</span> <span class="o">=</span> <span class="n">field_val</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;latin1&quot;</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">jpeg2np</span><span class="p">(</span><span class="n">field_val</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">obj</span></div>
+
+
+<div class="viewcode-block" id="SICMessage._np2base">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICMessage._np2base">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_np2base</span><span class="p">(</span><span class="n">inp</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert numpy arrays to byte arrays.</span>
+
+<span class="sd">        :param inp: a numpy array</span>
+<span class="sd">        :type inp: np.ndarray</span>
+<span class="sd">        :return: the byte string</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mem_stream</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">mem_stream</span><span class="p">,</span> <span class="n">inp</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mem_stream</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SICMessage._base2np">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICMessage._base2np">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_base2np</span><span class="p">(</span><span class="n">inp</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert back from byte arrays to numpy arrays.</span>
+
+<span class="sd">        :param inp: a byte string</span>
+<span class="sd">        :type inp: bytes</span>
+<span class="sd">        :return: the numpy array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">memfile</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
+        <span class="n">memfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+        <span class="n">memfile</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">memfile</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICMessage.np2jpeg">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICMessage.np2jpeg">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">np2jpeg</span><span class="p">(</span><span class="n">inp</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert numpy array to JPEG bytes.</span>
+
+<span class="sd">        :param inp: a numpy array</span>
+<span class="sd">        :type inp: np.ndarray</span>
+<span class="sd">        :return: the JPEG bytes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">turbojpeg</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICMessage.jpeg2np">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICMessage.jpeg2np">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">jpeg2np</span><span class="p">(</span><span class="n">inp</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert JPEG bytes to numpy array.</span>
+
+<span class="sd">        :param inp: a JPEG bytes</span>
+<span class="sd">        :type inp: bytes</span>
+<span class="sd">        :return: the numpy array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># takes about 15 ms for 1280x960px</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">turbojpeg</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+
+        <span class="c1"># the img np array now has the following flags:</span>
+        <span class="c1"># C_CONTIGUOUS : False</span>
+        <span class="c1"># OWNDATA: False</span>
+
+        <span class="c1"># cv2 drawing functions fail, with cryptic type errors (but cv2.imShow does not)</span>
+        <span class="c1"># the np.array() sets these flags to true</span>
+        <span class="c1"># takes about 1 ms for 1280x960px</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">img</span></div>
+
+
+<div class="viewcode-block" id="SICMessage.get_previous_component_name">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICMessage.get_previous_component_name">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_previous_component_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the name of the previous component that created the message.</span>
+
+<span class="sd">        :return: The name of the previous component.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_previous_component_name</span></div>
+
+
+
+<div class="viewcode-block" id="SICMessage.serialize">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICMessage.serialize">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert this object to its bytes representation, compatible between python2 and python3 and</span>
+<span class="sd">        with support for numpy arrays.</span>
+
+<span class="sd">        :return: &#39;bytes&#39; in python3, &#39;str&#39; in python2 (which are roughly the same)</span>
+<span class="sd">        :rtype: bytes or str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__NP_VALUES</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__JPEG_VALUES</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__SIC_MESSAGES</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Compress np arrays with np.save</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="n">attr_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr_value</span><span class="p">,</span> <span class="n">SICMessage</span><span class="p">):</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">attr_value</span><span class="o">.</span><span class="n">serialize</span><span class="p">())</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__SIC_MESSAGES</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr_value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_compress_images</span>
+                    <span class="ow">and</span> <span class="n">attr_value</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span>
+                    <span class="ow">and</span> <span class="n">attr_value</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span>
+                <span class="p">):</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">np2jpeg</span><span class="p">(</span><span class="n">attr_value</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__JPEG_VALUES</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_np2base</span><span class="p">(</span><span class="n">attr_value</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__NP_VALUES</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+
+        <span class="c1"># Pickle dataclass</span>
+        <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICMessage._pickle_load">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICMessage._pickle_load">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_pickle_load</span><span class="p">(</span><span class="n">byte_string</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load a pickle object from a byte string.</span>
+
+<span class="sd">        The pickle loads call is different between python versions. To reduce code duplication, this</span>
+<span class="sd">        function is created to contain only the difference.</span>
+
+<span class="sd">        :param byte_string: The byte string to load.</span>
+<span class="sd">        :type byte_string: bytes</span>
+<span class="sd">        :return: The loaded object.</span>
+<span class="sd">        :rtype: object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Not everything is a pickle object...</span>
+        <span class="c1"># If byte_string starts with &#39;text:&lt;channel_name&gt;&#39; some alien (non-SIC) agent is trying to tell us something...</span>
+        <span class="c1"># Otherwise, the EISComponent has been doing the talking (sending messages of the form &#39;text:&#39; and the logger</span>
+        <span class="c1"># is listening to this talk too...</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># If decoding works, we have a string that was sent by someone...</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">byte_string</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;text:&quot;</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Communication with agent alien to SIC: sending or receiving message &quot;</span> <span class="o">+</span> <span class="n">message</span><span class="p">)</span>
+                <span class="c1"># We need to accommodate SIC and turn a string into a SIC message. So, let&#39;s give SIC what it needs...</span>
+                <span class="c1"># If message was received from an alien agent on a reqreply channel, create a TextRequest object</span>
+                <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;text:reqreply:&quot;</span><span class="p">):</span>
+                    <span class="n">byte_string</span> <span class="o">=</span> <span class="n">TextRequest</span><span class="p">(</span><span class="n">byte_string</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">serialize</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Whether the message was sent by a SIC component or received from an agent alien to SIC, create a</span>
+                    <span class="c1"># TextMessage object</span>
+                    <span class="n">byte_string</span> <span class="o">=</span> <span class="n">TextMessage</span><span class="p">(</span><span class="n">byte_string</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">serialize</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="ne">UnicodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Pickle serialised objects will give a decoding exception; in that case we silently fail and assume we</span>
+            <span class="c1"># have a Pickle object we need to deal with...</span>
+            <span class="k">pass</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">PYTHON_VERSION_IS_2</span><span class="p">:</span>
+                <span class="n">byte_string</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">ensure_binary</span><span class="p">(</span><span class="n">byte_string</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">byte_string</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">byte_string</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;latin1&quot;</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">pickle</span><span class="o">.</span><span class="n">UnpicklingError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">byte_string</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">pickle</span><span class="o">.</span><span class="n">UnpicklingError</span><span class="p">(</span>
+                <span class="s2">&quot;Byte string is likely not a SICMessage (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                <span class="s2">&quot;You likely haven&#39;t imported the class that caused the original error in your SICApplication.</span><span class="se">\n</span><span class="s2">--&gt; Original error: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">e</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;You tried to deserialize a wrong type of message, or sent unpickleable types such as numpy arrays nested in objects. </span><span class="se">\n</span><span class="s2"> Got message:</span><span class="se">\n\n</span><span class="si">{}</span><span class="se">\n\n</span><span class="s2">(original error: </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">byte_string</span><span class="p">,</span> <span class="n">e</span>
+                <span class="p">)</span>
+            <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loose check to compare if messages are the same type. type(a) == type(b) might not work because the messages</span>
+<span class="sd">        might have been created on different machines.</span>
+
+<span class="sd">        :param other: The other message to compare to.</span>
+<span class="sd">        :type other: SICMessage</span>
+<span class="sd">        :return: Whether the messages are the same type.</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="s2">&quot;get_message_name&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_message_name</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">get_message_name</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a string representation of this message.</span>
+
+<span class="sd">        :return: The string representation of this message.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">max_len</span> <span class="o">=</span> <span class="mi">20</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">attr</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;__&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="n">attr_value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">attr</span> <span class="o">+</span> <span class="s2">&quot;:&quot;</span> <span class="o">+</span> <span class="n">attr_value</span><span class="p">[:</span><span class="n">max_len</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">attr_value</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_len</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot;[...]&quot;</span>
+
+            <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+        <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<span class="c1">######################################################################################</span>
+<span class="c1">#                             Message types                                          #</span>
+<span class="c1">######################################################################################</span>
+
+
+<div class="viewcode-block" id="SICConfMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICConfMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICConfMessage</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A type of message that carries configuration information for services.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="SICRequest">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICRequest</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A type of message that must be met with a reply, a SICMessage with the same request id, on the same channel.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_request_id</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="SICRequest.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">request_id</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_request_id</span> <span class="o">=</span> <span class="n">request_id</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># TODO https://softwareengineering.stackexchange.com/questions/339125/acceptable-to-rely-on-random-ints-being-unique</span>
+            <span class="c1"># should be a global that gets incremented, or 512</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_request_id</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">getrandbits</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SICControlMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICControlMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICControlMessage</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Superclass for all messages that are related to component control</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="SICControlRequest">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICControlRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICControlRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Superclass for all requests that are related to component control</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="SICPingRequest">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICPingRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICPingRequest</span><span class="p">(</span><span class="n">SICControlRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A request for a ping to check if alive.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="SICPongMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICPongMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICPongMessage</span><span class="p">(</span><span class="n">SICControlMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A pong to reply to a ping request.;</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="SICSuccessMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICSuccessMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICSuccessMessage</span><span class="p">(</span><span class="n">SICControlMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Special type of message to signal a request was successfully completed.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="SICFailureMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICFailureMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICFailureMessage</span><span class="p">(</span><span class="n">SICControlMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Special type of message to signal a request was not successfully completed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="SICFailureMessage.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICFailureMessage.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span></div>
+</div>
+
+
+<div class="viewcode-block" id="SICStopServerRequest">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICStopServerRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICStopServerRequest</span><span class="p">(</span><span class="n">SICControlRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Special type of message to signal a ComponentManager it should stop as the user no longer needs it.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="SICIgnoreRequestMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.SICIgnoreRequestMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICIgnoreRequestMessage</span><span class="p">(</span><span class="n">SICControlMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Special type of message with the request_response_id set to -1. This means it will not</span>
+<span class="sd">    be automatically set to the id of the request this is a reply to, and in effect will</span>
+<span class="sd">    not reply to the request as the user will ignore this reply.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_request_id</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span></div>
+
+
+
+<span class="c1">######################################################################################</span>
+<span class="c1">#                             Common data formats                                    #</span>
+<span class="c1">######################################################################################</span>
+
+
+<div class="viewcode-block" id="CompressedImage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.CompressedImage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CompressedImage</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compress WxHx3 np arrays using libturbo-jpeg to speed up network transfer of</span>
+<span class="sd">    images. This is LOSSY JPEG compression, which means the image is not exactly the same.</span>
+<span class="sd">    Non-image array content will be destroyed by this compression.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_compress_images</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="CompressedImage.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.CompressedImage.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="n">image</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="CompressedImageMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.CompressedImageMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CompressedImageMessage</span><span class="p">(</span><span class="n">CompressedImage</span><span class="p">,</span> <span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    See CompressedImage</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="CompressedImageMessage.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.CompressedImageMessage.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">CompressedImage</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">SICMessage</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="CompressedImageRequest">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.CompressedImageRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CompressedImageRequest</span><span class="p">(</span><span class="n">CompressedImage</span><span class="p">,</span> <span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    See CompressedImage</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="CompressedImageRequest.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.CompressedImageRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">CompressedImage</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">SICRequest</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="UncompressedImageMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.UncompressedImageMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UncompressedImageMessage</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Message class to send images/np array without JPEG compression. The data is</span>
+<span class="sd">    compressed using default np.save lossless compression. In other words: the</span>
+<span class="sd">    data does not change after compression, but this is much slower than JPEGCompressedImageMessage</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_compress_images</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="UncompressedImageMessage.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.UncompressedImageMessage.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="n">image</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Audio">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.Audio">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Audio</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A message that containes a byte representation of pulse-code modulated (PCM) 16-bit signed little endian</span>
+<span class="sd">    integer waveform audio data. </span>
+<span class="sd">    </span>
+<span class="sd">    Integers are represented as a python byte array because this is the expected and provided data format of </span>
+<span class="sd">    common hardware audio hardware and libraries. For compatibility with other services ensure that your data follows </span>
+<span class="sd">    EXACTLY this data type. This should be the most common format, but please check your data format.</span>
+
+<span class="sd">    You can convert to and from .wav files using the built-in module https://docs.python.org/2/library/wave.html</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Audio.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.Audio.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">waveform</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">is_stream</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span> <span class="o">=</span> <span class="n">sample_rate</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">waveform</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">waveform</span><span class="p">,</span> <span class="nb">bytearray</span>
+        <span class="p">),</span> <span class="s2">&quot;Waveform must be a byte array&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">waveform</span> <span class="o">=</span> <span class="n">waveform</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_stream</span> <span class="o">=</span> <span class="n">is_stream</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AudioMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.AudioMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AudioMessage</span><span class="p">(</span><span class="n">Audio</span><span class="p">,</span> <span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Message class to send audio data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AudioMessage.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.AudioMessage.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">Audio</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">SICMessage</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AudioRequest">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.AudioRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AudioRequest</span><span class="p">(</span><span class="n">Audio</span><span class="p">,</span> <span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request class to send audio data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AudioRequest.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.AudioRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">Audio</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">SICRequest</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Text">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.Text">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Text</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A simple object with a string as text.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Text.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.Text.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="TextMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.TextMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TextMessage</span><span class="p">(</span><span class="n">Text</span><span class="p">,</span> <span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Message class to send text data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TextMessage.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.TextMessage.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">Text</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">SICMessage</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="TextRequest">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.TextRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TextRequest</span><span class="p">(</span><span class="n">Text</span><span class="p">,</span> <span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request class to send text data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TextRequest.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.TextRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">Text</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">SICRequest</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="BoundingBox">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.BoundingBox">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BoundingBox</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Bounding box for identifying an object in an image.</span>
+<span class="sd">    </span>
+<span class="sd">    (x,y) represents the top-left pixel of the bounding box, and (w,h) indicates the width and height.</span>
+<span class="sd">    Identifier can be used implementation specific to for example indicate a specific object type or detected person.</span>
+<span class="sd">    Confidence indicates the confidence of the detection mechanism.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BoundingBox.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.BoundingBox.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">confidence</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">w</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span> <span class="o">=</span> <span class="n">h</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">identifier</span> <span class="o">=</span> <span class="n">identifier</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">confidence</span> <span class="o">=</span> <span class="n">confidence</span></div>
+
+
+<div class="viewcode-block" id="BoundingBox.xywh">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.BoundingBox.xywh">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">xywh</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the coordinates as a numpy array.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: The coordinates as a numpy array.</span>
+<span class="sd">        :rtype: np.ndarray</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">w</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="p">])</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a string representation of this bounding box.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: The string representation of this bounding box.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;BoundingBox</span><span class="se">\n</span><span class="s2">xywh: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">identifier: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">confidence: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xywh</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">identifier</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">confidence</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="BoundingBoxesMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.BoundingBoxesMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BoundingBoxesMessage</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Message class to send multiple bounding boxes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BoundingBoxesMessage.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.message_python2.BoundingBoxesMessage.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bboxes</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bboxes</span> <span class="o">=</span> <span class="n">bboxes</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

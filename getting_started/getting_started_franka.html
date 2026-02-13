@@ -1,0 +1,223 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getting started with the Franka Emika Research 3 &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Connecting to External APIs" href="../external_apis.html" />
+    <link rel="prev" title="Getting started with the Nao" href="getting_started_nao.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../getting_started.html#getting-started-with-the-nao">Getting started with the Nao</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../getting_started.html#getting-started-with-the-franka-emika-robot-arm">Getting started with the Franka Emika robot arm</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Getting started with the Franka Emika Research 3</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#installation-guide">📄 Installation Guide</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#start-with-the-robot">Start with the robot</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../getting_started.html">Getting started with the robots</a></li>
+      <li class="breadcrumb-item active">Getting started with the Franka Emika Research 3</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/getting_started/getting_started_franka.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="getting-started-with-the-franka-emika-research-3">
+<h1>Getting started with the Franka Emika Research 3<a class="headerlink" href="#getting-started-with-the-franka-emika-research-3" title="Link to this heading"></a></h1>
+<p>This is only a brief introductory guide on how to use the Franka Emika robot. For more detailed information—especially regarding safety—please refer to the product manual available here: Franka Robot Manual.</p>
+<section id="installation-guide">
+<h2>📄 Installation Guide<a class="headerlink" href="#installation-guide" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Follow the <a class="reference internal" href="../tutorials/1_installation.html"><span class="doc">tutorial</span></a> to have the SIC framework up and running (If you are not going to use SIC, you can skip this step)</p></li>
+<li><p>If you want to control the robot directly on your machine without using ROS, there is a lightweight Python package you can install in your virtual environment (venv or conda): <a class="reference external" href="https://github.com/JeanElsner/panda-py?tab=readme-ov-file#install">panda-py</a>. With this package, you don’t even need to install libfranka or a real-time kernel.</p></li>
+<li><p>Since our robot version is <code class="docutils literal notranslate"><span class="pre">5.3.2</span></code> (which is ≥ <code class="docutils literal notranslate"><span class="pre">5.2.0</span></code>), the libfranka version should be  <span class="math notranslate nohighlight">\(\geq 0.10.0 \lt 0.13.3\)</span>. That means you should download a stable version ending with <code class="docutils literal notranslate"><span class="pre">0.10.0.zip</span></code>. For example, <code class="docutils literal notranslate"><span class="pre">0.13.3.zip</span></code> won’t work because it is not lower than <code class="docutils literal notranslate"><span class="pre">0.13.3</span></code>.</p></li>
+</ol>
+<p>We recommend downloading the release we have confirmed works with our robot:
+<a class="reference external" href="https://github.com/JeanElsner/panda-py/releases/download/v0.7.5/panda_py_0.7.5_libfranka_0.10.0.zip">https://github.com/JeanElsner/panda-py/releases/download/v0.7.5/panda_py_0.7.5_libfranka_0.10.0.zip</a></p>
+<p>After downloading, use <code class="docutils literal notranslate"><span class="pre">pip</span></code> to install the version of <strong>panda-py</strong> that corresponds to your current Python version. For example, if you are using Python 3.10, install the package built for Python 3.10.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>panda_python-0.7.5+libfranka.0.10.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+</pre></div>
+</div>
+<ol class="arabic simple" start="4">
+<li><p>More documentation on how to use panda-py can be found <a class="reference external" href="https://jeanelsner.github.io/panda-py/panda_py.html">here</a></p></li>
+</ol>
+</section>
+<section id="start-with-the-robot">
+<h2>Start with the robot<a class="headerlink" href="#start-with-the-robot" title="Link to this heading"></a></h2>
+<section id="switch-on-the-franka">
+<h3><strong>Switch on the Franka</strong><a class="headerlink" href="#switch-on-the-franka" title="Link to this heading"></a></h3>
+<p>Press the power switch on the backside of the Control</p>
+</section>
+<section id="network-setup">
+<h3><strong>Network setup</strong><a class="headerlink" href="#network-setup" title="Link to this heading"></a></h3>
+<p>Set up the connection between the Control and the workstation:</p>
+<ol class="arabic simple">
+<li><p>The workstation’s network settings have already been configured, so you simply need to connect the workstation and the Control box using an Ethernet cable. If you’re using a workstation or laptop that doesn’t have a fixed wired IP address (172.16.0.1) set up, please refer to the instructions <a class="reference external" href="https://frankaemika.github.io/docs/getting_started.html#setting-up-the-network">here</a></p></li>
+<li><p>Select network <code class="docutils literal notranslate"><span class="pre">Wired</span> <span class="pre">connection</span> <span class="pre">1</span></code>, where the IPv4 address is set to 172.16.0.1.</p></li>
+</ol>
+</section>
+<section id="preparing-the-robot-for-fci-usage-in-desk">
+<h3><strong>Preparing the robot for FCI usage in Desk</strong><a class="headerlink" href="#preparing-the-robot-for-fci-usage-in-desk" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Open a browser, *Desk (you will need to log in; ask Lilly for the username and password) can be accessed via <a class="reference external" href="https://172.16.0.2">https://172.16.0.2</a>, although you will see a certificate warning in your browser</p></li>
+<li><p>Unlock joints: go to the joints section and select the unlock icon</p></li>
+</ol>
+<a class="reference internal image-reference" href="../_images/franka_unlock_joints.png"><img alt="Unlock joints of the franka robot arm" class="align-center" src="../_images/franka_unlock_joints.png" style="width: 200px; height: 75px;" />
+</a>
+<ol class="arabic simple" start="3">
+<li><p>Activate FCI (Go to the right panel where you see <em>172.16.0.2 N/A</em> and click on it. A menu will expand—then click the <strong>Activate FCI</strong> option) Once it’s activated, the status indicator should turn green (if it’s in Execution mode) from blue.</p></li>
+</ol>
+<p>*Desk is Franka Emika’s web-based, intuitive and graphical programming and user interface</p>
+</section>
+<section id="operate-the-robot">
+<h3><strong>Operate the robot</strong><a class="headerlink" href="#operate-the-robot" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>If you’re going to run code, make sure the operation mode is set to ‘Execution’ instead of ‘Programming’. The status indicator should be green when in Execution mode. If you want to freely move the arm, switch to ‘Programming’ mode— the status indicator should then turn white.</p></li>
+</ol>
+<p>2. If you’re not going to use SIC, you can run a very simple example to make the robot move:
+<a class="reference external" href="https://github.com/JeanElsner/panda-py/blob/main/examples/teaching.py">example/teaching.py</a>. This script lets you teach the robot 3 poses and replay the trajectories. Make sure to pass the robot’s IP address when running the script, i.e.: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">teaching.py</span> <span class="pre">172.16.0.2</span></code></p>
+<ol class="arabic simple" start="3">
+<li><p>If you are using Python version <strong>below 3.11</strong>, you might encounter a <strong>segmentation fault</strong>. To fix this, you can downgrade your NumPy version by running:</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;numpy&lt;2&quot;</span>
+</pre></div>
+</div>
+<p>See a <a class="reference external" href="https://github.com/JeanElsner/panda-py/issues/40">similar issue</a> for panda-py.</p>
+<p>4. To move the robot to its starting (home) position, use the <code class="docutils literal notranslate"><span class="pre">move_to_start</span></code> function.
+You can find more details <a class="reference external" href="https://jeanelsner.github.io/panda-py/panda_py.html#panda_py.Panda.move_to_start">here</a>.</p>
+<ol class="arabic simple" start="5">
+<li><p>If any drastic or dangerous movements occur, please press the emergency stop button. After you press it, always twist and release the button to reset it and allow it to pop back up.</p></li>
+<li><p>If the robot moves to a weird position and you encounter a “Joint Position Error Detected,” and you’re unable to recover it back to the reference position or continue operating the robot, please contact Lilly. Only Safety Operators can recover joint position sensor errors.</p></li>
+</ol>
+</section>
+<section id="switch-off-the-franka">
+<h3><strong>Switch off the Franka</strong><a class="headerlink" href="#switch-off-the-franka" title="Link to this heading"></a></h3>
+<p>1. Before switching off the robot, always move it to its starting (home) position first. You can use the <code class="docutils literal notranslate"><span class="pre">move_to_start()</span></code> function, see <a class="reference external" href="https://jeanelsner.github.io/panda-py/panda_py.html#panda_py.Panda.move_to_start">Panda.move_to_start</a>.
+See the photo below:</p>
+<a class="reference internal image-reference" href="../_images/franka_start_position.jpeg"><img alt="Starting position of the franka robot arm" class="align-center" src="../_images/franka_start_position.jpeg" style="width: 250px; height: 350px;" />
+</a>
+<p>2. Then, go to the right panel, click <strong>172.16.0.2 N/A</strong>, and select the <strong>Shut down</strong> option.
+The fail-safe locking system is activated, and Franka will shut down. Please make sure the system is properly shut down. You will see the message <strong>“Finished shutting down”</strong> once the process is complete.</p>
+<ol class="arabic simple" start="3">
+<li><p>Then, use the power switch on the back of the control box to disconnect Franka from the main power supply.</p></li>
+</ol>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Be aware: after using the switch to power the system off, please ensure to allow adequate waiting time (i.e. in the order of ~ 1 minute) before using it to power the system on again.</p>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="getting_started_nao.html" class="btn btn-neutral float-left" title="Getting started with the Nao" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../external_apis.html" class="btn btn-neutral float-right" title="Connecting to External APIs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

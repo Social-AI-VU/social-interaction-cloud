@@ -1,0 +1,635 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Devices &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Device Components" href="device_components.html" />
+    <link rel="prev" title="Core Framework" href="core.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../api.html#core-framework">Core Framework</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../api.html#devices">Devices</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Devices</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#module-sic_framework.devices.device">Device Interfaces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-sic_framework.devices.pepper">Robot Platforms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-sic_framework.devices.naoqi_shared">Shared Components</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="device_components.html">Device Components</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#services">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api.html#how-to-use-a-service">How to use a service</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API Reference</a></li>
+      <li class="breadcrumb-item active">Devices</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/devices.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="devices">
+<h1>Devices<a class="headerlink" href="#devices" title="Link to this heading"></a></h1>
+<p>The devices module provides interfaces for various robotic platforms and devices.</p>
+<section id="module-sic_framework.devices.device">
+<span id="device-interfaces"></span><h2>Device Interfaces<a class="headerlink" href="#module-sic_framework.devices.device" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="sic_framework.devices.device.SICLibrary">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">sic_framework.devices.device.</span></span><span class="sig-name descname"><span class="pre">SICLibrary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lib_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">download_cmd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">req_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lib_install_cmd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/device.html#SICLibrary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.device.SICLibrary" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A library to be installed on a remote device.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.device.SICLibrary.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lib_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">download_cmd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">req_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lib_install_cmd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/device.html#SICLibrary.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.device.SICLibrary.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="sic_framework.devices.device.exclude_pyc">
+<span class="sig-prename descclassname"><span class="pre">sic_framework.devices.device.</span></span><span class="sig-name descname"><span class="pre">exclude_pyc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tarinfo</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/device.html#exclude_pyc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.device.exclude_pyc" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="sic_framework.devices.device.SICDeviceManager">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">sic_framework.devices.device.</span></span><span class="sig-name descname"><span class="pre">SICDeviceManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/device.html#SICDeviceManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.device.SICDeviceManager" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Abstract class to facilitate property initialization for SICConnector properties.
+This way components of a device can easily be used without initializing all device components manually.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.device.SICDeviceManager.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sic_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">passwords</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">22</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/device.html#SICDeviceManager.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.device.SICDeviceManager.__init__" title="Link to this definition"></a></dt>
+<dd><p>Connect to the device and ensure an up to date version of the framework is installed
+:param ip: the ip adress of the device
+:param username: the ssh login name
+:param passwords: the (list) of passwords to use</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.device.SICDeviceManager.set_reservation">
+<span class="sig-name descname"><span class="pre">set_reservation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/device.html#SICDeviceManager.set_reservation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.device.SICDeviceManager.set_reservation" title="Link to this definition"></a></dt>
+<dd><p>Set a reservation for the device to prevent other users from using it.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.device.SICDeviceManager.get_last_modified">
+<span class="sig-name descname"><span class="pre">get_last_modified</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">paths</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/device.html#SICDeviceManager.get_last_modified"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.device.SICDeviceManager.get_last_modified" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.device.SICDeviceManager.auto_install">
+<span class="sig-name descname"><span class="pre">auto_install</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/device.html#SICDeviceManager.auto_install"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.device.SICDeviceManager.auto_install" title="Link to this definition"></a></dt>
+<dd><p>Install the SICFramework on the device.
+:return:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.device.SICDeviceManager.ssh_command">
+<span class="sig-name descname"><span class="pre">ssh_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_thread</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/device.html#SICDeviceManager.ssh_command"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.device.SICDeviceManager.ssh_command" title="Link to this definition"></a></dt>
+<dd><p>Executes the given command and logs any errors from the SSH session.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>command</strong> (<em>str</em>) – command to run on ssh client</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments to pass to ssh.exec_command
+(e.g., get_pty=False, timeout=30)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(stdin, stdout, stderr) file-like objects from the SSH session</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Various SSH exceptions if connection fails</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.device.SICDeviceManager.check_if_lib_installed">
+<span class="sig-name descname"><span class="pre">check_if_lib_installed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pip_freeze</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lib</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/device.html#SICDeviceManager.check_if_lib_installed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.device.SICDeviceManager.check_if_lib_installed" title="Link to this definition"></a></dt>
+<dd><p>Check to see if a python library name + version is in the ‘pip freeze’ output of a remote device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.device.SICDeviceManager.install_lib">
+<span class="sig-name descname"><span class="pre">install_lib</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lib</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/device.html#SICDeviceManager.install_lib"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.device.SICDeviceManager.install_lib" title="Link to this definition"></a></dt>
+<dd><p>Download and install Python library on this remote device</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.device.SICDeviceManager.stop_device">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">stop_device</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/device.html#SICDeviceManager.stop_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.device.SICDeviceManager.stop_device" title="Link to this definition"></a></dt>
+<dd><p>Stops the device and all its components.
+Must be implemented by subclasses.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.device.SICDeviceManager._get_connector">
+<span class="sig-name descname"><span class="pre">_get_connector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component_connector</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/device.html#SICDeviceManager._get_connector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.device.SICDeviceManager._get_connector" title="Link to this definition"></a></dt>
+<dd><p>Get the active connection the component, or initialize it if it is not yet connected to.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>component_connector</strong> – The component connector class to start, e.g. NaoCamera</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>SICConnector</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-sic_framework.devices.pepper">
+<span id="robot-platforms"></span><h2>Robot Platforms<a class="headerlink" href="#module-sic_framework.devices.pepper" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">sic_framework.devices.pepper.</span></span><span class="sig-name descname"><span class="pre">Pepper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/pepper.html#Pepper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.pepper.Pepper" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#sic_framework.devices.naoqi_shared.Naoqi" title="sic_framework.devices.naoqi_shared.Naoqi"><code class="xref py py-class docutils literal notranslate"><span class="pre">Naoqi</span></code></a></p>
+<p>Wrapper for Pepper device to easily access its components (connectors)</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sic_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stereo_camera_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth_camera_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pepper_motion_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/pepper.html#Pepper.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.pepper.Pepper.__init__" title="Link to this definition"></a></dt>
+<dd><p>Connect to the device and ensure an up to date version of the framework is installed
+:param ip: the ip adress of the device
+:param username: the ssh login name
+:param passwords: the (list) of passwords to use</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper.check_sic_install">
+<span class="sig-name descname"><span class="pre">check_sic_install</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/pepper.html#Pepper.check_sic_install"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.pepper.Pepper.check_sic_install" title="Link to this definition"></a></dt>
+<dd><p>Runs a script on Pepper to see if the sic_framework folder is there.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper.sic_install">
+<span class="sig-name descname"><span class="pre">sic_install</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/pepper.html#Pepper.sic_install"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.pepper.Pepper.sic_install" title="Link to this definition"></a></dt>
+<dd><p>Installs SIC on the Pepper</p>
+<p>This function:
+1. gets rid of old directories for clean install
+2. curl github repository
+3. pip install –no-deps git repo
+4. install dependencies from _LIBS_TO_INSTALL</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper.create_test_environment">
+<span class="sig-name descname"><span class="pre">create_test_environment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/pepper.html#Pepper.create_test_environment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.pepper.Pepper.create_test_environment" title="Link to this definition"></a></dt>
+<dd><p>Creates a test environment on the Pepper</p>
+<p>To use test environment, you must pass in a repo to the device initialization. For example:
+- Pepper(ip, dev_test=True, test_repo=PATH_TO_REPO) OR
+- Pepper(ip, dev_test=True)</p>
+<p>If you do not pass in a repo, it will assume the repo to test is already installed in a test environment on the Pepper.</p>
+<p>Instead of creating a virtual environment, we will just copy the repo over to the test directory
+and install from there.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper._get_desired_sic_version">
+<span class="sig-name descname"><span class="pre">_get_desired_sic_version</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/pepper.html#Pepper._get_desired_sic_version"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.pepper.Pepper._get_desired_sic_version" title="Link to this definition"></a></dt>
+<dd><p>Determine which SIC version should be installed on Pepper.</p>
+<p>Preference order:
+1. Explicit <cite>sic_version</cite> provided during construction.
+2. Local <cite>social-interaction-cloud</cite> package version.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper.stereo_camera">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">stereo_camera</span></span><a class="headerlink" href="#sic_framework.devices.pepper.Pepper.stereo_camera" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper.depth_camera">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">depth_camera</span></span><a class="headerlink" href="#sic_framework.devices.pepper.Pepper.depth_camera" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper.tablet">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">tablet</span></span><a class="headerlink" href="#sic_framework.devices.pepper.Pepper.tablet" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper.motion_streaming">
+<span class="sig-name descname"><span class="pre">motion_streaming</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/pepper.html#Pepper.motion_streaming"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.pepper.Pepper.motion_streaming" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper.tactile_sensor">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">tactile_sensor</span></span><a class="headerlink" href="#sic_framework.devices.pepper.Pepper.tactile_sensor" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper.back_bumper">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">back_bumper</span></span><a class="headerlink" href="#sic_framework.devices.pepper.Pepper.back_bumper" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper.right_bumper">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">right_bumper</span></span><a class="headerlink" href="#sic_framework.devices.pepper.Pepper.right_bumper" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.pepper.Pepper.left_bumper">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">left_bumper</span></span><a class="headerlink" href="#sic_framework.devices.pepper.Pepper.left_bumper" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class" id="module-sic_framework.devices.nao">
+<dt class="sig sig-object py" id="sic_framework.devices.nao.Nao">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">sic_framework.devices.nao.</span></span><span class="sig-name descname"><span class="pre">Nao</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/nao.html#Nao"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.nao.Nao" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#sic_framework.devices.naoqi_shared.Naoqi" title="sic_framework.devices.naoqi_shared.Naoqi"><code class="xref py py-class docutils literal notranslate"><span class="pre">Naoqi</span></code></a></p>
+<p>Wrapper for NAO device to easily access its components (connectors)</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.nao.Nao.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sic_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dev_test</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_repo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/nao.html#Nao.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.nao.Nao.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize the Nao device wrapper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ip</strong> (<em>str</em>) – The IP address of the NAO robot.</p></li>
+<li><p><strong>sic_version</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – The version of the SIC framework to use. Default is None which uses the same version as your local environment.</p></li>
+<li><p><strong>dev_test</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to use the device in development/testing mode. Default is False.</p></li>
+<li><p><strong>test_repo</strong> (<em>str</em><em> or </em><em>None</em><em>, </em><em>optional</em>) – Path to the test repository that you want zipped and installed on the Nao. Default is None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.nao.Nao.check_sic_install">
+<span class="sig-name descname"><span class="pre">check_sic_install</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/nao.html#Nao.check_sic_install"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.nao.Nao.check_sic_install" title="Link to this definition"></a></dt>
+<dd><p>Runs a script on Nao to see if SIC is installed there</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.nao.Nao.sic_install">
+<span class="sig-name descname"><span class="pre">sic_install</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/nao.html#Nao.sic_install"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.nao.Nao.sic_install" title="Link to this definition"></a></dt>
+<dd><p>Runs the install script specific to the Nao</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.nao.Nao.create_test_environment">
+<span class="sig-name descname"><span class="pre">create_test_environment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/nao.html#Nao.create_test_environment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.nao.Nao.create_test_environment" title="Link to this definition"></a></dt>
+<dd><p>Creates a test environment on the Nao</p>
+<p>To use test environment, you must pass in a repo to the device initialization. For example:</p>
+<ul class="simple">
+<li><p>Nao(ip, dev_test=True, test_repo=PATH_TO_REPO) OR</p></li>
+<li><p>Nao(ip, dev_test=True)</p></li>
+</ul>
+<p>If you do not pass in a repo, it will assume the repo to test is already installed in a test environment on the Nao.</p>
+<p>This function:</p>
+<ul class="simple">
+<li><p>checks to see if test environment exists</p></li>
+<li><p>if test_venv exists and no repo is passed in (self.test_repo), return True (no need to do anything)</p></li>
+<li><p>if test_venv exists but a new repo has been passed in:</p>
+<ol class="arabic simple">
+<li><p>uninstall old version of social-interaction-cloud on Nao</p></li>
+<li><p>zip the provided repo</p></li>
+<li><p>scp zip file over to nao, to ‘sic_to_test’ folder</p></li>
+<li><p>unzip repo and install</p></li>
+</ol>
+</li>
+<li><p>if test_venv does not exist:</p>
+<ol class="arabic simple">
+<li><p>check to make sure a test repo has been passed in to device initialization. If not, raise RuntimeError</p></li>
+<li><p>if repo has been passed in, create a new .test_venv and install repo</p></li>
+</ol>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.nao.Nao.motion_streaming">
+<span class="sig-name descname"><span class="pre">motion_streaming</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/nao.html#Nao.motion_streaming"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.nao.Nao.motion_streaming" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class" id="module-sic_framework.devices.desktop">
+<dt class="sig sig-object py" id="sic_framework.devices.desktop.Desktop">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">sic_framework.devices.desktop.</span></span><span class="sig-name descname"><span class="pre">Desktop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/desktop.html#Desktop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.desktop.Desktop" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#sic_framework.devices.device.SICDeviceManager" title="sic_framework.devices.device.SICDeviceManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">SICDeviceManager</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.desktop.Desktop.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">camera_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mic_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speakers_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tts_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/desktop.html#Desktop.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.desktop.Desktop.__init__" title="Link to this definition"></a></dt>
+<dd><p>Connect to the device and ensure an up to date version of the framework is installed
+:param ip: the ip adress of the device
+:param username: the ssh login name
+:param passwords: the (list) of passwords to use</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.desktop.Desktop.stop_device">
+<span class="sig-name descname"><span class="pre">stop_device</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/desktop.html#Desktop.stop_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.desktop.Desktop.stop_device" title="Link to this definition"></a></dt>
+<dd><p>Stops the desktop device and all its components.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.desktop.Desktop.camera">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">camera</span></span><a class="headerlink" href="#sic_framework.devices.desktop.Desktop.camera" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.desktop.Desktop.mic">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mic</span></span><a class="headerlink" href="#sic_framework.devices.desktop.Desktop.mic" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.desktop.Desktop.speakers">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">speakers</span></span><a class="headerlink" href="#sic_framework.devices.desktop.Desktop.speakers" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.desktop.Desktop.tts">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">tts</span></span><a class="headerlink" href="#sic_framework.devices.desktop.Desktop.tts" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.desktop.Desktop.spacemouse">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">spacemouse</span></span><a class="headerlink" href="#sic_framework.devices.desktop.Desktop.spacemouse" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<p id="module-sic_framework.devices.franka">franka.py</p>
+<p>This module provides the Franka device class and starts Franka-related components automatically.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="sic_framework.devices.franka.start_franka_components">
+<span class="sig-prename descclassname"><span class="pre">sic_framework.devices.franka.</span></span><span class="sig-name descname"><span class="pre">start_franka_components</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/franka.html#start_franka_components"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.franka.start_franka_components" title="Link to this definition"></a></dt>
+<dd><p>Initialize and run the Franka component manager</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="sic_framework.devices.franka.Franka">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">sic_framework.devices.franka.</span></span><span class="sig-name descname"><span class="pre">Franka</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/franka.html#Franka"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.franka.Franka" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#sic_framework.devices.device.SICDeviceManager" title="sic_framework.devices.device.SICDeviceManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">SICDeviceManager</span></code></a></p>
+<p>Franka device interface that automatically starts the component manager
+in a background thread on first initialization.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.franka.Franka.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">motion_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/franka.html#Franka.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.franka.Franka.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize the Franka device with the given motion configuration
+:param motion_conf: Configuration for the Franka motion component</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.franka.Franka.motion_recorder">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">motion_recorder</span></span><a class="headerlink" href="#sic_framework.devices.franka.Franka.motion_recorder" title="Link to this definition"></a></dt>
+<dd><p>Get the Franka motion recorder connector.
+:return: The FrankaMotionRecorder connector.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.franka.Franka.motion">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">motion</span></span><a class="headerlink" href="#sic_framework.devices.franka.Franka.motion" title="Link to this definition"></a></dt>
+<dd><p>Get the Franka motion connector.
+:return: The FrankaMotion connector.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-sic_framework.devices.naoqi_shared">
+<span id="shared-components"></span><h2>Shared Components<a class="headerlink" href="#module-sic_framework.devices.naoqi_shared" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">sic_framework.devices.naoqi_shared.</span></span><span class="sig-name descname"><span class="pre">Naoqi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/naoqi_shared.html#Naoqi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#sic_framework.devices.device.SICDeviceManager" title="sic_framework.devices.device.SICDeviceManager"><code class="xref py py-class docutils literal notranslate"><span class="pre">SICDeviceManager</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ip</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">robot_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">venv</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sic_version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dev_test</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_device_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_repo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bypass_install</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top_camera_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bottom_camera_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mic_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">motion_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tts_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">motion_record_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">motion_stream_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stiffness_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speaker_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lookat_conf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">passwords</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/naoqi_shared.html#Naoqi.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.__init__" title="Link to this definition"></a></dt>
+<dd><p>Connect to the device and ensure an up to date version of the framework is installed
+:param ip: the ip adress of the device
+:param username: the ssh login name
+:param passwords: the (list) of passwords to use</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.check_sic_install">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">check_sic_install</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/naoqi_shared.html#Naoqi.check_sic_install"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.check_sic_install" title="Link to this definition"></a></dt>
+<dd><p>Naos and Peppers have different ways of verifying SIC is installed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.sic_install">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">sic_install</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/naoqi_shared.html#Naoqi.sic_install"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.sic_install" title="Link to this definition"></a></dt>
+<dd><p>Naos and Peppers have different ways of installing SIC.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.run_sic">
+<span class="sig-name descname"><span class="pre">run_sic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/naoqi_shared.html#Naoqi.run_sic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.run_sic" title="Link to this definition"></a></dt>
+<dd><p>Starts SIC on the device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.stop_device">
+<span class="sig-name descname"><span class="pre">stop_device</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/naoqi_shared.html#Naoqi.stop_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.stop_device" title="Link to this definition"></a></dt>
+<dd><p>Stops the device and all its components.</p>
+<p>Makes sure the process is killed and the device is stopped.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.upload_file">
+<span class="sig-name descname"><span class="pre">upload_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">local_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remote_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/sic_framework/devices/naoqi_shared.html#Naoqi.upload_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.upload_file" title="Link to this definition"></a></dt>
+<dd><p>Upload a file to the Naoqi device using SCP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>local_path</strong> (<em>str</em>) – Path to the local file to upload.</p></li>
+<li><p><strong>remote_path</strong> (<em>str</em>) – Destination path on the robot. Must be under /home/nao.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the local file does not exist or the remote path is invalid.</p></li>
+<li><p><strong>RuntimeError</strong> – If SCP is unavailable, the SSH connection is missing, or the upload fails.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.top_camera">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">top_camera</span></span><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.top_camera" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.bottom_camera">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">bottom_camera</span></span><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.bottom_camera" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.mic">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mic</span></span><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.mic" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.motion">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">motion</span></span><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.motion" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.tts">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">tts</span></span><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.tts" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.motion_record">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">motion_record</span></span><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.motion_record" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.stiffness">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">stiffness</span></span><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.stiffness" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.autonomous">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">autonomous</span></span><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.autonomous" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.leds">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">leds</span></span><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.leds" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.speaker">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">speaker</span></span><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.speaker" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.buttons">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">buttons</span></span><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.buttons" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.tracker">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">tracker</span></span><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.tracker" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sic_framework.devices.naoqi_shared.Naoqi.look_at">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">look_at</span></span><a class="headerlink" href="#sic_framework.devices.naoqi_shared.Naoqi.look_at" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="core.html" class="btn btn-neutral float-left" title="Core Framework" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="device_components.html" class="btn btn-neutral float-right" title="Device Components" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

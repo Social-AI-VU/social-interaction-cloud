@@ -1,0 +1,224 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4: Robot Motion &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Further reading" href="further_reading.html" />
+    <link rel="prev" title="3: Using the Dialogflow Service" href="3_api_key.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-1-installation-and-setup">Tutorial 1: Installation and Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-2-using-a-service">Tutorial 2: Using a Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-3-application-with-a-service-requiring-an-api-key">Tutorial 3: Application with a Service Requiring an API key</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../tutorials.html#tutorial-4-robot-motion">Tutorial 4: Robot Motion</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">4: Robot Motion</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#nao-motion-tutorial">📄 Nao Motion Tutorial</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#video-tutorial">📹: Video Tutorial</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#further-reading">Further reading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">4: Robot Motion</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/tutorials/4_motion.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="robot-motion">
+<h1>4: Robot Motion<a class="headerlink" href="#robot-motion" title="Link to this heading"></a></h1>
+<p>This tutorial shows you how to play system motions, create, save, and replay custom motions, and how to stream motions from one robot to another.</p>
+<section id="nao-motion-tutorial">
+<h2>📄 Nao Motion Tutorial<a class="headerlink" href="#nao-motion-tutorial" title="Link to this heading"></a></h2>
+<section id="connecting-to-the-nao">
+<h3><strong>Connecting to the Nao</strong><a class="headerlink" href="#connecting-to-the-nao" title="Link to this heading"></a></h3>
+<p>Your computer must be connected to the same network as the Nao.
+Make sure the Nao crouches safely in its resting position. Press on its chest button to turn it on. Once it is fully awake, press the chest button again to get its IP address.
+Replace “XXX” with this IP address in the demo script.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">nao_ip</span> <span class="o">=</span> <span class="s2">&quot;XXX&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="playing-animations-and-setting-posture">
+<h3><strong>Playing Animations and Setting Posture</strong><a class="headerlink" href="#playing-animations-and-setting-posture" title="Link to this heading"></a></h3>
+<p>We’re following the <code class="docutils literal notranslate"><span class="pre">demo_nao_motion</span></code> script which can be found <a class="reference external" href="https://github.com/Social-AI-VU/sic_applications/blob/main/demos/nao/demo_nao_motion.py">here</a> and which contains more detailed comments.
+Make sure you are connected to your Nao.</p>
+<p>Set posture or play animation:</p>
+<p><strong>To set the posture</strong>: Second argument is the speed (NOTE: setting the speed too high may result in an error)</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">nao</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">NaoPostureRequest</span><span class="p">(</span><span class="s2">&quot;Stand&quot;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
+</pre></div>
+</div>
+<p><strong>To play an animation</strong>:</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you are playing a standing animation, make sure you put the Nao in a standing posture beforehand</p>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">nao</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">NaoqiAnimationRequest</span><span class="p">(</span><span class="s2">&quot;animations/Stand/Gestures/Hey_1&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>A list of all Nao animations can be found in the <a class="reference external" href="http://doc.aldebaran.com/2-4/naoqi/motion/alanimationplayer-advanced.html#animationplayer-list-behaviors-nao">Nao animation documentation</a>.</p>
+<p>A complete script for this tutorial can be found here: <a class="reference external" href="https://github.com/Social-AI-VU/sic_applications/blob/main/demos/nao/demo_nao_motion.py">demo_nao_motion.py</a></p>
+</section>
+<section id="recording-and-playing-custom-animations">
+<h3><strong>Recording and Playing Custom Animations</strong><a class="headerlink" href="#recording-and-playing-custom-animations" title="Link to this heading"></a></h3>
+<p>We’re following the <code class="docutils literal notranslate"><span class="pre">demo_nao_motion_recorder</span></code> script which can be found <cite>here &lt;https://github.com/Social-AI-VU/sic_applications/blob/main/demos/nao/demo_nao_motion_recorder.py&gt;</cite> and which contains more detailed comments.
+Make sure you are connected to your Nao.</p>
+<p>Specify which Nao parts you want to record (NOTE: a ‘chain’ is a group of body parts, or a link of joints). The full list can be found in the <a class="reference external" href="http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains">Nao body parts documentation</a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">chain</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;LArm&quot;</span><span class="p">,</span> <span class="s2">&quot;RArm&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Set the stiffness of these parts to 0 so that you can move them:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">nao</span><span class="o">.</span><span class="n">stiffness</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">Stiffness</span><span class="p">(</span><span class="n">stiffness</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">joints</span><span class="o">=</span><span class="n">chain</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Start the recording</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Set a ‘record_time’ variable. This is how long it will record the Nao’s motion before saving it.</p></li>
+<li><p>It is recommended to include a message to indicate when to start moving the Nao</p></li>
+</ol>
+</div></blockquote>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">record_time</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Start moving the robot! (not too fast)&quot;</span><span class="p">)</span>
+
+<span class="n">nao</span><span class="o">.</span><span class="n">motion_record</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">StartRecording</span><span class="p">(</span><span class="n">chain</span><span class="p">))</span>
+
+<span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">record_time</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Save the motion, give it a name:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">recording</span> <span class="o">=</span> <span class="n">nao</span><span class="o">.</span><span class="n">motion_record</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">StopRecording</span><span class="p">())</span>
+<span class="n">recording</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">MOTION_NAME</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Set the stiffness of the limbs to 0.7 so that the motors can move them. Play the recording back:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">nao</span><span class="o">.</span><span class="n">stiffness</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">Stiffness</span><span class="p">(</span><span class="mf">.7</span><span class="p">,</span> <span class="n">chain</span><span class="p">))</span>
+
+<span class="n">recording</span> <span class="o">=</span> <span class="n">NaoqiMotionRecording</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">MOTION_NAME</span><span class="p">)</span>
+<span class="n">nao</span><span class="o">.</span><span class="n">motion_record</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">PlayRecording</span><span class="p">(</span><span class="n">recording</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="video-tutorial">
+<h2>📹: Video Tutorial<a class="headerlink" href="#video-tutorial" title="Link to this heading"></a></h2>
+<blockquote>
+<div><iframe width="560" height="315" src="https://www.youtube.com/embed/7FYppAlqSuE?si=uYDKxA4roJYFl_mp" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div></blockquote>
+<section id="further-reading">
+<h3><strong>Further reading</strong><a class="headerlink" href="#further-reading" title="Link to this heading"></a></h3>
+<p>If you want some further reading, check out <a class="reference internal" href="further_reading.html"><span class="doc">this section</span></a>.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="3_api_key.html" class="btn btn-neutral float-left" title="3: Using the Dialogflow Service" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="further_reading.html" class="btn btn-neutral float-right" title="Further reading" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

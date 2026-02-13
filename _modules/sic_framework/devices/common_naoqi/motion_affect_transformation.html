@@ -1,0 +1,626 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.common_naoqi.motion_affect_transformation &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.common_naoqi.motion_affect_transformation</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.common_naoqi.motion_affect_transformation</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="MotionAffectTransformation">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MotionAffectTransformation</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Apply affect-based transformations to NAOqi motion dictionaries.</span>
+
+<span class="sd">    The methods adjust amplitude, timing, posture, and enforce joint limits based on valence/arousal or emotion labels.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="MotionAffectTransformation.transform_values">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation.transform_values">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">transform_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">motion</span><span class="p">,</span> <span class="n">valence</span><span class="p">,</span> <span class="n">arousal</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Transform a motion by applying flow, time, and weight changes based on valence and arousal.</span>
+
+<span class="sd">        :param dict motion: Motion dictionary with the shape `{ &quot;motion&quot;: { joint_name: {&quot;angles&quot;: list[float], &quot;times&quot;: list[float]} } }`.</span>
+<span class="sd">        :param float valence: Valence value in [-1, 1] influencing amplitude and posture.</span>
+<span class="sd">        :param float arousal: Arousal value in [-1, 1] influencing repetition and speed.</span>
+<span class="sd">        :returns: The transformed motion dictionary.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">motion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">modify_flow_parameters</span><span class="p">(</span><span class="n">motion</span><span class="p">,</span> <span class="n">valence</span><span class="p">)</span>
+        <span class="n">motion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">modify_time_parameters</span><span class="p">(</span><span class="n">motion</span><span class="p">,</span> <span class="n">arousal</span><span class="p">)</span>
+        <span class="n">motion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">modify_weight_parameters</span><span class="p">(</span><span class="n">motion</span><span class="p">,</span> <span class="n">valence</span><span class="p">,</span> <span class="n">arousal</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle_limit</span><span class="p">(</span><span class="n">motion</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MotionAffectTransformation.transform_label">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation.transform_label">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">transform_label</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">motion</span><span class="p">,</span> <span class="n">emotion_label</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Transform a motion by first mapping an emotion label to valence/arousal values.</span>
+
+<span class="sd">        :param dict motion: Motion dictionary to transform.</span>
+<span class="sd">        :param str emotion_label: Discrete emotion label (e.g., &quot;happy&quot;, &quot;sad&quot;, &quot;angry&quot;).</span>
+<span class="sd">        :returns: The transformed motion dictionary.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">valence</span><span class="p">,</span> <span class="n">arousal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">values_from_emotion</span><span class="p">(</span><span class="n">emotion_label</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_values</span><span class="p">(</span><span class="n">motion</span><span class="p">,</span> <span class="n">valence</span><span class="p">,</span> <span class="n">arousal</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MotionAffectTransformation.angle_limit">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation.angle_limit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">angle_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">motion</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Clamp joint angles to the robot&#39;s physical limits.</span>
+
+<span class="sd">        :param dict motion: Motion dictionary to validate and clamp.</span>
+<span class="sd">        :returns: The motion dictionary with angles limited to valid ranges.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">jointName</span> <span class="ow">in</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">jointName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">hand_joints</span> <span class="ow">and</span> <span class="n">jointName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">leg_joints</span><span class="p">:</span>
+                <span class="n">minimum</span><span class="p">,</span> <span class="n">maximum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">limit_check</span><span class="p">(</span><span class="n">jointName</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">angle</span> <span class="ow">in</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;angles&quot;</span><span class="p">]:</span>
+                    <span class="n">index</span> <span class="o">=</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;angles&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">angle</span> <span class="o">&lt;</span> <span class="n">minimum</span><span class="p">:</span>
+                        <span class="n">new_angle</span> <span class="o">=</span> <span class="n">minimum</span>
+                        <span class="nb">print</span><span class="p">(</span>
+                            <span class="n">jointName</span><span class="p">,</span>
+                            <span class="s2">&quot;: &quot;</span><span class="p">,</span>
+                            <span class="n">angle</span><span class="p">,</span>
+                            <span class="s2">&quot; is smaller than &quot;</span><span class="p">,</span>
+                            <span class="n">minimum</span><span class="p">,</span>
+                            <span class="s2">&quot; so changed to &quot;</span><span class="p">,</span>
+                            <span class="n">new_angle</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;angles&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_angle</span>
+                    <span class="k">elif</span> <span class="n">angle</span> <span class="o">&gt;</span> <span class="n">maximum</span><span class="p">:</span>
+                        <span class="n">new_angle</span> <span class="o">=</span> <span class="n">maximum</span>
+                        <span class="nb">print</span><span class="p">(</span>
+                            <span class="n">jointName</span><span class="p">,</span>
+                            <span class="s2">&quot;: &quot;</span><span class="p">,</span>
+                            <span class="n">angle</span><span class="p">,</span>
+                            <span class="s2">&quot; is larger than &quot;</span><span class="p">,</span>
+                            <span class="n">maximum</span><span class="p">,</span>
+                            <span class="s2">&quot; so changed to &quot;</span><span class="p">,</span>
+                            <span class="n">new_angle</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;angles&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_angle</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">pass</span>
+
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="n">motion</span></div>
+
+
+<div class="viewcode-block" id="MotionAffectTransformation.modify_flow_parameters">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation.modify_flow_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">modify_flow_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">motion</span><span class="p">,</span> <span class="n">valence</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adjust motion amplitudes and blend towards a linear trajectory based on valence.</span>
+
+<span class="sd">        :param dict motion: Motion dictionary to modify.</span>
+<span class="sd">        :param float valence: Valence value affecting amplitude (positive increases, negative slightly decreases).</span>
+<span class="sd">        :returns: The updated motion dictionary.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">amplitude</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span><span class="p">(</span><span class="n">valence</span><span class="p">)</span>
+        <span class="n">pivot_states</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pivot_states</span><span class="p">(</span><span class="n">motion</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">leg_joints</span><span class="p">)</span>
+        <span class="n">theta_init</span> <span class="o">=</span> <span class="n">pivot_states</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">theta_end</span> <span class="o">=</span> <span class="n">pivot_states</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">jointName</span> <span class="ow">in</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">jointName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">leg_joints</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;times&quot;</span><span class="p">])):</span>
+                    <span class="n">normalized_time</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;times&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+                        <span class="o">-</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;times&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="p">)</span> <span class="o">/</span> <span class="p">(</span>
+                        <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;times&quot;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="o">-</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;times&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="o">+</span> <span class="mi">1</span>
+                    <span class="p">)</span>
+                    <span class="n">line_angle</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">theta_init</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">normalized_time</span><span class="p">)</span> <span class="o">+</span> <span class="n">theta_end</span> <span class="o">*</span> <span class="n">normalized_time</span>
+                    <span class="p">)</span>
+                    <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;angles&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">amplitude</span> <span class="o">*</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;angles&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+                        <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">amplitude</span><span class="p">)</span> <span class="o">*</span> <span class="n">line_angle</span>
+                    <span class="p">)</span>
+            <span class="k">return</span> <span class="n">motion</span></div>
+
+
+<div class="viewcode-block" id="MotionAffectTransformation.modify_time_parameters">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation.modify_time_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">modify_time_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">motion</span><span class="p">,</span> <span class="n">arousal</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adjust repetition (implicit via angle scaling) and speed (time scaling) based on arousal.</span>
+
+<span class="sd">        :param dict motion: Motion dictionary to modify.</span>
+<span class="sd">        :param float arousal: Arousal value affecting repetition and speed.</span>
+<span class="sd">        :returns: The updated motion dictionary.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">repetitions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">repetition</span><span class="p">(</span><span class="n">arousal</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">jointName</span> <span class="ow">in</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">jointName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">leg_joints</span><span class="p">:</span>
+                <span class="n">angles</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">angle</span> <span class="ow">in</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;angles&quot;</span><span class="p">]:</span>
+                    <span class="n">angle</span> <span class="o">=</span> <span class="n">angle</span> <span class="o">*</span> <span class="p">(</span><span class="n">repetitions</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">angles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+                <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;angles&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">angles</span>
+
+        <span class="n">speed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed</span><span class="p">(</span><span class="n">arousal</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">jointName</span> <span class="ow">in</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">jointName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">leg_joints</span><span class="p">:</span>
+                <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;times&quot;</span><span class="p">]:</span>
+                    <span class="n">time</span> <span class="o">=</span> <span class="n">time</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">speed</span><span class="p">)</span>
+                    <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+                <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">][</span><span class="s2">&quot;times&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">times</span>
+        <span class="k">return</span> <span class="n">motion</span></div>
+
+
+<div class="viewcode-block" id="MotionAffectTransformation.modify_weight_parameters">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation.modify_weight_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">modify_weight_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">motion</span><span class="p">,</span> <span class="n">valence</span><span class="p">,</span> <span class="n">arousal</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add or adjust posture-related joints (e.g., head pitch) based on valence and arousal.</span>
+
+<span class="sd">        :param dict motion: Motion dictionary to modify.</span>
+<span class="sd">        :param float valence: Valence value influencing posture.</span>
+<span class="sd">        :param float arousal: Arousal value influencing posture and added joints.</span>
+<span class="sd">        :returns: The updated motion dictionary.</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">head_pose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_pose</span><span class="p">(</span><span class="n">valence</span><span class="p">,</span> <span class="n">arousal</span><span class="p">)</span>
+        <span class="n">first_joint</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">first_joint</span><span class="p">][</span><span class="s2">&quot;times&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s2">&quot;HeadPitch&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="s2">&quot;HeadPitch&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;angles&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">head_pose</span><span class="p">,</span> <span class="n">head_pose</span><span class="p">],</span>
+                <span class="s2">&quot;times&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">start_time</span><span class="p">],</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="s2">&quot;HeadPitch&quot;</span><span class="p">][</span><span class="s2">&quot;angles&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">head_pose</span> <span class="o">+</span> <span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="s2">&quot;HeadPitch&quot;</span><span class="p">][</span><span class="s2">&quot;angles&quot;</span><span class="p">]</span>
+            <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">arousal</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">jointName</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">bend</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">jointName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">leg_joints</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">jointName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">]:</span>
+                        <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                            <span class="s2">&quot;angles&quot;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bend</span><span class="p">[</span><span class="n">jointName</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">bend</span><span class="p">[</span><span class="n">jointName</span><span class="p">]],</span>
+                            <span class="s2">&quot;times&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">start_time</span><span class="p">],</span>
+                        <span class="p">}</span>
+
+        <span class="k">elif</span> <span class="n">arousal</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">jointName</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">upright</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">jointName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">leg_joints</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">jointName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">]:</span>
+                        <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                            <span class="s2">&quot;angles&quot;</span><span class="p">:</span> <span class="p">[</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">upright</span><span class="p">[</span><span class="n">jointName</span><span class="p">],</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">upright</span><span class="p">[</span><span class="n">jointName</span><span class="p">],</span>
+                            <span class="p">],</span>
+                            <span class="s2">&quot;times&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">start_time</span><span class="p">],</span>
+                        <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">jointName</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">neutral</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">jointName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">leg_joints</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">jointName</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">]:</span>
+                        <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">jointName</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                            <span class="s2">&quot;angles&quot;</span><span class="p">:</span> <span class="p">[</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">neutral</span><span class="p">[</span><span class="n">jointName</span><span class="p">],</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">neutral</span><span class="p">[</span><span class="n">jointName</span><span class="p">],</span>
+                            <span class="p">],</span>
+                            <span class="s2">&quot;times&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">start_time</span><span class="p">],</span>
+                        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">motion</span></div>
+
+
+<div class="viewcode-block" id="MotionAffectTransformation.pivot_states">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation.pivot_states">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pivot_states</span><span class="p">(</span><span class="n">motion</span><span class="p">,</span> <span class="n">ignore_joints</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Collect unique time points across joints, excluding specified joints.</span>
+
+<span class="sd">        :param dict motion: Motion dictionary containing joint time arrays.</span>
+<span class="sd">        :param list[str] ignore_joints: Joint names to ignore when collecting time points.</span>
+<span class="sd">        :returns: Sorted unique list of time points.</span>
+<span class="sd">        :rtype: list[float]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">time_points</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">joint_name</span> <span class="ow">in</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">joint_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignore_joints</span><span class="p">:</span>
+                <span class="n">times</span> <span class="o">=</span> <span class="n">motion</span><span class="p">[</span><span class="s2">&quot;motion&quot;</span><span class="p">][</span><span class="n">joint_name</span><span class="p">][</span><span class="s2">&quot;times&quot;</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">times</span><span class="p">:</span>
+                    <span class="n">time_points</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">time_points</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="MotionAffectTransformation.amplitude">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation.amplitude">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">amplitude</span><span class="p">(</span><span class="n">valence</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Map valence to an amplitude scaling factor.</span>
+
+<span class="sd">        :param float valence: Valence value in [-1, 1].</span>
+<span class="sd">        :returns: Amplitude multiplier (&gt;0).</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># correlation between amplitude of motion and valence of the affect</span>
+        <span class="k">if</span> <span class="n">valence</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">amplitude_factor</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">valence</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">amplitude_factor</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">valence</span>
+        <span class="k">return</span> <span class="n">amplitude_factor</span></div>
+
+
+<div class="viewcode-block" id="MotionAffectTransformation.repetition">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation.repetition">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">repetition</span><span class="p">(</span><span class="n">arousal</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Map arousal to a repetition factor. </span>
+<span class="sd">        </span>
+<span class="sd">        Positive arousal increases the factor; non-positive returns 1.</span>
+
+<span class="sd">        :param float arousal: Arousal value in [-1, 1].</span>
+<span class="sd">        :returns: Repetition multiplier (&gt;=1).</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># positive arousal is associated with an increase in the repetition of the motion</span>
+        <span class="c1"># negative arousal does not change the repetition of the motion</span>
+        <span class="k">if</span> <span class="n">arousal</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">repetition_factor</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">arousal</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">repetition_factor</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">repetition_factor</span></div>
+
+
+<div class="viewcode-block" id="MotionAffectTransformation.speed">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation.speed">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">speed</span><span class="p">(</span><span class="n">arousal</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Map arousal to a speed scaling factor for time values.</span>
+
+<span class="sd">        :param float arousal: Arousal value in [-1, 1].</span>
+<span class="sd">        :returns: Speed multiplier (&gt;0).</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># speed influences the perceived arousal: increase portrays high arousal,</span>
+        <span class="c1"># whereas reduction in speed portrays low arousal</span>
+        <span class="k">if</span> <span class="n">arousal</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">speed_factor</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">arousal</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">speed_factor</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">arousal</span>
+        <span class="k">return</span> <span class="n">speed_factor</span></div>
+
+
+<div class="viewcode-block" id="MotionAffectTransformation.head_pose">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation.head_pose">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">head_pose</span><span class="p">(</span><span class="n">valence</span><span class="p">,</span> <span class="n">arousal</span><span class="p">,</span> <span class="n">up</span><span class="o">=</span><span class="mf">0.506145</span><span class="p">,</span> <span class="n">down</span><span class="o">=</span><span class="mf">0.349066</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute a head pitch offset based on valence and arousal.</span>
+
+<span class="sd">        :param float valence: Valence value.</span>
+<span class="sd">        :param float arousal: Arousal value.</span>
+<span class="sd">        :param float up: Maximum upward pitch in radians.</span>
+<span class="sd">        :param float down: Maximum downward pitch in radians.</span>
+<span class="sd">        :returns: Head pitch offset in radians.</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># vertical head pose is important for expressing affects in the first and third quadrant</span>
+        <span class="c1"># pre-defined angels for up and down are set</span>
+        <span class="c1">#</span>
+        <span class="k">if</span> <span class="n">valence</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">arousal</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">headpose</span> <span class="o">=</span> <span class="o">-</span><span class="n">down</span> <span class="o">*</span> <span class="n">valence</span>
+        <span class="k">elif</span> <span class="n">valence</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">arousal</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">headpose</span> <span class="o">=</span> <span class="n">up</span> <span class="o">*</span> <span class="n">valence</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">headpose</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="n">headpose</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">leg_joints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the list of leg joint names.</span>
+
+<span class="sd">        :returns: List of leg joint identifiers.</span>
+<span class="sd">        :rtype: list[str]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="s2">&quot;LAnklePitch&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LAnkleRoll&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LHipPitch&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LHipRoll&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LHipYawPitch&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LKneePitch&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;RAnklePitch&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;RAnkleRoll&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;RHipPitch&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;RHipRoll&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;RHipYawPitch&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;RKneePitch&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">hand_joints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the list of hand joint names.</span>
+
+<span class="sd">        :returns: List of hand joint identifiers.</span>
+<span class="sd">        :rtype: list[str]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;LHand&quot;</span><span class="p">,</span> <span class="s2">&quot;RHand&quot;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">upright</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve a posture dictionary for an upright (expanded) stance.</span>
+
+<span class="sd">        :returns: Mapping from joint name to target angle in radians.</span>
+<span class="sd">        :rtype: dict[str, float]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>  <span class="c1"># also called expanded</span>
+            <span class="s2">&quot;LHipYawPitch&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.17</span><span class="p">,</span>
+            <span class="s2">&quot;LHipRoll&quot;</span><span class="p">:</span> <span class="mf">0.09</span><span class="p">,</span>
+            <span class="s2">&quot;LHipPitch&quot;</span><span class="p">:</span> <span class="mf">0.13</span><span class="p">,</span>
+            <span class="s2">&quot;LKneePitch&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.08</span><span class="p">,</span>
+            <span class="s2">&quot;LAnklePitch&quot;</span><span class="p">:</span> <span class="mf">0.08</span><span class="p">,</span>
+            <span class="s2">&quot;LAnkleRoll&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.13</span><span class="p">,</span>
+            <span class="s2">&quot;RHipYawPitch&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.17</span><span class="p">,</span>
+            <span class="s2">&quot;RHipRoll&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.09</span><span class="p">,</span>
+            <span class="s2">&quot;RHipPitch&quot;</span><span class="p">:</span> <span class="mf">0.13</span><span class="p">,</span>
+            <span class="s2">&quot;RKneePitch&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.08</span><span class="p">,</span>
+            <span class="s2">&quot;RAnklePitch&quot;</span><span class="p">:</span> <span class="mf">0.08</span><span class="p">,</span>
+            <span class="s2">&quot;RAnkleRoll&quot;</span><span class="p">:</span> <span class="mf">0.13</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">neutral</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve a posture dictionary for a neutral stance.</span>
+
+<span class="sd">        :returns: Mapping from joint name to target angle in radians.</span>
+<span class="sd">        :rtype: dict[str, float]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;LHipYawPitch&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;LHipRoll&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;LHipPitch&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;LKneePitch&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;LAnklePitch&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;LAnkleRoll&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;RHipYawPitch&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;RHipRoll&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;RHipPitch&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;RKneePitch&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;RAnklePitch&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;RAnkleRoll&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bend</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve a posture dictionary for a bent (shrunk) stance.</span>
+
+<span class="sd">        :returns: Mapping from joint name to target angle in radians.</span>
+<span class="sd">        :rtype: dict[str, float]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>  <span class="c1"># also called shrunk</span>
+            <span class="s2">&quot;LHipYawPitch&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;LHipRoll&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;LHipPitch&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.44</span><span class="p">,</span>
+            <span class="s2">&quot;LKneePitch&quot;</span><span class="p">:</span> <span class="mf">0.69</span><span class="p">,</span>
+            <span class="s2">&quot;LAnklePitch&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.35</span><span class="p">,</span>
+            <span class="s2">&quot;LAnkleRoll&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;RHipYawPitch&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;RHipRoll&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;RHipPitch&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.44</span><span class="p">,</span>
+            <span class="s2">&quot;RKneePitch&quot;</span><span class="p">:</span> <span class="mf">0.69</span><span class="p">,</span>
+            <span class="s2">&quot;RAnklePitch&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.35</span><span class="p">,</span>
+            <span class="s2">&quot;RAnkleRoll&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="MotionAffectTransformation.limit_check">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation.limit_check">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">limit_check</span><span class="p">(</span><span class="n">joint</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Look up the minimum and maximum allowed angles for a given joint.</span>
+
+<span class="sd">        :param str joint: Joint name to query.</span>
+<span class="sd">        :returns: Tuple of (minimum, maximum) allowed angles in radians.</span>
+<span class="sd">        :rtype: tuple[float, float]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">limit_table</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;HeadYaw&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">2.0857</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">2.0857</span><span class="p">},</span>
+            <span class="s2">&quot;HeadPitch&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.6720</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">0.5149</span><span class="p">},</span>
+            <span class="s2">&quot;LShoulderPitch&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">2.0857</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">2.0857</span><span class="p">},</span>
+            <span class="s2">&quot;LShoulderRoll&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.3142</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">1.3265</span><span class="p">},</span>
+            <span class="s2">&quot;LElbowYaw&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">2.0857</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">2.0857</span><span class="p">},</span>
+            <span class="s2">&quot;LElbowRoll&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.5446</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.0349</span><span class="p">},</span>
+            <span class="s2">&quot;LWristYaw&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.8238</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">1.8238</span><span class="p">},</span>
+            <span class="s2">&quot;RShoulderPitch&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">2.0857</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">2.0857</span><span class="p">},</span>
+            <span class="s2">&quot;RShoulderRoll&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="mf">1.3265</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">0.3142</span><span class="p">},</span>
+            <span class="s2">&quot;RElbowYaw&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">2.0857</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">2.0857</span><span class="p">},</span>
+            <span class="s2">&quot;RElbowRoll&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="mf">0.0349</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">1.5446</span><span class="p">},</span>
+            <span class="s2">&quot;RWristYaw&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.8238</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">1.8238</span><span class="p">},</span>
+            <span class="s2">&quot;LHipYawPitch&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.145303</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">0.740810</span><span class="p">},</span>
+            <span class="s2">&quot;RHipYawPitch&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.145303</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">0.740810</span><span class="p">},</span>
+            <span class="s2">&quot;LHipRoll&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.379472</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">0.790477</span><span class="p">},</span>
+            <span class="s2">&quot;LHipPitch&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.535889</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">0.484090</span><span class="p">},</span>
+            <span class="s2">&quot;LKneePitch&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.092346</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">2.112528</span><span class="p">},</span>
+            <span class="s2">&quot;LAnklePitch&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="mf">1.189516</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">0.922747</span><span class="p">},</span>
+            <span class="s2">&quot;LAnkleRoll&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.397880</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">0.769001</span><span class="p">},</span>
+            <span class="s2">&quot;RHipRoll&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.790477</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">0.379472</span><span class="p">},</span>
+            <span class="s2">&quot;RHipPitch&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.535889</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">0.484090</span><span class="p">},</span>
+            <span class="s2">&quot;RKneePitch&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.103083</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">2.120198</span><span class="p">},</span>
+            <span class="s2">&quot;RAnklePitch&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="mf">1.186448</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">0.932056</span><span class="p">},</span>
+            <span class="s2">&quot;RAnkleRoll&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;minimum&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.768992</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">:</span> <span class="mf">0.397880</span><span class="p">},</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">limit_table</span><span class="p">[</span><span class="n">joint</span><span class="p">][</span><span class="s2">&quot;minimum&quot;</span><span class="p">],</span> <span class="n">limit_table</span><span class="p">[</span><span class="n">joint</span><span class="p">][</span><span class="s2">&quot;maximum&quot;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="MotionAffectTransformation.values_from_emotion">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.motion_affect_transformation.MotionAffectTransformation.values_from_emotion">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">values_from_emotion</span><span class="p">(</span><span class="n">emotion_label</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Map an emotion label to its (valence, arousal) pair.</span>
+
+<span class="sd">        :param str emotion_label: Emotion label key (e.g., &quot;happy&quot;, &quot;sad&quot;).</span>
+<span class="sd">        :returns: Tuple containing (valence, arousal).</span>
+<span class="sd">        :rtype: tuple[float, float]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">value_table</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;excited&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">},</span>  <span class="c1"># oranje</span>
+            <span class="s2">&quot;happy&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">},</span>  <span class="c1"># geel</span>
+            <span class="s2">&quot;pleased&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">},</span>  <span class="c1"># lichtguldenroedegeel</span>
+            <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="mf">0.95</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.2</span><span class="p">},</span>  <span class="c1"># lichtgeel</span>
+            <span class="s2">&quot;calm&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.4</span><span class="p">},</span>  <span class="c1"># lichtgroen</span>
+            <span class="s2">&quot;relaxed&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">},</span>  <span class="c1"># ijsblauw</span>
+            <span class="s2">&quot;sleepy&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.8</span><span class="p">},</span>  <span class="c1"># blauwpaars</span>
+            <span class="s2">&quot;tired&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.4</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.85</span><span class="p">},</span>  <span class="c1"># paars</span>
+            <span class="s2">&quot;sad&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.7</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">},</span>  <span class="c1"># middenpaars</span>
+            <span class="s2">&quot;frustrated&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.9</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">},</span>  <span class="c1"># middenroodviolet</span>
+            <span class="s2">&quot;disgust&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.4</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">},</span>  <span class="c1"># dieproze</span>
+            <span class="s2">&quot;angry&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.6</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">},</span>  <span class="c1"># donkerrood</span>
+            <span class="s2">&quot;afraid&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.7</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">},</span>  <span class="c1"># donkergroen</span>
+            <span class="s2">&quot;neutral&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;valence&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;arousal&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>  <span class="c1"># wit</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">value_table</span><span class="p">[</span><span class="n">emotion_label</span><span class="p">][</span><span class="s2">&quot;valence&quot;</span><span class="p">],</span>
+            <span class="n">value_table</span><span class="p">[</span><span class="n">emotion_label</span><span class="p">][</span><span class="s2">&quot;arousal&quot;</span><span class="p">],</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

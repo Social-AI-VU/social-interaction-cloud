@@ -1,0 +1,693 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.device &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.device</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.device</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_function</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os.path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tarfile</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">abstractmethod</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">sic_logging</span><span class="p">,</span> <span class="n">utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConnector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DeviceConnectionError</span><span class="p">,</span>
+    <span class="n">DeviceReservationError</span><span class="p">,</span>
+    <span class="n">DeviceInstallationError</span><span class="p">,</span>
+    <span class="n">DeviceExecutionError</span><span class="p">,</span>
+    <span class="n">DeviceAuthError</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.sic_application</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICApplication</span>
+
+
+<div class="viewcode-block" id="SICLibrary">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.device.SICLibrary">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICLibrary</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A library to be installed on a remote device.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SICLibrary.__init__">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.device.SICLibrary.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">lib_path</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">download_cmd</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">req_version</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lib_install_cmd</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lib_path</span> <span class="o">=</span> <span class="n">lib_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">download_cmd</span> <span class="o">=</span> <span class="n">download_cmd</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">req_version</span> <span class="o">=</span> <span class="n">req_version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lib_install_cmd</span> <span class="o">=</span> <span class="n">lib_install_cmd</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="exclude_pyc">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.device.exclude_pyc">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">exclude_pyc</span><span class="p">(</span><span class="n">tarinfo</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">tarinfo</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.pyc&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">tarinfo</span></div>
+
+
+
+<div class="viewcode-block" id="SICDeviceManager">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.device.SICDeviceManager">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICDeviceManager</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstract class to facilitate property initialization for SICConnector properties.</span>
+<span class="sd">    This way components of a device can easily be used without initializing all device components manually.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Choose specific imports dependend on the type of device.</span>
+
+<span class="sd">        Reasoning: Alphamini does not support these imports; they are only needed for remotely installing packages on robots from the local machine</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">instance</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">SICDeviceManager</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;Nao&quot;</span><span class="p">,</span> <span class="s2">&quot;Pepper&quot;</span><span class="p">,</span> <span class="s2">&quot;Alphamini&quot;</span><span class="p">):</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">six</span>
+
+            <span class="k">if</span> <span class="n">six</span><span class="o">.</span><span class="n">PY3</span><span class="p">:</span>
+                <span class="k">global</span> <span class="n">pathlib</span><span class="p">,</span> <span class="n">paramiko</span><span class="p">,</span> <span class="n">SCPClient</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+
+                <span class="kn">import</span><span class="w"> </span><span class="nn">paramiko</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">scp</span><span class="w"> </span><span class="kn">import</span> <span class="n">SCPClient</span>
+
+        <span class="k">return</span> <span class="n">instance</span>
+
+<div class="viewcode-block" id="SICDeviceManager.__init__">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.device.SICDeviceManager.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ip</span><span class="p">,</span> <span class="n">sic_version</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">passwords</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">22</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Connect to the device and ensure an up to date version of the framework is installed</span>
+<span class="sd">        :param ip: the ip adress of the device</span>
+<span class="sd">        :param username: the ssh login name</span>
+<span class="sd">        :param passwords: the (list) of passwords to use</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">SICApplication</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">get_redis_instance</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span> <span class="o">=</span> <span class="n">ip</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client_id</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_ip_adress</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">sic_logging</span><span class="o">.</span><span class="n">get_sic_logger</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">DeviceManager&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">),</span> <span class="n">client_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_client_id</span><span class="p">,</span> <span class="n">redis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_redis</span>
+        <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_reservation</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error setting reservation: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">connectors</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">port</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_PING_TIMEOUT</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sic_version</span> <span class="o">=</span> <span class="n">sic_version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stop_event</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SCPClient</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># if no sic_version is specified, use the same version of the local sic</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sic_version</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">sic_version</span> <span class="o">=</span> <span class="n">version</span><span class="p">(</span><span class="s2">&quot;social-interaction-cloud&quot;</span><span class="p">)</span>
+
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SCPClient</span> <span class="o">=</span> <span class="n">SCPClient</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initializing device with ip: </span><span class="si">{ip}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ip</span><span class="o">=</span><span class="n">ip</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">username</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">passwords</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="n">passwords</span> <span class="o">=</span> <span class="p">[</span><span class="n">passwords</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">utils</span><span class="o">.</span><span class="n">ping_server</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">DeviceConnectionError</span><span class="p">(</span>
+                    <span class="s2">&quot;Could not connect to device on ip </span><span class="si">{}</span><span class="s2">. Please check if it is reachable.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span> <span class="o">=</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">SSHClient</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">set_missing_host_key_policy</span><span class="p">(</span><span class="n">paramiko</span><span class="o">.</span><span class="n">AutoAddPolicy</span><span class="p">())</span>
+            <span class="c1"># allow_agent=False, look_for_keys=False to disable asking for keyring (just use the password)</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">passwords</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">,</span>
+                        <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>
+                        <span class="n">username</span><span class="o">=</span><span class="n">username</span><span class="p">,</span>
+                        <span class="n">password</span><span class="o">=</span><span class="n">p</span><span class="p">,</span>
+                        <span class="n">timeout</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                        <span class="n">allow_agent</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                        <span class="n">look_for_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">break</span>
+                <span class="k">except</span> <span class="p">(</span>
+                    <span class="n">paramiko</span><span class="o">.</span><span class="n">ssh_exception</span><span class="o">.</span><span class="n">AuthenticationException</span><span class="p">,</span>
+                    <span class="n">paramiko</span><span class="o">.</span><span class="n">ssh_exception</span><span class="o">.</span><span class="n">BadAuthenticationType</span><span class="p">,</span>
+                <span class="p">):</span>
+                    <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">DeviceAuthError</span><span class="p">(</span>
+                    <span class="s2">&quot;Could not authenticate to device, please check ip adress and/or credentials. (Username: </span><span class="si">{}</span><span class="s2"> Passwords: </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">username</span><span class="p">,</span> <span class="n">passwords</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+        
+        <span class="c1"># register device with the sic application</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">register_device</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICDeviceManager.set_reservation">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.device.SICDeviceManager.set_reservation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_reservation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a reservation for the device to prevent other users from using it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Attempting to reserve device </span><span class="si">{}</span><span class="s2"> for client </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client_id</span><span class="p">))</span>
+
+        <span class="c1"># skip reservation for localhost</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span> <span class="o">==</span> <span class="s2">&quot;localhost&quot;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span> <span class="o">==</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        
+        <span class="n">existing_reservation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">get_reservation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">existing_reservation</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Device </span><span class="si">{}</span><span class="s2"> is already reserved by another client&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Checking if the other client is still connected...&quot;</span><span class="p">)</span>
+
+            <span class="c1"># get the client ID who has reserved the device</span>
+            <span class="n">other_client_id</span> <span class="o">=</span> <span class="n">existing_reservation</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Other client ID: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">other_client_id</span><span class="p">))</span>
+
+            <span class="c1"># check if the other client is still connected</span>
+            <span class="k">if</span> <span class="n">other_client_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client_id</span><span class="p">:</span>
+                <span class="c1"># no need to reserve the device again</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Device </span><span class="si">{}</span><span class="s2"> is already reserved by this client&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">))</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">ping_client</span><span class="p">(</span><span class="n">other_client_id</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;The other client is not connected to SIC, releasing the device&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">remove_client</span><span class="p">(</span><span class="n">other_client_id</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">DeviceReservationError</span><span class="p">(</span><span class="s2">&quot;Device </span><span class="si">{}</span><span class="s2"> is already reserved by another client&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reserving device </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">))</span>
+        <span class="n">reservation_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis</span><span class="o">.</span><span class="n">set_reservation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client_id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reservation_result</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">DeviceReservationError</span><span class="p">(</span><span class="s2">&quot;Reservation for device </span><span class="si">{}</span><span class="s2"> failed: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">,</span> <span class="n">reservation_result</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Device </span><span class="si">{}</span><span class="s2"> has been reserved for this client&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="SICDeviceManager.get_last_modified">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.device.SICDeviceManager.get_last_modified">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_last_modified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">,</span> <span class="n">paths</span><span class="p">):</span>
+        <span class="n">last_modified</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">file_or_folder</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">:</span>
+            <span class="n">file_or_folder</span> <span class="o">=</span> <span class="n">root</span> <span class="o">+</span> <span class="n">file_or_folder</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">file_or_folder</span><span class="p">):</span>
+                <span class="n">sub_last_modified</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">root</span><span class="p">)</span> <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">file_or_folder</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">last_modified</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">sub_last_modified</span><span class="p">,</span> <span class="n">last_modified</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">file_or_folder</span><span class="p">):</span>
+                <span class="n">last_modified</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">file_or_folder</span><span class="p">),</span> <span class="n">last_modified</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="n">last_modified</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Could not find any files to transfer.&quot;</span>
+        <span class="n">last_modified</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">ctime</span><span class="p">(</span><span class="n">last_modified</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">last_modified</span></div>
+
+
+<div class="viewcode-block" id="SICDeviceManager.auto_install">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.device.SICDeviceManager.auto_install">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">auto_install</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Install the SICFramework on the device.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Find framework root folder</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+        <span class="c1"># assert os.path.basename(root) == &quot;framework&quot;, &quot;Could not find SIC &#39;framework&#39; directory.&quot;</span>
+
+        <span class="c1"># List of selected files and directories to be zipped and transferred</span>
+        <span class="n">selected_files</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;/setup.py&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;/conf&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;/lib&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;/sic_framework/core&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;/sic_framework/devices&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;/sic_framework/__init__.py&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="n">last_modified</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_last_modified</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">selected_files</span><span class="p">)</span>
+
+        <span class="c1"># Create a signature for the framework</span>
+        <span class="n">framework_signature</span> <span class="o">=</span> <span class="s2">&quot;~/framework/sic_version_signature_</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">get_ip_adress</span><span class="p">(),</span> <span class="n">last_modified</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Check if the framework signature file exists</span>
+        <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span>
+            <span class="s2">&quot;ls </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">framework_signature</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">file_exists</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">stdout</span><span class="o">.</span><span class="n">readlines</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">file_exists</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Up to date framework is installed on the remote device.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># prefetch slow pip freeze command</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">stdout_pip_freeze</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span><span class="s2">&quot;pip freeze&quot;</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">progress</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">sent</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="se">\r</span><span class="s2"> </span><span class="si">{}</span><span class="s2"> progress: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">filename</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">sent</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">size</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="p">),</span>
+                <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Copying framework to the remote device.&quot;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">SCPClient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">get_transport</span><span class="p">(),</span> <span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">)</span> <span class="k">as</span> <span class="n">scp</span><span class="p">:</span>
+
+            <span class="c1"># Copy the framework to the remote computer</span>
+            <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span>
+                <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;_sic_files.tar.gz&quot;</span><span class="p">,</span> <span class="n">delete</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fileobj</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w:gz&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">tar</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">selected_files</span><span class="p">:</span>
+                        <span class="n">tar</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">root</span> <span class="o">+</span> <span class="n">file</span><span class="p">,</span> <span class="n">arcname</span><span class="o">=</span><span class="n">file</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="n">exclude_pyc</span><span class="p">)</span>
+
+                <span class="n">f</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span><span class="s2">&quot;mkdir ~/framework&quot;</span><span class="p">)</span>
+                <span class="n">scp</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">remote_path</span><span class="o">=</span><span class="s2">&quot;~/framework/sic_files.tar.gz&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>  <span class="c1"># newline after progress bar</span>
+            <span class="c1"># delete=False for windows compatibility, must delete file manually</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+            <span class="c1"># Unzip the file on the remote server</span>
+            <span class="c1"># use --touch to prevent files from having timestamps of 1970 which intefere with python caching</span>
+            <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span>
+                <span class="s2">&quot;cd framework &amp;&amp; tar --touch -xvf sic_files.tar.gz&quot;</span>
+            <span class="p">)</span>
+
+            <span class="n">err</span> <span class="o">=</span> <span class="n">stderr</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">err</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">err</span><span class="p">))</span>
+                <span class="k">raise</span> <span class="n">DeviceInstallationError</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Error while extracting library on remote device. Please consult manual installation instructions.&quot;</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Remove the zipped file</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span><span class="s2">&quot;rm ~/framework/sic_files.tar.gz&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check and/or install the framework and libraries on the remote computer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Checking if libraries are installed on the remote device.&quot;</span><span class="p">)</span>
+        <span class="c1"># stdout_pip_freeze is prefetched above because it is slow</span>
+        <span class="c1"># remote_libs = stdout_pip_freeze.readlines()</span>
+        <span class="c1"># for lib in _LIBS_TO_INSTALL:</span>
+        <span class="c1">#     if not lib.check_if_lib_installed(remote_libs):</span>
+        <span class="c1">#         lib.install(self.ssh)</span>
+
+        <span class="c1"># Remove signatures from the remote computer</span>
+        <span class="c1"># add own signature to the remote computer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span><span class="s2">&quot;rm ~/framework/sic_version_signature_*&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span><span class="s2">&quot;touch </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">framework_signature</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="SICDeviceManager.ssh_command">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.device.SICDeviceManager.ssh_command">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ssh_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">create_thread</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the given command and logs any errors from the SSH session.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            command (str): command to run on ssh client</span>
+<span class="sd">            **kwargs: Additional keyword arguments to pass to ssh.exec_command</span>
+<span class="sd">                     (e.g., get_pty=False, timeout=30)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple: (stdin, stdout, stderr) file-like objects from the SSH session</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            Various SSH exceptions if connection fails</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Executing command: </span><span class="si">{command}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="n">command</span><span class="p">))</span>
+            <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">create_thread</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Creating thread to monitor remote command&quot;</span><span class="p">)</span>
+
+                <span class="k">def</span><span class="w"> </span><span class="nf">monitor_call</span><span class="p">():</span>
+                    <span class="c1"># check if command has exited or if there is standard output</span>
+                    <span class="k">while</span> <span class="ow">not</span> <span class="n">stdout</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">exit_status_ready</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">stdout</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">recv_ready</span><span class="p">():</span>
+                            <span class="n">line</span> <span class="o">=</span> <span class="n">stdout</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+                            <span class="c1"># self.logger.debug(line)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># get exit status of the command</span>
+                        <span class="n">status</span> <span class="o">=</span> <span class="n">stdout</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">recv_exit_status</span><span class="p">()</span>
+
+                        <span class="c1"># log exit status and output</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                            <span class="s2">&quot;SSH command exited with status: </span><span class="si">{status}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="n">status</span><span class="o">=</span><span class="n">status</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                            <span class="s2">&quot;SSH command output: </span><span class="si">{output}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="n">output</span><span class="o">=</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+                        <span class="n">error_text</span> <span class="o">=</span> <span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">error_text</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                                <span class="s2">&quot;SSH command error: </span><span class="si">{error}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">error</span><span class="o">=</span><span class="n">error_text</span><span class="p">)</span>
+                            <span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;SSH command error: (none)&quot;</span><span class="p">)</span>
+
+                        <span class="c1"># if remote thread exits before local main thread, report to user.</span>
+                        <span class="k">if</span> <span class="p">(</span>
+                            <span class="n">threading</span><span class="o">.</span><span class="n">main_thread</span><span class="p">()</span><span class="o">.</span><span class="n">is_alive</span><span class="p">()</span>
+                            <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">()</span>
+                            <span class="ow">and</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="p">,</span> <span class="s2">&quot;shutdown_event&quot;</span><span class="p">,</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">())</span><span class="o">.</span><span class="n">is_set</span><span class="p">()</span>
+                        <span class="p">):</span>
+                            <span class="c1"># Report to main application instead of just raising in void</span>
+                            <span class="n">exc</span> <span class="o">=</span> <span class="n">DeviceExecutionError</span><span class="p">(</span>
+                                <span class="s2">&quot;Remote SIC program has stopped unexpectedly.</span><span class="se">\n</span><span class="s2">See sic.log for details&quot;</span>
+                            <span class="p">)</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">report_background_exception</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+
+                <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">monitor_call</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">thread</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;remote_SIC_process_monitor&quot;</span>
+                <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">thread</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Check stderr for any errors</span>
+                <span class="n">status</span> <span class="o">=</span> <span class="n">stdout</span><span class="o">.</span><span class="n">channel</span><span class="o">.</span><span class="n">recv_exit_status</span><span class="p">()</span>
+                <span class="n">error_output</span> <span class="o">=</span> <span class="n">stderr</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">error_output</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                        <span class="s2">&quot;SSH command produced errors: </span><span class="si">{error_output}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                            <span class="n">error_output</span><span class="o">=</span><span class="n">error_output</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="k">return</span> <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="n">status</span>
+
+        <span class="k">except</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">AuthenticationException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Authentication failed when trying to execute ssh command: </span><span class="si">{e}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">e</span><span class="o">=</span><span class="n">e</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">SSHException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;SSH exception occurred when trying to execute command: </span><span class="si">{e}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="o">=</span><span class="n">e</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Unexpected error while executing ssh command: </span><span class="si">{e}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="o">=</span><span class="n">e</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="SICDeviceManager.check_if_lib_installed">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.device.SICDeviceManager.check_if_lib_installed">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_if_lib_installed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pip_freeze</span><span class="p">,</span> <span class="n">lib</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check to see if a python library name + version is in the &#39;pip freeze&#39; output of a remote device.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">cur_lib</span> <span class="ow">in</span> <span class="n">pip_freeze</span><span class="p">:</span>
+            <span class="n">cur_lib</span> <span class="o">=</span> <span class="n">cur_lib</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">cur_lib_name</span><span class="p">,</span> <span class="n">cur_lib_ver</span> <span class="o">=</span> <span class="n">cur_lib</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;==&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">lib</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">cur_lib_name</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s2">&quot;Found package: </span><span class="si">{}</span><span class="s2"> with version </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">cur_lib_name</span><span class="p">,</span> <span class="n">cur_lib_ver</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="c1"># check to make sure version matches if there is a version requirement</span>
+                <span class="k">if</span> <span class="n">lib</span><span class="o">.</span><span class="n">req_version</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">lib</span><span class="o">.</span><span class="n">req_version</span> <span class="ow">in</span> <span class="n">cur_lib_ver</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> version matches: remote </span><span class="si">{}</span><span class="s2"> == required </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="n">lib</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">cur_lib_ver</span><span class="p">,</span> <span class="n">lib</span><span class="o">.</span><span class="n">req_version</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+                        <span class="k">return</span> <span class="kc">True</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> version mismatch: remote </span><span class="si">{}</span><span class="s2"> != required </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="n">lib</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">cur_lib_ver</span><span class="p">,</span> <span class="n">lib</span><span class="o">.</span><span class="n">req_version</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+                        <span class="k">return</span> <span class="kc">False</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="SICDeviceManager.install_lib">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.device.SICDeviceManager.install_lib">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">install_lib</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lib</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Download and install Python library on this remote device</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Installing </span><span class="si">{}</span><span class="s2"> on remote device &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lib</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c1"># download the binary first if necessary, as is the case with Pepper</span>
+        <span class="k">if</span> <span class="n">lib</span><span class="o">.</span><span class="n">download_cmd</span><span class="p">:</span>
+            <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="n">exit_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;cd {} &amp;&amp; {} &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lib</span><span class="o">.</span><span class="n">lib_path</span><span class="p">,</span> <span class="n">lib</span><span class="o">.</span><span class="n">download_cmd</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">exit_status</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">err</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">stderr</span><span class="o">.</span><span class="n">readlines</span><span class="p">())</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;Command: cd </span><span class="si">{}</span><span class="s2"> &amp;&amp; </span><span class="si">{}</span><span class="s2"> </span><span class="se">\n</span><span class="s2"> Gave error:&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">lib</span><span class="o">.</span><span class="n">lib_path</span><span class="p">,</span> <span class="n">lib</span><span class="o">.</span><span class="n">download_cmd</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">DeviceInstallationError</span><span class="p">(</span><span class="s2">&quot;Error while downloading library on remote device.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># install the library</span>
+        <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="n">exit_status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssh_command</span><span class="p">(</span>
+            <span class="s2">&quot;cd </span><span class="si">{}</span><span class="s2"> &amp;&amp; </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lib</span><span class="o">.</span><span class="n">lib_path</span><span class="p">,</span> <span class="n">lib</span><span class="o">.</span><span class="n">lib_install_cmd</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;Successfully installed&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">():</span>
+            <span class="n">err</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">stderr</span><span class="o">.</span><span class="n">readlines</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Command: cd </span><span class="si">{}</span><span class="s2"> &amp;&amp; </span><span class="si">{}</span><span class="s2"> </span><span class="se">\n</span><span class="s2"> Gave error:&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">lib</span><span class="o">.</span><span class="n">lib_path</span><span class="p">,</span> <span class="n">lib</span><span class="o">.</span><span class="n">lib_install_cmd</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">DeviceInstallationError</span><span class="p">(</span>
+                <span class="s2">&quot;Error while installing library on remote device. Please consult manual installation instructions.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Successfully installed </span><span class="si">{}</span><span class="s2"> package&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lib</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="SICDeviceManager.stop_device">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.device.SICDeviceManager.stop_device">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop_device</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stops the device and all its components.</span>
+<span class="sd">        Must be implemented by subclasses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SICDeviceManager._get_connector">
+<a class="viewcode-back" href="../../../api/devices.html#sic_framework.devices.device.SICDeviceManager._get_connector">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_connector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_connector</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the active connection the component, or initialize it if it is not yet connected to.</span>
+
+<span class="sd">        :param component_connector: The component connector class to start, e.g. NaoCamera</span>
+<span class="sd">        :return: SICConnector</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">assert</span> <span class="nb">issubclass</span><span class="p">(</span>
+            <span class="n">component_connector</span><span class="p">,</span> <span class="n">SICConnector</span>
+        <span class="p">),</span> <span class="s2">&quot;Component connector must be a SICConnector&quot;</span>
+
+        <span class="k">if</span> <span class="n">component_connector</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connectors</span><span class="p">:</span>
+            <span class="n">conf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">configs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">component_connector</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">connectors</span><span class="p">[</span><span class="n">component_connector</span><span class="p">]</span> <span class="o">=</span> <span class="n">component_connector</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">,</span> <span class="n">conf</span><span class="o">=</span><span class="n">conf</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TimeoutError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">DeviceConnectionError</span><span class="p">(</span>
+                    <span class="s2">&quot;Could not connect to </span><span class="si">{}</span><span class="s2"> on device </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">component_connector</span><span class="o">.</span><span class="n">component_class</span><span class="o">.</span><span class="n">get_component_name</span><span class="p">(),</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">device_ip</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">connectors</span><span class="p">[</span><span class="n">component_connector</span><span class="p">]</span></div>
+</div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">ssh</span> <span class="o">=</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">SSHClient</span><span class="p">()</span>
+    <span class="n">ssh</span><span class="o">.</span><span class="n">set_missing_host_key_policy</span><span class="p">(</span><span class="n">paramiko</span><span class="o">.</span><span class="n">AutoAddPolicy</span><span class="p">())</span>
+    <span class="c1"># allow_agent=False, look_for_keys=False to disable asking for keyring (just use the password)</span>
+    <span class="n">ssh</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+        <span class="s2">&quot;192.168.0.151&quot;</span><span class="p">,</span>
+        <span class="n">port</span><span class="o">=</span><span class="mi">22</span><span class="p">,</span>
+        <span class="n">username</span><span class="o">=</span><span class="s2">&quot;nao&quot;</span><span class="p">,</span>
+        <span class="n">password</span><span class="o">=</span><span class="s2">&quot;nao&quot;</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">allow_agent</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">look_for_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Unzip the file on the remote server</span>
+    <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="n">ssh</span><span class="o">.</span><span class="n">exec_command</span><span class="p">(</span><span class="s2">&quot;apt update&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">stdout</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">stderr</span><span class="o">.</span><span class="n">readline</span><span class="p">())</span>
+        <span class="c1"># empty line means command is done</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,246 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Building Blocks of SIC &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Messaging System" href="message_system.html" />
+    <link rel="prev" title="How SIC Works" href="../architecture.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../architecture.html">How SIC Works</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../architecture.html#sic-101-building-blocks">SIC 101: Building Blocks</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Building Blocks of SIC</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#components-sensors-actuators-and-services">Components: Sensors, Actuators, and Services</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#supporting-elements-componentmanager-connector-and-redis">Supporting Elements: ComponentManager, Connector, and Redis</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-application-diagrams">Example Application Diagrams</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../architecture.html#messaging-system">Messaging System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../architecture.html#processes-and-threads">Processes and Threads</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../architecture.html">How SIC Works</a></li>
+      <li class="breadcrumb-item active">Building Blocks of SIC</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/architecture/building_blocks.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="building-blocks-of-sic">
+<h1>Building Blocks of SIC<a class="headerlink" href="#building-blocks-of-sic" title="Link to this heading"></a></h1>
+<p>This section will guide you through the building blocks of the Social Interaction Cloud framework.</p>
+<section id="components-sensors-actuators-and-services">
+<h2>Components: Sensors, Actuators, and Services<a class="headerlink" href="#components-sensors-actuators-and-services" title="Link to this heading"></a></h2>
+<p>You can picture creating a SIC application as a process of connecting components together, or building with Legos.
+Components are either Sensors, Actuators, or Services.</p>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="../_images/sensor.svg"><img alt="Component Breakdown" src="../_images/sensor.svg" style="width: 20%;" />
+</a>
+<figcaption>
+<p><span class="caption-text"><strong>Sensors</strong> are the input devices that collect data from the physical environment.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id2">
+<a class="reference internal image-reference" href="../_images/service.svg"><img alt="Component Breakdown" src="../_images/service.svg" style="width: 25%;" />
+</a>
+<figcaption>
+<p><span class="caption-text"><strong>Services</strong> are components that transform data from one format to another in a desirable way.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id3">
+<a class="reference internal image-reference" href="../_images/actuator.svg"><img alt="Component Breakdown" src="../_images/actuator.svg" style="width: 20%;" />
+</a>
+<figcaption>
+<p><span class="caption-text"><strong>Actuators</strong> are the output devices that operate on the physical environment.</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id4">
+<a class="reference internal image-reference" href="../_images/component_breakdown.png"><img alt="Component Breakdown" src="../_images/component_breakdown.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Breakdown of Component types in SIC.</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<br><p>Pictured below are some example setups of SIC Components:</p>
+<figure class="align-center" id="id5">
+<a class="reference internal image-reference" href="../_images/face_det_comp_diagram.svg"><img alt="Face Detection Component Diagram" src="../_images/face_det_comp_diagram.svg" style="width: 80%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Component diagram for a <strong>Dialogflow</strong> application using a Nao robot.</span><a class="headerlink" href="#id5" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id6">
+<a class="reference internal image-reference" href="../_images/multi_actuator_diagram.svg"><img alt="Multi-Actuator Component Diagram" src="../_images/multi_actuator_diagram.svg" style="width: 80%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Component diagram for a <strong>Face Detection</strong> application using a Nao robot. It is possible to use the output of a Component as input to multiple other Components.</span><a class="headerlink" href="#id6" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id7">
+<a class="reference internal image-reference" href="../_images/sent_analysis_comp_diagram.svg"><img alt="Sentiment Analysis Component Diagram" src="../_images/sent_analysis_comp_diagram.svg" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Component diagram for a <strong>Sentiment Analysis</strong> application. Note that some Services may require multiple input types.</span><a class="headerlink" href="#id7" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="supporting-elements-componentmanager-connector-and-redis">
+<h2>Supporting Elements: ComponentManager, Connector, and Redis<a class="headerlink" href="#supporting-elements-componentmanager-connector-and-redis" title="Link to this heading"></a></h2>
+<p>In reality, SIC is a lot more than just Components. There are other elements that are used to support Components, namely:</p>
+<figure class="align-center" id="id8">
+<a class="reference internal image-reference" href="../_images/ComponentManager.svg"><img alt="ComponentManager" src="../_images/ComponentManager.svg" style="width: 25%;" />
+</a>
+<figcaption>
+<p><span class="caption-text"><strong>ComponentManagers</strong> are responsible for starting and stopping Components on hosts/devices.</span><a class="headerlink" href="#id8" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id9">
+<a class="reference internal image-reference" href="../_images/Connector.svg"><img alt="Connector" src="../_images/Connector.svg" style="width: 25%;" />
+</a>
+<figcaption>
+<p><span class="caption-text"><strong>Connectors</strong> behave as remote controls and are the actual interface the user uses to interact with the Components.</span><a class="headerlink" href="#id9" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id10">
+<a class="reference internal image-reference" href="../_images/Device.svg"><img alt="Device" src="../_images/Device.svg" style="width: 25%;" />
+</a>
+<figcaption>
+<p><span class="caption-text"><strong>Devices</strong> are the physical devices where the Components run.</span><a class="headerlink" href="#id10" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id11">
+<a class="reference internal image-reference" href="../_images/Redis.svg"><img alt="Redis" src="../_images/Redis.svg" style="width: 15%;" />
+</a>
+<figcaption>
+<p><span class="caption-text"><strong>Redis</strong> is the message broker that is used to communicate between the Components.</span><a class="headerlink" href="#id11" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id12">
+<a class="reference internal image-reference" href="../_images/Application.svg"><img alt="Application" src="../_images/Application.svg" style="width: 25%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">The <strong>SIC Application</strong> is the script the user writes that connects the Components together.</span><a class="headerlink" href="#id12" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="example-application-diagrams">
+<h2>Example Application Diagrams<a class="headerlink" href="#example-application-diagrams" title="Link to this heading"></a></h2>
+<figure class="align-center" id="id13">
+<a class="reference internal image-reference" href="../_images/DialogflowAppSimple.svg"><img alt="Redis" src="../_images/DialogflowAppSimple.svg" style="width: 80%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">High-level diagram for a simple Dialogflow application.</span><a class="headerlink" href="#id13" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../architecture.html" class="btn btn-neutral float-left" title="How SIC Works" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="message_system.html" class="btn btn-neutral float-right" title="Messaging System" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,260 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.common_naoqi.common_naoqi_motion &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.common_naoqi.common_naoqi_motion</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.common_naoqi.common_naoqi_motion</h1><div class="highlight"><pre>
+<div class="viewcode-block" id="NaoqiMotionTools">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.common_naoqi_motion.NaoqiMotionTools">[docs]</a>
+<span></span><span class="k">class</span><span class="w"> </span><span class="nc">NaoqiMotionTools</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provides utility functions for handling NAOqi robot motion models.</span>
+
+<span class="sd">    :ivar str robot_type: Type of robot, either &#39;nao&#39; or &#39;pepper&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NaoqiMotionTools.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.common_naoqi_motion.NaoqiMotionTools.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qi_session</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the motion tools by determining the robot type.</span>
+
+<span class="sd">        :param qi.Session qi_session: A qi.Session() instance used to determine robot type.</span>
+<span class="sd">        :raises NotImplementedError: If the robot type is not supported.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">robot_model_service</span> <span class="o">=</span> <span class="n">qi_session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALRobotModel&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">robot_model_service</span><span class="o">.</span><span class="n">getRobotType</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;Nao&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">robot_type</span> <span class="o">=</span> <span class="s2">&quot;nao&quot;</span>
+        <span class="k">elif</span> <span class="n">robot_model_service</span><span class="o">.</span><span class="n">getRobotType</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;Juliette&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">robot_type</span> <span class="o">=</span> <span class="s2">&quot;pepper&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Romeo is not supported&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiMotionTools.generate_joint_list">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.common_naoqi_motion.NaoqiMotionTools.generate_joint_list">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_joint_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">joint_chains</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate a flat list of valid joints for a given robot based on input joint chains.</span>
+
+<span class="sd">        :param list[str] joint_chains: List of joint chains or individual joints to resolve.</span>
+<span class="sd">        :returns: A flat list of valid joint names for the current robot.</span>
+<span class="sd">        :rtype: list[str]</span>
+<span class="sd">        :raises ValueError: If a provided joint or chain is not recognized.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">joints</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">joint_chain</span> <span class="ow">in</span> <span class="n">joint_chains</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">joint_chain</span> <span class="o">==</span> <span class="s2">&quot;Body&quot;</span><span class="p">:</span>
+                <span class="n">joints</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_joints</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="n">joint_chain</span> <span class="o">==</span> <span class="s2">&quot;Body&quot;</span> <span class="ow">and</span> <span class="n">joint_chain</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">body_model</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">joints</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">body_model</span><span class="p">[</span><span class="n">joint_chain</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="p">(</span>
+                <span class="n">joint_chain</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">body_model</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+                <span class="ow">and</span> <span class="n">joint_chain</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_joints</span>
+            <span class="p">):</span>
+                <span class="n">joints</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">joint_chain</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Joint </span><span class="si">{}</span><span class="s2"> not recognized.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">joint_chain</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">joints</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">body_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the mapping of joint chains to their respective joints for the current robot.</span>
+
+<span class="sd">        For more information, see robot documentation:</span>
+<span class="sd">        - Nao: http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains</span>
+<span class="sd">        - Pepper: http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html</span>
+
+<span class="sd">        :returns: Dictionary of joint chains and their associated joints.</span>
+<span class="sd">        :rtype: dict[str, list[str]]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">body_model</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;nao&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;Body&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Head&quot;</span><span class="p">,</span> <span class="s2">&quot;LArm&quot;</span><span class="p">,</span> <span class="s2">&quot;LLeg&quot;</span><span class="p">,</span> <span class="s2">&quot;RLeg&quot;</span><span class="p">,</span> <span class="s2">&quot;RArm&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;Head&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;HeadYaw&quot;</span><span class="p">,</span> <span class="s2">&quot;HeadPitch&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;LArm&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="s2">&quot;LShoulderPitch&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LShoulderRoll&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LElbowYaw&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LElbowRoll&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LWristYaw&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LHand&quot;</span><span class="p">,</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;LLeg&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="s2">&quot;LHipYawPitch&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LHipRoll&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LHipPitch&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LKneePitch&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LAnklePitch&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LAnkleRoll&quot;</span><span class="p">,</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;RLeg&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="s2">&quot;RHipYawPitch&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RHipRoll&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RHipPitch&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RKneePitch&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RAnklePitch&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RAnkleRoll&quot;</span><span class="p">,</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;RArm&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="s2">&quot;RShoulderPitch&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RShoulderRoll&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RElbowYaw&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RElbowRoll&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RWristYaw&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RHand&quot;</span><span class="p">,</span>
+                <span class="p">],</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;pepper&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;Body&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Head&quot;</span><span class="p">,</span> <span class="s2">&quot;LArm&quot;</span><span class="p">,</span> <span class="s2">&quot;Leg&quot;</span><span class="p">,</span> <span class="s2">&quot;RArm&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;Head&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;HeadYaw&quot;</span><span class="p">,</span> <span class="s2">&quot;HeadPitch&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;LArm&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="s2">&quot;LShoulderPitch&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LShoulderRoll&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LElbowYaw&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LElbowRoll&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LWristYaw&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;LHand&quot;</span><span class="p">,</span>
+                <span class="p">],</span>
+                <span class="s2">&quot;Leg&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;HipRoll&quot;</span><span class="p">,</span> <span class="s2">&quot;HipPitch&quot;</span><span class="p">,</span> <span class="s2">&quot;KneePitch&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;RArm&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="s2">&quot;RShoulderPitch&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RShoulderRoll&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RElbowYaw&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RElbowRoll&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RWristYaw&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;RHand&quot;</span><span class="p">,</span>
+                <span class="p">],</span>
+            <span class="p">},</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">body_model</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">robot_type</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">all_joints</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve all joints available for the current robot.</span>
+
+<span class="sd">        :returns: List of all joint names.</span>
+<span class="sd">        :rtype: list[str]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">all_joints</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">chain</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">body_model</span><span class="p">[</span><span class="s2">&quot;Body&quot;</span><span class="p">]:</span>
+            <span class="n">all_joints</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">body_model</span><span class="p">[</span><span class="n">chain</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">all_joints</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
