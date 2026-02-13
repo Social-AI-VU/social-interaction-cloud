@@ -95,7 +95,7 @@ extras_require = {
         "python-dotenv",
     ],
     "sortformer": [
-        "pandas",  
+        "pandas",
         "torch==2.9.0+cu130",
         "torchvision==0.24.0+cu130",
         "nemo_toolkit[asr]==2.5.2",
