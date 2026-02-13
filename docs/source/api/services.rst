@@ -29,21 +29,6 @@ Computer Vision Services
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: sic_framework.services.face_detection_dnn
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: sic_framework.services.face_recognition_dnn
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: sic_framework.services.object_tracking
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: sic_framework.services.depth_estimation
    :members:
    :undoc-members:
@@ -67,11 +52,6 @@ Web Services
 
 Utility Services
 ----------------
-
-.. automodule:: sic_framework.services.installation_verifier
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 .. automodule:: sic_framework.services.eis
    :members:

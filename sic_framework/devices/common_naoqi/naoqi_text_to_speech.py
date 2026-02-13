@@ -149,12 +149,15 @@ class NaoqiTextToSpeechActuator(SICActuator):
         return SICMessage()
 
     def stop(self, *args):
-        """
-        Stop the text-to-speech actuator.
-        """
-        self.session.close()
+        # No long-running worker loop; mark stopped immediately so cleanup runs.
         self._stopped.set()
-        super(NaoqiTextToSpeechActuator, self).stop()
+        super(NaoqiTextToSpeechActuator, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class NaoqiTextToSpeech(SICConnector):

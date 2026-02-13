@@ -1,6 +1,7 @@
 import queue
 import threading
 from datetime import datetime
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +11,7 @@ import torch.amp
 from huggingface_hub import get_token as get_hf_token
 
 from sic_framework import SICComponentManager
+from sic_framework.core.exceptions import SICModelFileNotFoundError
 from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
@@ -33,6 +35,11 @@ except ImportError:
     raise SystemExit(
         """Please use `pip install "git+https://github.com/NVIDIA/NeMo.git@main#egg=nemo_toolkit[asr]"` to use the Sortformer diarization"""
     )
+
+_DATA_DIR = Path(__file__).resolve().parent / "data"
+_HF_MODEL_FILES_URL = "https://huggingface.co/nvidia/diar_streaming_sortformer_4spk-v2/tree/main"
+_DEFAULT_LOCAL_MODEL_PATH = _DATA_DIR / "diar_streaming_sortformer_4spk-v2.nemo"
+_DEFAULT_MODEL_YAML_PATH = _DATA_DIR / "diar_streaming_sortformer_4spk-v2_dihard3-dev.yaml"
 
 
 class STMSortformerConf(SICConfMessage):
@@ -59,8 +66,8 @@ class STMSortformerConf(SICConfMessage):
 
     def __init__(
         self,
-        local_model="./data/diar_streaming_sortformer_4spk-v2.nemo",
-        model_yaml="./data/diar_streaming_sortformer_4spk-v2_dihard3-dev.yaml",
+        local_model=None,
+        model_yaml=None,
         CHUNK_SIZE=3,
         RIGHT_CONTEXT=1,
         FIFO_SIZE=188,
@@ -68,8 +75,12 @@ class STMSortformerConf(SICConfMessage):
         SPEAKER_CACHE_SIZE=188,
     ):
         super(SICConfMessage, self).__init__()
-        self.local_model = local_model
-        self.model_yaml = model_yaml
+        self.local_model = (
+            str(_DEFAULT_LOCAL_MODEL_PATH) if local_model is None else local_model
+        )
+        self.model_yaml = (
+            str(_DEFAULT_MODEL_YAML_PATH) if model_yaml is None else model_yaml
+        )
         self.CHUNK_SIZE = CHUNK_SIZE
         self.RIGHT_CONTEXT = RIGHT_CONTEXT
         self.FIFO_SIZE = FIFO_SIZE
@@ -130,8 +141,9 @@ class STMSortformerComponent(SICService):
         self._init_streaming_state()
         self._configure_batching_params()
         # Start thread
-        t = threading.Thread(target=self._streaming_diarization_thd)
-        t.start()
+        self._diar_thread = threading.Thread(target=self._streaming_diarization_thd)
+        self._diar_thread.daemon = True
+        self._diar_thread.start()
 
     def _load_model(self):
         hf_token = get_hf_token()
@@ -140,9 +152,34 @@ class STMSortformerComponent(SICService):
                 "nvidia/diar_streaming_sortformer_4spk-v2"
             )
         else:
+            # The service expects a local .nemo checkpoint when no HF token is present.
+            # Resolve relative paths against this service's `data/` directory so the
+            # current working directory doesn't matter.
+            local_model_path = Path(self.params.local_model)
+            if not local_model_path.is_absolute():
+                candidate = _DATA_DIR / local_model_path.name
+                if candidate.exists():
+                    local_model_path = candidate
+
+            if not local_model_path.exists():
+                raise SICModelFileNotFoundError(
+                    (
+                        "Can't find Streaming Sortformer model checkpoint (.nemo).\n\n"
+                        "Download `diar_streaming_sortformer_4spk-v2.nemo` from:\n"
+                        f"{_HF_MODEL_FILES_URL}\n\n"
+                        "and place it in:\n"
+                        f"{_DATA_DIR}\n\n"
+                        "Expected file path:\n"
+                        f"{_DEFAULT_LOCAL_MODEL_PATH}\n"
+                    ),
+                    missing_path=str(local_model_path),
+                )
+
             self.diar_model = SortformerEncLabelModel.restore_from(
-                restore_path=self.params.local_model,
-                map_location=torch.device("cuda"),
+                restore_path=str(local_model_path),
+                map_location=torch.device(
+                    "cuda" if torch.cuda.is_available() else "cpu"
+                ),
                 strict=False,
             )
 
@@ -260,12 +297,19 @@ class STMSortformerComponent(SICService):
         return speaker_timestamps
 
     def _streaming_diarization_thd(self):
-        while True:
-            stream_chunk = self.stream_queue.get()
-            if stream_chunk is None or stream_chunk.size == 0:
+        while not self._signal_to_stop.is_set():
+            try:
+                stream_chunk = self.stream_queue.get(timeout=0.1)
+            except queue.Empty:
                 continue
-            else:
-                self.stream_buffer = np.concatenate([self.stream_buffer, stream_chunk])
+
+            # Sentinel to stop thread
+            if stream_chunk is None:
+                break
+            if getattr(stream_chunk, "size", 0) == 0:
+                continue
+
+            self.stream_buffer = np.concatenate([self.stream_buffer, stream_chunk])
 
             base_start_global = self.processed_until
             base_end_global = base_start_global + self.chunk_size
@@ -370,12 +414,46 @@ class STMSortformerComponent(SICService):
         :raises NotImplementedError: If the request type is unsupported
         """
         if is_sic_instance(request, GetDiarizationRequest):
-            preds, speaker_timestamps = self.results_queue.get()
-            return DiarizationResult(
-                predictions=preds, speaker_timestamps=speaker_timestamps
-            )
+            while not self._signal_to_stop.is_set():
+                try:
+                    preds, speaker_timestamps = self.results_queue.get(timeout=0.1)
+                    if preds is None:
+                        break
+                    return DiarizationResult(
+                        predictions=preds, speaker_timestamps=speaker_timestamps
+                    )
+                except queue.Empty:
+                    continue
+
+            # Stopping: return an empty result
+            try:
+                empty_preds = torch.zeros(
+                    (1, 0, self.diar_model.sortformer_modules.n_spk), device=self.device
+                )
+            except Exception:
+                empty_preds = torch.zeros((1, 0, 0))
+            return DiarizationResult(predictions=empty_preds, speaker_timestamps=[])
         else:
             raise NotImplementedError("Unknown request type {}".format(type(request)))
+
+    def stop(self, *args):
+        # Unblock background thread and any waiting request.
+        try:
+            self.stream_queue.put_nowait(None)
+        except Exception:
+            pass
+        try:
+            self.results_queue.put_nowait((None, []))
+        except Exception:
+            pass
+        super(STMSortformerComponent, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            if getattr(self, "_diar_thread", None) is not None:
+                self._diar_thread.join(timeout=2)
+        except Exception:
+            pass
 
 
 class STMSortformerUtils:
@@ -532,5 +610,12 @@ class STMSortformer(SICConnector):
     component_class = STMSortformerComponent
 
 
+def main():
+    """
+    Run a ComponentManager that can start the Streaming Sortformer diarization Component.
+    """
+    SICComponentManager([STMSortformerComponent], name="StreamingSortformer")
+
+
 if __name__ == "__main__":
-    SICComponentManager([STMSortformerComponent], name="Streaming Sortformer")
+    main()

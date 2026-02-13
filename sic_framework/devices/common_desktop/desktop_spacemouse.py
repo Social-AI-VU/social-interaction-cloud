@@ -52,9 +52,15 @@ class DesktopSpaceMouseSensor(SICSensor):
             self.logger.warning("Failed to read from the space mouse")
         return SpaceMouseStates(state.t, state.x, state.y, state.z, state.roll, state.pitch, state.yaw, state.buttons)
 
-    def stop(self, *args):
-        super(DesktopSpaceMouseSensor, self).stop(*args)
-        self.cam.release()
+    def _cleanup(self):
+        # pyspacemouse exposes close() in most versions; be defensive.
+        try:
+            if hasattr(self, "spacemouse") and hasattr(self.spacemouse, "close"):
+                self.spacemouse.close()
+            elif hasattr(self, "spacemouse") and hasattr(self.spacemouse, "stop"):
+                self.spacemouse.stop()
+        except Exception:
+            pass
 
 
 class DesktopSpaceMouse(SICConnector):

@@ -137,7 +137,7 @@ Pepper-Specific Components
 Pepper Motion Streamer
 """"""""""""""""""""""
 
-.. automodule:: sic_framework.devices.common_naoqi.pepper_motion_streamer
+.. automodule:: sic_framework.devices.common_pepper.pepper_motion_streamer
    :members:
    :undoc-members:
    :show-inheritance:
@@ -145,7 +145,7 @@ Pepper Motion Streamer
 Pepper Tablet
 """""""""""""
 
-.. automodule:: sic_framework.devices.common_naoqi.pepper_tablet
+.. automodule:: sic_framework.devices.common_pepper.pepper_tablet
    :members:
    :undoc-members:
    :show-inheritance:
@@ -153,7 +153,31 @@ Pepper Tablet
 Pepper Top Tactile Sensor
 """"""""""""""""""""""""""
 
-.. automodule:: sic_framework.devices.common_naoqi.pepper_top_tactile_sensor
+.. automodule:: sic_framework.devices.common_pepper.pepper_top_tactile_sensor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Pepper Back Bumper Sensor
+""""""""""""""""""""""""
+
+.. automodule:: sic_framework.devices.common_pepper.pepper_back_bumper_sensor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Pepper Right Bumper Sensor
+""""""""""""""""""""""""
+
+.. automodule:: sic_framework.devices.common_pepper.pepper_right_bumper_sensor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Pepper Left Bumper Sensor
+""""""""""""""""""""""""
+
+.. automodule:: sic_framework.devices.common_pepper.pepper_left_bumper_sensor
    :members:
    :undoc-members:
    :show-inheritance:

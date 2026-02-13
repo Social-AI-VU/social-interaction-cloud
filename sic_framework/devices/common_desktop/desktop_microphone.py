@@ -62,11 +62,16 @@ class DesktopMicrophoneSensor(SICSensor):
             empty_data = b'\x00' * int(self.params.sample_rate // 4) * 2  # 16-bit samples
             return AudioMessage(empty_data, sample_rate=self.params.sample_rate)
 
-    def stop(self, *args):
-        super(DesktopMicrophoneSensor, self).stop(*args)
+    def _cleanup(self):
         self.logger.info("Stopped microphone")
-        self.stream.close()
-        self.device.terminate()
+        try:
+            self.stream.close()
+        except Exception:
+            pass
+        try:
+            self.device.terminate()
+        except Exception:
+            pass
 
 
 class DesktopMicrophone(SICConnector):

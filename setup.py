@@ -95,12 +95,12 @@ extras_require = {
         "python-dotenv",
     ],
     "sortformer": [
+        "pandas",  
         "torch==2.9.0+cu130",
         "torchvision==0.24.0+cu130",
         "nemo_toolkit[asr]==2.5.2",
         "huggingface-hub==0.36.0",
     ], # requires a flag to set the URL, e.g. pip install .[asr] --extra-index-url https://download.pytorch.org/whl/cu130
-
 }
 
 setup(
@@ -128,8 +128,6 @@ setup(
             "run-dialogflow=sic_framework.services.dialogflow:main",
             "run-dialogflow-cx=sic_framework.services.dialogflow_cx:main",
             "run-face-detection=sic_framework.services.face_detection:main",
-            "run-face-detection-dnn=sic_framework.services.face_detection_dnn:main",
-            "run-face-recognition=sic_framework.services.face_recognition_dnn:main",
             "run-gpt=sic_framework.services.llm.openai_gpt:main",
             "run-whisper=sic_framework.services.openai_whisper_stt:main",
             "run-webserver=sic_framework.services.webserver.webserver_component:main",
@@ -139,6 +137,7 @@ setup(
             "run-voice-detection=sic_framework.services.voice_detection:main",
             "run-nebula=sic_framework.services.llm.nebula:main",
             "run-database-redis=sic_framework.services.database.redis_database:main",
+            "run-sortformer=sic_framework.services.streaming_sortformer.stm_sortformer:main",
         ],
     },
 )

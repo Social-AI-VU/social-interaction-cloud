@@ -108,6 +108,7 @@ class DesktopTextToSpeechActuator(SICActuator):
         self._speak(message.text)
 
     def stop(self, *args):
+        # No long-running worker loop; mark as stopped immediately.
         self._stopped.set()
         super(DesktopTextToSpeechActuator, self).stop(*args)
 

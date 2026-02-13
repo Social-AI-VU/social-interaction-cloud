@@ -15,6 +15,7 @@ from sic_framework.core.utils import is_sic_instance
 
 from . import sic_logging
 from .message_python2 import SICConfMessage, SICMessage
+from sic_framework.core.exceptions import AlignmentError
 
 
 class MessageQueue(collections.deque):
@@ -111,11 +112,6 @@ class SICMessageDictionary:
         except AttributeError:
             # Object is SICConnector, not SICComponent
             return component.component_class.get_component_name()
-
-
-class AlignmentError(Exception):
-    """Raised when input messages cannot be time-aligned."""
-    pass
 
 
 class SICService(SICComponent):
@@ -319,8 +315,9 @@ class SICService(SICComponent):
 
             self._process_and_output(messages, timestamp)
 
+        # Signal to the framework that the service's worker loop has exited.
+        self._stopped.set()
         self.logger.debug("Stopped listening")
-        self.stop()
 
     def _wait_for_new_data(self):
         """

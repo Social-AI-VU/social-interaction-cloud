@@ -24,13 +24,7 @@ from .message_python2 import SICMessage, SICPingRequest, SICRequest, SICSuccessM
 from . import sic_logging
 from .sic_redis import SICRedisConnection
 from sic_framework.core.sic_application import SICApplication
-
-
-class ComponentNotStartedError(Exception):
-    """
-    An exception to indicate that a component failed to start.
-    """
-    pass
+from sic_framework.core.exceptions import ComponentNotStartedError
 
 
 class SICConnector(object):

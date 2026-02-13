@@ -25,18 +25,6 @@ The social interaction cloud has many components available for you to speed up c
      - `demo_desktop_camera_facedetection.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection.py>`_ 
      - None, no extra dependencies are needed
      -  
-   * - **DNN Face detection** using a YOLOv7 neural network for accurate detection, and detection of small faces.
-     - ``run-face-detection-dnn --model yolo7-face.pt``
-     - `face_detection_dnn <https://github.com/Social-AI-VU/social-interaction-cloud/blob/main/sic_framework/services/face_detection_dnn/face_detection_dnn.py>`_ 
-     - `demo_desktop_camera_facedetection_dnn.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facedetection_dnn.py>`_ 
-     - ``pip install social-interaction-cloud[face-detection-dnn]`` 
-     - The model file used in this example can be found here: `yolov7-face.pt <https://drive.google.com/file/d/1oIaGXFd4goyBvB1mYDK24GLof53H9ZYo/view>`_ 
-   * - **DNN Face recognition** using a resnet50 network to extract face embeddings and assign an id based on automatic clustering.
-     - ``run-face-recognition --model xxx.pt --cascadefile xxx.xml``
-     - `face_recognition_dnn <https://github.com/Social-AI-VU/social-interaction-cloud/tree/main/sic_framework/services/face_recognition_dnn>`_ 
-     - `demo_desktop_camera_facerecognition.py <https://github.com/Social-AI-VU/sic_applications/blob/main/demos/desktop/demo_desktop_camera_facerecognition.py>`_
-     - ``pip install social-interaction-cloud[face-recognition]``
-     - The cascade classifier file used in this example can be found here\: `haarcascade_frontalface_default.xml <https://github.com/kipr/opencv/blob/master/data/haarcascades/haarcascade_frontalface_default.xml>`_. The model file can be found here\: `resnet50_ft_weight.pt <https://bitbucket.org/socialroboticshub/framework/src/master/sic_framework/services/face_recognition_dnn/resnet50_ft_weight.pt>`_ 
    * - **OpenAI ChatGPT** a text based large language model that provides a very capable dialog agent. Requires a credit card.
      - ``run-gpt `` 
      - `gpt <https://bitbucket.ohttps//github.com/Social-AI-VU/social-interaction-cloud/blob/main/sic_framework/services/openai_gpt/gpt.pyrg/socialroboticshub/framework/src/master/sic_framework/services/openai_gpt/>`_ 

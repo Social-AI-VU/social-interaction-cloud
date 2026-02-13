@@ -222,9 +222,14 @@ class NaoqiMotionStreamerService(SICService, NaoqiMotionTools):
         :returns: None
         :rtype: None
         """
-        self.session.close()
-        self._stopped.set()
-        super(NaoqiMotionStreamerService, self).stop()
+        # Do not set `_stopped` here: it is set by the streaming thread when it exits.
+        super(NaoqiMotionStreamerService, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class NaoqiMotionStreamer(SICConnector):

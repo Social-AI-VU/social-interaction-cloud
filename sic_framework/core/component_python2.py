@@ -11,6 +11,7 @@ from abc import ABCMeta, abstractmethod
 import six
 
 from sic_framework.core.utils import is_sic_instance
+from sic_framework.core.exceptions import ComponentRequestError
 from . import sic_logging, utils
 from .message_python2 import (
     SICConfMessage,
@@ -90,6 +91,13 @@ class SICComponent:
         # _stopped is set when the component has stopped
         self._stopped = threading.Event()
 
+        # Track in-flight message/request handlers to avoid cleaning up resources
+        # while callbacks are still executing.
+        self._active_calls_lock = threading.Lock()
+        self._active_calls = 0
+        self._no_active_calls = threading.Event()
+        self._no_active_calls.set()
+
         # Components constrained to one input, request_reply, output channel
         self.input_channel = input_channel
         self.component_channel = component_channel
@@ -156,15 +164,53 @@ class SICComponent:
 
     def stop(self, *args):
         """
-        Set the stop event to signal the component to stop.
+        Stop the component safely (template method).
 
-        Awaits for the component to stop and checks that the _stopped event is set.
+        Lifecycle:
+        - Signal the component thread to stop via `_signal_to_stop`
+        - Wait (up to `COMPONENT_STOP_TIMEOUT`) for the worker thread to confirm it stopped via `_stopped`
+        - Only if the worker thread has stopped, run `_cleanup()` to release subclass resources
+
+        If the worker thread does not stop within the timeout, `_cleanup()` is skipped to avoid
+        race conditions where resources are freed while the worker thread is still executing.
         """
         self._signal_to_stop.set()
-        if self._stopped.wait(timeout=self.COMPONENT_STOP_TIMEOUT):
+        stopped = self._stopped.wait(timeout=self.COMPONENT_STOP_TIMEOUT)
+        if stopped:
             self.logger.debug("Component's _stopped event set successfully")
+            # Wait briefly for any in-flight request/message callbacks to finish
+            # before cleaning up resources. If callbacks don't drain, skip cleanup
+            # to avoid races (same principle as waiting for `_stopped`).
+            drained = True
+            try:
+                drained = self._no_active_calls.wait(timeout=self.COMPONENT_STOP_TIMEOUT)
+            except Exception:
+                drained = False
+
+            if drained:
+                try:
+                    self._cleanup()
+                except Exception as e:
+                    self.logger.error("Error during component cleanup: {}".format(e))
+            else:
+                self.logger.warning(
+                    "Component still has active callbacks after stop timeout; "
+                    "skipping cleanup to avoid race conditions"
+                )
         else:
-            self.logger.warning("Component's _stopped event was not set within the specified timeout time")
+            self.logger.warning(
+                "Component's _stopped event was not set within the specified timeout time; "
+                "skipping cleanup to avoid race conditions"
+            )
+
+    def _cleanup(self):
+        """
+        Hook for subclasses to release resources.
+
+        Called by `stop()` only after the component's worker thread has confirmed it stopped
+        (i.e., `_stopped` is set). Subclasses should override this instead of overriding `stop()`.
+        """
+        return
 
     def set_config(self, new=None):
         """
@@ -301,7 +347,11 @@ class SICComponent:
                 )
                 return None
 
-        return self.on_message(message)
+        self._begin_active_call()
+        try:
+            return self.on_message(message)
+        finally:
+            self._end_active_call()
 
     def _handle_request(self, request):
         """
@@ -322,9 +372,32 @@ class SICComponent:
             return SICPongMessage()
 
         if not is_sic_instance(request, SICControlRequest):
-            return self.on_request(request)
+            self._begin_active_call()
+            try:
+                return self.on_request(request)
+            finally:
+                self._end_active_call()
 
-        raise TypeError("Unknown request type {}".format(type(request)))
+        raise ComponentRequestError("Unknown request type {}".format(type(request)))
+
+    def _begin_active_call(self):
+        try:
+            with self._active_calls_lock:
+                self._active_calls += 1
+                if self._active_calls == 1:
+                    self._no_active_calls.clear()
+        except Exception:
+            pass
+
+    def _end_active_call(self):
+        try:
+            with self._active_calls_lock:
+                if self._active_calls > 0:
+                    self._active_calls -= 1
+                if self._active_calls == 0:
+                    self._no_active_calls.set()
+        except Exception:
+            pass
 
     def _parse_conf(self, conf):
         """

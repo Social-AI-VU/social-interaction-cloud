@@ -141,12 +141,19 @@ class NebulaComponent(SICService):
             self.logger.error("Invalid request type: %s", type(request))
             return SICMessage("Invalid request type: %s", type(request))
 
-    def stop(self):
+    def stop(self, *args):
         """
-        Stop the NebulaComponent..
+        Stop the NebulaComponent.
         """
-        self._stopped.set()
-        super(NebulaComponent, self).stop()
+        super(NebulaComponent, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            client = getattr(self, "client", None)
+            if client is not None and hasattr(client, "close"):
+                client.close()
+        except Exception:
+            pass
 
 
 class Nebula(SICConnector):
