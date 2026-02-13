@@ -15,6 +15,10 @@ import tempfile
 import os
 import weakref
 import time
+try:
+    import queue  # Python 3
+except ImportError:  # pragma: no cover
+    import Queue as queue  # Python 2
 from sic_framework.core.sic_redis import SICRedisConnection
 
 class SICApplication(object):
@@ -58,6 +62,10 @@ class SICApplication(object):
         self.shutdown_event = threading.Event()
         self.client_ip = utils.get_ip_adress()
 
+        # Background exception handling
+        self._background_exception_queue = queue.Queue()
+        self._background_exception_event = threading.Event()
+
         # Initialize logger (will be available immediately)
         self.logger = sic_logging.get_sic_logger(
             "SICApplication",
@@ -92,7 +100,12 @@ class SICApplication(object):
 
     def set_log_file(self, path):
         """Write logs to directory at ``path`` (created if missing)."""
-        os.makedirs(path, exist_ok=True)
+        # Python 2 compatibility: exist_ok is not supported.
+        try:
+            os.makedirs(path)
+        except OSError:
+            if not os.path.isdir(path):
+                raise
         sic_logging.set_log_file(path)
 
     def get_app_logger(self):
@@ -105,9 +118,31 @@ class SICApplication(object):
 
     def get_redis_instance(self):
         """Return the shared Redis connection for this process."""
+        self.check_health()
         if self._redis is None:
             self._redis = SICRedisConnection()
         return self._redis
+
+    def report_background_exception(self, exception):
+        """
+        Report an exception that occurred in a background thread (e.g. device monitor).
+        This signals the main thread to stop.
+        """
+        self.logger.error("Background exception reported: {}".format(exception))
+        self._background_exception_queue.put(exception)
+        self._background_exception_event.set()
+        # Trigger shutdown immediately
+        self.shutdown_event.set()
+
+    def check_health(self):
+        """
+        Check if any background errors have occurred. 
+        Should be called periodically by the main loop or blocking calls.
+        """
+        if self._background_exception_event.is_set():
+            if not self._background_exception_queue.empty():
+                exc = self._background_exception_queue.get()
+                raise exc
 
     def setup(self):
         """
@@ -137,34 +172,76 @@ class SICApplication(object):
             self.logger.info("Setting shutdown event")
             self.shutdown_event.set()
 
-        self.logger.info("Stopping devices")
-        # devices_to_stop = list(self._active_devices)
-        # for device in devices_to_stop:
-        #     try:
-        #         device.stop_device()
-        #     except Exception as e:
-        #         self.logger.error("Error stopping device {name}: {e}".format(name=device.name, e=e))
+        devices_to_stop = list(self._active_devices)
+        device_ips = set([getattr(d, "device_ip", None) for d in devices_to_stop if getattr(d, "device_ip", None)])
 
-        self.logger.info("Stopping components (found {count} components)".format(count=len(self._active_connectors)))
         connectors_to_stop = list(self._active_connectors)
-        for i, connector in enumerate(connectors_to_stop):
-            # Skip if this connector belongs to a device we already stopped
-            # if any(connector in device._connectors for device in devices_to_stop):
-            #     self.logger.debug("Skipping connector {name} as it belongs to a device we already stopped".format(name=connector.component_endpoint))
-            #     continue
-            
+        device_connectors = []
+        other_connectors = []
+        for c in connectors_to_stop:
+            c_ip = getattr(c, "component_ip", None)
+            if c_ip and c_ip in device_ips:
+                device_connectors.append(c)
+            else:
+                other_connectors.append(c)
+
+        # Stop device-owned connectors first while the remote manager is still alive.
+        self.logger.info(
+            "Stopping components (found {count} components)".format(
+                count=len(connectors_to_stop)
+            )
+        )
+        stopped = set()
+        for i, connector in enumerate(device_connectors):
             connector_name = getattr(connector, "component_endpoint", "unknown")
-            self.logger.info("Stopping component {i}/{total}: {name}".format(i=i+1, total=len(connectors_to_stop), name=connector_name))
+            self.logger.info(
+                "Stopping component {i}/{total}: {name}".format(
+                    i=i + 1, total=len(device_connectors), name=connector_name
+                )
+            )
             try:
                 connector.stop_component()
             except Exception as e:
                 self.logger.warning(
                     "Warning: Error stopping component {name}: {e}".format(
-                        name=getattr(connector, "component_endpoint", "unknown"), e=e
+                        name=connector_name, e=e
                     )
                 )
-                # import traceback
-                # traceback.print_exc()
+            stopped.add(connector)
+
+        # Then stop devices (which stops their remote component manager).
+        self.logger.info("Stopping devices")
+        for device in devices_to_stop:
+            try:
+                device.stop_device()
+            except Exception as e:
+                self.logger.error(
+                    "Error stopping device {name}: {e}".format(
+                        name=getattr(
+                            device, "name", getattr(device, "device_ip", "unknown")
+                        ),
+                        e=e,
+                    )
+                )
+
+        # Finally stop any remaining connectors.
+        for i, connector in enumerate(other_connectors):
+            if connector in stopped:
+                continue
+            connector_name = getattr(connector, "component_endpoint", "unknown")
+            self.logger.info(
+                "Stopping component {i}/{total}: {name}".format(
+                    i=i + 1, total=len(other_connectors), name=connector_name
+                )
+            )
+            try:
+                connector.stop_component()
+            except Exception as e:
+                self.logger.warning(
+                    "Warning: Error stopping component {name}: {e}".format(
+                        name=connector_name, e=e
+                    )
+                )
 
         self.logger.info("All components stopped, stopping logging thread")
         
@@ -186,4 +263,3 @@ class SICApplication(object):
         atexit.register(self.exit_handler)
         signal.signal(signal.SIGINT, self.exit_handler)
         signal.signal(signal.SIGTERM, self.exit_handler)
-

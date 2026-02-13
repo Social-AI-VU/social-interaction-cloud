@@ -74,12 +74,15 @@ class NaoqiStiffnessActuator(SICActuator, NaoqiMotionTools):
         return SICMessage()
 
     def stop(self, *args):
-        """
-        Stop the NAOqi stiffness actuator.
-        """
-        self.session.close()
+        # No long-running worker loop; mark stopped immediately so cleanup runs.
         self._stopped.set()
-        super(NaoqiStiffnessActuator, self).stop()
+        super(NaoqiStiffnessActuator, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class NaoqiStiffness(SICConnector):

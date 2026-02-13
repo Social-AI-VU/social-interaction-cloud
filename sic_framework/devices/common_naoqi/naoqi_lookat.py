@@ -119,12 +119,15 @@ class NaoqiLookAtComponent(SICComponent):
             self.output_message(NaoJointAngles(["HeadYaw", "HeadPitch"], angles))
 
     def stop(self, *args):
-        """
-        Stop the LookAt component.
-        """
-        self.session.close()
+        # No long-running worker loop; mark stopped immediately so cleanup runs.
         self._stopped.set()
         super(NaoqiLookAtComponent, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class NaoqiLookAt(SICConnector):

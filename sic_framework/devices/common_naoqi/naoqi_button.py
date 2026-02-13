@@ -97,17 +97,20 @@ class NaoqiButtonSensor(SICComponent):
         self.ids.append(id)
 
     def stop(self, *args):
-        """
-        Stop the touch sensor by disconnecting signals and closing the session.
-
-        :returns: None
-        :rtype: None
-        """
-        for id in self.ids:
-            self.touch.signal.disconnect(id)
-        self.session.close()
+        # No long-running worker loop; mark stopped immediately so cleanup runs.
         self._stopped.set()
-        super(NaoqiButtonSensor, self).stop()
+        super(NaoqiButtonSensor, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            for id in self.ids:
+                self.touch.signal.disconnect(id)
+        except Exception:
+            pass
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class NaoqiButton(SICConnector):

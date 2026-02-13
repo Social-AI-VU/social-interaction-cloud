@@ -181,13 +181,15 @@ class NaoqiLEDsActuator(SICActuator):
         return SICMessage()
 
     def stop(self, *args):
-        """
-        Stop the LEDs actuator, close the NAOqi session, and release resources.
-
-        """
-        self.session.close()
+        # No long-running worker loop; mark stopped immediately so cleanup runs.
         self._stopped.set()
-        super(NaoqiLEDsActuator, self).stop()
+        super(NaoqiLEDsActuator, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class NaoqiLEDs(SICConnector):

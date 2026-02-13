@@ -399,13 +399,18 @@ class NaoqiMotionActuator(SICActuator):
         except RuntimeError:  # NAOqi 2.3 / 2.1
             self.motion.setWalkArmsEnabled(request.left_enable, request.right_enable)
 
-    def stop(self):
+    def stop(self, *args):
         """
         Stop the NAOqi motion actuator.
         """
-        self.session.close()
         self._stopped.set()
-        super(NaoqiMotionActuator, self).stop()
+        super(NaoqiMotionActuator, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class NaoqiMotion(SICConnector):

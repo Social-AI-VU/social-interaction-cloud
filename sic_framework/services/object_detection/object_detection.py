@@ -61,8 +61,11 @@ class ObjectDetectionComponent(SICService):
         # Calculate sleep time based on frequency (Hz -> seconds)
         sleep_time = 1.0 / self.params.frequency if self.params.frequency > 0 else 0.01
 
-        while self._signal_to_stop.is_set() is False:
-            message = self.input_message_buffer.get()
+        while not self._signal_to_stop.is_set():
+            try:
+                message = self.input_message_buffer.get(timeout=0.1)
+            except queue.Empty:
+                continue
             bboxes = self.detect(message.image)
             self.output_message(bboxes)
             time.sleep(sleep_time)

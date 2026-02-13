@@ -144,12 +144,15 @@ class NaoqiTrackerActuator(SICActuator):
         return SICMessage()
 
     def stop(self, *args):
-        """
-        Stop the tracker actuator.
-        """
-        self.session.close()
+        # No long-running worker loop; mark stopped immediately so cleanup runs.
         self._stopped.set()
-        super(NaoqiTrackerActuator, self).stop()
+        super(NaoqiTrackerActuator, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class NaoqiTracker(SICConnector):

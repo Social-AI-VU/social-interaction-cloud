@@ -9,6 +9,7 @@ from sic_framework.devices.common_naoqi.nao_motion_streamer import (
     NaoqiMotionStreamerService,
 )
 from sic_framework.devices.naoqi_shared import *
+from sic_framework.core.exceptions import DeviceInstallationError, DeviceExecutionError
 
 
 class Nao(Naoqi):
@@ -114,7 +115,7 @@ class Nao(Naoqi):
         error = stderr.read().decode()
 
         if not "SIC successfully installed" in output:
-            raise Exception(
+            raise DeviceInstallationError(
                 "Failed to install sic. Standard error stream from install command: {}".format(
                     error
                 )
@@ -176,7 +177,7 @@ class Nao(Naoqi):
                 """
             )
             if exit_status != 0:
-                raise RuntimeError("Failed to create test virtual environment")
+                raise DeviceInstallationError("Failed to create test virtual environment")
 
         def uninstall_old_repo():
             """
@@ -248,7 +249,7 @@ class Nao(Naoqi):
 
             # check to see if the repo was installed successfully
             if exit_status != 0:
-                raise RuntimeError("Failed to install social-interaction-cloud")
+                raise DeviceInstallationError("Failed to install social-interaction-cloud")
 
         # check to see if test environment already exists
         _, stdout, _, exit_status = self.ssh_command(
@@ -285,14 +286,14 @@ class Nao(Naoqi):
             self.logger.error(
                 "No test environment present on Nao and no new dev repo provided... raising RuntimeError"
             )
-            raise RuntimeError("Need to provide repo to create test environment")
+            raise DeviceInstallationError("Need to provide repo to create test environment")
         else:
             self.logger.error(
                 "Activating test environment on Nao resulted in unknown exit status: {}".format(
                     exit_status
                 )
             )
-            raise RuntimeError(
+            raise DeviceInstallationError(
                 "Unknown error occurred while creating test environment on Nao"
             )
 

@@ -94,6 +94,13 @@ extras_require = {
         "openai>=1.52.2",
         "python-dotenv",
     ],
+    "sortformer": [
+        "pandas",
+        "torch",
+        "torchvision",
+        "nemo_toolkit[asr]",
+        "huggingface-hub",
+    ]
 }
 
 setup(
@@ -132,6 +139,7 @@ setup(
             "run-voice-detection=sic_framework.services.voice_detection:main",
             "run-nebula=sic_framework.services.llm.nebula:main",
             "run-database-redis=sic_framework.services.database.redis_database:main",
+            "run-sortformer=sic_framework.services.streaming_sortformer.stm_sortformer:main",
         ],
     },
 )

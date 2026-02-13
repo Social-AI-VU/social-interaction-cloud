@@ -94,10 +94,12 @@ class DesktopCameraSensor(SICSensor):
 
         return CompressedImageMessage(frame)
 
-    def stop(self, *args):
-        if hasattr(self, 'cam') and self.cam is not None:
-            self.cam.release()
-        super(DesktopCameraSensor, self).stop(*args)
+    def _cleanup(self):
+        if hasattr(self, "cam") and self.cam is not None:
+            try:
+                self.cam.release()
+            except Exception:
+                pass
 
 
 class DesktopCamera(SICConnector):

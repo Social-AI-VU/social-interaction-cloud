@@ -24,6 +24,7 @@ from sic_framework.devices.common_mini.mini_speaker import (
     MiniSpeakerComponent,
 )
 from sic_framework.devices.device import SICDeviceManager
+from sic_framework.core.exceptions import DeviceInstallationError, DeviceExecutionError
 
 
 class Alphamini(SICDeviceManager):
@@ -277,7 +278,7 @@ class Alphamini(SICDeviceManager):
         error = stderr.read().decode()
 
         if not "Successfully installed social-interaction-cloud" in output:
-            raise Exception(
+            raise DeviceInstallationError(
                 "Failed to install sic. Standard error stream from install command: {}".format(
                     error
                 )
@@ -338,7 +339,7 @@ class Alphamini(SICDeviceManager):
                 """
             )
             if exit_status != 0:
-                raise RuntimeError("Failed to create test virtual environment")
+                raise DeviceInstallationError("Failed to create test virtual environment")
 
         def uninstall_old_repo():
             """
@@ -392,7 +393,7 @@ class Alphamini(SICDeviceManager):
 
             # check to see if the repo was installed successfully
             if exit_status != 0:
-                raise RuntimeError("Failed to install social-interaction-cloud")
+                raise DeviceInstallationError("Failed to install social-interaction-cloud")
 
         # check to see if test environment already exists
         _, stdout, _, exit_status = self.ssh_command(
@@ -429,14 +430,14 @@ class Alphamini(SICDeviceManager):
             self.logger.error(
                 "No test environment present on Mini and no new dev repo provided... raising RuntimeError"
             )
-            raise RuntimeError("Need to provide repo to create test environment")
+            raise DeviceInstallationError("Need to provide repo to create test environment")
         else:
             self.logger.error(
                 "Activating test environment on Mini resulted in unknown exit status: {}".format(
                     exit_status
                 )
             )
-            raise RuntimeError(
+            raise DeviceInstallationError(
                 "Unknown error occurred while creating test environment on Mini"
             )
 
@@ -445,7 +446,8 @@ class Alphamini(SICDeviceManager):
 
         self.stop_cmd = """
             echo 'Killing all previous robot wrapper processes';
-            pkill -f "python {alphamini_device}"
+            # pkill returns 1 when no process matched; treat that as success.
+            pkill -f "python {alphamini_device}" || true
         """.format(
             alphamini_device=self.device_path
         )
@@ -507,7 +509,7 @@ class Alphamini(SICDeviceManager):
                     )
                 )
         else:
-            raise RuntimeError(
+            raise DeviceExecutionError(
                 "Could not start SIC on remote device\nSee SIC logs for details"
             )
 
@@ -525,8 +527,7 @@ class Alphamini(SICDeviceManager):
         self._redis.request(self.device_ip, SICStopServerRequest())
 
         # make sure the process is killed
-        stdin, stdout, stderr = self.ssh_command(self.stop_cmd)
-        status = stdout.channel.recv_exit_status()
+        stdin, stdout, stderr, status = self.ssh_command(self.stop_cmd)
         if status != 0:
             self.logger.error("Failed to stop device, exit code: {status}".format(status=status))
             self.logger.error(stderr.read().decode("utf-8"))

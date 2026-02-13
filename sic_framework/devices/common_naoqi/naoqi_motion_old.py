@@ -252,12 +252,15 @@ class NaoqiMotionActuator(SICActuator):
         self.motion.moveToward(motion.x, motion.y, motion.theta)
 
     def stop(self, *args):
-        """
-        Stop the Naoqi motion actuator.
-        """
-        self.session.close()
+        # No long-running worker loop; mark stopped immediately so cleanup runs.
         self._stopped.set()
-        super(NaoqiMotionActuator, self).stop()
+        super(NaoqiMotionActuator, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class NaoqiMotion(SICConnector):

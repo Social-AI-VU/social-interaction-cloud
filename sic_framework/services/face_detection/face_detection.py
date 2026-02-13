@@ -68,7 +68,6 @@ class FaceDetectionComponent(SICService):
     def detect(self, image):
 
         if self._signal_to_stop.is_set():
-            self._stopped.set()
             # return the image as is
             return BoundingBoxesMessage([])
         
@@ -86,12 +85,11 @@ class FaceDetectionComponent(SICService):
 
         return BoundingBoxesMessage(faces)
 
-    def stop(self):
+    def stop(self, *args):
         """
         Stop the face detection component.
         """
-        self._stopped.set()
-        super(FaceDetectionComponent, self).stop()
+        super(FaceDetectionComponent, self).stop(*args)
 
 
 class FaceDetection(SICConnector):

@@ -471,22 +471,17 @@ class PepperMotionStreamerService(SICService, NaoqiMotionTools):
                 self.output_message(PepperMotionStream(self.joints, angles, velocity))
 
                 time.sleep(1 / float(self.samples_per_second))
+                
+            self._stopped.set()
         except Exception as e:
             self.logger.exception(e)
             self.stop()
 
-    def stop(self, *args):
-        """
-        Stop the motion streamer and clean up resources.
-        
-        Closes the NAOqi session, stops the streaming thread, and performs
-        cleanup of parent components.
-        
-        :param args: Variable length argument list (unused).
-        """
-        self.session.close()
-        self._stopped.set()
-        super(PepperMotionStreamerService, self).stop()
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class PepperMotionStreamer(SICConnector):

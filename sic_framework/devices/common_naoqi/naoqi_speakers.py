@@ -113,12 +113,15 @@ class NaoqiSpeakerComponent(SICComponent):
             self.play_sound(message)
 
     def stop(self, *args):
-        """
-        Stop the NAOqi speaker component.
-        """
-        self.session.close()
+        # No long-running worker loop; mark stopped immediately so cleanup runs.
         self._stopped.set()
-        super(NaoqiSpeakerComponent, self).stop()
+        super(NaoqiSpeakerComponent, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class NaoqiSpeaker(SICConnector):

@@ -15,6 +15,13 @@ import os
 
 from . import utils
 from .message_python2 import SICMessage
+from sic_framework.core.exceptions import SICRemoteError
+
+try:
+    BrokenPipeError
+except NameError:
+    # Python 2 doesn't define BrokenPipeError; treat it as an IOError.
+    BrokenPipeError = IOError
 
 ANSI_CODE_REGEX = re.compile(r'\033\[[0-9;]*m')
 
@@ -43,10 +50,6 @@ class SICLogMessage(SICMessage):
         self.msg = msg
         self.client_id = client_id
         super(SICLogMessage, self).__init__()
-
-
-class SICRemoteError(Exception):
-    """An exception indicating the error happened on a remote device"""
 
 
 class SICClientLog(object):

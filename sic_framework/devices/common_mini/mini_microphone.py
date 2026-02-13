@@ -147,13 +147,17 @@ class MiniMicrophoneSensor(SICSensor):
         except socket.error as e:
             self.logger.error(f"Socket error: {e}")
 
-    def stop(self, *args):
-        super(MiniMicrophoneSensor, self).stop(*args)
+    def _cleanup(self):
         self.logger.info("Stopped microphone")
-
-        if self.client_conn:
-            self.client_conn.close()
-        self.server_socket.close()
+        try:
+            if self.client_conn:
+                self.client_conn.close()
+        except Exception:
+            pass
+        try:
+            self.server_socket.close()
+        except Exception:
+            pass
         # self.stream.close()
         # self.audio.terminate()
 

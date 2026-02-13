@@ -51,11 +51,20 @@ class MiniSpeakerComponent(SICComponent):
         return SICMessage()
 
     def stop(self, *args):
+        # No long-running worker loop; mark as stopped immediately so cleanup runs.
+        self._stopped.set()
         super(MiniSpeakerComponent, self).stop(*args)
-        self.logger.info("Stopped speakers")
 
-        self.stream.close()
-        self.device.terminate()
+    def _cleanup(self):
+        self.logger.info("Stopped speakers")
+        try:
+            self.stream.close()
+        except Exception:
+            pass
+        try:
+            self.device.terminate()
+        except Exception:
+            pass
 
 
 class MiniSpeaker(SICConnector):

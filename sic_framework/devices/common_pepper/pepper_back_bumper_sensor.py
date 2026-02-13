@@ -117,18 +117,20 @@ class PepperBackBumperSensor(SICComponent):
         self.ids.append(id)
 
     def stop(self, *args):
-        """
-        Stop the sensor and clean up resources.
-        
-        Disconnects from NAOqi events and closes the session.
-        
-        :param args: Variable length argument list (unused).
-        """
-        for id in self.ids:
-            self.bumper.signal.disconnect(id)
-        self.session.close()
+        # No long-running worker loop; mark stopped immediately so cleanup runs.
         self._stopped.set()
-        super(PepperBackBumperSensor, self).stop()
+        super(PepperBackBumperSensor, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            for id in self.ids:
+                self.bumper.signal.disconnect(id)
+        except Exception:
+            pass
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class PepperBackBumper(SICConnector):

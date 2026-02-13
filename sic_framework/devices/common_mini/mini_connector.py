@@ -4,13 +4,7 @@ import os
 
 import mini.mini_sdk as MiniSdk
 from mini.dns.dns_browser import WiFiDevice
-
-
-# Define a custom exception class
-class CouldNotConnectToMiniException(Exception):
-    def __init__(self, message):
-        # Initialize the custom exception with a message and error code
-        super().__init__(message)  # Call the base class constructor
+from sic_framework.core.exceptions import DeviceConnectionError
 
 
 class MiniConnector:
@@ -31,7 +25,7 @@ class MiniConnector:
         if device:
             return await MiniSdk.connect(device)
         else:
-            raise CouldNotConnectToMiniException("Could not connect to mini with id {mini_id}".format(mini_id=self.mini_id))
+            raise DeviceConnectionError("Could not connect to mini with id {mini_id}".format(mini_id=self.mini_id))
 
     async def _disconnect_to_mini(self):
         await MiniSdk.quit_program()

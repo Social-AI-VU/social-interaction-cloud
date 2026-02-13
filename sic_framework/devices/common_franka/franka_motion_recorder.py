@@ -132,9 +132,10 @@ class FrankaMotionRecorderActuator(SICActuator):
                 self.recorded_joints_vel.append(self.panda.get_state().dq)
                 time.sleep(1/self.frequency)
 
+            self._stopped.set()
         except Exception as e:
-                    self.logger.exception(e)
-                    self.stop()
+            self.logger.exception(e)
+            self.stop()
 
     def reset_recording_variables(self, request):
         """
