@@ -96,11 +96,11 @@ extras_require = {
     ],
     "sortformer": [
         "pandas",
-        "torch",
-        "torchvision",
-        "nemo_toolkit[asr]",
-        "huggingface-hub",
-    ]
+        "torch==2.9.0+cu130",
+        "torchvision==0.24.0+cu130",
+        "nemo_toolkit[asr]==2.5.2",
+        "huggingface-hub==0.36.0",
+    ], # requires a flag to set the URL, e.g. pip install .[asr] --extra-index-url https://download.pytorch.org/whl/cu130
 }
 
 setup(
