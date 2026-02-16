@@ -75,21 +75,29 @@ class NaoqiMicrophoneSensor(SICSensor):
         return AudioMessage
 
     def execute(self):
+        # Use a timeout so the sensor can stop promptly without hanging forever.
+        while not self._signal_to_stop.is_set():
+            if self.new_sound_data_available.wait(timeout=0.1):
+                self.new_sound_data_available.clear()
+                return AudioMessage(self.audio_buffer, sample_rate=self.params.sample_rate)
+        return None
 
-        self.new_sound_data_available.wait()
-        self.new_sound_data_available.clear()
-
-        return AudioMessage(self.audio_buffer, sample_rate=self.params.sample_rate)
-
-    def stop(self, *args):
+    def _cleanup(self):
         """
-        Stop the microphone sensor.
+        Release NAOqi resources after the sensor thread has stopped.
         """
-        self.audio_service.unsubscribe(self.module_name)
-        self.session.unregisterService(self.session_id)
-        self.session.close()
-        self._stopped.set()
-        super(NaoqiMicrophoneSensor, self).stop(*args)
+        try:
+            self.audio_service.unsubscribe(self.module_name)
+        except Exception:
+            pass
+        try:
+            self.session.unregisterService(self.session_id)
+        except Exception:
+            pass
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
     def processRemote(self, nbOfChannels, nbOfSamplesByChannel, timeStamp, inputBuffer):
         self.audio_buffer = inputBuffer

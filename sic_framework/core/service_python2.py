@@ -5,7 +5,9 @@ This module contains the SICService class, which is the base class for all servi
 """
 
 import collections
-from abc import ABCMeta, abstractmethod
+import logging
+import threading
+from abc import ABCMeta
 from threading import Event
 
 from sic_framework.core.component_python2 import SICComponent
@@ -13,274 +15,327 @@ from sic_framework.core.utils import is_sic_instance
 
 from . import sic_logging
 from .message_python2 import SICConfMessage, SICMessage
+from sic_framework.core.exceptions import AlignmentError
 
 
 class MessageQueue(collections.deque):
     """
-    A message buffer, with logging to notify of excessive dropped messages.
+    A bounded message buffer that logs warnings when messages are dropped.
 
-    :param logger: The logger to use for logging dropped messages.
-    :type logger: logging.Logger
+    Messages are dropped when the buffer reaches MAX_MESSAGE_BUFFER_SIZE.
+    Warnings are logged at exponentially increasing intervals to avoid log spam.
     """
 
-    def __init__(self, logger):
+    # Log warnings at these drop counts (exponential backoff)
+    DROP_WARNING_THRESHOLDS = {5, 10, 50, 100, 200, 1000, 5000, 10000}
+
+    def __init__(self, logger, maxlen):
         self.logger = logger
         self.dropped_messages_counter = 0
-        super(MessageQueue, self).__init__(maxlen=SICService.MAX_MESSAGE_BUFFER_SIZE)
+        super(MessageQueue, self).__init__(maxlen=maxlen)
 
-    def appendleft(self, x):
-        # TODO when inputs arrive faster than processing, the buffer might fill up. Do we want to handle this better or
-        # just silence the logging. Maybe its better to log only when receiving lots of messages but never executing.
+    def appendleft(self, message):
+        if self._is_full():
+            self._handle_dropped_message(message)
+        return super(MessageQueue, self).appendleft(message)
 
-        if len(self) == self.maxlen:
-            self.dropped_messages_counter += 1
-            if self.dropped_messages_counter in {
-                5,
-                10,
-                50,
-                100,
-                200,
-                1000,
-                5000,
-                10000,
-            }:
-                self.logger.warning(
-                    "Dropped {} messages of type {}".format(
-                        self.dropped_messages_counter, x.get_message_name()
-                    )
+    def _is_full(self):
+        return len(self) == self.maxlen
+
+    def _handle_dropped_message(self, message):
+        self.dropped_messages_counter += 1
+        if self.dropped_messages_counter in self.DROP_WARNING_THRESHOLDS:
+            self.logger.warning(
+                "Dropped {} messages of type {}".format(
+                    self.dropped_messages_counter, message.get_message_name()
                 )
-        return super(MessageQueue, self).appendleft(x)
+            )
 
-
-class PopMessageException(ValueError):
-    """
-    An exception to raise whenever the conditions to pop messages from the input message buffers were not met.
-    """
 
 class SICMessageDictionary:
     """
-    A dictionary container for messages, indexable by the message type and possibly an origin.
+    A container for messages, indexable by message type and optionally by source component.
+
+    Used to pass synchronized input messages to the execute() method.
     """
 
     def __init__(self):
-        self.messages = collections.defaultdict(lambda: list())
+        self._messages = collections.defaultdict(list)
 
-    def set(self, message):
+    def add(self, message):
         """
-        Add a message to the dictionary.
+        Add a message to the dictionary, indexed by its type.
 
         :param message: The message to add.
         :type message: SICMessage
         """
-        self.messages[message.get_message_name()].append(message)
+        self._messages[message.get_message_name()].append(message)
 
-    def get(self, type, source_component=None):
+    def get(self, message_type, source_component=None):
         """
-        Get a message from the dictionary.
+        Retrieve a message by type, optionally filtering by source component.
 
-        :param type: The type of message to get.
-        :type type: SICMessage
-        :param source_component: The component that sent the message.
+        :param message_type: The type of message to get.
+        :type message_type: Type[SICMessage]
+        :param source_component: Optional component to filter by.
+        :return: The matching message.
+        :raises IndexError: If no matching message is found.
         """
-        if source_component is not None:
-            try:
-                source_component_name = source_component.get_component_name()
-            except AttributeError:
-                # Object is SICConnector and not SICComponent
-                source_component_name = (
-                    source_component.component_class.get_component_name()
-                )
+        messages = self._messages[message_type.get_message_name()]
 
-        messages = self.messages[type.get_message_name()]
+        if not messages:
+            raise AssertionError(
+                "Attempting to get message from empty buffer (framework issue)"
+            )
 
-        assert len(
-            messages
-        ), "Attempting to get message from empty buffer (framework issue, should not be possible)"
+        if source_component is None:
+            # No filter, return the first (should be only one)
+            return messages[0]
 
+        # Filter by source component
+        source_name = self._get_component_name(source_component)
         for message in messages:
-            if source_component is not None:
-                # find the message with the right source component in the list of duplicate input types
-                if message._previous_component_name == source_component_name:
-                    return message
-            else:
-                # if no source component is set, just accept any (should be only 1)
+            if message._previous_component_name == source_name:
                 return message
 
         raise IndexError(
-            "Input of type {} with source: {} not found.".format(type, source_component)
+            "Input of type {} with source: {} not found.".format(
+                message_type, source_component
+            )
         )
+
+    @staticmethod
+    def _get_component_name(component):
+        """Extract component name from either SICComponent or SICConnector."""
+        try:
+            return component.get_component_name()
+        except AttributeError:
+            # Object is SICConnector, not SICComponent
+            return component.component_class.get_component_name()
 
 
 class SICService(SICComponent):
     """
-    Abstract class for Services that transform and perform operations on data.
+    Base class for services that process and transform data.
 
-    Some Services take multiple inputs and must synchronize the data based on timestamp.
-    This class provides the logic to synchronize the data if multiple inputs are expected.
+    Services can have multiple input types. When multiple inputs are defined,
+    this class automatically synchronizes incoming messages by timestamp,
+    ensuring that execute() receives temporally aligned data.
+
+    Configuration:
+        MAX_MESSAGE_BUFFER_SIZE: Maximum messages to buffer per input type.
+        MAX_TIMESTAMP_DIFF_SECONDS: Maximum time difference for alignment.
     """
 
     MAX_MESSAGE_BUFFER_SIZE = 10
-    MAX_MESSAGE_AGE_DIFF_IN_SECONDS = (
-        0.5  # TODO tune? maybe in config? Can be use case dependent
-    )
+    MAX_TIMESTAMP_DIFF_SECONDS = 0.5
+    LISTEN_POLL_INTERVAL_SECONDS = 0.1
 
     def __init__(self, *args, **kwargs):
         super(SICService, self).__init__(*args, **kwargs)
-        
-        # this event is set whenever a new message arrives.
         self._new_data_event = Event()
-
-        self._input_buffers = dict()
+        self._input_buffers = {}
+        self._listen_thread = None
 
     def start(self):
         """
-        Start the Service. Calls the _listen method to start listening for input messages.
+        Start the Service.
+        
+        This initiates the background listener thread that handles message alignment
+        and calls execute(). Because it runs in a background thread, this method
+        is non-blocking, allowing subclasses to run their own loops in start() if needed.
         """
         super(SICService, self).start()
+        
+        self._listen_thread = threading.Thread(target=self._listen)
+        self._listen_thread.daemon = True
+        self._listen_thread.start()
 
-        self._listen()
-
-    @abstractmethod
     def execute(self, inputs):
         """
-        Process the input messages and return a SICMessage.
-        
-        Main function of the Service. Must be implemented by the subclass.
+        Process synchronized input messages and optionally produce output.
 
-        :param inputs: dict of input messages from other components
+        Override this method to implement your service logic.
+
+        :param inputs: Container with time-aligned input messages.
         :type inputs: SICMessageDictionary
-        :return: A SICMessage or None
+        :return: Output message to publish, or None.
         :rtype: SICMessage | None
         """
-        raise NotImplementedError("You need to define service execution.")
+        pass
 
-    def _pop_messages(self):
-        """
-        Collect all input SICdata messages gathered in the buffers into a dictionary to use in the execute method.
-        Make sure all input messages are aligned to the newest timestamp to synchronise the input data.
-        If multiple channels contain the same type, give them an index in the service_input dict.
-
-        If the buffers do not contain an aligned set of messages, a PopMessageException is raised.
-        :raises: PopMessageException
-        :return: tuple of dictionary of messages and the shared timestamp
-        """
-
-        self.logger.debug(
-            "input buffers: {}".format(
-                [(k, len(v)) for k, v in self._input_buffers.items()]
-            )
-        )
-
-        # First, get the most recent message for all buffers. Then, select the oldest message from these messages.
-        # The timestamp of this message corresponds to the most recent timestamp for which we have all information
-        # available
-        try:
-            selected_timestamp = min(
-                [buffer[0]._timestamp for buffer in self._input_buffers.values()]
-            )
-        except IndexError:
-            # Not all buffers are full, so do not pop messages
-            raise PopMessageException(
-                "Could not collect aligned input data from buffers, not all buffers filled"
-            )
-
-        # Buffers are created dynamically, based on the source components. Only start executing once
-        # we have at least one buffer per message type
-        if len(self._input_buffers) != len(self.get_inputs()):
-            raise PopMessageException("Not enough buffer has been created yet")
-
-        # Second, we go through each buffer and check if we can find a message that is within the time difference
-        # threshold. Duplicate input types are in separate buffers based on their _previous_component attribute.
-
-        # TODO might raise
-        # RuntimeError: deque mutated during iteration
-        # in for msg in buffer: as on_message could be set while iterating
-        message_dict = SICMessageDictionary()
-        messages_to_remove = []
-        for name, buffer in self._input_buffers.items():
-            # get the newest message in the buffer closest to the selected timestamp
-            # if there is none, we raise a ValueError to stop searching and wait for new data again
-            for msg in buffer:
-                if (
-                    abs(msg._timestamp - selected_timestamp)
-                    <= self.MAX_MESSAGE_AGE_DIFF_IN_SECONDS
-                ):
-
-                    message_dict.set(msg)
-                    messages_to_remove.append(msg)
-                    break
-            else:
-                # the timestamps across all buffers did not align within the threshold, so do not pop messages
-                raise PopMessageException(
-                    "Could not collect aligned input data from buffers, no matching timestamps"
-                )
-
-        # Third, we now know all buffers contain a valid (aligned) message for the timestamp
-        # only then, consume these messages from the buffers and return the messages.
-        for buffer, msg in zip(self._input_buffers.values(), messages_to_remove):
-            buffer.remove(msg)
-
-        return message_dict, selected_timestamp
+    # -------------------------------------------------------------------------
+    # Message Handling
+    # -------------------------------------------------------------------------
 
     def on_message(self, message):
         """
-        Collect an input message and put it into the appropriate buffer.
+        Receive an input message and buffer it for processing.
 
-        Sets the _new_data_event to signal that new data is available.
-
-        :param message: The message to collect.
+        :param message: The incoming message.
         :type message: SICMessage
         """
-
-        # TODO support inheritance by indexing using the superclass that matches an input type
-        # for b in msg.__class__.__mro__:
-        #     if issubclass(b, SICMessage):
-
-        idx = (message.get_message_name(), message._previous_component_name)
-
-        try:
-            self._input_buffers[idx].appendleft(message)
-        except KeyError:
-            self._input_buffers[idx] = MessageQueue(self.logger)
-            self._input_buffers[idx].appendleft(message)
-
+        buffer_key = self._get_buffer_key(message)
+        self._get_or_create_buffer(buffer_key).appendleft(message)
         self._new_data_event.set()
 
-    def _listen(self):
+    def _get_buffer_key(self, message):
+        """Create a unique key for buffering based on message type and source."""
+        return (message.get_message_name(), message._previous_component_name)
+
+    def _get_or_create_buffer(self, buffer_key):
+        """Get existing buffer or create a new one."""
+        if buffer_key not in self._input_buffers:
+            self._input_buffers[buffer_key] = MessageQueue(
+                self.logger, maxlen=self.MAX_MESSAGE_BUFFER_SIZE
+            )
+        return self._input_buffers[buffer_key]
+
+    # -------------------------------------------------------------------------
+    # Message Synchronization
+    # -------------------------------------------------------------------------
+
+    def _pop_aligned_messages(self):
         """
-        Wait for new data and execute when possible.
+        Extract time-aligned messages from all input buffers.
+
+        Finds the most recent timestamp for which all inputs have data,
+        then collects one message from each buffer within the time threshold.
+
+        :return: Tuple of (message dictionary, reference timestamp).
+        :raises AlignmentError: If messages cannot be aligned.
         """
-        while not self._signal_to_stop.is_set():
-            # wait for new data to be set by the _process_message callback, and check every .1 second to check if the
-            # service must stop
-            self._new_data_event.wait(timeout=0.1)
+        self._log_buffer_state()
+        self._validate_buffers_ready()
 
-            if not self._new_data_event.is_set():
-                continue
+        reference_timestamp = self._get_reference_timestamp()
+        aligned_messages = self._collect_aligned_messages(reference_timestamp)
+        self._consume_messages(aligned_messages)
 
-            # clear the flag so we will wait for new data again next iteration
-            self._new_data_event.clear()
+        message_dict = self._build_message_dict(aligned_messages)
+        return message_dict, reference_timestamp
 
-            # pop messages if all buffers contain a timestamp aligned message, if not a PopMessageException is raised
-            # and we will have to wait for new data
-            try:
-                messages, timestamp = self._pop_messages()
-            except PopMessageException:
-                self.logger.debug(
-                    "Did not pop messages from buffers."
+    def _log_buffer_state(self):
+        """Log current buffer sizes for debugging."""
+        # Only log if the logger is enabled for DEBUG
+        if not self.logger.isEnabledFor(logging.DEBUG):
+            return
+        buffer_sizes = [(key, len(buf)) for key, buf in self._input_buffers.items()]
+        self.logger.debug("Input buffer sizes: {}".format(buffer_sizes))
+
+    def _validate_buffers_ready(self):
+        """Ensure we have one buffer per expected input type."""
+        expected_count = len(self.get_inputs())
+        actual_count = len(self._input_buffers)
+        if actual_count != expected_count:
+            raise AlignmentError(
+                "Waiting for all input types: have {}, need {}".format(
+                    actual_count, expected_count
                 )
+            )
+
+    def _get_reference_timestamp(self):
+        """
+        Determine the reference timestamp for alignment.
+
+        Uses the oldest "newest message" timestamp across all buffers.
+        This is the most recent time for which we have data from all sources.
+
+        :raises AlignmentError: If any buffer is empty.
+        """
+        try:
+            newest_per_buffer = [
+                buffer[0]._timestamp for buffer in self._input_buffers.values()
+            ]
+            return min(newest_per_buffer)
+        except IndexError:
+            raise AlignmentError("One or more input buffers are empty")
+
+    def _collect_aligned_messages(self, reference_timestamp):
+        """
+        Find one message per buffer that aligns with the reference timestamp.
+
+        :param reference_timestamp: The timestamp to align to.
+        :return: List of (buffer, message) tuples.
+        :raises AlignmentError: If any buffer lacks an aligned message.
+        """
+        aligned = []
+        for buffer_key, buffer in self._input_buffers.items():
+            message = self._find_aligned_message(buffer, reference_timestamp)
+            if message is None:
+                raise AlignmentError(
+                    "No message within {}s of reference timestamp in buffer {}".format(
+                        self.MAX_TIMESTAMP_DIFF_SECONDS, buffer_key
+                    )
+                )
+            aligned.append((buffer, message))
+        return aligned
+
+    def _find_aligned_message(self, buffer, reference_timestamp):
+        """
+        Find the first message in buffer within the timestamp threshold.
+
+        :param buffer: The message buffer to search.
+        :param reference_timestamp: The timestamp to align to.
+        :return: The aligned message, or None if not found.
+        """
+        for message in buffer:
+            time_diff = abs(message._timestamp - reference_timestamp)
+            if time_diff <= self.MAX_TIMESTAMP_DIFF_SECONDS:
+                return message
+        return None
+
+    def _consume_messages(self, aligned_messages):
+        """Remove consumed messages from their buffers."""
+        for buffer, message in aligned_messages:
+            buffer.remove(message)
+
+    def _build_message_dict(self, aligned_messages):
+        """Build the message dictionary from aligned messages."""
+        message_dict = SICMessageDictionary()
+        for _, message in aligned_messages:
+            message_dict.add(message)
+        return message_dict
+
+    # -------------------------------------------------------------------------
+    # Main Loop
+    # -------------------------------------------------------------------------
+
+    def _listen(self):
+        """Main loop: wait for data, align messages, and execute."""
+        while not self._signal_to_stop.is_set():
+            if not self._wait_for_new_data():
                 continue
 
-            output = self.execute(messages)
+            try:
+                messages, timestamp = self._pop_aligned_messages()
+            except AlignmentError as e:
+                self.logger.debug("Alignment pending: {}".format(e))
+                continue
 
-            self.logger.debug("Outputting message {}".format(output))
+            self._process_and_output(messages, timestamp)
 
-            if output:
-                # To keep track of the creation time of this data, the output timestamp is the oldest timestamp of all
-                # the timestamp sources.
-                output._timestamp = timestamp
-
-                self.output_message(output)
-
+        # Signal to the framework that the service's worker loop has exited.
+        self._stopped.set()
         self.logger.debug("Stopped listening")
-        self.stop()
+
+    def _wait_for_new_data(self):
+        """
+        Wait for new data with timeout.
+
+        :return: True if new data is available, False if timed out.
+        """
+        self._new_data_event.wait(timeout=self.LISTEN_POLL_INTERVAL_SECONDS)
+        if not self._new_data_event.is_set():
+            return False
+        self._new_data_event.clear()
+        return True
+
+    def _process_and_output(self, messages, timestamp):
+        """Execute the service logic and publish any output."""
+        output = self.execute(messages)
+
+        if output:
+            self.logger.debug("Outputting message: {}".format(output))
+            output._timestamp = timestamp
+            self.output_message(output)

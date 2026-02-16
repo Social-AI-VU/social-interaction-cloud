@@ -11,6 +11,7 @@ from sic_framework import (
 from sic_framework.core.component_python2 import SICComponent
 from sic_framework.core.connector import SICConnector
 from sic_framework.devices.common_naoqi.common_naoqi_motion import NaoqiMotionTools
+from sic_framework.core.service_python2 import SICService
 
 if utils.PYTHON_VERSION_IS_2:
     import qi
@@ -194,7 +195,7 @@ class PepperMotionStreamerConf(SICConfMessage):
         self.locked_joints = locked_joints or []
 
 
-class PepperMotionStreamerService(SICComponent, NaoqiMotionTools):
+class PepperMotionStreamerService(SICService, NaoqiMotionTools):
     """
     Service component for Pepper motion streaming.
     
@@ -226,7 +227,7 @@ class PepperMotionStreamerService(SICComponent, NaoqiMotionTools):
         :param args: Variable length argument list passed to parent.
         :param kwargs: Arbitrary keyword arguments passed to parent.
         """
-        SICComponent.__init__(self, *args, **kwargs)
+        SICService.__init__(self, *args, **kwargs)
 
         self.session = qi.Session()
         self.session.connect("tcp://127.0.0.1:9559")
@@ -470,22 +471,17 @@ class PepperMotionStreamerService(SICComponent, NaoqiMotionTools):
                 self.output_message(PepperMotionStream(self.joints, angles, velocity))
 
                 time.sleep(1 / float(self.samples_per_second))
+                
+            self._stopped.set()
         except Exception as e:
             self.logger.exception(e)
             self.stop()
 
-    def stop(self, *args):
-        """
-        Stop the motion streamer and clean up resources.
-        
-        Closes the NAOqi session, stops the streaming thread, and performs
-        cleanup of parent components.
-        
-        :param args: Variable length argument list (unused).
-        """
-        self.session.close()
-        self._stopped.set()
-        super(PepperMotionStreamerService, self).stop()
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class PepperMotionStreamer(SICConnector):

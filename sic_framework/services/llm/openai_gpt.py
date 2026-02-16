@@ -136,12 +136,19 @@ class GPTComponent(SICService):
             )
             return output
 
-    def stop(self):
+    def stop(self, *args):
         """
         Stop the GPTComponent.
         """
-        self._stopped.set()
-        super(GPTComponent, self).stop()
+        super(GPTComponent, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            client = getattr(self, "client", None)
+            if client is not None and hasattr(client, "close"):
+                client.close()
+        except Exception:
+            pass
 
 
 class GPT(SICConnector):

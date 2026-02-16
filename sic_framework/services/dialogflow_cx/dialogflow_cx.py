@@ -20,7 +20,7 @@ from google.oauth2.service_account import Credentials
 from six.moves import queue
 
 from sic_framework import SICComponentManager
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
     AudioMessage,
@@ -212,7 +212,7 @@ class DialogflowCXConf(SICConfMessage):
             self.api_endpoint = api_endpoint
 
 
-class DialogflowCXComponent(SICComponent):
+class DialogflowCXComponent(SICService):
     """
     Dialogflow CX (Conversational Agents) Component for SIC Framework.
     
@@ -317,7 +317,7 @@ class DialogflowCXComponent(SICComponent):
             start_time = time.time()
 
             # Subsequent requests: stream audio chunks through query_input.audio
-            while not self.message_was_final.is_set():
+            while not self.message_was_final.is_set() and not self._signal_to_stop.is_set():
                 # Check timeout if configured
                 if self.params.timeout is not None:
                     if time.time() - start_time > self.params.timeout:
@@ -329,8 +329,11 @@ class DialogflowCXComponent(SICComponent):
                         self.message_was_final.set()
                         break
 
-                # Get next audio chunk from buffer
-                chunk = self.audio_buffer.get()
+                # Use a timeout so stop() can terminate promptly even if no audio arrives.
+                try:
+                    chunk = self.audio_buffer.get(timeout=0.1)
+                except queue.Empty:
+                    continue
 
                 # Ensure chunk is bytes
                 if isinstance(chunk, bytearray):
@@ -460,18 +463,26 @@ class DialogflowCXComponent(SICComponent):
         # Return empty result if no query result was received
         return QueryResult(type('obj', (object,), {'query_result': None})())
 
-    def stop(self):
+    def stop(self, *args):
         """Stop the component and clean up resources."""
+        # Signal any in-flight streaming iterator to stop producing requests.
         self.message_was_final.set()
         self.dialogflow_is_init = False
+        super(DialogflowCXComponent, self).stop(*args)
+
+    def _cleanup(self):
+        # Best-effort close of underlying client resources.
         try:
-            del self.session_client
-        except AttributeError:
+            client = getattr(self, "session_client", None)
+            if client is not None and hasattr(client, "close"):
+                client.close()
+        except Exception:
             pass
-        except Exception as e:
-            self.logger.error("Error deleting session client: {}".format(e))
-        self._stopped.set()
-        super(DialogflowCXComponent, self).stop()
+        try:
+            if hasattr(self, "session_client"):
+                del self.session_client
+        except Exception:
+            pass
 
 
 class DialogflowCX(SICConnector):

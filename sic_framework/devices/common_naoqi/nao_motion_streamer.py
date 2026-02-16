@@ -10,6 +10,7 @@ from sic_framework import (
 )
 from sic_framework.core.component_python2 import SICComponent
 from sic_framework.core.connector import SICConnector
+from sic_framework.core.service_python2 import SICService
 from sic_framework.devices.common_naoqi.common_naoqi_motion import NaoqiMotionTools
 
 if utils.PYTHON_VERSION_IS_2:
@@ -85,7 +86,7 @@ class NaoMotionStreamerConf(SICConfMessage):
         self.samples_per_second = samples_per_second
 
 
-class NaoqiMotionStreamerService(SICComponent, NaoqiMotionTools):
+class NaoqiMotionStreamerService(SICService, NaoqiMotionTools):
     """
     Stream NAOqi joint angles and process control requests.
 
@@ -99,7 +100,7 @@ class NaoqiMotionStreamerService(SICComponent, NaoqiMotionTools):
         :param Any args: Positional arguments passed to the component base.
         :param Any kwargs: Keyword arguments passed to the component base.
         """
-        SICComponent.__init__(self, *args, **kwargs)
+        SICService.__init__(self, *args, **kwargs)
 
         self.session = qi.Session()
         self.session.connect("tcp://127.0.0.1:9559")
@@ -221,9 +222,14 @@ class NaoqiMotionStreamerService(SICComponent, NaoqiMotionTools):
         :returns: None
         :rtype: None
         """
-        self.session.close()
-        self._stopped.set()
-        super(NaoqiMotionStreamerService, self).stop()
+        # Do not set `_stopped` here: it is set by the streaming thread when it exits.
+        super(NaoqiMotionStreamerService, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class NaoqiMotionStreamer(SICConnector):

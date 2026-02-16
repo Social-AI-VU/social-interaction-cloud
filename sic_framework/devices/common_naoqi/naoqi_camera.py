@@ -238,24 +238,20 @@ class BaseNaoqiCameraSensor(SICSensor):
             else:
                 raise e
 
-    def stop(self, *args):
+    def _cleanup(self):
         """
-        Stop the camera sensor by closing the NAOqi session and the component.
+        Release NAOqi camera resources after the sensor thread has stopped.
         """
-        self._signal_to_stop.set()
         try:
-            if hasattr(self, 'videoClient') and self.videoClient:
+            if hasattr(self, "videoClient") and self.videoClient:
                 self.video_service.unsubscribe(self.videoClient)
-        except Exception as e:
-            print("Error unsubscribing from camera: {}".format(e))
-        
+        except Exception:
+            pass
+
         try:
             self.session.close()
-        except Exception as e:
-            print("Error closing session: {}".format(e))
-            
-        self._stopped.set()
-        super(BaseNaoqiCameraSensor, self).stop(*args)
+        except Exception:
+            pass
 
 
 ##################

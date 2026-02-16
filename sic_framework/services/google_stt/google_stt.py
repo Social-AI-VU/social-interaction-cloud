@@ -169,7 +169,7 @@ class GoogleSpeechToTextComponent(SICService):
 
             start_time = self._redis.time()
 
-            while not self.message_was_final.is_set():
+            while not self.message_was_final.is_set() and not self._signal_to_stop.is_set():
                 if self.params.timeout != None:
                     if self._redis.time() - start_time > self.params.timeout:
                         self.logger.warning(
@@ -180,7 +180,11 @@ class GoogleSpeechToTextComponent(SICService):
                         self.message_was_final.set()
                         break
 
-                chunk = self.audio_buffer.get()
+                # Use a timeout so stop() can terminate promptly even if no audio arrives.
+                try:
+                    chunk = self.audio_buffer.get(timeout=0.1)
+                except queue.Empty:
+                    continue
 
                 if isinstance(chunk, bytearray):
                     chunk = bytes(chunk)
@@ -225,7 +229,9 @@ class GoogleSpeechToTextComponent(SICService):
 
         for response in responses:
             if self._signal_to_stop.is_set():
-                break
+                # Shutdown: ensure we still return a SICMessage reply to satisfy the
+                # Redis request-handler contract.
+                return RecognitionResult(dict())
 
             if not response.results:
                 continue
@@ -247,12 +253,24 @@ class GoogleSpeechToTextComponent(SICService):
                 self.message_was_final.set()
                 return RecognitionResult(result)
 
-    def stop(self):
+        # If the streaming iterator ended (or we broke out) without a final result,
+        # still return a valid SICMessage to avoid request-handler assertion errors.
+        return RecognitionResult(dict())
+
+    def stop(self, *args):
         """
         Stop the GoogleSpeechToTextComponent.
         """
-        self._stopped.set()
-        super(GoogleSpeechToTextComponent, self).stop()
+        self.message_was_final.set()
+        super(GoogleSpeechToTextComponent, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            client = getattr(self, "google_speech_client", None)
+            if client is not None and hasattr(client, "close"):
+                client.close()
+        except Exception:
+            pass
 
 class GoogleSpeechToText(SICConnector):
     """

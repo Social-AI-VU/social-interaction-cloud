@@ -123,18 +123,21 @@ class PepperTopTactileSensor(SICComponent):
         self.ids.append(id)
 
     def stop(self, *args):
-        """
-        Stop the sensor and clean up resources.
-        
-        Disconnects from NAOqi events and closes the session.
-        
-        :param args: Variable length argument list (unused).
-        """
-        for id in self.ids:
-            self.touch.signal.disconnect(id)
-        self.session.close()
+        # This component doesn't have a long-running worker loop, so mark it stopped
+        # immediately and let the base class run `_cleanup()`.
         self._stopped.set()
-        super(PepperTopTactileSensor, self).stop()
+        super(PepperTopTactileSensor, self).stop(*args)
+
+    def _cleanup(self):
+        try:
+            for id in self.ids:
+                self.touch.signal.disconnect(id)
+        except Exception:
+            pass
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class PepperTopTactile(SICConnector):

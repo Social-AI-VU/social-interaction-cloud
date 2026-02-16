@@ -355,11 +355,11 @@ class SICComponentManager(object):
         :param args: Additional arguments to pass to the stop method.
         :type args: tuple
         """
-        self.logger.info("Attempting to exit manager gracefully...")
-
         # prevent stopping the component manager multiple times
         if self.stop_event.is_set():
             return
+
+        self.logger.info("Attempting to exit manager gracefully...")
         
         self.stop_event.set()
 
@@ -499,12 +499,11 @@ class SICComponentManager(object):
             return SICPongMessage()
 
         if is_sic_instance(request, SICStopServerRequest):
-            self.stop_component_manager()
-            
-            if self._components_stopped.wait(timeout=self.stop_timeout):
-                return SICSuccessMessage()
-            else:
-                return SICFailureMessage("Component manager failed to stop within timeout")
+            # Reply immediately, then let the main serve loop perform shutdown.
+            # This avoids request timeouts caused by shutting down Redis/exiting
+            # before the request/reply cycle can complete.
+            self.stop_event.set()
+            return SICSuccessMessage()
         
         if is_sic_instance(request, SICStartComponentRequest):
             # reply to the request if the component manager can start the component

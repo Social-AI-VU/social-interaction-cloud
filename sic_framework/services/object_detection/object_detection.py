@@ -3,7 +3,7 @@ import time
 from ultralytics import YOLO
 
 from sic_framework.core.component_manager_python2 import SICComponentManager
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
     BoundingBox,
@@ -47,7 +47,7 @@ class ObjectDetectionConf(SICConfMessage):
 """
 Yolov11 object detection based on ultralytics: https://docs.ultralytics.com/tasks/detect/
 """
-class ObjectDetectionComponent(SICComponent):
+class ObjectDetectionComponent(SICService):
 
     def __init__(self, *args, **kwargs):
         super(ObjectDetectionComponent, self).__init__(*args, **kwargs)
@@ -61,8 +61,11 @@ class ObjectDetectionComponent(SICComponent):
         # Calculate sleep time based on frequency (Hz -> seconds)
         sleep_time = 1.0 / self.params.frequency if self.params.frequency > 0 else 0.01
 
-        while self._signal_to_stop.is_set() is False:
-            message = self.input_message_buffer.get()
+        while not self._signal_to_stop.is_set():
+            try:
+                message = self.input_message_buffer.get(timeout=0.1)
+            except queue.Empty:
+                continue
             bboxes = self.detect(message.image)
             self.output_message(bboxes)
             time.sleep(sleep_time)

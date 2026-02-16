@@ -145,7 +145,8 @@ class Naoqi(SICDeviceManager):
 
         self.stop_cmd = """
             echo 'Killing all previous robot wrapper processes';
-            pkill -f "python2 {robot_wrapper_file}.py"
+            # pkill returns 1 when no process matched; treat that as success.
+            pkill -f "python2 {robot_wrapper_file}.py" || true
         """.format(
             robot_wrapper_file=robot_wrapper_file
         )
@@ -233,15 +234,29 @@ class Naoqi(SICDeviceManager):
 
         Makes sure the process is killed and the device is stopped.
         """
+        # Mark that we're intentionally stopping the remote process so the
+        # SSH monitor thread doesn't report it as "unexpected".
+        try:
+            self.stop_event.set()
+        except Exception:
+            pass
+
         # send StopRequest to ComponentManager
         self._redis.request(self.device_ip, SICStopServerRequest())
 
         # make sure the process is killed
-        stdin, stdout, stderr = self.ssh_command(self.stop_cmd)
-        status = stdout.channel.recv_exit_status()
-        if status != 0:
+        stdin, stdout, stderr, status = self.ssh_command(self.stop_cmd)
+        # Some SSH servers/channels may not provide an exit status (-1). If there is
+        # no stderr output, treat it as a best-effort stop during shutdown.
+        err = ""
+        try:
+            err = stderr.read().decode("utf-8")
+        except Exception:
+            err = ""
+
+        if status not in (0, 1) and not (status == -1 and not err.strip()):
             self.logger.error("Failed to stop device, exit code: {status}".format(status=status))
-            self.logger.error(stderr.read().decode("utf-8"))
+            self.logger.error(err)
 
     def upload_file(self, local_path, remote_path):
         """

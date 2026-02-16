@@ -55,12 +55,16 @@ class DesktopSpeakersActuator(SICActuator):
         else:
             self.logger.warning("Expecting a message with a waveform attribute but received none")
 
-    def stop(self, *args):
-        super(DesktopSpeakersActuator, self).stop(*args)
+    def _cleanup(self):
         self.logger.info("Stopped speakers")
-
-        self.stream.close()
-        self.device.terminate()
+        try:
+            self.stream.close()
+        except Exception:
+            pass
+        try:
+            self.device.terminate()
+        except Exception:
+            pass
 
 
 class DesktopSpeakers(SICConnector):

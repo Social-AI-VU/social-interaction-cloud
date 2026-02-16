@@ -7,7 +7,7 @@ from numpy import array
 from sic_framework.core import sic_logging
 from sic_framework.core.utils_cv2 import draw_bbox_on_image
 from sic_framework.core.component_manager_python2 import SICComponentManager
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import (
     BoundingBox,
@@ -17,7 +17,6 @@ from sic_framework.core.message_python2 import (
     SICConfMessage,
     SICMessage,
 )
-from sic_framework.core.service_python2 import SICService
 
 
 class FaceDetectionConf(SICConfMessage):
@@ -38,7 +37,7 @@ class FaceDetectionConf(SICConfMessage):
         self.minH = minH
 
 
-class FaceDetectionComponent(SICComponent):
+class FaceDetectionComponent(SICService):
     def __init__(self, *args, **kwargs):
         super(FaceDetectionComponent, self).__init__(*args, **kwargs)
         script_dir = Path(__file__).parent.resolve()
@@ -69,7 +68,6 @@ class FaceDetectionComponent(SICComponent):
     def detect(self, image):
 
         if self._signal_to_stop.is_set():
-            self._stopped.set()
             # return the image as is
             return BoundingBoxesMessage([])
         
@@ -87,12 +85,11 @@ class FaceDetectionComponent(SICComponent):
 
         return BoundingBoxesMessage(faces)
 
-    def stop(self):
+    def stop(self, *args):
         """
         Stop the face detection component.
         """
-        self._stopped.set()
-        super(FaceDetectionComponent, self).stop()
+        super(FaceDetectionComponent, self).stop(*args)
 
 
 class FaceDetection(SICConnector):

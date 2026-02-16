@@ -37,6 +37,7 @@ from sic_framework.devices.common_pepper.pepper_left_bumper_sensor import (
 )
 from sic_framework.devices.device import SICLibrary
 from sic_framework.devices.naoqi_shared import *
+from sic_framework.core.exceptions import DeviceInstallationError
 
 # this is where dependency binaries are downloaded to on the Pepper machine
 _LIB_DIRECTORY = "/home/nao/sic_framework_2/social-interaction-cloud-main/lib"
@@ -177,6 +178,13 @@ class Pepper(Naoqi):
 
                     mkdir /home/nao/sic_framework_2;
                     cd /home/nao/sic_framework_2;
+                    
+                    # Ensure curl has a CA bundle available
+                    if [ ! -f /home/nao/cacert.pem ]; then
+                        curl -k -o /home/nao/cacert.pem https://curl.se/ca/cacert.pem;
+                    fi;
+                    echo 'cacert = "/home/nao/cacert.pem"' > ~/.curlrc;
+
                     curl -L -o sic_repo.zip https://github.com/Social-AI-VU/social-interaction-cloud/archive/refs/tags/v{version}.zip;
                     unzip sic_repo.zip;
                     mv social-interaction-cloud-{version} social-interaction-cloud-main;
@@ -192,7 +200,7 @@ class Pepper(Naoqi):
         )
 
         if not "SIC successfully installed" in stdout.read().decode():
-            raise Exception(
+            raise DeviceInstallationError(
                 "Failed to install sic. Standard error stream from install command: {}".format(
                     stderr.read().decode()
                 )
@@ -308,7 +316,7 @@ class Pepper(Naoqi):
             )
 
             if exit_status != 0:
-                raise RuntimeError("Failed to install social-interaction-cloud")
+                raise DeviceInstallationError("Failed to install social-interaction-cloud")
 
         if self.test_repo:
             self.logger.info("Installing test repo on Pepper")

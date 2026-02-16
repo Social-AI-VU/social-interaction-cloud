@@ -221,17 +221,11 @@ class NaoqiTabletComponent(SICComponent):
         except Exception as exc:
             raise RuntimeError("Failed to clear tablet display: {}".format(exc))
 
-    def stop(self, *args):
-        """
-        Stop the component and clean up resources.
-        
-        Closes the NAOqi session.
-        
-        :param args: Variable length argument list (unused).
-        """
-        self.session.close()
-        self._stopped.set()
-        super(NaoqiTabletComponent, self).stop()
+    def _cleanup(self):
+        try:
+            self.session.close()
+        except Exception:
+            pass
 
 
 class NaoqiTablet(SICConnector):

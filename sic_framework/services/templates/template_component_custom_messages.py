@@ -1,5 +1,5 @@
 from sic_framework import SICComponentManager, SICConfMessage, SICMessage, SICRequest
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
 
 
@@ -39,7 +39,7 @@ class DummyOutputMessage(SICMessage):
         super(SICMessage, self).__init__()
 
 
-class ExampleComponent(SICComponent):
+class ExampleComponent(SICService):
     """
     Dummy SICAction
     """
