@@ -200,8 +200,6 @@ class EISComponent(SICComponent):
             self._handle_start_listening_command()
         elif content.startswith("stopListening"):
             self._handle_stop_listening_command()
-        elif content.startswith("renderPage"):
-            self._handle_render_page_command(content)
         else:
             self.logger.info("Unknown command: " + content)
 
@@ -321,13 +319,6 @@ class EISComponent(SICComponent):
         # Inform MARBEL agent that Dialogflow stopped listening
         self.redis_client.publish(
             self.marbel_channel, "event('ListeningDone')")
-
-    def _handle_render_page_command(self, html):
-        """"Used for implementing OLD MARBEL action 'renderPage' TODO: needs updating"""
-        # the HTML file to be rendered
-        web_url = f"http://{self.your_ip}:{self.port}/{html}"
-        self.web_server.send_message(HtmlMessage(text="", html=html))
-        self.logger.info("Open the web page at " + web_url)
 
     def on_request(self, request):
         """"

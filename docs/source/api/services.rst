@@ -60,7 +60,7 @@ Speech Services
 Web Services
 ------------
 
-.. automodule:: sic_framework.services.webserver.webserver_component
+.. automodule:: sic_framework.services.webserver.webserver_service
    :members:
    :undoc-members:
    :show-inheritance:
