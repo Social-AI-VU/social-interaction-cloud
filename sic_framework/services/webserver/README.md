@@ -100,6 +100,27 @@ The server uses a small set of stable Socket.IO events:
 - **`sic/button_clicked`** *(client → server)*:
   - payload: any (string or object); forwarded to the app as a `ButtonClicked(button=<payload>)`.
 
+## How to load the Socket.IO client
+
+Use the Socket.IO client script served by the running SIC webserver:
+
+```html
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  socket.on("connect", () => console.log("connected", socket.id));
+  socket.on("connect_error", (err) => console.error(err.message));
+</script>
+```
+
+### Important notes
+
+- Prefer `"/socket.io/socket.io.js"` over manually bundled copies. It matches the server protocol version and avoids common Engine.IO mismatch errors.
+- If your page shows `Socket.IO client failed to load`, first open this URL directly in your browser:
+  - `http://localhost:<port>/socket.io/socket.io.js`
+- If you configure `WebserverConf(static_dir=...)`, that only affects `/static/...` paths. It does **not** replace `/socket.io/socket.io.js`.
+- If your app loads the client from `/static/js/socket.io.min.js`, make sure that file actually exists in the configured `static_dir`.
+
 ### Client example (sending a click)
 
 ```html
