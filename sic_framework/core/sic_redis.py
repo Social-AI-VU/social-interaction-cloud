@@ -390,7 +390,7 @@ class SICRedisConnection:
 
             if not done.is_set():
                 raise TimeoutError(
-                    "Waiting for reply to {} to request timed out".format(
+                    "Waiting for reply to {} timed out".format(
                         request.get_message_name()
                     )
                 )

@@ -181,3 +181,57 @@ conf = WebserverConf(
 - **Template pages**: you may allowlist extra template routes via `pages={"/vote": "vote.html"}`.
 - **Tunnel**: enable with `tunnel_enable=True` (requires `cloudflared` or `ngrok` installed). The public URL is surfaced via `/api/tunnel` and included in `sic/state`.
 
+### Installing tunnel tools (`ngrok` / `cloudflared`)
+
+You only need **one** tunneling tool. Both options are free for basic use.
+
+#### Option A: `cloudflared` (Cloudflare Tunnel)
+
+- **macOS (Homebrew)**
+  - Install: `brew install cloudflared`
+  - Verify: `cloudflared --version`
+- **macOS (no Homebrew)**
+  - Download the latest `cloudflared` binary for macOS from the Cloudflare downloads page (`https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/`).
+  - Make it executable and move it somewhere on your `PATH`, for example:
+    - `chmod +x ~/Downloads/cloudflared`
+    - `sudo mv ~/Downloads/cloudflared /usr/local/bin/cloudflared`
+  - Verify: `cloudflared --version`
+- **Windows**
+  - Download the Windows installer (`.msi`) from the same Cloudflare downloads page.
+  - Run the installer and follow the prompts.
+  - Open *Command Prompt* or *PowerShell* and verify: `cloudflared --version`
+- **Linux (Debian/Ubuntu)**
+  - `curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null`
+  - `echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflared.list`
+  - `sudo apt update && sudo apt install -y cloudflared`
+  - Verify: `cloudflared --version`
+- **Linux (generic)**
+  - Download the appropriate binary (or `.deb`/`.rpm`) from the Cloudflare downloads page.
+  - Install via your package manager or mark the binary as executable and place it on your `PATH`.
+
+Once installed, you usually do **not** need to start `cloudflared` manually; the SIC webserver will invoke it when `tunnel_enable=True` (see application demo configs for details).
+
+#### Option B: `ngrok`
+
+- **Create an ngrok account**
+  - Go to `https://ngrok.com` and sign up (free tier is sufficient).
+  - Copy your **authtoken** from the ngrok dashboard.
+- **macOS**
+  - With Homebrew: `brew install ngrok/ngrok/ngrok`
+  - Or download the macOS archive from `https://ngrok.com/download` and place `ngrok` on your `PATH`.
+  - Verify: `ngrok version`
+- **Windows**
+  - Download the Windows zip from `https://ngrok.com/download`.
+  - Extract `ngrok.exe` and place it in a folder on your `PATH` (e.g. `C:\Users\<you>\AppData\Local\Programs\ngrok` or similar).
+  - In *Command Prompt* or *PowerShell*: `ngrok version`
+- **Linux**
+  - Download the Linux archive from `https://ngrok.com/download`.
+  - Extract the `ngrok` binary and move it to a directory on your `PATH`, e.g.:
+    - `unzip ngrok-v3-*.zip`
+    - `sudo mv ngrok /usr/local/bin/ngrok`
+  - Verify: `ngrok version`
+- **Configure your authtoken (all OSes)**
+  - Run: `ngrok config add-authtoken <YOUR_AUTHTOKEN>`
+
+As with `cloudflared`, the SIC webserver will handle starting `ngrok` when `tunnel_enable=True` and the ngrok binary is on your `PATH`.
+

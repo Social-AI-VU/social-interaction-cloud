@@ -172,47 +172,12 @@ class SICApplication(object):
             self.logger.info("Setting shutdown event")
             self.shutdown_event.set()
 
+        # First stop devices (which stops their remote component managers and their components).
         devices_to_stop = list(self._active_devices)
-        device_ips = set([getattr(d, "device_ip", None) for d in devices_to_stop if getattr(d, "device_ip", None)])
-
-        connectors_to_stop = list(self._active_connectors)
-        device_connectors = []
-        other_connectors = []
-        for c in connectors_to_stop:
-            c_ip = getattr(c, "component_ip", None)
-            if c_ip and c_ip in device_ips:
-                device_connectors.append(c)
-            else:
-                other_connectors.append(c)
-
-        # Stop device-owned connectors first while the remote manager is still alive.
-        self.logger.info(
-            "Stopping components (found {count} components)".format(
-                count=len(connectors_to_stop)
-            )
-        )
-        stopped = set()
-        for i, connector in enumerate(device_connectors):
-            connector_name = getattr(connector, "component_endpoint", "unknown")
-            self.logger.info(
-                "Stopping component {i}/{total}: {name}".format(
-                    i=i + 1, total=len(device_connectors), name=connector_name
-                )
-            )
-            try:
-                connector.stop_component()
-            except Exception as e:
-                self.logger.warning(
-                    "Warning: Error stopping component {name}: {e}".format(
-                        name=connector_name, e=e
-                    )
-                )
-            stopped.add(connector)
-
-        # Then stop devices (which stops their remote component manager).
         self.logger.info("Stopping devices")
         for device in devices_to_stop:
             try:
+                self.logger.info("Stopping device {}".format(getattr(device, "name", getattr(device, "device_ip", "unknown"))))
                 device.stop_device()
             except Exception as e:
                 self.logger.error(
@@ -224,14 +189,18 @@ class SICApplication(object):
                     )
                 )
 
-        # Finally stop any remaining connectors.
-        for i, connector in enumerate(other_connectors):
-            if connector in stopped:
-                continue
+        # Then stop any remaining connectors that are still alive (i.e. standalone AI services)
+        connectors_to_stop = list(self._active_connectors)
+        self.logger.info(
+            "Stopping components (found {count} components)".format(
+                count=len(connectors_to_stop)
+            )
+        )
+        for i, connector in enumerate(connectors_to_stop):
             connector_name = getattr(connector, "component_endpoint", "unknown")
             self.logger.info(
                 "Stopping component {i}/{total}: {name}".format(
-                    i=i + 1, total=len(other_connectors), name=connector_name
+                    i=i + 1, total=len(connectors_to_stop), name=connector_name
                 )
             )
             try:

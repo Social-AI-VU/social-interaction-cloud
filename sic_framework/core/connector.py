@@ -87,6 +87,7 @@ class SICConnector(object):
 
         self._callback_threads = []
         self._conf = conf
+        self._stopped = False
 
         # make sure we can start the component and ping it
         try:
@@ -179,7 +180,9 @@ class SICConnector(object):
         """
         Send a StopComponentRequest to the respective ComponentManager, called on exit.
         """
-
+        if self._stopped:
+            return
+            
         self.logger.debug("Connector sending StopComponentRequest to ComponentManager")
         stop_result = self._redis.request(
             self.component_ip,
@@ -197,6 +200,8 @@ class SICConnector(object):
         self.logger.debug("Closing callback threads")
         for ct in self._callback_threads[:]:
             self._redis.unregister_callback(ct)
+        
+        self._stopped = True
 
 
     def get_input_channel(self):
@@ -241,7 +246,6 @@ class SICConnector(object):
             ),
         )
 
-        ephemeral = bool(getattr(self._conf, "ephemeral", False)) if self._conf is not None else False
         component_request = SICStartComponentRequest(
             component_name=self.component_class.get_component_name(),
             endpoint=self.component_endpoint,
@@ -250,7 +254,6 @@ class SICConnector(object):
             request_reply_channel=self.request_reply_channel,
             client_id=self.app.client_ip,
             conf=self._conf,
-            ephemeral=ephemeral,
         )
 
         try:

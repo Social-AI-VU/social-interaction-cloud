@@ -42,8 +42,16 @@ class Desktop(SICDeviceManager):
         global desktop_active
 
         if not desktop_active:
-            # Create manager in main thread
-            self.manager = SICComponentManager(desktop_component_list, client_id=utils.get_ip_adress(), auto_serve=False, name="Desktop")
+            # Create manager in main thread, but mark it as non-main-thread
+            # for shutdown purposes so it doesn't call os._exit(0) when embedded.
+            self.manager = SICComponentManager(
+                desktop_component_list,
+                client_id=utils.get_ip_adress(),
+                auto_serve=False,
+                name="Desktop",
+            )
+            # Prevent this embedded manager from force-exiting the whole process.
+            self.manager.is_main_thread = False
             
             def managed_serve():
                 try:
@@ -88,6 +96,10 @@ class Desktop(SICDeviceManager):
     @property
     def spacemouse(self):
         return self._get_connector(DesktopSpaceMouse)
+
+    @property
+    def all_components(self):
+        return [self.camera, self.mic, self.speakers, self.tts, self.spacemouse]
 
 desktop_component_list = [
     DesktopMicrophoneSensor,

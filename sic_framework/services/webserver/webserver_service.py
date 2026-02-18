@@ -64,7 +64,6 @@ class WebserverConf(SICConfMessage):
         static_url_path: str = "/static",
         ssl_cert: str = None,
         ssl_key: str = None,
-        ephemeral: bool = False,
         # Pages registry: route -> template name (rendered via Jinja).
         pages: Optional[Dict[str, str]] = None,
         # Extension loading: list of import specs like "pkg.module:ExtensionClass".
@@ -86,7 +85,7 @@ class WebserverConf(SICConfMessage):
         :param ssl_cert: Path to SSL certificate file (optional).
         :param ssl_key: Path to SSL private key file (optional).
         """
-        super(WebserverConf, self).__init__(ephemeral=ephemeral)
+        super(WebserverConf, self).__init__()
         self.host = host
         self.port = port
         self.templates_dir = templates_dir
@@ -429,7 +428,7 @@ class WebserverComponent(SICService):
         # Only accept URLs that look like actual public tunnel endpoints.
         url_regex = re.compile(r"(https?://[^\s]+)")
         trycloudflare_regex = re.compile(r"(https?://[a-z0-9-]+\.trycloudflare\.com)", re.IGNORECASE)
-        ngrok_regex = re.compile(r"(https?://[a-z0-9-]+\.(?:ngrok-free\.app|ngrok\.app|ngrok\.io))", re.IGNORECASE)
+        ngrok_regex = re.compile(r"(https?://[a-z0-9-]+\.(?:ngrok-free\.app|ngrok\.app|ngrok\.io|ngrok-free\.dev))", re.IGNORECASE)
         try:
             assert self._tunnel_process.stdout is not None
             for line in self._tunnel_process.stdout:
@@ -690,7 +689,7 @@ class Webserver(SICConnector):
 
 
 def main():
-    SICComponentManager([WebserverComponent])
+    SICComponentManager([WebserverComponent], name="Webserver")
 
 
 if __name__ == "__main__":

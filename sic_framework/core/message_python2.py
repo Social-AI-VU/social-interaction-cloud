@@ -347,11 +347,9 @@ class SICConfMessage(SICMessage):
     A type of message that carries configuration information for services.
     """
 
-    def __init__(self, ephemeral=False):
-        # If True, the ComponentManager should treat the component as session-scoped
-        # and allow creating a fresh instance on subsequent starts (instead of reusing
-        # long-lived in-memory state).
-        self.ephemeral = bool(ephemeral)
+    def __init__(self):
+        # Plain configuration message; lifecycle is managed by the application.
+        pass
 
 
 class SICRequest(SICMessage):
