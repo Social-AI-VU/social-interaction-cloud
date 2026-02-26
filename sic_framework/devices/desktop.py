@@ -97,9 +97,6 @@ class Desktop(SICDeviceManager):
     def spacemouse(self):
         return self._get_connector(DesktopSpaceMouse)
 
-    @property
-    def all_components(self):
-        return [self.camera, self.mic, self.speakers, self.tts, self.spacemouse]
 
 desktop_component_list = [
     DesktopMicrophoneSensor,

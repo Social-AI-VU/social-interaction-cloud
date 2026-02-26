@@ -173,14 +173,13 @@ class WebserverComponent(SICService):
             ]
         # Enable server-side Socket.IO/Engine.IO logs so common client mismatches
         # (e.g., outdated Socket.IO JS -> EIO=3) are visible in the component logs.
-        logging.getLogger("engineio").setLevel(logging.INFO)
-        logging.getLogger("socketio").setLevel(logging.INFO)
+        socket_logger = self.logger  # SIC logger (a logging.Logger)
         self.socketio = SocketIO(
             self.app,
             async_mode="threading",
             cors_allowed_origins=cors_allowed_origins,
-            logger=True,
-            engineio_logger=True,
+            logger=False,
+            engineio_logger=False,
         )
 
         # Internal state
