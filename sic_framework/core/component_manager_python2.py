@@ -492,7 +492,7 @@ class SICComponentManager(object):
                     ),
                     extra={"client_id": client_id}
                 )
-                return SICIgnoreRequestMessage()
+                return None
         
         if is_sic_instance(request, SICStopComponentRequest):
             # reply to the request if the component manager can stop the component
@@ -512,4 +512,5 @@ class SICComponentManager(object):
                     ),
                     extra={"client_id": client_id}
                 )
-                return SICIgnoreRequestMessage()
+                # Return None so no reply is sent; the manager that owns this component will reply.
+                return None

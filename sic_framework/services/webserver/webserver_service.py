@@ -125,8 +125,8 @@ class WebserverComponent(SICService):
         if not os.path.exists(static_folder):
              self.logger.warning(f"Static directory not found: {static_folder}")
 
-        self.logger.info(f"Templates: {template_folder}")
-        self.logger.info(f"Static: {static_folder}")
+        self.logger.debug(f"Templates: {template_folder}")
+        self.logger.debug(f"Static: {static_folder}")
 
         # 2. Flask & SocketIO Setup
         self.app = Flask(
@@ -156,7 +156,7 @@ class WebserverComponent(SICService):
             fsio_v = importlib.metadata.version("Flask-SocketIO")
         except Exception:
             fsio_v = "unknown"
-        self.logger.info(f"Socket.IO versions: Flask-SocketIO={fsio_v}, python-socketio={sio_v}, python-engineio={eio_v}")
+        self.logger.debug(f"Socket.IO versions: Flask-SocketIO={fsio_v}, python-socketio={sio_v}, python-engineio={eio_v}")
 
         # Initialize SocketIO (async_mode='threading' is usually safest for integration)
         cors_allowed_origins = getattr(self.params, "cors_allowed_origins", None)
@@ -434,7 +434,7 @@ class WebserverComponent(SICService):
                 line = line.strip()
                 if not line:
                     continue
-                self.logger.info(f"[tunnel] {line}")
+                self.logger.debug(f"[tunnel] {line}")
 
                 if self.public_url is None:
                     candidate = None
@@ -579,7 +579,7 @@ class WebserverComponent(SICService):
             data = request.get_json(silent=True)
             if data is None:
                 data = request.form.to_dict() if request.form else {}
-            self.logger.info(f"API button click: {data}")
+            self.logger.debug(f"API button click: {data}")
             self.output_message(ButtonClicked(button=data))
             return ("", 204)
 
@@ -609,7 +609,7 @@ class WebserverComponent(SICService):
         
         @self.socketio.on("connect")
         def handle_connect():
-            self.logger.info("Client connected")
+            self.logger.debug("Client connected")
             with self._state_lock:
                 transcript = self.transcript
                 webinfo = dict(self._latest_webinfo)
@@ -619,11 +619,11 @@ class WebserverComponent(SICService):
 
         @self.socketio.on("disconnect")
         def handle_disconnect():
-            self.logger.info("Client disconnected")
+            self.logger.debug("Client disconnected")
 
         @self.socketio.on(self.EVENT_BUTTON_CLICKED)
         def handle_button_namespaced(data):
-            self.logger.info(f"Button clicked (namespaced): {data}")
+            self.logger.debug(f"Button clicked (namespaced): {data}")
             self.output_message(ButtonClicked(button=data))
 
     def stop(self, *args):
@@ -662,7 +662,7 @@ class WebserverComponent(SICService):
         
         if is_sic_instance(message, HtmlMessage):
             if message.html:
-                self.logger.info("Received HTML update request.")
+                self.logger.debug("Received HTML update request.")
                 self.socketio.emit(self.EVENT_HTML, {"html": message.html})
 
         elif is_sic_instance(message, TranscriptMessage):
@@ -673,13 +673,13 @@ class WebserverComponent(SICService):
             self.socketio.emit(self.EVENT_TRANSCRIPT, {"transcript": transcript})
 
         elif is_sic_instance(message, WebInfoMessage):
-            self.logger.info(f"WebInfo {message.label}: {message.message}")
+            self.logger.debug(f"WebInfo {message.label}: {message.message}")
             with self._state_lock:
                 self._latest_webinfo[message.label] = message.message
             self.socketio.emit(self.EVENT_WEBINFO, {"label": message.label, "message": message.message})
 
         elif is_sic_instance(message, SetTurnMessage):
-            self.logger.info(f"SetTurn: {message.user_turn}")
+            self.logger.debug(f"SetTurn: {message.user_turn}")
             self.socketio.emit(self.EVENT_TURN, {"user_turn": message.user_turn})
 
 

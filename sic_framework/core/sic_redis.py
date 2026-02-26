@@ -414,14 +414,15 @@ class SICRedisConnection:
         def wrapped_callback(request):
             if is_sic_instance(request, SICRequest):
                 reply = callback(request)
-
+                # None means "no reply" (e.g. another manager will handle it when multiple managers share a channel).
+                if reply is None:
+                    return
                 assert not is_sic_instance(reply, SICRequest) and is_sic_instance(
                     reply, SICMessage
                 ), (
                     "Request handler callback must return a SICMessage but not SICRequest, "
                     "received: {}".format(type(reply))
                 )
-
                 self._reply(channel, request, reply)
 
         return self.register_message_handler(
