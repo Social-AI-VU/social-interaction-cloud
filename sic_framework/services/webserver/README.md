@@ -81,7 +81,6 @@ Your `webfiles/` should contain at least an `index.html` (served at `/`).
 - **`GET /api/webinfo/<label>`**: polling endpoint for the latest `WebInfoMessage` value for `label`.
 - **`POST /api/buttonClick`**: sends a `ButtonClicked` SIC message to the application callback.
 - **`GET /api/tunnel`**: reports tunnel status/url (if tunnel support is enabled).
-- **`GET /api/qr?data=...`**: returns a QR PNG encoding the provided data string.
 
 ## Socket.IO contract (namespaced)
 
@@ -102,32 +101,51 @@ The server uses a small set of stable Socket.IO events:
 
 ## How to load the Socket.IO client
 
-Use the Socket.IO client script served by the running SIC webserver:
+Most demos load the official Socket.IO v4 client from the CDN and then call `io()` to connect back to the SIC webserver:
 
 ```html
-<script src="/socket.io/socket.io.js"></script>
+<!-- Load Socket.IO v4 client from CDN (Engine.IO v4, compatible with this server) -->
+<script
+  src="https://cdn.socket.io/4.7.5/socket.io.min.js"
+  crossorigin="anonymous"
+></script>
+
 <script>
+  // Create a Socket.IO connection to the same origin that served the page.
+  // The SIC webserver is already configured with Socket.IO (EIO=4).
   const socket = io();
-  socket.on("connect", () => console.log("connected", socket.id));
-  socket.on("connect_error", (err) => console.error(err.message));
+
+  socket.on("connect", () => {
+    console.log("Connected to SIC webserver:", socket.id);
+  });
+
+  socket.on("connect_error", (err) => {
+    const msg = err && err.message ? err.message : String(err || "connect_error");
+    console.error("Socket.IO connect_error:", msg);
+  });
 </script>
 ```
 
 ### Important notes
 
-- Prefer `"/socket.io/socket.io.js"` over manually bundled copies. It matches the server protocol version and avoids common Engine.IO mismatch errors.
-- If your page shows `Socket.IO client failed to load`, first open this URL directly in your browser:
-  - `http://localhost:<port>/socket.io/socket.io.js`
-- If you configure `WebserverConf(static_dir=...)`, that only affects `/static/...` paths. It does **not** replace `/socket.io/socket.io.js`.
-- If your app loads the client from `/static/js/socket.io.min.js`, make sure that file actually exists in the configured `static_dir`.
+- Use Socket.IO **v3 or v4** on the frontend. The webserver is configured for Engine.IO protocol **4**; older v2 clients (EIO=3) will be rejected with a clear error in the server logs.
+- The server’s CORS guard logs the requested Engine.IO version (`EIO` query parameter) and origin. If you see a `"unsupported_engineio_version"` error, update your client bundle to v3/v4 or switch to the CDN URL above.
+- Calling `io()` with no arguments connects back to the same origin (scheme + host + port) as the page, which is exactly where the SIC webserver listens in the demos.
+- If you need to run without external network access, you can serve your own `socket.io.min.js` from your `static_dir`, but make sure it is a v3/v4 build that matches Engine.IO 4.
 
 ### Client example (sending a click)
 
 ```html
-<script src="/socket.io/socket.io.js"></script>
+<script
+  src="https://cdn.socket.io/4.7.5/socket.io.min.js"
+  crossorigin="anonymous"
+></script>
 <script>
   const socket = io();
+
+  // Send a button click to the backend; the app receives a ButtonClicked(button=...) message.
   socket.emit("sic/button_clicked", { action: "dance" });
+
   socket.on("sic/transcript", (p) => console.log(p.transcript));
   socket.on("sic/webinfo", (p) => console.log(p.label, p.message));
   socket.on("sic/turn", (p) => console.log("user_turn:", p.user_turn));
