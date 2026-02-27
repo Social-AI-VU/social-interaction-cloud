@@ -529,51 +529,6 @@ class WebserverComponent(SICService):
                 }
             )
 
-        @self.app.route("/api/qr", methods=["GET"])
-        def api_qr():
-            """
-            Generate a QR code PNG for the provided data or latest WebInfo label.
-
-            Query params:
-              - data: string to encode (preferred)
-              - label: key in latest webinfo dict (fallback)
-              - scale: integer scale factor (optional, default 6)
-            """
-            data = request.args.get("data", default=None, type=str)
-            if not data:
-                label = request.args.get("label", default=None, type=str)
-                if label:
-                    with self._state_lock:
-                        val = self._latest_webinfo.get(label)
-                    if val is not None:
-                        data = str(val)
-
-            if not data:
-                return jsonify({"error": "missing data"}), 400
-
-            try:
-                import qrcode  # type: ignore
-            except Exception:
-                return jsonify({"error": "missing python package: qrcode"}), 503
-
-            scale = request.args.get("scale", default=6, type=int)
-            if scale < 1:
-                scale = 1
-            if scale > 20:
-                scale = 20
-
-            try:
-                qr = qrcode.QRCode(box_size=scale, border=2)
-                qr.add_data(data)
-                qr.make(fit=True)
-                img = qr.make_image(fill_color="black", back_color="white")
-                buf = BytesIO()
-                img.save(buf, format="PNG")
-                buf.seek(0)
-                return send_file(buf, mimetype="image/png", download_name="qr.png", max_age=0)
-            except Exception as e:
-                return jsonify({"error": f"qr generation failed: {e}"}), 500
-
         @self.app.route("/api/buttonClick", methods=["POST"])
         def api_button_click():
             data = request.get_json(silent=True)
