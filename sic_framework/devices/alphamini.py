@@ -15,6 +15,10 @@ from sic_framework.devices.common_mini.mini_animation import (
     MiniAnimation,
     MiniAnimationActuator,
 )
+from sic_framework.devices.common_mini.mini_camera import (
+    MiniCamera,
+    MiniCameraSensor,
+)
 from sic_framework.devices.common_mini.mini_microphone import (
     MiniMicrophone,
     MiniMicrophoneSensor,
@@ -38,6 +42,7 @@ class Alphamini(SICDeviceManager):
         port=8022,
         mic_conf=None,
         speaker_conf=None,
+        camera_conf=None,
         dev_test=False,
         test_repo=None,
         bypass_install=False,
@@ -89,6 +94,7 @@ class Alphamini(SICDeviceManager):
         self.logger.info("SIC version on your local machine: {version}".format(version=self.sic_version))
         self.configs[MiniMicrophone] = mic_conf
         self.configs[MiniSpeaker] = speaker_conf
+        self.configs[MiniCamera] = camera_conf
 
         if self.dev_test:
             self.create_test_environment()
@@ -113,6 +119,10 @@ class Alphamini(SICDeviceManager):
     @property
     def animation(self):
         return self._get_connector(MiniAnimation)
+
+    @property
+    def camera(self):
+        return self._get_connector(MiniCamera)
 
     def install_ssh(self):
         # Updating the package manager
@@ -328,7 +338,7 @@ class Alphamini(SICDeviceManager):
                 source ~/.test_venv/bin/activate;
 
                 # install required packages and perform a clean sic installation
-                pip install redis six pyaudio alphamini websockets==13.1 protobuf==3.20.3
+                pip install PyTurboJPEG redis six pyaudio alphamini websockets==13.1 protobuf==3.20.3
                 """
             )
 
@@ -554,6 +564,7 @@ mini_component_list = [
     MiniMicrophoneSensor,
     MiniSpeakerComponent,
     MiniAnimationActuator,
+    MiniCameraSensor,
 ]
 # mini_component_list = [MiniSpeakerComponent, MiniAnimationActuator]
 
