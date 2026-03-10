@@ -100,6 +100,10 @@ class LLMRequest(SICRequest):
         model: str | None = None,
         temp: float | None = None,
         max_tokens: int | None = None,
+        response_format: dict | None = None,
+        stream: bool = False,
+        role_messages: list[dict] | None = None,
+        image_urls: list[str] | None = None,
     ):
         """  
         :param prompt: The main text prompt to send to the LLM model
@@ -116,6 +120,10 @@ class LLMRequest(SICRequest):
         self.model = model
         self.temp = temp
         self.max_tokens = max_tokens
+        self.response_format = response_format
+        self.stream = stream
+        self.role_messages = role_messages or []
+        self.image_urls = image_urls or []
 
 
 class GPTRequest(LLMRequest):
