@@ -1,0 +1,349 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Writing Docstrings in reStructuredText (reST) &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Feature Requests" href="feature_requests.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../contributions.html">Contribution</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="feature_requests.html">Feature Requests</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Writing Docstrings in reStructuredText (reST)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#core-principles">Core principles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-docstring-template">Module docstring template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#function-docstring-template">Function docstring template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#class-docstring-template">Class docstring template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#common-sections-and-fields">Common sections and fields</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#crossreferences-and-inline-markup">Cross‑references and inline markup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#admonitions">Admonitions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#formatting-rules-and-tips">Formatting rules and tips</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#quick-copypaste-templates">Quick copy‑paste templates</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../contributions.html">Contribution</a></li>
+      <li class="breadcrumb-item active">Writing Docstrings in reStructuredText (reST)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/contributions/writing_docstrings_in_reST.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="writing-docstrings-in-restructuredtext-rest">
+<h1>Writing Docstrings in reStructuredText (reST)<a class="headerlink" href="#writing-docstrings-in-restructuredtext-rest" title="Link to this heading"></a></h1>
+<p>This guide explains how to write high‑quality Python docstrings using
+reStructuredText (reST) so they render well with Sphinx and are picked up by
+<code class="docutils literal notranslate"><span class="pre">autodoc</span></code>. The guidelines apply to both Python 2 and Python 3 code in this
+repository.</p>
+<p>For more information, please refer to the <a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html">Sphinx documentation</a> .</p>
+<section id="core-principles">
+<h2>Core principles<a class="headerlink" href="#core-principles" title="Link to this heading"></a></h2>
+<p>For module, class, and function docstrings, follow these core principles:</p>
+<ul class="simple">
+<li><p>Write a short, imperative summary line on the first line, ending with a period.</p></li>
+<li><p>Leave one blank line after the summary, then provide details.</p></li>
+<li><dl class="simple">
+<dt><strong>Give an example usage if helpful</strong></dt><dd><ul>
+<li><p>You don’t need to go crazy here, only if it’s really helpful or necessary.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>For class and moreso function docstrings, follow these additional principles:</p>
+<ul class="simple">
+<li><p>Document parameters, return values, and raised exceptions using Sphinx field lists.</p></li>
+<li><p>Include explicit types in docstrings (<code class="docutils literal notranslate"><span class="pre">:type:</span></code> for parameter types, <code class="docutils literal notranslate"><span class="pre">:rtype:</span></code> for return types) to support modules
+without type annotations.</p></li>
+</ul>
+</section>
+<section id="module-docstring-template">
+<h2>Module docstring template<a class="headerlink" href="#module-docstring-template" title="Link to this heading"></a></h2>
+<p>Every Python module should start with a docstring describing its purpose and contents:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Brief one-line summary of the module.</span>
+
+<span class="sd">Extended description that explains the module&#39;s purpose, key concepts,</span>
+<span class="sd">and any important notes about usage. Can be multiple paragraphs.</span>
+
+<span class="sd">Example:</span>
+<span class="sd">    &gt;&gt;&gt; from mymodule import MyClass</span>
+<span class="sd">    &gt;&gt;&gt; obj = MyClass()</span>
+<span class="sd">    &gt;&gt;&gt; obj.my_method()</span>
+<span class="sd">    42</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>The module docstring should:</p>
+<ul class="simple">
+<li><p>Start with a one-line summary that fits on a single line</p></li>
+<li><p>Leave one blank line after the summary</p></li>
+<li><p>Provide an extended description of the module’s purpose and contents</p></li>
+<li><p>Include example usage if helpful</p></li>
+<li><p>Document any important module-level variables or constants</p></li>
+<li><p>List any required third-party imports</p></li>
+<li><p>Note any important limitations or caveats</p></li>
+</ul>
+<p>For example, this is a good module docstring:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Utilities for working with vector data in machine learning applications.</span>
+
+<span class="sd">This module provides functions for common vector operations like normalization,</span>
+<span class="sd">distance calculations, and similarity metrics. All functions support both</span>
+<span class="sd">Python lists and NumPy arrays as input.</span>
+
+<span class="sd">The implementations prioritize numerical stability over performance. For</span>
+<span class="sd">high-performance applications, consider using optimized libraries like NumPy</span>
+<span class="sd">directly.</span>
+
+<span class="sd">Required dependencies:</span>
+<span class="sd">    - numpy &gt;= 1.15.0</span>
+<span class="sd">    - scipy &gt;= 1.3.0</span>
+
+<span class="sd">Example:</span>
+<span class="sd">    &gt;&gt;&gt; from vectors import normalize, cosine_similarity</span>
+<span class="sd">    &gt;&gt;&gt; a = [1.0, 2.0, 3.0]</span>
+<span class="sd">    &gt;&gt;&gt; b = normalize(a)</span>
+<span class="sd">    &gt;&gt;&gt; cosine_similarity(a, b)</span>
+<span class="sd">    1.0</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="function-docstring-template">
+<h2>Function docstring template<a class="headerlink" href="#function-docstring-template" title="Link to this heading"></a></h2>
+<p>Give a short summary of the function’s purpose and its parameters and return values.</p>
+<p>For example, this is a good function docstring:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">normalize_vector</span><span class="p">(</span><span class="n">vector</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Normalize a 1D numeric vector to unit length.</span>
+
+<span class="sd">    :param vector: Input vector.</span>
+<span class="sd">    :type vector: list[float] | numpy.ndarray</span>
+<span class="sd">    :param eps: Small constant to avoid division by zero.</span>
+<span class="sd">    :type eps: float</span>
+<span class="sd">    :returns: Normalized vector with L2 norm equal to 1.</span>
+<span class="sd">    :rtype: list[float] | numpy.ndarray</span>
+<span class="sd">    :raises ValueError: If ``vector`` is empty.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; normalize_vector([3.0, 4.0])</span>
+<span class="sd">        [0.6, 0.8]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># implementation</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+<section id="class-docstring-template">
+<h2>Class docstring template<a class="headerlink" href="#class-docstring-template" title="Link to this heading"></a></h2>
+<p>Document public attributes and constructor arguments in the class header:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">RateLimiter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Limit the rate of operations to a maximum number per time window.</span>
+
+<span class="sd">    :param int max_calls: Maximum calls allowed per window.</span>
+<span class="sd">    :param float window_seconds: Window size in seconds.</span>
+<span class="sd">    :ivar int max_calls: Maximum calls allowed per window.</span>
+<span class="sd">    :ivar float window_seconds: Window size in seconds.</span>
+<span class="sd">    :raises ValueError: If ``max_calls`` or ``window_seconds`` is non-positive.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">       Instances are thread-safe.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_calls</span><span class="p">,</span> <span class="n">window_seconds</span><span class="p">):</span>
+        <span class="c1"># implementation</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+<section id="common-sections-and-fields">
+<h2>Common sections and fields<a class="headerlink" href="#common-sections-and-fields" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">:param</span> <span class="pre">&lt;name&gt;:</span></code> description of an argument</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">:type</span> <span class="pre">&lt;name&gt;:</span></code> type of an argument, immediate after the parameter name</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">:returns:</span></code> description of the return value</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">:rtype:</span></code> return type, immediate after the return value description</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">:raises</span> <span class="pre">&lt;ExcType&gt;:</span></code> when and why an exception is raised</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">:yields:</span></code> / <code class="docutils literal notranslate"><span class="pre">:yield</span> <span class="pre">type:</span></code> for generators</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">:ivar</span> <span class="pre">&lt;name&gt;:</span></code> / <code class="docutils literal notranslate"><span class="pre">:vartype</span> <span class="pre">&lt;name&gt;:</span></code> for instance attributes</p></li>
+</ul>
+</section>
+<section id="crossreferences-and-inline-markup">
+<h2>Cross‑references and inline markup<a class="headerlink" href="#crossreferences-and-inline-markup" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Reference code objects to create links:
+<code class="docutils literal notranslate"><span class="pre">:mod:`package.module`</span></code> • <code class="docutils literal notranslate"><span class="pre">:class:`package.Class`</span></code> • <code class="docutils literal notranslate"><span class="pre">:func:`package.func`</span></code> • <code class="docutils literal notranslate"><span class="pre">:meth:`Class.method`</span></code> • <code class="docutils literal notranslate"><span class="pre">:attr:`Class.attribute`</span></code>.</p></li>
+<li><p>Use inline literals (text that should be displayed as is) with double backticks, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;utf-8&quot;</span></code>.</p></li>
+<li><p>Try to include links with descriptive text, e.g. <code class="docutils literal notranslate"><span class="pre">:ref:`tutorials`</span></code>.</p></li>
+</ul>
+</section>
+<section id="admonitions">
+<h2>Admonitions<a class="headerlink" href="#admonitions" title="Link to this heading"></a></h2>
+<p>Admonitions are special callout blocks in documentation that highlight important information.
+They’re like warning boxes or note boxes (e.g., .. note::, .. warning::) that draw attention to specific points.</p>
+<ul>
+<li><p>Use admonitions for emphasis:</p>
+<div class="highlight-rst notranslate"><div class="highlight"><pre><span></span><span class="p">..</span> <span class="ow">note</span><span class="p">::</span>
+   This operation is idempotent.
+
+<span class="p">..</span> <span class="ow">warning</span><span class="p">::</span>
+   Network timeouts should be handled by the caller.
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="formatting-rules-and-tips">
+<h2>Formatting rules and tips<a class="headerlink" href="#formatting-rules-and-tips" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Keep lines under ~88 characters for readability.</p></li>
+<li><p>Indent continuation lines and blocks consistently within the docstring.</p></li>
+<li><p>Leave a blank line before field lists (<code class="docutils literal notranslate"><span class="pre">:param:</span></code>, <code class="docutils literal notranslate"><span class="pre">:returns:</span></code>, etc.).</p></li>
+<li><p>If a function is private or trivial, keep the docstring concise or omit
+section fields.</p></li>
+</ul>
+</section>
+<section id="quick-copypaste-templates">
+<h2>Quick copy‑paste templates<a class="headerlink" href="#quick-copypaste-templates" title="Link to this heading"></a></h2>
+<p>Function template:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">your_function</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    One-line imperative summary.</span>
+
+<span class="sd">    Optional extended description spanning multiple lines.</span>
+
+<span class="sd">    :param &lt;type&gt; arg1: Description of arg1.</span>
+<span class="sd">    :param &lt;type&gt; arg2: Description of arg2.</span>
+<span class="sd">    :returns: What the function returns.</span>
+<span class="sd">    :rtype: &lt;type&gt;</span>
+<span class="sd">    :raises SomeError: When something goes wrong.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>Class template:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">YourClass</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    One-line summary of the class purpose.</span>
+
+<span class="sd">    :ivar &lt;type&gt; attr: Description of attribute.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param &lt;type&gt; param: Description of parameter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="feature_requests.html" class="btn btn-neutral float-left" title="Feature Requests" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

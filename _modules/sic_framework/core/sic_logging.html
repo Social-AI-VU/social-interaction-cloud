@@ -1,0 +1,586 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.core.sic_logging &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.core.sic_logging</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.core.sic_logging</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">sic_logging.py</span>
+
+<span class="sd">This module contains the SICLogging class, which is used to log messages to the Redis log channel and a local logfile.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">print_function</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICMessage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICRemoteError</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="ne">BrokenPipeError</span>
+<span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+    <span class="c1"># Python 2 doesn&#39;t define BrokenPipeError; treat it as an IOError.</span>
+    <span class="ne">BrokenPipeError</span> <span class="o">=</span> <span class="ne">IOError</span>
+
+<span class="n">ANSI_CODE_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\033\[[0-9;]*m&#39;</span><span class="p">)</span>
+
+<span class="c1"># loglevel interpretation, mostly follows python&#39;s defaults</span>
+<span class="n">CRITICAL</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">ERROR</span> <span class="o">=</span> <span class="mi">40</span>
+<span class="n">WARNING</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="n">INFO</span> <span class="o">=</span> <span class="mi">20</span> 
+<span class="n">DEBUG</span> <span class="o">=</span> <span class="mi">10</span> 
+<span class="n">NOTSET</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<div class="viewcode-block" id="get_log_channel">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.get_log_channel">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_log_channel</span><span class="p">(</span><span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the global log channel. All components on any device should log to this channel.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="s2">&quot;sic:logging:</span><span class="si">{client_id}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">client_id</span><span class="o">=</span><span class="n">client_id</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="SICLogMessage">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICLogMessage">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICLogMessage</span><span class="p">(</span><span class="n">SICMessage</span><span class="p">):</span>
+<div class="viewcode-block" id="SICLogMessage.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICLogMessage.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A wrapper for log messages to be sent over the SIC SICRedisConnection pubsub framework.</span>
+<span class="sd">        :param msg: The log message to send to the user</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span> <span class="o">=</span> <span class="n">client_id</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SICLogMessage</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SICClientLog">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICClientLog">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICClientLog</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class to subscribe to a Redis log channel and write all log messages to a logfile.</span>
+
+<span class="sd">    Pseudo singleton object. Does nothing when this file is executed during the import, but can subscribe to the log</span>
+<span class="sd">    channel for the user with subscribe_to_redis_log once.</span>
+
+<span class="sd">    :param redis: The Redis instance to use for logging.</span>
+<span class="sd">    :type redis: SICRedisConnection</span>
+<span class="sd">    :param logfile: The file path to write the log to.</span>
+<span class="sd">    :type logfile: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="SICClientLog.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICClientLog.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redis</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logfile</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_dir</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_to_logfile</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">DEBUG</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">callback_thread</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="SICClientLog.subscribe_to_redis_log">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICClientLog.subscribe_to_redis_log">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subscribe_to_redis_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Subscribe to the Redis log channel and display any messages on the terminal. </span>
+<span class="sd">        This function may be called multiple times but will only subscribe once.</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>  <span class="c1"># Ensure thread-safe access</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">callback_thread</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">register_message_handler</span><span class="p">(</span>
+                    <span class="n">get_log_channel</span><span class="p">(</span><span class="n">client_id</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_redis_log_message</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;SICClientLog&quot;</span>
+                <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICClientLog.stop">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICClientLog.stop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stop the logging and unregister the callback thread.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>  <span class="c1"># Ensure thread-safe access</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">running</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">running</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="c1"># Unregister the callback thread from Redis</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">callback_thread</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">unregister_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">callback_thread</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">callback_thread</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                        <span class="c1"># Ignore errors during shutdown (Redis might already be closed)</span>
+                        <span class="k">pass</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">logfile</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logfile</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="SICClientLog.set_log_file_path">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICClientLog.set_log_file_path">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_log_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the path to the log file.</span>
+
+<span class="sd">        :param path: The path to the log file.</span>
+<span class="sd">        :type path: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_dir</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_dir</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">logfile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logfile</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="SICClientLog._handle_redis_log_message">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICClientLog._handle_redis_log_message">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_redis_log_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Handle a message sent on the Redis stream.</span>
+
+<span class="sd">        If it surpasses the threshold, it will be printed to the terminal and written to the logfile (if enabled).</span>
+
+<span class="sd">        :param message: The message to handle.</span>
+<span class="sd">        :type message: SICLogMessage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># default to INFO level if not set</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="s1">&#39;level&#39;</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+        <span class="c1"># check if the level is greater than or equal to the threshold</span>
+        <span class="k">if</span> <span class="n">level</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">:</span>
+            <span class="c1"># outputs to terminal</span>
+            <span class="k">try</span><span class="p">:</span>    
+                <span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">msg</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">BrokenPipeError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">write_to_logfile</span><span class="p">:</span>
+                <span class="c1"># writes to logfile</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_write_to_logfile</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">msg</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="SICClientLog._write_to_logfile">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICClientLog._write_to_logfile">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_write_to_logfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write a message to the logfile.</span>
+
+<span class="sd">        :param message: The message to write to the logfile.</span>
+<span class="sd">        :type message: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">acquired</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">acquired</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># on remote devices the log_dir is set to None. We don&#39;t want to write to a logfile on remote devices</span>
+                <span class="k">return</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">logfile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_dir</span><span class="p">):</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_dir</span><span class="p">)</span>
+                <span class="n">current_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">log_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log_dir</span><span class="p">,</span> <span class="s2">&quot;sic_</span><span class="si">{current_date}</span><span class="s2">.log&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">current_date</span><span class="o">=</span><span class="n">current_date</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logfile</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span>
+
+            <span class="c1"># strip ANSI codes before writing to logfile</span>
+            <span class="n">clean_message</span> <span class="o">=</span> <span class="n">ANSI_CODE_REGEX</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+
+            <span class="c1"># add timestamp to the log message</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%H:%M:%S&quot;</span><span class="p">)</span>
+            <span class="n">clean_message</span> <span class="o">=</span> <span class="s2">&quot;[</span><span class="si">{timestamp}</span><span class="s2">] </span><span class="si">{clean_message}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">timestamp</span><span class="o">=</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">clean_message</span><span class="o">=</span><span class="n">clean_message</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">clean_message</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">:</span>
+                <span class="n">clean_message</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+            <span class="c1"># write to logfile</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">clean_message</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span></div>
+</div>
+
+
+<div class="viewcode-block" id="SICRedisLogHandler">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICRedisLogHandler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICRedisLogHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Handler</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Facilities to log to Redis as a file-like object, to integrate with standard python logging facilities.</span>
+
+<span class="sd">    :param redis: The Redis instance to use for logging.</span>
+<span class="sd">    :type redis: SICRedisConnection</span>
+<span class="sd">    :param client_id: The client id of the device that is logging</span>
+<span class="sd">    :type client_id: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="SICRedisLogHandler.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICRedisLogHandler.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">redis</span><span class="p">,</span> <span class="n">client_id</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SICRedisLogHandler</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redis</span> <span class="o">=</span> <span class="n">redis</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span> <span class="o">=</span> <span class="n">client_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logging_channel</span> <span class="o">=</span> <span class="n">get_log_channel</span><span class="p">(</span><span class="n">client_id</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICRedisLogHandler.emit">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICRedisLogHandler.emit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Emit a log message to the Redis log channel.</span>
+
+<span class="sd">        :param record: The log record to emit.</span>
+<span class="sd">        :type record: logging.LogRecord</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">stopping</span><span class="p">:</span>
+                <span class="k">return</span> <span class="c1"># silently ignore messages if the application is stopping</span>
+
+            <span class="c1"># Get the formatted message</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+            
+            <span class="c1"># Create the log message with client_id if it exists</span>
+            <span class="n">log_message</span> <span class="o">=</span> <span class="n">SICLogMessage</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+            <span class="c1"># If additional client id is provided (as with the ComponentManager), use it to send the log message to the correct channel</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s1">&#39;client_id&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="n">log_message</span><span class="o">.</span><span class="n">client_id</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">client_id</span>
+                <span class="n">log_channel</span> <span class="o">=</span> <span class="n">get_log_channel</span><span class="p">(</span><span class="n">log_message</span><span class="o">.</span><span class="n">client_id</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">log_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logging_channel</span>
+
+            <span class="n">log_message</span><span class="o">.</span><span class="n">level</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">levelno</span>
+
+            <span class="c1"># Send over Redis</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">log_channel</span><span class="p">,</span> <span class="n">log_message</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">stopping</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">handleError</span><span class="p">(</span><span class="n">record</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICRedisLogHandler.readable">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICRedisLogHandler.readable">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">readable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if the stream is readable.</span>
+
+<span class="sd">        :return: False</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="SICRedisLogHandler.writable">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICRedisLogHandler.writable">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">writable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if the stream is writable.</span>
+
+<span class="sd">        :return: True</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="SICRedisLogHandler.write">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICRedisLogHandler.write">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write a message to the Redis log channel.</span>
+
+<span class="sd">        :param msg: The message to write to the Redis log channel.</span>
+<span class="sd">        :type msg: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># only send logs to redis if a redis instance is associated with this logger</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">SICLogMessage</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logging_channel</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICRedisLogHandler.flush">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICRedisLogHandler.flush">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Flush the stream.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span></div>
+</div>
+
+
+<div class="viewcode-block" id="SICLogFormatter">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICLogFormatter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICLogFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A formatter for SIC log messages.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Define ANSI escape codes for colors</span>
+    <span class="n">LOG_COLORS</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[92m&quot;</span><span class="p">,</span>  <span class="c1"># Green</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[94m&quot;</span><span class="p">,</span>   <span class="c1"># Blue</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[93m&quot;</span><span class="p">,</span>  <span class="c1"># Yellow</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">:</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[91m&quot;</span><span class="p">,</span>  <span class="c1"># Deep Red</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">:</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[101m</span><span class="se">\033</span><span class="s2">[97m&quot;</span><span class="p">,</span>  <span class="c1"># Bright Red (White on Red Background)</span>
+    <span class="p">}</span>
+    <span class="n">RESET_COLOR</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[0m&quot;</span>  <span class="c1"># Reset color</span>
+
+<div class="viewcode-block" id="SICLogFormatter.format">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICLogFormatter.format">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Format a log message.</span>
+
+<span class="sd">        :param record: The log record to format.</span>
+<span class="sd">        :type record: logging.LogRecord</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get the color for the current log level</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LOG_COLORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">levelno</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">RESET_COLOR</span><span class="p">)</span>
+
+        <span class="c1"># Create the prefix part</span>
+        <span class="c1"># Highlight and bold &quot;SICApplication&quot; in the logger name if present</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">pad_amount</span> <span class="o">=</span> <span class="mi">45</span>
+        <span class="k">if</span> <span class="s2">&quot;SICApplication&quot;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+            <span class="n">pad_amount</span> <span class="o">=</span> <span class="mi">58</span>
+            <span class="c1"># ANSI escape codes: bold (\033[1m), yellow (\033[93m), reset (\033[0m)</span>
+            <span class="n">highlighted</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[1m</span><span class="se">\033</span><span class="s2">[93mSICApplication</span><span class="se">\033</span><span class="s2">[0m&quot;</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;SICApplication&quot;</span><span class="p">,</span> <span class="n">highlighted</span><span class="p">)</span>
+        <span class="n">name_ip</span> <span class="o">=</span> <span class="s2">&quot;[</span><span class="si">{name}</span><span class="s2"> </span><span class="si">{ip}</span><span class="s2">]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">ip</span><span class="o">=</span><span class="n">utils</span><span class="o">.</span><span class="n">get_ip_adress</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">name_ip_padded</span> <span class="o">=</span> <span class="n">name_ip</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="n">pad_amount</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{name_ip_padded}{color}{record_level}{reset_color}</span><span class="s2">: &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name_ip_padded</span><span class="o">=</span><span class="n">name_ip_padded</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">record_level</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="p">,</span> <span class="n">reset_color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">RESET_COLOR</span><span class="p">)</span>
+
+        <span class="c1"># Split message into lines and handle each line</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">message_lines</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">())</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">message_lines</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ERROR: Could not get message from record: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">record</span><span class="p">),</span> <span class="s2">&quot;Exception: </span><span class="si">{e}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="o">=</span><span class="n">e</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">message_lines</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">prefix</span>
+
+        <span class="c1"># Format first line with full prefix</span>
+        <span class="n">formatted_lines</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="si">{prefix}{message_lines}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">,</span> <span class="n">message_lines</span><span class="o">=</span><span class="n">message_lines</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+
+        <span class="c1"># For subsequent lines, indent to align with first line&#39;s content</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">message_lines</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">indent</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+            <span class="n">formatted_lines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{indent}{line}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">message_lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+        <span class="c1"># If an exception was attached (e.g., logger.exception), append formatted exception text</span>
+        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">exc_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatException</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">exc_text</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">exc_text</span><span class="p">:</span>
+                <span class="n">indent</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc_text</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+                    <span class="n">formatted_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{indent}{line}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="n">indent</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="n">line</span><span class="p">))</span>
+
+        <span class="c1"># Join all lines with newlines</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">formatted_lines</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICLogFormatter.formatException">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.SICLogFormatter.formatException">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">formatException</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exec_info</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prepend every exception with a | to indicate it is not local.</span>
+
+<span class="sd">        :param exec_info: The exception information.</span>
+<span class="sd">        :type exec_info: tuple</span>
+<span class="sd">        :return: The formatted exception.</span>
+<span class="sd">        :rtype: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">SICLogFormatter</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">formatException</span><span class="p">(</span><span class="n">exec_info</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;| &quot;</span> <span class="o">+</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">| &quot;</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">| NOTE: Exception occurred in SIC framework, not application&quot;</span>
+        <span class="k">return</span> <span class="n">text</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="get_sic_logger">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.get_sic_logger">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_sic_logger</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">redis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">client_logger</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set up logging to the log output channel to be able to report messages to users.</span>
+
+<span class="sd">    :param name: A readable and identifiable name to indicate to the user where the log originated</span>
+<span class="sd">    :type name: str</span>
+<span class="sd">    :param client_id: The client id of the device that is logging</span>
+<span class="sd">    :type client_id: str</span>
+<span class="sd">    :param redis: The SICRedisConnection object</span>
+<span class="sd">    :type redis: SICRedisConnection</span>
+<span class="sd">    :return: The logger.</span>
+<span class="sd">    :rtype: logging.Logger</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># logging initialisation</span>
+    <span class="c1"># Always set logger to DEBUG so it logs everything - SICClientLog will filter what to display</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">DEBUG</span><span class="p">)</span>
+    <span class="n">log_format</span> <span class="o">=</span> <span class="n">SICLogFormatter</span><span class="p">()</span>
+
+    <span class="n">handler_redis</span> <span class="o">=</span> <span class="n">SICRedisLogHandler</span><span class="p">(</span><span class="n">redis</span><span class="p">,</span> <span class="n">client_id</span><span class="p">)</span>
+    <span class="n">handler_redis</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">log_format</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler_redis</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">client_logger</span><span class="p">:</span>
+        <span class="n">SIC_CLIENT_LOG</span><span class="o">.</span><span class="n">redis</span> <span class="o">=</span> <span class="n">redis</span>
+        <span class="n">SIC_CLIENT_LOG</span><span class="o">.</span><span class="n">subscribe_to_redis_log</span><span class="p">(</span><span class="n">client_id</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">logger</span></div>
+
+
+<span class="c1"># pseudo singleton object. Does nothing when this file is executed during the import, but can subscribe to the log</span>
+<span class="c1"># channel for the user with subscribe_to_redis_log once</span>
+<span class="n">SIC_CLIENT_LOG</span> <span class="o">=</span> <span class="n">SICClientLog</span><span class="p">()</span>
+
+<div class="viewcode-block" id="set_log_level">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.set_log_level">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_log_level</span><span class="p">(</span><span class="n">level</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set the log level threshold for SICClientLog.</span>
+<span class="sd">    This filters which messages are displayed/written, but all messages are still logged.</span>
+<span class="sd">    </span>
+<span class="sd">    :param level: The log level threshold (DEBUG, INFO, WARNING, ERROR, CRITICAL)</span>
+<span class="sd">    :type level: int</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">SIC_CLIENT_LOG</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">level</span></div>
+
+
+<div class="viewcode-block" id="set_log_file">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.sic_logging.set_log_file">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_log_file</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="n">SIC_CLIENT_LOG</span><span class="o">.</span><span class="n">write_to_logfile</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">SIC_CLIENT_LOG</span><span class="o">.</span><span class="n">set_log_file_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

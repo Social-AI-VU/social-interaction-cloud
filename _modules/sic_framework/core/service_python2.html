@@ -1,0 +1,538 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.core.service_python2 &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.core.service_python2</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.core.service_python2</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">service_python2.py</span>
+
+<span class="sd">This module contains the SICService class, which is the base class for all services in the Social Interaction Cloud.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABCMeta</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">threading</span><span class="w"> </span><span class="kn">import</span> <span class="n">Event</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.component_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICComponent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_sic_instance</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">sic_logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConfMessage</span><span class="p">,</span> <span class="n">SICMessage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">AlignmentError</span>
+
+
+<div class="viewcode-block" id="MessageQueue">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.MessageQueue">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MessageQueue</span><span class="p">(</span><span class="n">collections</span><span class="o">.</span><span class="n">deque</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A bounded message buffer that logs warnings when messages are dropped.</span>
+
+<span class="sd">    Messages are dropped when the buffer reaches MAX_MESSAGE_BUFFER_SIZE.</span>
+<span class="sd">    Warnings are logged at exponentially increasing intervals to avoid log spam.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Log warnings at these drop counts (exponential backoff)</span>
+    <span class="n">DROP_WARNING_THRESHOLDS</span> <span class="o">=</span> <span class="p">{</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">5000</span><span class="p">,</span> <span class="mi">10000</span><span class="p">}</span>
+
+<div class="viewcode-block" id="MessageQueue.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.MessageQueue.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">maxlen</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropped_messages_counter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MessageQueue</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="n">maxlen</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MessageQueue.appendleft">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.MessageQueue.appendleft">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">appendleft</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_full</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_handle_dropped_message</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">MessageQueue</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">appendleft</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_is_full</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxlen</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_dropped_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropped_messages_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropped_messages_counter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">DROP_WARNING_THRESHOLDS</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Dropped </span><span class="si">{}</span><span class="s2"> messages of type </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dropped_messages_counter</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">get_message_name</span><span class="p">()</span>
+                <span class="p">)</span>
+            <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="SICMessageDictionary">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICMessageDictionary">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICMessageDictionary</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A container for messages, indexable by message type and optionally by source component.</span>
+
+<span class="sd">    Used to pass synchronized input messages to the execute() method.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SICMessageDictionary.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICMessageDictionary.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_messages</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICMessageDictionary.add">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICMessageDictionary.add">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a message to the dictionary, indexed by its type.</span>
+
+<span class="sd">        :param message: The message to add.</span>
+<span class="sd">        :type message: SICMessage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_messages</span><span class="p">[</span><span class="n">message</span><span class="o">.</span><span class="n">get_message_name</span><span class="p">()]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICMessageDictionary.get">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICMessageDictionary.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message_type</span><span class="p">,</span> <span class="n">source_component</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve a message by type, optionally filtering by source component.</span>
+
+<span class="sd">        :param message_type: The type of message to get.</span>
+<span class="sd">        :type message_type: Type[SICMessage]</span>
+<span class="sd">        :param source_component: Optional component to filter by.</span>
+<span class="sd">        :return: The matching message.</span>
+<span class="sd">        :raises IndexError: If no matching message is found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_messages</span><span class="p">[</span><span class="n">message_type</span><span class="o">.</span><span class="n">get_message_name</span><span class="p">()]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">messages</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
+                <span class="s2">&quot;Attempting to get message from empty buffer (framework issue)&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">source_component</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># No filter, return the first (should be only one)</span>
+            <span class="k">return</span> <span class="n">messages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Filter by source component</span>
+        <span class="n">source_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_component_name</span><span class="p">(</span><span class="n">source_component</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">_previous_component_name</span> <span class="o">==</span> <span class="n">source_name</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">message</span>
+
+        <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span>
+            <span class="s2">&quot;Input of type </span><span class="si">{}</span><span class="s2"> with source: </span><span class="si">{}</span><span class="s2"> not found.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">message_type</span><span class="p">,</span> <span class="n">source_component</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICMessageDictionary._get_component_name">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICMessageDictionary._get_component_name">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_component_name</span><span class="p">(</span><span class="n">component</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract component name from either SICComponent or SICConnector.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">component</span><span class="o">.</span><span class="n">get_component_name</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="c1"># Object is SICConnector, not SICComponent</span>
+            <span class="k">return</span> <span class="n">component</span><span class="o">.</span><span class="n">component_class</span><span class="o">.</span><span class="n">get_component_name</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SICService">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SICService</span><span class="p">(</span><span class="n">SICComponent</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for services that process and transform data.</span>
+
+<span class="sd">    Services can have multiple input types. When multiple inputs are defined,</span>
+<span class="sd">    this class automatically synchronizes incoming messages by timestamp,</span>
+<span class="sd">    ensuring that execute() receives temporally aligned data.</span>
+
+<span class="sd">    Configuration:</span>
+<span class="sd">        MAX_MESSAGE_BUFFER_SIZE: Maximum messages to buffer per input type.</span>
+<span class="sd">        MAX_TIMESTAMP_DIFF_SECONDS: Maximum time difference for alignment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">MAX_MESSAGE_BUFFER_SIZE</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">MAX_TIMESTAMP_DIFF_SECONDS</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="n">LISTEN_POLL_INTERVAL_SECONDS</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+<div class="viewcode-block" id="SICService.__init__">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SICService</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_new_data_event</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_input_buffers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_listen_thread</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="SICService.start">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService.start">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Start the Service.</span>
+<span class="sd">        </span>
+<span class="sd">        This initiates the background listener thread that handles message alignment</span>
+<span class="sd">        and calls execute(). Because it runs in a background thread, this method</span>
+<span class="sd">        is non-blocking, allowing subclasses to run their own loops in start() if needed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SICService</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_listen_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_listen</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_listen_thread</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_listen_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SICService.execute">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService.execute">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Process synchronized input messages and optionally produce output.</span>
+
+<span class="sd">        Override this method to implement your service logic.</span>
+
+<span class="sd">        :param inputs: Container with time-aligned input messages.</span>
+<span class="sd">        :type inputs: SICMessageDictionary</span>
+<span class="sd">        :return: Output message to publish, or None.</span>
+<span class="sd">        :rtype: SICMessage | None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+    <span class="c1"># -------------------------------------------------------------------------</span>
+    <span class="c1"># Message Handling</span>
+    <span class="c1"># -------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="SICService.on_message">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService.on_message">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Receive an input message and buffer it for processing.</span>
+
+<span class="sd">        :param message: The incoming message.</span>
+<span class="sd">        :type message: SICMessage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">buffer_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_buffer_key</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_or_create_buffer</span><span class="p">(</span><span class="n">buffer_key</span><span class="p">)</span><span class="o">.</span><span class="n">appendleft</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_new_data_event</span><span class="o">.</span><span class="n">set</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="SICService._get_buffer_key">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService._get_buffer_key">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_buffer_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a unique key for buffering based on message type and source.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">get_message_name</span><span class="p">(),</span> <span class="n">message</span><span class="o">.</span><span class="n">_previous_component_name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICService._get_or_create_buffer">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService._get_or_create_buffer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_or_create_buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffer_key</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get existing buffer or create a new one.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">buffer_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input_buffers</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_input_buffers</span><span class="p">[</span><span class="n">buffer_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">MessageQueue</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">,</span> <span class="n">maxlen</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">MAX_MESSAGE_BUFFER_SIZE</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input_buffers</span><span class="p">[</span><span class="n">buffer_key</span><span class="p">]</span></div>
+
+
+    <span class="c1"># -------------------------------------------------------------------------</span>
+    <span class="c1"># Message Synchronization</span>
+    <span class="c1"># -------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="SICService._pop_aligned_messages">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService._pop_aligned_messages">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_pop_aligned_messages</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extract time-aligned messages from all input buffers.</span>
+
+<span class="sd">        Finds the most recent timestamp for which all inputs have data,</span>
+<span class="sd">        then collects one message from each buffer within the time threshold.</span>
+
+<span class="sd">        :return: Tuple of (message dictionary, reference timestamp).</span>
+<span class="sd">        :raises AlignmentError: If messages cannot be aligned.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log_buffer_state</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_buffers_ready</span><span class="p">()</span>
+
+        <span class="n">reference_timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_reference_timestamp</span><span class="p">()</span>
+        <span class="n">aligned_messages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect_aligned_messages</span><span class="p">(</span><span class="n">reference_timestamp</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_consume_messages</span><span class="p">(</span><span class="n">aligned_messages</span><span class="p">)</span>
+
+        <span class="n">message_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_message_dict</span><span class="p">(</span><span class="n">aligned_messages</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">message_dict</span><span class="p">,</span> <span class="n">reference_timestamp</span></div>
+
+
+<div class="viewcode-block" id="SICService._log_buffer_state">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService._log_buffer_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_log_buffer_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log current buffer sizes for debugging.&quot;&quot;&quot;</span>
+        <span class="c1"># Only log if the logger is enabled for DEBUG</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">):</span>
+            <span class="k">return</span>
+        <span class="n">buffer_sizes</span> <span class="o">=</span> <span class="p">[(</span><span class="n">key</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">buf</span><span class="p">))</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">buf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input_buffers</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Input buffer sizes: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">buffer_sizes</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="SICService._validate_buffers_ready">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService._validate_buffers_ready">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_buffers_ready</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensure we have one buffer per expected input type.&quot;&quot;&quot;</span>
+        <span class="n">expected_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_inputs</span><span class="p">())</span>
+        <span class="n">actual_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_input_buffers</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">actual_count</span> <span class="o">!=</span> <span class="n">expected_count</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AlignmentError</span><span class="p">(</span>
+                <span class="s2">&quot;Waiting for all input types: have </span><span class="si">{}</span><span class="s2">, need </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">actual_count</span><span class="p">,</span> <span class="n">expected_count</span>
+                <span class="p">)</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICService._get_reference_timestamp">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService._get_reference_timestamp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_reference_timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine the reference timestamp for alignment.</span>
+
+<span class="sd">        Uses the oldest &quot;newest message&quot; timestamp across all buffers.</span>
+<span class="sd">        This is the most recent time for which we have data from all sources.</span>
+
+<span class="sd">        :raises AlignmentError: If any buffer is empty.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">newest_per_buffer</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">buffer</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">_timestamp</span> <span class="k">for</span> <span class="n">buffer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input_buffers</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="p">]</span>
+            <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">newest_per_buffer</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">AlignmentError</span><span class="p">(</span><span class="s2">&quot;One or more input buffers are empty&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICService._collect_aligned_messages">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService._collect_aligned_messages">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_collect_aligned_messages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reference_timestamp</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find one message per buffer that aligns with the reference timestamp.</span>
+
+<span class="sd">        :param reference_timestamp: The timestamp to align to.</span>
+<span class="sd">        :return: List of (buffer, message) tuples.</span>
+<span class="sd">        :raises AlignmentError: If any buffer lacks an aligned message.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">aligned</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">buffer_key</span><span class="p">,</span> <span class="n">buffer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input_buffers</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_aligned_message</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">reference_timestamp</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">message</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AlignmentError</span><span class="p">(</span>
+                    <span class="s2">&quot;No message within </span><span class="si">{}</span><span class="s2">s of reference timestamp in buffer </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">MAX_TIMESTAMP_DIFF_SECONDS</span><span class="p">,</span> <span class="n">buffer_key</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="n">aligned</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">buffer</span><span class="p">,</span> <span class="n">message</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">aligned</span></div>
+
+
+<div class="viewcode-block" id="SICService._find_aligned_message">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService._find_aligned_message">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_aligned_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffer</span><span class="p">,</span> <span class="n">reference_timestamp</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find the first message in buffer within the timestamp threshold.</span>
+
+<span class="sd">        :param buffer: The message buffer to search.</span>
+<span class="sd">        :param reference_timestamp: The timestamp to align to.</span>
+<span class="sd">        :return: The aligned message, or None if not found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">buffer</span><span class="p">:</span>
+            <span class="n">time_diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">_timestamp</span> <span class="o">-</span> <span class="n">reference_timestamp</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">time_diff</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAX_TIMESTAMP_DIFF_SECONDS</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">message</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="SICService._consume_messages">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService._consume_messages">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_consume_messages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aligned_messages</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove consumed messages from their buffers.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">buffer</span><span class="p">,</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">aligned_messages</span><span class="p">:</span>
+            <span class="n">buffer</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICService._build_message_dict">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService._build_message_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_message_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aligned_messages</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the message dictionary from aligned messages.&quot;&quot;&quot;</span>
+        <span class="n">message_dict</span> <span class="o">=</span> <span class="n">SICMessageDictionary</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">aligned_messages</span><span class="p">:</span>
+            <span class="n">message_dict</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">message_dict</span></div>
+
+
+    <span class="c1"># -------------------------------------------------------------------------</span>
+    <span class="c1"># Main Loop</span>
+    <span class="c1"># -------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="SICService._listen">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService._listen">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_listen</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Main loop: wait for data, align messages, and execute.&quot;&quot;&quot;</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_signal_to_stop</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait_for_new_data</span><span class="p">():</span>
+                <span class="k">continue</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">messages</span><span class="p">,</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pop_aligned_messages</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">AlignmentError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Alignment pending: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                <span class="k">continue</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_process_and_output</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">)</span>
+
+        <span class="c1"># Signal to the framework that the service&#39;s worker loop has exited.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stopped</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Stopped listening&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SICService._wait_for_new_data">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService._wait_for_new_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_wait_for_new_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wait for new data with timeout.</span>
+
+<span class="sd">        :return: True if new data is available, False if timed out.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_new_data_event</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">LISTEN_POLL_INTERVAL_SECONDS</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_new_data_event</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_new_data_event</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="SICService._process_and_output">
+<a class="viewcode-back" href="../../../api/core.html#sic_framework.core.service_python2.SICService._process_and_output">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_and_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute the service logic and publish any output.&quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">output</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Outputting message: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output</span><span class="p">))</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">_timestamp</span> <span class="o">=</span> <span class="n">timestamp</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_message</span><span class="p">(</span><span class="n">output</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

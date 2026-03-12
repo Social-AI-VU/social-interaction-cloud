@@ -1,0 +1,326 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.common_naoqi.naoqi_text_to_speech &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.common_naoqi.naoqi_text_to_speech</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.common_naoqi.naoqi_text_to_speech</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework</span><span class="w"> </span><span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.actuator_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICActuator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.component_manager_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICComponentManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConnector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConfMessage</span><span class="p">,</span> <span class="n">SICMessage</span><span class="p">,</span> <span class="n">SICRequest</span>
+
+<span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">PYTHON_VERSION_IS_2</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">qi</span>
+
+
+<span class="c1"># @dataclass</span>
+<div class="viewcode-block" id="NaoqiTextToSpeechRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_text_to_speech.NaoqiTextToSpeechRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiTextToSpeechRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request the robot to say a given text using text-to-speech.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NaoqiTextToSpeechRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_text_to_speech.NaoqiTextToSpeechRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">,</span>
+        <span class="n">language</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">animated</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">pitch</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">speed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">pitch_shift</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">volume</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize a text-to-speech request.</span>
+
+<span class="sd">        :param str text: Text to be spoken.</span>
+<span class="sd">        :param str language: &quot;English&quot; or &quot;Dutch&quot; or see http://doc.aldebaran.com/2-8/family/nao_technical/languages_naov6.html#language-codes-naov6</span>
+<span class="sd">        :param animated: Use animated text to speech, e.g. perform some gestures while talking</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiTextToSpeechRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">animated</span> <span class="o">=</span> <span class="n">animated</span>
+
+        <span class="c1"># TTS params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">language</span> <span class="o">=</span> <span class="n">language</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pitch</span> <span class="o">=</span> <span class="n">pitch</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="n">speed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pitch_shift</span> <span class="o">=</span> <span class="n">pitch_shift</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">volume</span></div>
+</div>
+
+
+
+<span class="c1"># @dataclass</span>
+<div class="viewcode-block" id="NaoqiTextToSpeechConf">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_text_to_speech.NaoqiTextToSpeechConf">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiTextToSpeechConf</span><span class="p">(</span><span class="n">SICConfMessage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Configuration for the NAOqi text-to-speech engine.</span>
+
+<span class="sd">    Defines default voice parameters such as language, volume, pitch, and speed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="NaoqiTextToSpeechConf.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_text_to_speech.NaoqiTextToSpeechConf.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">language</span><span class="o">=</span><span class="s2">&quot;English&quot;</span><span class="p">,</span>
+        <span class="n">volume</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">speed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">pitch</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">pitch_shift</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize default parameters for the text-to-speech configuration.</span>
+
+<span class="sd">        If None, the default NAOqi values are used. </span>
+
+<span class="sd">        See also:</span>
+<span class="sd">        http://doc.aldebaran.com/2-4/naoqi/audio/altexttospeech-api.html#ALTextToSpeechProxy::setParameter__ssCR.floatCR</span>
+
+<span class="sd">        :param str language: Language to use &quot;English&quot; or &quot;Dutch&quot; or see http://doc.aldebaran.com/2-8/family/nao_technical/languages_naov6.html#language-codes-naov6</span>
+<span class="sd">        :param float volume: Sets the current gain applied to the signal synthesized by the text to speech engine if not None.</span>
+<span class="sd">        :param int pitch: Applies a pitch shift to the voice. Range is  [50 - 100]. </span>
+<span class="sd">        :param float pitch_shift: Applies a pitch shift to the voice. Range is [1.0 - 4.0]. 0 disables the effect.</span>
+<span class="sd">        :param int speed: sets the current voice speed. The default value is 100. Range is [50 - 400]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SICConfMessage</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pitch</span> <span class="o">=</span> <span class="n">pitch</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speed</span> <span class="o">=</span> <span class="n">speed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pitch_shift</span> <span class="o">=</span> <span class="n">pitch_shift</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">volume</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">language</span> <span class="o">=</span> <span class="n">language</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoqiTextToSpeechActuator">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_text_to_speech.NaoqiTextToSpeechActuator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiTextToSpeechActuator</span><span class="p">(</span><span class="n">SICActuator</span><span class="p">):</span>
+<div class="viewcode-block" id="NaoqiTextToSpeechActuator.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_text_to_speech.NaoqiTextToSpeechActuator.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiTextToSpeechActuator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">qi</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;tcp://127.0.0.1:9559&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALTextToSpeech&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">atts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALAnimatedSpeech&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiTextToSpeechActuator.set_params">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_text_to_speech.NaoqiTextToSpeechActuator.set_params">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="c1"># Check for all parameters if they are available and set</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;language&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">language</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tts</span><span class="o">.</span><span class="n">setLanguage</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">language</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;volume&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">volume</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tts</span><span class="o">.</span><span class="n">setVolume</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">volume</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;speed&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">speed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tts</span><span class="o">.</span><span class="n">setParameter</span><span class="p">(</span><span class="s2">&quot;speed&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">speed</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;pitch&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">pitch</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tts</span><span class="o">.</span><span class="n">setParameter</span><span class="p">(</span><span class="s2">&quot;pitch&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">pitch</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;pitch_shift&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">params</span><span class="o">.</span><span class="n">pitch_shift</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tts</span><span class="o">.</span><span class="n">setParameter</span><span class="p">(</span><span class="s2">&quot;pitchShift&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">.</span><span class="n">pitch_shift</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiTextToSpeechActuator.get_conf">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_text_to_speech.NaoqiTextToSpeechActuator.get_conf">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_conf</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the default configuration for this actuator.</span>
+
+<span class="sd">        :returns: Default text-to-speech configuration.</span>
+<span class="sd">        :rtype: NaoqiTextToSpeechConf</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">NaoqiTextToSpeechConf</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NaoqiTextToSpeechActuator.get_inputs">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_text_to_speech.NaoqiTextToSpeechActuator.get_inputs">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_inputs</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">NaoqiTextToSpeechRequest</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="NaoqiTextToSpeechActuator.get_output">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_text_to_speech.NaoqiTextToSpeechActuator.get_output">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_output</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">SICMessage</span></div>
+
+
+<div class="viewcode-block" id="NaoqiTextToSpeechActuator.execute">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_text_to_speech.NaoqiTextToSpeechActuator.execute">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute the text-to-speech request.</span>
+
+<span class="sd">        Applies message-specific parameters, then speaks using ALTextToSpeech or ALAnimatedSpeech.</span>
+
+<span class="sd">        :param NaoqiTextToSpeechRequest message: Request containing speech parameters and text.</span>
+<span class="sd">        :returns: Acknowledgement message after speaking.</span>
+<span class="sd">        :rtype: SICMessage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Set tts parameters for current request</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">animated</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">atts</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">language</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tts</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NaoqiTextToSpeechActuator.stop">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_text_to_speech.NaoqiTextToSpeechActuator.stop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="c1"># No long-running worker loop; mark stopped immediately so cleanup runs.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stopped</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiTextToSpeechActuator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiTextToSpeech">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_text_to_speech.NaoqiTextToSpeech">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiTextToSpeech</span><span class="p">(</span><span class="n">SICConnector</span><span class="p">):</span>
+    <span class="n">component_class</span> <span class="o">=</span> <span class="n">NaoqiTextToSpeechActuator</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">SICComponentManager</span><span class="p">([</span><span class="n">NaoqiTextToSpeechActuator</span><span class="p">])</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

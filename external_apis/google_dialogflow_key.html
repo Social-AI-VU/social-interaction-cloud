@@ -1,0 +1,199 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getting a google dialogflow key &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="How SIC Works" href="../architecture.html" />
+    <link rel="prev" title="Google Cloud Platform" href="google_cloud.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../external_apis.html#google-cloud-platform">Google Cloud Platform</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="google_cloud.html">Google Cloud Platform</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Getting a google dialogflow key</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#getting-a-key-file">Getting a key file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../external_apis.html">Connecting to External APIs</a></li>
+      <li class="breadcrumb-item active">Getting a google dialogflow key</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/external_apis/google_dialogflow_key.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="getting-a-google-dialogflow-key">
+<h1>Getting a google dialogflow key<a class="headerlink" href="#getting-a-google-dialogflow-key" title="Link to this heading"></a></h1>
+<p>To use google dialogflow or other services, you need an authentication JSON key. This can be a little bothersome to set up without a credit card, but if you follow these instructions you should be able to.
+For instructions on how to use google dialogflow, please refer to :doc:``</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<p>A Google account</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Please take note of which of your google accounts you use to create the service account and/or sign into the dialogflow webpage. This account must be the same one.</p>
+</div>
+</section>
+<section id="getting-a-key-file">
+<h2>Getting a key file<a class="headerlink" href="#getting-a-key-file" title="Link to this heading"></a></h2>
+<p>1. <strong>Create a project</strong>
+Using the following link, create a project:
+<a class="reference external" href="https://console.cloud.google.com/projectselector2/home/dashboard">https://console.cloud.google.com/projectselector2/home/dashboard</a></p>
+<p>2. <strong>Enable the dialogflow API</strong>
+Ensure you have the right project and enable the API
+<a class="reference external" href="https://console.cloud.google.com/flows/enableapi?apiid=dialogflow.googleapis.com">https://console.cloud.google.com/flows/enableapi?apiid=dialogflow.googleapis.com</a></p>
+<p>3. <strong>Create service account</strong>
+Go to <a class="reference external" href="https://console.cloud.google.com/iam-admin/serviceaccounts">https://console.cloud.google.com/iam-admin/serviceaccounts</a> and click on the project you just created, then click “Create service account” in the top bar
+Follow the instructions, and grant it the following roles:</p>
+<ul class="simple">
+<li><p>Dialogflow API Client</p></li>
+<li><p>Dialogflow API Reader</p></li>
+</ul>
+<p>4. <strong>Create account key</strong>
+In the service accounts view, click the service account you have just created.
+In the top bar select “Keys” and select “Add key” To create a new one. Select JSON.
+And thats it! This should download the json file with your key.</p>
+<p>5. <strong>Create dialogflow agent</strong>
+Go to <a class="reference external" href="https://dialogflow.cloud.google.com/#/getStarted">Dialogflow</a> and sign in with the same google account. Select “Create new agent”. Under the google project drop down make sure to select the same project as the one you created the key for.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you selected “create new project” you will have to create a new key for this google project, or create a new agent connected to the right project.</p>
+</div>
+<p>If everything went right, you should have have a <code class="docutils literal notranslate"><span class="pre">your_dialogflow_key.json</span></code> with similar content:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">{</span>
+<span class="w">    </span><span class="s">&quot;type&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;service_account&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">    </span><span class="s">&quot;project_id&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;test-project&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">    </span><span class="s">&quot;private_key_id&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;348e1399234328ea8ase5e4799a98356ef6ab6&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">    </span><span class="s">&quot;private_key&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;-----BEGIN</span><span class="nv"> </span><span class="s">PRIVATE</span><span class="nv"> </span><span class="s">KEY-----\nMIIEvgIBADANBgkqhk</span><span class="nv"> </span><span class="s">...</span><span class="nv"> </span><span class="s">lots</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">characters</span><span class="nv"> </span><span class="s">...</span><span class="nv"> </span><span class="s">WrXM145A0W1Gm0jZhnI1\n-----END</span><span class="nv"> </span><span class="s">PRIVATE</span><span class="nv"> </span><span class="s">KEY-----\n&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">    </span><span class="s">&quot;client_email&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;test-357@test-project.iam.gserviceaccount.com&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">    </span><span class="s">&quot;client_id&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;113588749577095165520&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">    </span><span class="s">&quot;auth_uri&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;https://accounts.google.com/o/oauth2/auth&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">    </span><span class="s">&quot;token_uri&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;https://oauth2.googleapis.com/token&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">    </span><span class="s">&quot;auth_provider_x509_cert_url&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;https://www.googleapis.com/oauth2/v1/certs&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">    </span><span class="s">&quot;client_x509_cert_url&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;https://www.googleapis.com/robot/v1/metadata/x509/test-357%40test-project.iam.gserviceaccount.com&quot;</span>
+<span class="p p-Indicator">}</span>
+</pre></div>
+</div>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<p><em>No DesignTimeAgent found</em>: Make sure you are using the right google project for your dialogflow project. Ensure that the service account key you have downloaded is <em>for the same google project</em> listed as the connected google project for your dialogflow agent.</p>
+<p>You can find which google project your dialogflow agent is linked to under the agent settings <a class="reference external" href="https://dialogflow.cloud.google.com/#/getStarted">Dialogflow</a></p>
+<p>You can find which google project your json key is for by looking at the <code class="docutils literal notranslate"><span class="pre">project_id</span></code> field of the json. In the example key above that is <code class="docutils literal notranslate"><span class="pre">&quot;test-project&quot;</span></code>.</p>
+<p>Useful links for further troubleshooting:
+<a class="reference external" href="https://cloud.google.com/dialogflow/docs/quick/setup">Quickstart: Setup page for Google Cloud Dialogflow ES</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="google_cloud.html" class="btn btn-neutral float-left" title="Google Cloud Platform" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../architecture.html" class="btn btn-neutral float-right" title="How SIC Works" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

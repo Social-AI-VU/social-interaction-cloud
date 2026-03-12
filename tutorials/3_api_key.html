@@ -1,0 +1,200 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3: Using the Dialogflow Service &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="4: Robot Motion" href="4_motion.html" />
+    <link rel="prev" title="2: Using a Service" href="2_service.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../tutorials.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-1-installation-and-setup">Tutorial 1: Installation and Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-2-using-a-service">Tutorial 2: Using a Service</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../tutorials.html#tutorial-3-application-with-a-service-requiring-an-api-key">Tutorial 3: Application with a Service Requiring an API key</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">3: Using the Dialogflow Service</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction-to-dialogflow">Introduction to Dialogflow</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-smalltalk">Example: SmallTalk</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#video-tutorial">📹: Video Tutorial</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#tutorial-4-robot-motion">Tutorial 4: Robot Motion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials.html#further-reading">Further reading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../tutorials.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">3: Using the Dialogflow Service</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/tutorials/3_api_key.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="using-the-dialogflow-service">
+<h1>3: Using the Dialogflow Service<a class="headerlink" href="#using-the-dialogflow-service" title="Link to this heading"></a></h1>
+<p>This tutorial will guide you through the use of the Dialogflow service. First, we introduce Dialogflow and explain how it works. Then, we look at an example of how to use it with your comptuer’s microphone.</p>
+<section id="introduction-to-dialogflow">
+<h2>Introduction to Dialogflow<a class="headerlink" href="#introduction-to-dialogflow" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">dialogflow</span></code> service enables the use of the <a class="reference external" href="https://dialogflow.com/">Google Dialogflow</a> platform within your application.</p>
+<p>Dialogflow is used to translate human speech into intents (<em>intent classification</em>). In other words, not only does it (try to) convert an audio stream into readable text, it also classifies this text into an intent and extracts additional parameters called entities from the text, if specified. For example, an audio stream can be transcribed to the string “I am 15 years old”, and classified as the intent ‘answer_age’ with entity ‘age=15’.</p>
+</section>
+<section id="example-smalltalk">
+<h2>Example: SmallTalk<a class="headerlink" href="#example-smalltalk" title="Link to this heading"></a></h2>
+<p>In order to create a Dialogflow agent, visit <a class="reference external" href="https://dialogflow.cloud.google.com">https://dialogflow.cloud.google.com</a> and log-in with a Google account of choice. Use the ‘Create Agent’ button in the top left to start your first project. For our framework to be able to communicate with this agent, the project ID and a keyfile are required. To get a keyfile read the instructions on <span class="xref std std-doc">Getting a google dialogflow key</span>. Once you have a keyfile, place it inside the conf/google folder in your local repository.</p>
+<p>Go to the <a class="reference external" href="https://conversational-agents.cloud.google.com/projects">Google CX page</a> and select the same project that you used to create the keyfile. Click on ‘Create agent’ and select ‘Use prebuilt agent’ and then ‘SmallTalk’. You can name the agent anything you like. Also change the location to the Netherlands if this is not set by default.</p>
+<p>Now that your agent has been created, you have choice between a playbook structure and a flow structure. A playbook structure is based on generative AI while the flow structure allows for more control. For the purposes of this tutorial, we will use a flow-based agent, so click on the ‘flow’ tab. You will see a basic flow. The blocks are called pages and frame where you are in the conversation and what agents can recognize.</p>
+<a class="reference internal image-reference" href="../_images/dialogflow_cx_flow.png"><img alt="Flow interface in Google Dialogflow" class="align-center" src="../_images/dialogflow_cx_flow.png" style="width: 500px; height: 350px;" />
+</a>
+<p>If you click on one of these pages (blocks), it will show you its routes which specify the speech patterns and responses that are available at that stage of the conversation as well as the triggers to enter the page.</p>
+<a class="reference internal image-reference" href="../_images/dialogflow_cx_route_with_detail.png"><img alt="Routes in Google Dialogflow" class="align-center" src="../_images/dialogflow_cx_route_with_detail.png" style="width: 500px; height: 350px;" />
+</a>
+<p>The intent determines what we want the agent to recognise and the route determines how we want the agent to respond. To set what the agent will say in response, we consult the fulfillment section:</p>
+<a class="reference internal image-reference" href="../_images/dialogflow_cx_route_fulfillment.png"><img alt="Fulfillment section in route in Google Dialogflow" class="align-center" src="../_images/dialogflow_cx_route_fulfillment.png" style="width: 500px; height: 350px;" />
+</a>
+<p>To test the intent, you can press the three dots next to your user and select ‘toggle simulator’. That allows you to have a conversation with your agent without having a robot at your disposal or even connecting SIC.</p>
+<p>To train your agent, go into the agent settings, then to ‘deterministic flows’ and then click on ‘train’.</p>
+<p>To use your agent in your SIC project, you need both the agent ID and where the agent is located. You can find this information in the URL: everything between</p>
+<p>The location will look something like this: europe-west4, and the agent ID something like this: b7a6bbf1-0246-461f-83bc-11e68d34d67d. Paste this information into the appropriate fields in your SIC project (e.g. in <code class="docutils literal notranslate"><span class="pre">demo_nao_dialogflow_cx.py</span></code>).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">agent_id</span> <span class="o">=</span> <span class="s2">&quot;XXX&quot;</span>  <span class="c1"># Replace with your agent ID</span>
+<span class="n">location</span> <span class="o">=</span> <span class="s2">&quot;XXX&quot;</span>  <span class="c1"># Replace with your agent location if different</span>
+</pre></div>
+</div>
+<p>We can also have the Nao perform gestures as an accompaniment to the dialogflow routes, e.g.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">reply</span><span class="o">.</span><span class="n">intent</span> <span class="o">==</span> <span class="s2">&quot;welcome_intent&quot;</span><span class="p">:</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Welcome intent detected - performing wave gesture&quot;</span><span class="p">)</span>
+    <span class="c1"># Use send_message for non-blocking gesture execution</span>
+    <span class="c1"># This allows the TTS to speak while the gesture is performed</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">nao</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">NaoPostureRequest</span><span class="p">(</span><span class="s2">&quot;Stand&quot;</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> <span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">nao</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">NaoqiAnimationRequest</span><span class="p">(</span><span class="s2">&quot;animations/Stand/Gestures/Hey_1&quot;</span><span class="p">),</span> <span class="n">block</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Before running the demo, install the required dependencies in your SIC project by running the following command in a separate terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>social-interaction-cloud<span class="o">[</span>dialogflow-cx<span class="o">]</span>
+</pre></div>
+</div>
+<p>or if you’re using z-shell on MacOS:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s1">&#39;social-interaction-cloud[dialogflow-cx]&#39;</span>
+</pre></div>
+</div>
+<p>Afterwards, run the following command in the terminal to start the dialogflow service:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>run-dialogflow-cx
+</pre></div>
+</div>
+<p>Now you can start the demo.</p>
+</section>
+<section id="video-tutorial">
+<h2>📹: Video Tutorial<a class="headerlink" href="#video-tutorial" title="Link to this heading"></a></h2>
+<blockquote>
+<div><iframe width="560" height="315" src="https://www.youtube.com/embed/2cpiXFD8Pj4?si=QrlUV_FeVgewvzjI" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div></blockquote>
+<p>And that’s it! See also <a class="reference external" href="https://github.com/Social-AI-VU/sic_applications/blob/main/demos/nao/demo_nao_dialogflow_cx.py">the full demo script</a> for a more complete example. Make sure to set the proper keyfile path, Nao IP, location and agent ID!
+Next, we’ll cover the basics of robot motion with a Nao robot.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="2_service.html" class="btn btn-neutral float-left" title="2: Using a Service" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="4_motion.html" class="btn btn-neutral float-right" title="4: Robot Motion" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,239 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.common_naoqi.naoqi_stiffness &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.common_naoqi.naoqi_stiffness</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.common_naoqi.naoqi_stiffness</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">six</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICComponentManager</span><span class="p">,</span> <span class="n">SICService</span><span class="p">,</span> <span class="n">utils</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.actuator_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICActuator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConnector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.message_python2</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConfMessage</span><span class="p">,</span> <span class="n">SICMessage</span><span class="p">,</span> <span class="n">SICRequest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.devices.common_naoqi.common_naoqi_motion</span><span class="w"> </span><span class="kn">import</span> <span class="n">NaoqiMotionTools</span>
+
+<span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">PYTHON_VERSION_IS_2</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">qi</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">naoqi</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALProxy</span>
+
+
+<div class="viewcode-block" id="Stiffness">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_stiffness.Stiffness">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Stiffness</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<div class="viewcode-block" id="Stiffness.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_stiffness.Stiffness.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stiffness</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">joints</span><span class="o">=</span><span class="s2">&quot;Body&quot;</span><span class="p">,</span> <span class="n">enable_joint_list_generation</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize a stiffness control request.</span>
+
+<span class="sd">        Controls how strongly the robot maintains commanded joint angles.</span>
+
+<span class="sd">        For more information, see:</span>
+<span class="sd">        - Nao: http://doc.aldebaran.com/2-8/family/nao_technical/bodyparts_naov6.html#nao-chains</span>
+<span class="sd">        - Pepper: http://doc.aldebaran.com/2-8/family/pepper_technical/bodyparts_pep.html</span>
+
+<span class="sd">        :param float stiffness: Stiffness level to set in [0, 1].</span>
+<span class="sd">        :param list[str] joints: Joint or joint chain names (e.g., [&quot;Body&quot;], [&quot;HeadYaw&quot;, LArm]).</span>
+<span class="sd">        :param bool enable_joint_list_generation: If True, joint lists are automatically expanded from chains.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Stiffness</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stiffness</span> <span class="o">=</span> <span class="n">stiffness</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">joints</span> <span class="o">=</span> <span class="n">joints</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enable_joint_list_generation</span> <span class="o">=</span> <span class="n">enable_joint_list_generation</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoqiStiffnessActuator">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_stiffness.NaoqiStiffnessActuator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiStiffnessActuator</span><span class="p">(</span><span class="n">SICActuator</span><span class="p">,</span> <span class="n">NaoqiMotionTools</span><span class="p">):</span>
+<div class="viewcode-block" id="NaoqiStiffnessActuator.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_stiffness.NaoqiStiffnessActuator.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">SICActuator</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">qi</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;tcp://127.0.0.1:9559&quot;</span><span class="p">)</span>
+
+        <span class="n">NaoqiMotionTools</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qi_session</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALMotion&quot;</span><span class="p">)</span>
+
+        <span class="c1"># According to the API you should not set stiffness on these joints. The call fails silently if you do.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forbidden_pepper_joints</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;Leg&quot;</span><span class="p">,</span> <span class="s2">&quot;HipRoll&quot;</span><span class="p">,</span> <span class="s2">&quot;HipPitch&quot;</span><span class="p">,</span> <span class="s2">&quot;KneePitch&quot;</span><span class="p">}</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">robot_type</span> <span class="o">==</span> <span class="s2">&quot;pepper&quot;</span>
+            <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiStiffnessActuator.get_inputs">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_stiffness.NaoqiStiffnessActuator.get_inputs">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_inputs</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">Stiffness</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="NaoqiStiffnessActuator.get_output">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_stiffness.NaoqiStiffnessActuator.get_output">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_output</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">SICMessage</span></div>
+
+
+<div class="viewcode-block" id="NaoqiStiffnessActuator.execute">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_stiffness.NaoqiStiffnessActuator.execute">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">enable_joint_list_generation</span><span class="p">:</span>
+            <span class="n">joints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_joint_list</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">joints</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">joints</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">joints</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;joint list </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">joints</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forbidden_pepper_joints</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">joints</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Stiffness should not be set on leg joints on pepper.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">setStiffnesses</span><span class="p">(</span><span class="n">joints</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">stiffness</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NaoqiStiffnessActuator.stop">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_stiffness.NaoqiStiffnessActuator.stop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="c1"># No long-running worker loop; mark stopped immediately so cleanup runs.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stopped</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiStiffnessActuator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiStiffness">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_stiffness.NaoqiStiffness">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiStiffness</span><span class="p">(</span><span class="n">SICConnector</span><span class="p">):</span>
+    <span class="n">component_class</span> <span class="o">=</span> <span class="n">NaoqiStiffnessActuator</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">SICComponentManager</span><span class="p">([</span><span class="n">NaoqiStiffnessActuator</span><span class="p">])</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

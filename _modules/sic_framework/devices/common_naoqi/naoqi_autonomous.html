@@ -1,0 +1,393 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sic_framework.devices.common_naoqi.naoqi_autonomous &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../../../../_static/sic_mini_logo.svg"/>
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../../../_static/togglebutton.js?v=1ae7504c"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../../../../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sic_framework.devices.common_naoqi.naoqi_autonomous</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sic_framework.devices.common_naoqi.naoqi_autonomous</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SICActuator</span><span class="p">,</span>
+    <span class="n">SICComponentManager</span><span class="p">,</span>
+    <span class="n">SICConfMessage</span><span class="p">,</span>
+    <span class="n">SICMessage</span><span class="p">,</span>
+    <span class="n">SICRequest</span><span class="p">,</span>
+    <span class="n">utils</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sic_framework.core.connector</span><span class="w"> </span><span class="kn">import</span> <span class="n">SICConnector</span>
+
+<span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">PYTHON_VERSION_IS_2</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">qi</span>
+
+
+<div class="viewcode-block" id="NaoBlinkingRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoBlinkingRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoBlinkingRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to enable or disable autonomous blinking.</span>
+
+<span class="sd">    :param bool value: True to enable, False to disable autonomous blinking.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NaoBlinkingRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoBlinkingRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoBlinkingRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoBackgroundMovingRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoBackgroundMovingRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoBackgroundMovingRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to enable or disable autonomous background movement.</span>
+
+<span class="sd">    :param bool value: True to enable, False to disable background movement.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NaoBackgroundMovingRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoBackgroundMovingRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoBackgroundMovingRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoListeningMovementRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoListeningMovementRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoListeningMovementRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to enable or disable listening movements (small motions indicating attention).</span>
+
+<span class="sd">    :param bool value: True to enable, False to disable listening movements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NaoListeningMovementRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoListeningMovementRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoListeningMovementRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoSpeakingMovementRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoSpeakingMovementRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoSpeakingMovementRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to enable or disable autonomous speaking movements.</span>
+
+<span class="sd">    :param bool value: True to enable, False to disable.</span>
+<span class="sd">    :param str mode: Speaking movement mode (&quot;random&quot; or &quot;contextual&quot;).</span>
+<span class="sd">    :raises ValueError: If mode is not one of the supported options. see http://doc.aldebaran.com/2-5/naoqi/interaction/autonomousabilities/alspeakingmovement.html#speaking-movement-mode</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NaoSpeakingMovementRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoSpeakingMovementRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoSpeakingMovementRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoRestRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoRestRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoRestRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+
+
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="NaoWakeUpRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoWakeUpRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoWakeUpRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+
+
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="NaoSetAutonomousLifeRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoSetAutonomousLifeRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoSetAutonomousLifeRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to set the state of the Autonomous Life module.</span>
+
+<span class="sd">    For further details, see: http://doc.aldebaran.com/2-5/ref/life/state_machine_management.html#autonomouslife-states</span>
+
+<span class="sd">    :param str state: Target state (&quot;solitary&quot;, &quot;interactive&quot;, &quot;safeguard&quot;, or &quot;disabled&quot;).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NaoSetAutonomousLifeRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoSetAutonomousLifeRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="s2">&quot;solitary&quot;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoSetAutonomousLifeRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">state</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoBasicAwarenessRequest">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoBasicAwarenessRequest">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoBasicAwarenessRequest</span><span class="p">(</span><span class="n">SICRequest</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Request to enable or disable basic awareness and configure its parameters.</span>
+
+<span class="sd">    :param bool value: True to enable, False to disable basic awareness.</span>
+<span class="sd">    :param list[tuple[str, bool]] stimulus_detection: Optional list of (stimulus_name, enable) tuples.</span>
+<span class="sd">    :param str engagement_mode: Engagement mode setting.</span>
+<span class="sd">    :param str tracking_mode: Tracking mode setting.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NaoBasicAwarenessRequest.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoBasicAwarenessRequest.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">stimulus_detection</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">engagement_mode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tracking_mode</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoBasicAwarenessRequest</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stimulus_detection</span> <span class="o">=</span> <span class="n">stimulus_detection</span> <span class="k">if</span> <span class="n">stimulus_detection</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">engagement_mode</span> <span class="o">=</span> <span class="n">engagement_mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tracking_mode</span> <span class="o">=</span> <span class="n">tracking_mode</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NaoqiAutonomousActuator">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoqiAutonomousActuator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiAutonomousActuator</span><span class="p">(</span><span class="n">SICActuator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Actuator managing NAOqi autonomous abilities.</span>
+
+<span class="sd">    Provides an interface for enabling or disabling autonomous features like blinking, awareness, and background movements, as well as wakeUp and rest actions.</span>
+
+<span class="sd">    :ivar qi.Session session: Connection to the NAOqi framework.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="NaoqiAutonomousActuator.__init__">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoqiAutonomousActuator.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiAutonomousActuator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">qi</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;tcp://127.0.0.1:9559&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Connect to AL proxies</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blinking</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALAutonomousBlinking&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">background_movement</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALBackgroundMovement&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">basic_awareness</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALBasicAwareness&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">listening_movement</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALListeningMovement&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speaking_movement</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALSpeakingMovement&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">autonomous_life</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALAutonomousLife&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">motion</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">service</span><span class="p">(</span><span class="s2">&quot;ALMotion&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NaoqiAutonomousActuator.get_conf">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoqiAutonomousActuator.get_conf">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_conf</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">SICConfMessage</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NaoqiAutonomousActuator.get_inputs">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoqiAutonomousActuator.get_inputs">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_inputs</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">NaoBlinkingRequest</span><span class="p">,</span>
+            <span class="n">NaoBackgroundMovingRequest</span><span class="p">,</span>
+            <span class="n">NaoBasicAwarenessRequest</span><span class="p">,</span>
+            <span class="n">NaoListeningMovementRequest</span><span class="p">,</span>
+            <span class="n">NaoSpeakingMovementRequest</span><span class="p">,</span>
+            <span class="n">NaoWakeUpRequest</span><span class="p">,</span>
+            <span class="n">NaoRestRequest</span><span class="p">,</span>
+        <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="NaoqiAutonomousActuator.get_output">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoqiAutonomousActuator.get_output">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_output</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">SICMessage</span></div>
+
+
+<div class="viewcode-block" id="NaoqiAutonomousActuator.execute">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoqiAutonomousActuator.execute">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute the given autonomous ability request.</span>
+
+<span class="sd">        :param SICRequest message: Request specifying which autonomous ability to adjust.</span>
+<span class="sd">        :returns: Acknowledgement message after execution.</span>
+<span class="sd">        :rtype: SICMessage</span>
+<span class="sd">        :raises Exception: If a requested service or mode is invalid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">message</span> <span class="o">==</span> <span class="n">NaoRestRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">rest</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">message</span> <span class="o">==</span> <span class="n">NaoWakeUpRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">motion</span><span class="o">.</span><span class="n">wakeUp</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">message</span> <span class="o">==</span> <span class="n">NaoBlinkingRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">blinking</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">message</span> <span class="o">==</span> <span class="n">NaoBackgroundMovingRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">background_movement</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">message</span> <span class="o">==</span> <span class="n">NaoListeningMovementRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">listening_movement</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">message</span> <span class="o">==</span> <span class="n">NaoSpeakingMovementRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">speaking_movement</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">mode</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">speaking_movement</span><span class="o">.</span><span class="n">setMode</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">message</span> <span class="o">==</span> <span class="n">NaoSetAutonomousLifeRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">autonomous_life</span><span class="o">.</span><span class="n">setState</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">message</span> <span class="o">==</span> <span class="n">NaoBasicAwarenessRequest</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">basic_awareness</span><span class="o">.</span><span class="n">setEnabled</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">stimulus_detection</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">basic_awareness</span><span class="o">.</span><span class="n">setStimulusDetectionEnabled</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">engagement_mode</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">basic_awareness</span><span class="o">.</span><span class="n">setEngagementMode</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">engagement_mode</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">tracking_mode</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">basic_awareness</span><span class="o">.</span><span class="n">setTrackingMode</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">tracking_mode</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">SICMessage</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="NaoqiAutonomousActuator.stop">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoqiAutonomousActuator.stop">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="c1"># No long-running worker loop; mark stopped immediately so cleanup runs.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stopped</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NaoqiAutonomousActuator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="NaoqiAutonomous">
+<a class="viewcode-back" href="../../../../api/device_components.html#sic_framework.devices.common_naoqi.naoqi_autonomous.NaoqiAutonomous">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NaoqiAutonomous</span><span class="p">(</span><span class="n">SICConnector</span><span class="p">):</span>
+    <span class="n">component_class</span> <span class="o">=</span> <span class="n">NaoqiAutonomousActuator</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">SICComponentManager</span><span class="p">([</span><span class="n">NaoqiAutonomousActuator</span><span class="p">])</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
