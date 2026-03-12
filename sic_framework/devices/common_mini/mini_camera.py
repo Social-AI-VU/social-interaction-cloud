@@ -188,7 +188,7 @@ class MiniCameraSensor(SICSensor):
                 "am",
                 "start",
                 "-n",
-                f"{package_name}/{activity_name}",
+                "{pkg}/{act}".format(pkg=package_name, act=activity_name),
                 # Camera configuration extras
                 "--ei",
                 "target_width",
@@ -208,6 +208,27 @@ class MiniCameraSensor(SICSensor):
         except Exception as e:
             self.logger.error(
                 "MiniCameraSensor failed to start app {pkg}/{act}: {err}".format(
+                    pkg=package_name, act=activity_name, err=e
+                )
+            )
+
+    def stop_app(self, package_name, activity_name):
+        """
+        Request a clean shutdown of the Android camera activity by sending it
+        a broadcast that the activity listens for. This avoids relying on any
+        privileged force-stop permissions.
+        """
+        try:
+            cmd = [
+                "am",
+                "broadcast",
+                "-a",
+                "com.example.alphamini.camera.ACTION_STOP",
+            ]
+            subprocess.run(cmd, check=False)
+        except Exception as e:
+            self.logger.error(
+                "MiniCameraSensor failed to stop app {pkg}/{act}: {err}".format(
                     pkg=package_name, act=activity_name, err=e
                 )
             )
@@ -360,6 +381,8 @@ class MiniCameraSensor(SICSensor):
 
     def _cleanup(self):
         self.logger.info("MiniCameraSensor cleanup: closing sockets")
+        # Ask the Android side to shut down the camera activity if it is still running.
+        self.stop_app("com.example.alphamini.camera", ".CameraActivity")
         try:
             if self.client_conn:
                 self.client_conn.close()

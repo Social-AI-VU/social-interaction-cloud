@@ -17,3 +17,11 @@ Getting started with the Franka Emika robot arm
    :maxdepth: 2
 
    getting_started/getting_started_franka
+
+
+Getting started with the Alphamini
+----------------------------------
+.. toctree::
+   :maxdepth: 2
+
+   getting_started/getting_started_alphamini

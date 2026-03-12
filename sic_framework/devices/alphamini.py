@@ -501,7 +501,7 @@ class Alphamini(SICDeviceManager):
         self.logger.info("Pinging ComponentManager on Alphamini")
 
         # Wait for SIC to start
-        ping_tries = 3
+        ping_tries = 5
         for i in range(ping_tries):
             try:
                 response = self._redis.request(
