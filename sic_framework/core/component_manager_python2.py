@@ -73,10 +73,11 @@ class SICStopComponentRequest(SICRequest):
     :type component_channel: str
     """
 
-    def __init__(self, component_channel, component_name):
+    def __init__(self, component_channel, component_name, client_id=""):
         super(SICStopComponentRequest, self).__init__()
         self.component_channel = component_channel  # str
         self.component_name = component_name  # str
+        self.client_id = client_id  # str
 
 class SICNotStartedMessage(SICMessage):
     """
@@ -115,6 +116,8 @@ class SICComponentManager(object):
         self.client_id = client_id
 
         self.active_components = {}
+
+        self.active_component_meta = {}
         self.component_threads = collections.defaultdict(dict)
         self.component_classes = {
             cls.get_component_name(): cls for cls in component_classes
@@ -364,14 +367,6 @@ class SICComponentManager(object):
                 import gc
                 gc.collect()  # Force garbage collection
                 
-                # Write directly to stderr to see if we reach the end
-                # sys.stderr.write("ComponentManager.stop() completed successfully\n")
-                # sys.stderr.flush()
-                
-                # Try multiple exit strategies
-                # sys.stderr.write("Calling os._exit(0) now...\n")
-                # sys.stderr.flush()
-                
                 try:
                     os._exit(0)
                 except Exception as e:
@@ -497,7 +492,7 @@ class SICComponentManager(object):
                     ),
                     extra={"client_id": client_id}
                 )
-                return SICIgnoreRequestMessage()
+                return None
         
         if is_sic_instance(request, SICStopComponentRequest):
             # reply to the request if the component manager can stop the component
@@ -517,4 +512,5 @@ class SICComponentManager(object):
                     ),
                     extra={"client_id": client_id}
                 )
-                return SICIgnoreRequestMessage()
+                # Return None so no reply is sent; the manager that owns this component will reply.
+                return None
