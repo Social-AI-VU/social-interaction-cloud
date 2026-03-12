@@ -347,7 +347,9 @@ class SICConfMessage(SICMessage):
     A type of message that carries configuration information for services.
     """
 
-    pass
+    def __init__(self):
+        # Plain configuration message; lifecycle is managed by the application.
+        pass
 
 
 class SICRequest(SICMessage):
