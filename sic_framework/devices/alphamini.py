@@ -330,26 +330,29 @@ class Alphamini(SICDeviceManager):
             """
             # start with a clean slate just to be sure
             _, stdout, _, exit_status = self.ssh_command(
-                """
-                rm -rf ~/.test_venv
+                    """
+                    rm -rf ~/.test_venv
 
-                # create virtual environment
-                python -m venv .test_venv --system-site-packages;
-                source ~/.test_venv/bin/activate;
+                    # create virtual environment
+                    python -m venv .test_venv --system-site-packages;
+                    source ~/.test_venv/bin/activate;
 
-                # install required packages and perform a clean sic installation
-                pip install PyTurboJPEG redis six pyaudio alphamini websockets==13.1 protobuf==3.20.3
-                """
-            )
+                    # install required packages and perform a clean sic installation
+                    pip install PyTurboJPEG redis six pyaudio alphamini websockets==13.1 protobuf==3.20.3
+                    """
+                )
 
-            # test to make sure the virtual environment was created
-            _, stdout, _, exit_status = self.ssh_command(
+            # test to make sure the virtual environment was created and that key
+            # packages can be imported
+            _, _, _, exit_status = self.ssh_command(
                 """
                 source ~/.test_venv/bin/activate;
                 """
             )
             if exit_status != 0:
-                raise DeviceInstallationError("Failed to create test virtual environment")
+                raise DeviceInstallationError(
+                    "Failed to create test virtual environment with required packages "
+                )
 
         def uninstall_old_repo():
             """
@@ -412,12 +415,25 @@ class Alphamini(SICDeviceManager):
             """
         )
 
-        if exit_status == 0 and not self.test_repo:
+        # if the environment can be activated, also verify that key Python
+        # packages are importable. If imports fail, we treat the environment
+        # as broken and re-initialise it.
+        pkg_status = 1
+        if exit_status == 0:
+            _, _, _, pkg_status = self.ssh_command(
+                """
+                source ~/.test_venv/bin/activate;
+                python -c "import sic_framework" && python -c "import mini"
+                """
+            )
+
+        if exit_status == 0 and pkg_status == 0 and not self.test_repo:
             self.logger.info(
-                "Test environment already created on Mini and no new dev repo provided... skipping test_venv setup"
+                "Test environment already created on Mini with required packages present "
+                "and no new dev repo provided... skipping test_venv setup"
             )
             return True
-        elif exit_status == 0 and self.test_repo:
+        elif exit_status == 0 and pkg_status == 0 and self.test_repo:
             self.logger.info(
                 "Test environment already created on Mini and new dev repo provided... uninstalling old repo and installing new one"
             )
@@ -426,6 +442,23 @@ class Alphamini(SICDeviceManager):
             )
             uninstall_old_repo()
             install_new_repo()
+        elif (exit_status == 0 and pkg_status != 0) and self.test_repo:
+            # environment exists but is missing required packages
+            self.logger.info(
+                "Test environment on Mini is missing required packages... reinitialising test environment and installing new repo"
+            )
+            self.logger.warning(
+                "This process may take a minute or two... Please hold tight!"
+            )
+            init_test_venv()
+            install_new_repo()
+        elif (exit_status == 0 and pkg_status != 0) and not self.test_repo:
+            self.logger.error(
+                "Test environment on Mini is missing required packages and no new dev repo provided... raising RuntimeError"
+            )
+            raise DeviceInstallationError(
+                "Need to provide repo to recreate broken test environment"
+            )
         elif exit_status == 1 and self.test_repo:
             # test environment not created, so create one
             self.logger.info(
@@ -535,12 +568,6 @@ class Alphamini(SICDeviceManager):
         """
         # send StopRequest to ComponentManager
         self._redis.request(self.device_ip, SICStopServerRequest())
-
-        # make sure the process is killed
-        stdin, stdout, stderr, status = self.ssh_command(self.stop_cmd)
-        if status != 0:
-            self.logger.error("Failed to stop device, exit code: {status}".format(status=status))
-            self.logger.error(stderr.read().decode("utf-8"))
 
 
     @staticmethod

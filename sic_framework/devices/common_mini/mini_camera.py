@@ -60,10 +60,19 @@ class MiniCameraConf(SICConfMessage):
             Desired preview height in pixels. Default 0 uses the camera’s preferred
             preview height.
         :param scale:
-            Fractional scaling factor applied to the camera's default preview size.
-            For example, 0.5 halves both width and height while preserving aspect
-            ratio. If different from 1.0, this takes precedence over target_width
-            and target_height. Default 1.0 leaves the default resolution unchanged.
+            Fractional scaling factor applied on top of the desired size chosen by
+            the Android side. Concretely, the Android ``CameraActivity``:
+
+            - starts from the camera’s preferred preview size,
+            - optionally overrides that with ``target_width``/``target_height`` if
+              both are > 0,
+            - and then multiplies the resulting width/height by ``scale`` before
+              snapping to the closest supported preview size.
+
+            For example, if the preferred size is 640x480, ``scale=0.5`` yields an
+            effective target of ~320x240. If you also set ``target_width`` and
+            ``target_height``, they are used first and then scaled; they are *not*
+            ignored when a non‑default ``scale`` is provided.
         :param jpeg_quality:
             JPEG quality (0–100). Default 80, which is the quality used in the
             original implementation before we started tuning for latency.

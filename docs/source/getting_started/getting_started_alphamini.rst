@@ -170,7 +170,7 @@ From the directory where your APK is located:
    # If updating an existing install
    adb install -r camera_app-debug.apk
 
-Repeat this for the microphone app if it is a separate APK.
+Repeat this for the microphone app.
 
 Once installed, the apps will appear in the Alphamini’s Android launcher, and
 SIC components (e.g. ``MiniCameraSensor`` / ``MiniMicrophoneSensor``) can start
