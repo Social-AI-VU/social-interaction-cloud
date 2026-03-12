@@ -70,12 +70,11 @@ class Alphamini(SICDeviceManager):
         self.dev_test = dev_test
         self.bypass_install = bypass_install
         self.test_repo = test_repo
-        self.device_path = "/data/data/com.termux/files/home/.venv_sic/lib/python3.12/site-packages/sic_framework/devices/alphamini.py"
-        self.test_device_path = "/data/data/com.termux/files/home/sic_in_test/social-interaction-cloud/sic_framework/devices/alphamini.py"
 
-        # if it's a dev_test, we want to use the device script within the test environment
-        if self.dev_test:
-            self.device_path = self.test_device_path
+        # Module path for the Alphamini device script. We invoke it via
+        # "python -m sic_framework.devices.alphamini" on the robot, so we do not
+        # depend on a specific Python minor version or site-packages path.
+        self.device_module = "sic_framework.devices.alphamini"
 
         MiniSdk.set_robot_type(MiniSdk.RobotType.EDU)
 
@@ -220,14 +219,17 @@ class Alphamini(SICDeviceManager):
         _, stdout, _, exit_status = self.ssh_command(
             """
                     # state if SIC is already installed
-                    if [ -d ~/.venv_sic/lib/python3.12/site-packages/sic_framework ]; then
-                        echo "SIC already installed";
-
+                    if [ -d ~/.venv_sic ]; then
                         # activate virtual environment if it exists
                         source ~/.venv_sic/bin/activate;
 
-                        # upgrade the social-interaction-cloud package
-                        pip install --upgrade social-interaction-cloud=={version} --no-deps
+                        # check if sic_framework is importable in this venv
+                        python -c "import sic_framework" >/dev/null 2>&1 && {{
+                            echo "SIC already installed";
+
+                            # upgrade the social-interaction-cloud package
+                            pip install --upgrade social-interaction-cloud=={version} --no-deps;
+                        }}
                     fi;
                     """.format(
                 version=self.sic_version
@@ -490,9 +492,9 @@ class Alphamini(SICDeviceManager):
         self.stop_cmd = """
             echo 'Killing all previous robot wrapper processes';
             # pkill returns 1 when no process matched; treat that as success.
-            pkill -f "python {alphamini_device}" || true
+            pkill -f "python -m {alphamini_module}" || true
         """.format(
-            alphamini_device=self.device_path
+            alphamini_module=self.device_module
         )
 
         # stop alphamini
@@ -501,9 +503,9 @@ class Alphamini(SICDeviceManager):
         time.sleep(1)
 
         self.start_cmd = """
-            python {alphamini_device} --redis_ip={redis_ip} --client_id {client_id} --alphamini_id {mini_id};
+            python -m {alphamini_module} --redis_ip={redis_ip} --client_id {client_id} --alphamini_id {mini_id};
         """.format(
-            alphamini_device=self.device_path,
+            alphamini_module=self.device_module,
             redis_ip=self.redis_ip,
             client_id=self._client_id,
             mini_id=self.mini_id,
@@ -567,7 +569,7 @@ class Alphamini(SICDeviceManager):
         Makes sure the process is killed and the device is stopped.
         """
         # send StopRequest to ComponentManager
-        self._redis.request(self.device_ip, SICStopServerRequest())
+        self._redis.request(self.device_ip, SICStopServerRequest(), block=False)
 
 
     @staticmethod
