@@ -10,8 +10,16 @@ class LLMConf(SICConfMessage):
     and various parameters that control the behavior of the language model.
     """
 
-    def __init__(self, api_key: str, model: str, temp: float = 0.7, max_tokens: int = 100,
-                 system_message: str = "", return_usage_data: bool = False):
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        temp: float = 0.7,
+        max_tokens: int = 100,
+        system_message: str = "",
+        return_usage_data: bool = False,
+        response_format: dict | None = None,
+    ):
         """
         :param api_key: Your secret API API key for authentication
         :param model: LLM model to use (availability depends on exact LLM service)
@@ -19,6 +27,7 @@ class LLMConf(SICConfMessage):
         :param max_tokens: Maximum number of tokens in the model's response
         :param system_message: System message that sets the behavior/context for the LLM
         :param return_usage_data: Boolean flag to output usage data
+        :param response_format: Optional OpenAI response_format dict used as a default
         """
         super().__init__()
         self.api_key = api_key
@@ -27,6 +36,7 @@ class LLMConf(SICConfMessage):
         self.max_tokens = max_tokens
         self.system_message = system_message
         self.return_usage_data = return_usage_data
+        self.response_format = response_format
 
 
 class GPTConf(LLMConf):
@@ -41,8 +51,16 @@ class GPTConf(LLMConf):
     For API key setup, see: https://platform.openai.com/docs/quickstart
     """
 
-    def __init__(self, openai_key, model="gpt-4o-mini", temp=0.7, max_tokens=100, system_message="",
-                 return_usage_data=False):
+    def __init__(
+        self,
+        openai_key,
+        model="gpt-4o-mini",
+        temp=0.7,
+        max_tokens=100,
+        system_message="",
+        return_usage_data: bool = False,
+        response_format: dict | None = None,
+    ):
         """
         :param openai_key: Your secret OpenAI API key for authentication
         :type openai_key: str
@@ -55,9 +73,18 @@ class GPTConf(LLMConf):
         :param system_message: System message that sets the behavior/context for the LLM
         :type system_message: str
         :param return_usage_data: Boolean flag to output usage data
+        :param response_format: Optional OpenAI response_format dict used as a default
         :type return_usage_data: bool
         """
-        super().__init__(openai_key, model, temp, max_tokens, system_message, return_usage_data)
+        super().__init__(
+            openai_key,
+            model,
+            temp,
+            max_tokens,
+            system_message,
+            return_usage_data,
+            response_format=response_format,
+        )
 
 
 class LLMResponse(SICMessage):
@@ -103,7 +130,6 @@ class LLMRequest(SICRequest):
         response_format: dict | None = None,
         stream: bool = False,
         role_messages: list[dict] | None = None,
-        image_urls: list[str] | None = None,
     ):
         """  
         :param prompt: The main text prompt to send to the LLM model
@@ -123,7 +149,6 @@ class LLMRequest(SICRequest):
         self.response_format = response_format
         self.stream = stream
         self.role_messages = role_messages or []
-        self.image_urls = image_urls or []
 
 
 class GPTRequest(LLMRequest):

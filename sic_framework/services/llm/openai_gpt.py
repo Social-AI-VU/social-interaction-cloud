@@ -29,7 +29,6 @@ class GPTComponent(SICService):
 
     def __init__(self, *args, **kwargs):
         super(GPTComponent, self).__init__(*args, **kwargs)
-        self.logger.warning("Initializing GPTComponent!!!")
         self.client = OpenAI(api_key=self.params.api_key)
 
     @staticmethod
@@ -51,7 +50,6 @@ class GPTComponent(SICService):
         context_messages=None,
         system_message=None,
         role_messages=None,
-        image_urls=None,
     ):
         """
         Construct the OpenAI chat messages list from the provided inputs.
@@ -76,15 +74,7 @@ class GPTComponent(SICService):
                     messages.append({"role": "user", "content": context_message})
 
         if user_messages is not None and user_messages != "":
-            if image_urls:
-                content_parts = [{"type": "text", "text": user_messages}]
-                for url in image_urls:
-                    content_parts.append(
-                        {"type": "image_url", "image_url": {"url": url}}
-                    )
-                messages.append({"role": "user", "content": content_parts})
-            else:
-                messages.append({"role": "user", "content": user_messages})
+            messages.append({"role": "user", "content": user_messages})
 
         return messages
 
@@ -98,7 +88,6 @@ class GPTComponent(SICService):
         max_tokens=None,
         response_format=None,
         role_messages=None,
-        image_urls=None,
     ):
         """
         Generate a response from OpenAI GPT models.
@@ -111,16 +100,23 @@ class GPTComponent(SICService):
             context_messages=context_messages,
             system_message=system_message,
             role_messages=role_messages,
-            image_urls=image_urls,
         )
 
-        response = self.client.chat.completions.create(
-            model=model if model else self.params.model,
-            messages=messages,
-            temperature=temp if temp else self.params.temp,
-            max_tokens=max_tokens if max_tokens else self.params.max_tokens,
-            response_format=response_format,
+        # Prefer per-request overrides, then fall back to configuration default
+        effective_response_format = (
+            response_format if response_format is not None else getattr(self.params, "response_format", None)
         )
+
+        kwargs = {
+            "model": model if model else self.params.model,
+            "messages": messages,
+            "temperature": temp if temp else self.params.temp,
+            "max_tokens": max_tokens if max_tokens else self.params.max_tokens,
+        }
+        if effective_response_format is not None:
+            kwargs["response_format"] = effective_response_format
+
+        response = self.client.chat.completions.create(**kwargs)
         content = response.choices[0].message.content
         num_tokens = response.usage.total_tokens if response.usage else 0
         output = GPTResponse(content, num_tokens)
@@ -142,59 +138,10 @@ class GPTComponent(SICService):
         if not is_sic_instance(message, GPTRequest):
             return
 
-        if getattr(message, "stream", False):
-            messages = self._build_messages(
-                user_messages=message.prompt,
-                context_messages=message.context_messages,
-                system_message=message.system_message,
-                role_messages=getattr(message, "role_messages", None),
-                image_urls=getattr(message, "image_urls", None),
-            )
-
-            stream = self.client.chat.completions.create(
-                model=message.model if message.model else self.params.model,
-                messages=messages,
-                temperature=message.temp if message.temp else self.params.temp,
-                max_tokens=message.max_tokens if message.max_tokens else self.params.max_tokens,
-                response_format=getattr(message, "response_format", None),
-                stream=True,
-            )
-
-            full_content = ""
-            last_usage = None
-            for chunk in stream:
-                choice = chunk.choices[0]
-                delta_content = getattr(choice.delta, "content", None)
-                if delta_content:
-                    full_content += delta_content
-                    resp_chunk = GPTResponse(delta_content, 0)
-                    resp_chunk.is_stream_chunk = True
-                    resp_chunk.full_response = full_content
-                    resp_chunk.finish_reason = getattr(choice, "finish_reason", None)
-                    resp_chunk.usage_data = getattr(chunk, "usage", None)
-                    self.output_message(resp_chunk)
-                    last_usage = getattr(chunk, "usage", None)
-
-            if full_content:
-                final_tokens = getattr(last_usage, "total_tokens", 0) if last_usage else 0
-                final_resp = GPTResponse(full_content, final_tokens)
-                final_resp.is_stream_chunk = False
-                final_resp.full_response = full_content
-                final_resp.usage_data = last_usage
-                self.output_message(final_resp)
-        else:
-            output = self.get_openai_response(
-                message.prompt,
-                context_messages=message.context_messages,
-                system_message=message.system_message,
-                model=message.model,
-                temp=message.temp,
-                max_tokens=message.max_tokens,
-                response_format=getattr(message, "response_format", None),
-                role_messages=getattr(message, "role_messages", None),
-                image_urls=getattr(message, "image_urls", None),
-            )
-            self.output_message(output)
+        # For GPTRequest messages, delegate directly to the request handler so that
+        # both request() and send_message() share the same streaming / non-streaming logic.
+        # Any streamed chunks and the final response are handled inside on_request.
+        self.on_request(message)
 
     def on_request(self, request):
         """
@@ -209,24 +156,83 @@ class GPTComponent(SICService):
         :return: GPTResponse with generated text and token usage, or error message for invalid requests
         :rtype: GPTResponse or SICMessage
         """
+        self.logger.debug("Received request: %s", request)
         # Use is_sic_instance for compatibility with pickled messages
         if not is_sic_instance(request, GPTRequest):
             self.logger.error("Invalid request type: %s", type(request))
             return SICMessage("Invalid request type: %s", type(request))
-        else:
-            self.logger.debug("Getting OpenAI response for request: %s", request)
-            output = self.get_openai_response(
-                request.prompt,
+
+        # If streaming is requested, emit intermediate GPTResponse chunks over the
+        # output channel and return the final GPTResponse so request() callers get
+        # a complete reply while subscribers see real-time tokens.
+        if getattr(request, "stream", False):
+            messages = self._build_messages(
+                user_messages=request.prompt,
                 context_messages=request.context_messages,
                 system_message=request.system_message,
-                model=request.model,
-                temp=request.temp,
-                max_tokens=request.max_tokens,
-                response_format=getattr(request, "response_format", None),
                 role_messages=getattr(request, "role_messages", None),
-                image_urls=getattr(request, "image_urls", None),
             )
-            return output
+
+            # Prefer per-request overrides, then fall back to configuration default
+            effective_response_format = getattr(
+                request, "response_format", None
+            ) or getattr(self.params, "response_format", None)
+
+            stream_kwargs = {
+                "model": request.model if request.model else self.params.model,
+                "messages": messages,
+                "temperature": request.temp if request.temp else self.params.temp,
+                "max_tokens": request.max_tokens if request.max_tokens else self.params.max_tokens,
+                "stream": True,
+            }
+            if effective_response_format is not None:
+                stream_kwargs["response_format"] = effective_response_format
+
+            stream = self.client.chat.completions.create(**stream_kwargs)
+
+            full_content = ""
+            last_usage = None
+            for chunk in stream:
+                choice = chunk.choices[0]
+                delta_content = getattr(choice.delta, "content", None)
+                if delta_content:
+                    full_content += delta_content
+                    resp_chunk = GPTResponse(delta_content, 0)
+                    resp_chunk.is_stream_chunk = True
+                    resp_chunk.full_response = full_content
+                    resp_chunk.finish_reason = getattr(choice, "finish_reason", None)
+                    resp_chunk.usage_data = getattr(chunk, "usage", None)
+                    # Send intermediate chunk over the output channel
+                    self.output_message(resp_chunk)
+                    last_usage = getattr(chunk, "usage", None)
+
+            # Build and return the final response to the requester
+            if full_content:
+                final_tokens = getattr(last_usage, "total_tokens", 0) if last_usage else 0
+                final_resp = GPTResponse(full_content, final_tokens)
+                final_resp.is_stream_chunk = False
+                final_resp.full_response = full_content
+                final_resp.usage_data = last_usage
+                # Also emit the final response on the output channel for symmetry
+                self.output_message(final_resp)
+                return final_resp
+
+            # If no content was produced, fall back to an empty response
+            return GPTResponse("", 0)
+
+        # Non-streaming request: just run a single completion and return it
+        self.logger.debug("Getting OpenAI response for request: %s", request)
+        output = self.get_openai_response(
+            request.prompt,
+            context_messages=request.context_messages,
+            system_message=request.system_message,
+            model=request.model,
+            temp=request.temp,
+            max_tokens=request.max_tokens,
+            response_format=getattr(request, "response_format", None),
+            role_messages=getattr(request, "role_messages", None),
+        )
+        return output
 
     def stop(self, *args):
         """
