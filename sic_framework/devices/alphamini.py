@@ -15,6 +15,10 @@ from sic_framework.devices.common_mini.mini_animation import (
     MiniAnimation,
     MiniAnimationActuator,
 )
+from sic_framework.devices.common_mini.mini_camera import (
+    MiniCamera,
+    MiniCameraSensor,
+)
 from sic_framework.devices.common_mini.mini_microphone import (
     MiniMicrophone,
     MiniMicrophoneSensor,
@@ -38,6 +42,7 @@ class Alphamini(SICDeviceManager):
         port=8022,
         mic_conf=None,
         speaker_conf=None,
+        camera_conf=None,
         dev_test=False,
         test_repo=None,
         bypass_install=False,
@@ -65,12 +70,11 @@ class Alphamini(SICDeviceManager):
         self.dev_test = dev_test
         self.bypass_install = bypass_install
         self.test_repo = test_repo
-        self.device_path = "/data/data/com.termux/files/home/.venv_sic/lib/python3.12/site-packages/sic_framework/devices/alphamini.py"
-        self.test_device_path = "/data/data/com.termux/files/home/sic_in_test/social-interaction-cloud/sic_framework/devices/alphamini.py"
 
-        # if it's a dev_test, we want to use the device script within the test environment
-        if self.dev_test:
-            self.device_path = self.test_device_path
+        # Module path for the Alphamini device script. We invoke it via
+        # "python -m sic_framework.devices.alphamini" on the robot, so we do not
+        # depend on a specific Python minor version or site-packages path.
+        self.device_module = "sic_framework.devices.alphamini"
 
         MiniSdk.set_robot_type(MiniSdk.RobotType.EDU)
 
@@ -89,6 +93,7 @@ class Alphamini(SICDeviceManager):
         self.logger.info("SIC version on your local machine: {version}".format(version=self.sic_version))
         self.configs[MiniMicrophone] = mic_conf
         self.configs[MiniSpeaker] = speaker_conf
+        self.configs[MiniCamera] = camera_conf
 
         if self.dev_test:
             self.create_test_environment()
@@ -113,6 +118,10 @@ class Alphamini(SICDeviceManager):
     @property
     def animation(self):
         return self._get_connector(MiniAnimation)
+
+    @property
+    def camera(self):
+        return self._get_connector(MiniCamera)
 
     def install_ssh(self):
         # Updating the package manager
@@ -210,14 +219,17 @@ class Alphamini(SICDeviceManager):
         _, stdout, _, exit_status = self.ssh_command(
             """
                     # state if SIC is already installed
-                    if [ -d ~/.venv_sic/lib/python3.12/site-packages/sic_framework ]; then
-                        echo "SIC already installed";
-
+                    if [ -d ~/.venv_sic ]; then
                         # activate virtual environment if it exists
                         source ~/.venv_sic/bin/activate;
 
-                        # upgrade the social-interaction-cloud package
-                        pip install --upgrade social-interaction-cloud=={version} --no-deps
+                        # check if sic_framework is importable in this venv
+                        python -c "import sic_framework" >/dev/null 2>&1 && {{
+                            echo "SIC already installed";
+
+                            # upgrade the social-interaction-cloud package
+                            pip install --upgrade social-interaction-cloud=={version} --no-deps;
+                        }}
                     fi;
                     """.format(
                 version=self.sic_version
@@ -320,26 +332,29 @@ class Alphamini(SICDeviceManager):
             """
             # start with a clean slate just to be sure
             _, stdout, _, exit_status = self.ssh_command(
-                """
-                rm -rf ~/.test_venv
+                    """
+                    rm -rf ~/.test_venv
 
-                # create virtual environment
-                python -m venv .test_venv --system-site-packages;
-                source ~/.test_venv/bin/activate;
+                    # create virtual environment
+                    python -m venv .test_venv --system-site-packages;
+                    source ~/.test_venv/bin/activate;
 
-                # install required packages and perform a clean sic installation
-                pip install redis six pyaudio alphamini websockets==13.1 protobuf==3.20.3
-                """
-            )
+                    # install required packages and perform a clean sic installation
+                    pip install PyTurboJPEG redis six pyaudio alphamini websockets==13.1 protobuf==3.20.3
+                    """
+                )
 
-            # test to make sure the virtual environment was created
-            _, stdout, _, exit_status = self.ssh_command(
+            # test to make sure the virtual environment was created and that key
+            # packages can be imported
+            _, _, _, exit_status = self.ssh_command(
                 """
                 source ~/.test_venv/bin/activate;
                 """
             )
             if exit_status != 0:
-                raise DeviceInstallationError("Failed to create test virtual environment")
+                raise DeviceInstallationError(
+                    "Failed to create test virtual environment with required packages "
+                )
 
         def uninstall_old_repo():
             """
@@ -402,12 +417,25 @@ class Alphamini(SICDeviceManager):
             """
         )
 
-        if exit_status == 0 and not self.test_repo:
+        # if the environment can be activated, also verify that key Python
+        # packages are importable. If imports fail, we treat the environment
+        # as broken and re-initialise it.
+        pkg_status = 1
+        if exit_status == 0:
+            _, _, _, pkg_status = self.ssh_command(
+                """
+                source ~/.test_venv/bin/activate;
+                python -c "import sic_framework" && python -c "import mini"
+                """
+            )
+
+        if exit_status == 0 and pkg_status == 0 and not self.test_repo:
             self.logger.info(
-                "Test environment already created on Mini and no new dev repo provided... skipping test_venv setup"
+                "Test environment already created on Mini with required packages present "
+                "and no new dev repo provided... skipping test_venv setup"
             )
             return True
-        elif exit_status == 0 and self.test_repo:
+        elif exit_status == 0 and pkg_status == 0 and self.test_repo:
             self.logger.info(
                 "Test environment already created on Mini and new dev repo provided... uninstalling old repo and installing new one"
             )
@@ -416,6 +444,23 @@ class Alphamini(SICDeviceManager):
             )
             uninstall_old_repo()
             install_new_repo()
+        elif (exit_status == 0 and pkg_status != 0) and self.test_repo:
+            # environment exists but is missing required packages
+            self.logger.info(
+                "Test environment on Mini is missing required packages... reinitialising test environment and installing new repo"
+            )
+            self.logger.warning(
+                "This process may take a minute or two... Please hold tight!"
+            )
+            init_test_venv()
+            install_new_repo()
+        elif (exit_status == 0 and pkg_status != 0) and not self.test_repo:
+            self.logger.error(
+                "Test environment on Mini is missing required packages and no new dev repo provided... raising RuntimeError"
+            )
+            raise DeviceInstallationError(
+                "Need to provide repo to recreate broken test environment"
+            )
         elif exit_status == 1 and self.test_repo:
             # test environment not created, so create one
             self.logger.info(
@@ -447,9 +492,9 @@ class Alphamini(SICDeviceManager):
         self.stop_cmd = """
             echo 'Killing all previous robot wrapper processes';
             # pkill returns 1 when no process matched; treat that as success.
-            pkill -f "python {alphamini_device}" || true
+            pkill -f "python -m {alphamini_module}" || true
         """.format(
-            alphamini_device=self.device_path
+            alphamini_module=self.device_module
         )
 
         # stop alphamini
@@ -458,9 +503,9 @@ class Alphamini(SICDeviceManager):
         time.sleep(1)
 
         self.start_cmd = """
-            python {alphamini_device} --redis_ip={redis_ip} --client_id {client_id} --alphamini_id {mini_id};
+            python -m {alphamini_module} --redis_ip={redis_ip} --client_id {client_id} --alphamini_id {mini_id};
         """.format(
-            alphamini_device=self.device_path,
+            alphamini_module=self.device_module,
             redis_ip=self.redis_ip,
             client_id=self._client_id,
             mini_id=self.mini_id,
@@ -491,7 +536,7 @@ class Alphamini(SICDeviceManager):
         self.logger.info("Pinging ComponentManager on Alphamini")
 
         # Wait for SIC to start
-        ping_tries = 3
+        ping_tries = 5
         for i in range(ping_tries):
             try:
                 response = self._redis.request(
@@ -524,13 +569,7 @@ class Alphamini(SICDeviceManager):
         Makes sure the process is killed and the device is stopped.
         """
         # send StopRequest to ComponentManager
-        self._redis.request(self.device_ip, SICStopServerRequest())
-
-        # make sure the process is killed
-        stdin, stdout, stderr, status = self.ssh_command(self.stop_cmd)
-        if status != 0:
-            self.logger.error("Failed to stop device, exit code: {status}".format(status=status))
-            self.logger.error(stderr.read().decode("utf-8"))
+        self._redis.request(self.device_ip, SICStopServerRequest(), block=False)
 
 
     @staticmethod
@@ -554,6 +593,7 @@ mini_component_list = [
     MiniMicrophoneSensor,
     MiniSpeakerComponent,
     MiniAnimationActuator,
+    MiniCameraSensor,
 ]
 # mini_component_list = [MiniSpeakerComponent, MiniAnimationActuator]
 
