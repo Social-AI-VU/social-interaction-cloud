@@ -389,6 +389,9 @@ class SICRedisConnection:
             done.wait(timeout)
 
             if not done.is_set():
+                # Clean up the per-request callback subscription thread on timeout.
+                # Otherwise, repeated short-timeout requests can accumulate callback threads.
+                self.unregister_callback(callback_thread)
                 raise TimeoutError(
                     "Waiting for reply to {} timed out".format(
                         request.get_message_name()

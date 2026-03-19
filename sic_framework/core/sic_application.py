@@ -15,10 +15,11 @@ import tempfile
 import os
 import weakref
 import time
+import subprocess
 try:
     import queue  # Python 3
-except ImportError:  # pragma: no cover
-    import Queue as queue  # Python 2
+except ImportError:
+    import Queue as queue  # Python 2  # type: ignore[import-not-found]
 from sic_framework.core.sic_redis import SICRedisConnection
 
 class SICApplication(object):
@@ -58,6 +59,12 @@ class SICApplication(object):
         self._active_connectors = weakref.WeakSet()
         self._active_devices = weakref.WeakSet()
         self._shutdown_handler_registered = False
+
+        # Track background SIC service subprocesses started by this app process.
+        # This prevents killing services that were already running before we started.
+        self._managed_service_processes = {}
+        self._managed_service_processes_lock = threading.Lock()
+        self._managed_service_logs_dir = tempfile.mkdtemp(prefix="sic_managed_services_")
         
         self.shutdown_event = threading.Event()
         self.client_ip = utils.get_ip_adress()
@@ -115,6 +122,140 @@ class SICApplication(object):
     def get_shutdown_event(self):
         """Return the app-wide shutdown event (backward compatibility wrapper)."""
         return self.shutdown_event
+
+    def start_managed_service_module(self, service_module):
+        """
+        Start a SIC service module in a subprocess (if this app hasn't started it already).
+
+        Parameters
+        ----------
+        service_module : str
+            A Python module path that can be executed via `python -m <service_module>`.
+        """
+        if not service_module or not isinstance(service_module, str):
+            raise ValueError("service_module must be a non-empty string")
+
+        with self._managed_service_processes_lock:
+            existing = self._managed_service_processes.get(service_module)
+            if existing:
+                proc = existing.get("process")
+                if proc is not None and proc.poll() is None:
+                    return proc
+
+            safe_name = service_module.replace(".", "_").replace("/", "_")
+            stdout_path = os.path.join(self._managed_service_logs_dir, "{}_stdout.log".format(safe_name))
+            stderr_path = os.path.join(self._managed_service_logs_dir, "{}_stderr.log".format(safe_name))
+
+            stdout_fh = None
+            stderr_fh = None
+            proc = None
+            try:
+                stdout_fh = open(stdout_path, "ab", buffering=0)
+                stderr_fh = open(stderr_path, "ab", buffering=0)
+
+                # Mirror the console-script behavior (e.g. `run-face-detection=...:main`)
+                # by importing `main` and calling it directly, rather than relying on
+                # `if __name__ == "__main__": main()`.
+                code = (
+                    "import importlib; "
+                    "m = importlib.import_module({mod!r}); "
+                    "m.main()"
+                ).format(mod=service_module)
+                cmd = [sys.executable, "-c", code]
+                popen_kwargs = {
+                    "stdout": stdout_fh,
+                    "stderr": stderr_fh,
+                    "cwd": os.getcwd(),
+                    "close_fds": True,
+                }
+
+                # Important: isolate the managed subprocess from the parent terminal's
+                # SIGINT handling. Otherwise, when the user hits Ctrl+C, the subprocess
+                # receives SIGINT too, starts shutting down early, and the parent then
+                # hangs/times out while trying to stop the component it "owns".
+                try:
+                    proc = subprocess.Popen(
+                        cmd,
+                        **popen_kwargs,
+                        start_new_session=True,
+                    )
+                except TypeError:
+                    # Python2 / older Python may not support start_new_session.
+                    if hasattr(os, "setsid"):
+                        proc = subprocess.Popen(
+                            cmd,
+                            **popen_kwargs,
+                            preexec_fn=os.setsid,
+                        )
+                    else:
+                        proc = subprocess.Popen(cmd, **popen_kwargs)
+            except Exception:
+                # Best-effort cleanup on startup failure.
+                if proc is not None:
+                    try:
+                        proc.kill()
+                    except Exception:
+                        pass
+                if stdout_fh is not None:
+                    try:
+                        stdout_fh.close()
+                    except Exception:
+                        pass
+                if stderr_fh is not None:
+                    try:
+                        stderr_fh.close()
+                    except Exception:
+                        pass
+                raise
+
+            self._managed_service_processes[service_module] = {
+                "process": proc,
+                "stdout_fh": stdout_fh,
+                "stderr_fh": stderr_fh,
+                "started_at": time.time(),
+            }
+            return proc
+
+    def stop_managed_service_modules(self, timeout=5.0):
+        """
+        Stop background SIC service subprocesses started by this app process.
+        Only subprocesses started by `start_managed_service_module()` are stopped.
+        """
+        with self._managed_service_processes_lock:
+            items = list(self._managed_service_processes.items())
+            # Clear early to avoid double-stops if exit handler runs multiple times.
+            self._managed_service_processes = {}
+
+        for service_module, meta in items:
+            proc = meta.get("process")
+            if proc is None:
+                continue
+
+            try:
+                if proc.poll() is None:
+                    proc.terminate()
+                    start_time = time.time()
+                    while proc.poll() is None and (time.time() - start_time) < timeout:
+                        time.sleep(0.1)
+
+                if proc.poll() is None:
+                    proc.kill()
+            except Exception:
+                # Best-effort: don't fail app shutdown if service stop had issues.
+                pass
+
+            stdout_fh = meta.get("stdout_fh")
+            stderr_fh = meta.get("stderr_fh")
+            if stdout_fh is not None:
+                try:
+                    stdout_fh.close()
+                except Exception:
+                    pass
+            if stderr_fh is not None:
+                try:
+                    stderr_fh.close()
+                except Exception:
+                    pass
 
     def get_redis_instance(self):
         """Return the shared Redis connection for this process."""
@@ -209,6 +350,9 @@ class SICApplication(object):
                     )
                 )
 
+        self.logger.info("Stopping managed SIC service subprocesses")
+        self.stop_managed_service_modules()
+
         self.logger.info("All components stopped, stopping logging thread")
         
         # Stop the SICClientLog thread before closing Redis
@@ -219,7 +363,10 @@ class SICApplication(object):
             self._redis.close()
             self._redis = None
 
-        sys.exit(0)
+        try:
+            sys.exit(0)
+        except Exception as e:
+            pass
 
     def register_exit_handler(self):
         """Idempotently register signal and atexit shutdown handlers."""

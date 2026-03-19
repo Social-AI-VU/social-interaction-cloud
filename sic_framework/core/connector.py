@@ -4,6 +4,7 @@ connector.py
 This module contains the SICConnector class, the user interface to connect to components.
 """
 import logging
+import threading
 import time
 from abc import ABCMeta
 import six
@@ -41,6 +42,10 @@ class SICConnector(object):
 
     # define how long an "instant" reply should take at most (ping sometimes takes more than 150ms)
     _PING_TIMEOUT = 1
+    # Liveness monitor settings to prevent shutdown hangs when the component manager dies.
+    _LIVENESS_MONITOR_INTERVAL_SECONDS = 0.2
+    _LIVENESS_MONITOR_PING_TIMEOUT_SECONDS = 0.3
+    _LIVENESS_MONITOR_FAILURES_BEFORE_STOPPED = 2
 
     def __init__(self, 
                  ip="localhost", 
@@ -88,18 +93,64 @@ class SICConnector(object):
         self._callback_threads = []
         self._conf = conf
         self._stopped = False
+        self._stopping = False
+        self._liveness_failures = 0
 
         # make sure we can start the component and ping it
-        try:
-            self._start_component()
-            self.logger.debug("Received SICComponentStartedMessage, component successfully started")
-            assert self._ping(), "Component failed to ping"
-        except Exception as e:
-            self.logger.error(e)
-            raise RuntimeError(e)
+        started = False
+        last_exc = None
+
+        # Try twice:
+        # - first time: normal component startup + ping
+        # - second time: if local and it looks like the component manager isn't running,
+        #   start the corresponding service module in a subprocess and retry.
+        for attempt in range(2):
+            try:
+                self._start_component()
+                self.logger.debug("Received SICComponentStartedMessage, component successfully started")
+                assert self._ping(), "Component failed to ping"
+                started = True
+                break
+            except Exception as e:
+                last_exc = e
+
+                should_autostart = (
+                    attempt == 0
+                    and self.component_ip == self.app.client_ip  # only auto-start local services
+                )
+                if should_autostart:
+                    msg = str(e).lower()
+                    looks_like_missing_service = (
+                        "could not connect" in msg
+                        or "timed out" in msg
+                        or "timeout" in msg
+                        or "ping" in msg
+                    )
+                    if looks_like_missing_service:
+                        try:
+                            service_module = self.component_class.__module__
+                            self.logger.info(
+                                "Auto-starting missing SIC service module: %s",
+                                service_module,
+                            )
+                            self.app.start_managed_service_module(service_module)
+                            time.sleep(0.5)  # give the component manager time to come up
+                            continue
+                        except Exception as start_e:
+                            self.logger.warning("Auto-start failed: %s", start_e)
+
+                break
+
+        if not started:
+            self.logger.error(last_exc)
+            raise RuntimeError(last_exc)
 
         self._callback_threads = []
         self.app.register_connector(self)
+
+        # Start a background liveness monitor so we don't block shutdown
+        # when the component manager (and therefore the component) is already going away.
+        self._start_component_manager_liveness_monitor()
         self.logger.info("Component initialization complete")
 
     @property
@@ -180,8 +231,10 @@ class SICConnector(object):
         """
         Send a StopComponentRequest to the respective ComponentManager, called on exit.
         """
-        if self._stopped:
+        if self._stopped or self._stopping:
             return
+
+        self._stopping = True
             
         self.logger.debug("Connector sending StopComponentRequest to ComponentManager")
         stop_result = self._redis.request(
@@ -216,21 +269,57 @@ class SICConnector(object):
         """
         return self.component_channel
 
-    def _ping(self):
+    def _ping(self, timeout=None):
         """
         Ping the component to check if it is alive.
 
         :return: True if the component is alive, False otherwise.
         :rtype: bool
         """
+        ping_timeout = self._PING_TIMEOUT if timeout is None else timeout
         try:
-            self.request(SICPingRequest(), timeout=self._PING_TIMEOUT)
+            self.request(SICPingRequest(), timeout=ping_timeout)
             self.logger.debug("Received ping response")
             return True
 
         except TimeoutError:
+            if self._stopping or self._stopped:
+                return False
             self.logger.error("Timeout error when trying to ping component {}".format(self.component_class.get_component_name()))
             return False
+
+    def _start_component_manager_liveness_monitor(self):
+        """
+        Monitor component manager liveness and mark this connector stopped
+        if pings fail repeatedly.
+        """
+        def monitor():
+            # Give the app a moment to fully initialize.
+            time.sleep(0.5)
+            while not self._stopped:
+                try:
+                    alive = self._ping(timeout=self._LIVENESS_MONITOR_PING_TIMEOUT_SECONDS)
+                except Exception:
+                    alive = False
+
+                if alive:
+                    self._liveness_failures = 0
+                else:
+                    self._liveness_failures += 1
+                    if self._liveness_failures >= self._LIVENESS_MONITOR_FAILURES_BEFORE_STOPPED:
+                        # Mark stopped so SICApplication.exit_handler won't try to stop again.
+                        self.logger.warning(
+                            "Component manager unresponsive; marking connector %s as stopped",
+                            self.component_endpoint,
+                        )
+                        self._stopped = True
+                        break
+
+                time.sleep(self._LIVENESS_MONITOR_INTERVAL_SECONDS)
+
+        self._liveness_monitor_thread = threading.Thread(target=monitor, name="SICConnectorLivenessMonitor")
+        self._liveness_monitor_thread.daemon = True
+        self._liveness_monitor_thread.start()
         
     def _start_component(self):
         """
