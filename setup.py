@@ -107,6 +107,9 @@ else:
             "nemo_toolkit[asr]==2.5.2",
             "huggingface-hub==0.36.0",
         ],  # requires a flag to set the URL, e.g. pip install .[asr] --extra-index-url https://download.pytorch.org/whl/cu130
+        "reachy-mini": [
+            "reachy-mini>=1.2.0",
+        ],
     }
 
 setup(
