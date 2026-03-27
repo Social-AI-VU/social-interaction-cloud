@@ -25,3 +25,11 @@ Getting started with the Alphamini
    :maxdepth: 2
 
    getting_started/getting_started_alphamini
+
+
+Getting started with the Reachy Mini
+------------------------------------
+.. toctree::
+   :maxdepth: 2
+
+   getting_started/getting_started_reachymini
