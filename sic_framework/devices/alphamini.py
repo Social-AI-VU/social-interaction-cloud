@@ -17,10 +17,6 @@ from sic_framework import SICComponentManager
 from sic_framework.core import utils
 from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage, SICStopServerRequest
 from sic_framework.core.utils import MAGIC_STARTED_COMPONENT_MANAGER_TEXT
-from sic_framework.devices.common_mini.mini_animation import (
-    MiniAnimation,
-    MiniAnimationActuator,
-)
 from sic_framework.devices.common_mini.mini_camera import (
     MiniCamera,
     MiniCameraSensor,
@@ -330,10 +326,6 @@ class Alphamini(SICDeviceManager):
     @property
     def speaker(self):
         return self._get_connector(MiniSpeaker)
-
-    @property
-    def animation(self):
-        return self._get_connector(MiniAnimation)
 
     @property
     def camera(self):
@@ -821,10 +813,8 @@ class Alphamini(SICDeviceManager):
 mini_component_list = [
     MiniMicrophoneSensor,
     MiniSpeakerComponent,
-    MiniAnimationActuator,
     MiniCameraSensor,
 ]
-# mini_component_list = [MiniSpeakerComponent, MiniAnimationActuator]
 
 
 if __name__ == "__main__":
