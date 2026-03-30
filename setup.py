@@ -108,7 +108,7 @@ else:
             "huggingface-hub==0.36.0",
         ],  # requires a flag to set the URL, e.g. pip install .[asr] --extra-index-url https://download.pytorch.org/whl/cu130
         "reachy-mini": [
-            "reachy-mini>=1.6.0",
+            "reachy-mini[mujoco]>=1.6.0",
         ],
     }
 
