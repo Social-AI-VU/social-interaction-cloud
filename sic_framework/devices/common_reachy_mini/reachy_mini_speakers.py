@@ -1,4 +1,7 @@
+from math import gcd
+
 import numpy as np
+from scipy.signal import resample_poly
 
 from sic_framework.core.component_manager_python2 import SICComponentManager
 from sic_framework.core.connector import SICConnector
@@ -23,6 +26,7 @@ class ReachyMiniSpeakersActuator(SICActuator):
         from sic_framework.devices.reachy_mini import ReachyMiniDevice
 
         self.mini = ReachyMiniDevice._mini_instance
+        self._sdk_rate = self.mini.media.get_output_audio_samplerate()
         self.mini.media.start_playing()
 
     @staticmethod
@@ -38,18 +42,24 @@ class ReachyMiniSpeakersActuator(SICActuator):
         return SICMessage
 
     def on_request(self, request):
-        self._play_audio(request.waveform)
+        self._play_audio(request.waveform, request.sample_rate)
         return SICMessage()
 
     def on_message(self, message):
         if hasattr(message, "waveform"):
-            self._play_audio(message.waveform)
+            rate = getattr(message, "sample_rate", self.params.sample_rate)
+            self._play_audio(message.waveform, rate)
         else:
             self.logger.warning("Expected message with waveform attribute")
 
-    def _play_audio(self, waveform):
+    def _play_audio(self, waveform, source_rate):
         pcm = np.frombuffer(waveform, dtype=np.int16)
         samples = pcm.astype(np.float32) / 32767.0
+
+        if source_rate != self._sdk_rate:
+            d = gcd(source_rate, self._sdk_rate)
+            samples = resample_poly(samples, self._sdk_rate // d, source_rate // d)
+
         samples = samples.reshape(-1, 1)
         try:
             self.mini.media.push_audio_sample(samples)
