@@ -358,7 +358,7 @@ class MiniCameraSensor(SICSensor):
             now = time.time()
             if now - self._last_rate_log_time >= 5.0:
                 fps = self._frames_since_log / (now - self._last_rate_log_time)
-                self.logger.info(
+                self.logger.debug(
                     "MiniCameraSensor receiving ~{fps:.1f} fps from Android camera".format(
                         fps=fps
                     )
