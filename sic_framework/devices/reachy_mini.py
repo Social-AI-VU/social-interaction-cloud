@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import threading
 import time
+import sys
 
 from sic_framework import SICComponentManager, utils
 from sic_framework.devices.common_reachy_mini.reachy_mini_camera import (
@@ -132,18 +133,34 @@ class ReachyMiniDevice(SICDeviceManager):
     def _start_daemon(self, sim=False, mockup_sim=False, headless=False,
                       wake_up_on_start=True):
         """Spawn the reachy-mini daemon with its output silenced."""
-        daemon_bin = shutil.which("reachy-mini-daemon")
-        if daemon_bin is None:
-            raise RuntimeError(
-                "reachy-mini-daemon not found on PATH. "
-                "Install the reachy-mini package: pip install 'reachy-mini>=1.6.0'"
-            )
+        if sim and sys.platform == "darwin":
+            mjpython = shutil.which("mjpython")
+            daemon_bin = shutil.which("reachy-mini-daemon")
+            if mjpython is None:
+                raise RuntimeError(
+                    "mjpython not found on PATH. "
+                    "MuJoCo simulation on macOS requires mjpython: pip install mujoco"
+                )
+            if daemon_bin is None:
+                raise RuntimeError(
+                    "reachy-mini-daemon not found on PATH. "
+                    "Install the reachy-mini package: pip install 'reachy-mini>=1.6.0'"
+                )
+            cmd = [mjpython, daemon_bin]
+        else:
+            daemon_bin = shutil.which("reachy-mini-daemon")
+            if daemon_bin is None:
+                raise RuntimeError(
+                    "reachy-mini-daemon not found on PATH. "
+                    "Install the reachy-mini package: pip install 'reachy-mini>=1.6.0'"
+                )
+            cmd = [daemon_bin]
 
         # Silence GStreamer WebRTC signalling logs in the daemon subprocess
         os.environ["RUST_LOG"] = "error,gst_plugin_webrtc_signalling=off"
         os.environ["WEBRTCSINK_SIGNALLING_SERVER_LOG"] = "error"
 
-        cmd = [daemon_bin, "--log-level", "CRITICAL"]
+        cmd.extend(["--log-level", "CRITICAL"])
         if sim:
             cmd.append("--sim")
         elif mockup_sim:
