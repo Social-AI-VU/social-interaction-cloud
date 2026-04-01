@@ -25,6 +25,13 @@ class ReachyMiniIMUConf(SICConfMessage):
 
 
 class ReachyMiniIMUSensor(SICSensor):
+    """Reachy Mini IMU sensor component (wireless variant only).
+
+    Uses the singleton Reachy Mini SDK instance created by `ReachyMiniDevice`
+    (stored on `ReachyMiniDevice._mini_instance`) to read `mini.imu` and emit
+    a `ReachyMiniIMUMessage`.
+    """
+
     def __init__(self, *args, **kwargs):
         super(ReachyMiniIMUSensor, self).__init__(*args, **kwargs)
         from sic_framework.devices.reachy_mini import ReachyMiniDevice

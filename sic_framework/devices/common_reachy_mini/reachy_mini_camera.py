@@ -18,6 +18,14 @@ class ReachyMiniCameraConf(SICConfMessage):
 
 
 class ReachyMiniCameraSensor(SICSensor):
+    """Reachy Mini camera sensor component.
+
+    Uses the singleton Reachy Mini SDK instance created by `ReachyMiniDevice`
+    (stored on `ReachyMiniDevice._mini_instance`) to grab frames from
+    `mini.media.get_frame()`, then applies optional flipping and BGR→RGB
+    conversion before emitting a `CompressedImageMessage`.
+    """
+
     def __init__(self, *args, **kwargs):
         super(ReachyMiniCameraSensor, self).__init__(*args, **kwargs)
         from sic_framework.devices.reachy_mini import ReachyMiniDevice
