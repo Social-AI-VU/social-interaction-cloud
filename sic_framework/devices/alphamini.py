@@ -1,20 +1,22 @@
 import argparse
+import asyncio
+import enum
 import os
 import socket
 import threading
 import time
+from concurrent.futures import Future
 
 import mini.mini_sdk as MiniSdk
 import mini.pkg_tool as Tool
+from mini import MouthLampColor, MouthLampMode
+from mini.apis.api_action import GetActionList, PlayAction, RobotActionType
+from mini.apis.api_expression import PlayExpression, SetMouthLamp
 
 from sic_framework import SICComponentManager
 from sic_framework.core import utils
 from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage, SICStopServerRequest
 from sic_framework.core.utils import MAGIC_STARTED_COMPONENT_MANAGER_TEXT
-from sic_framework.devices.common_mini.mini_animation import (
-    MiniAnimation,
-    MiniAnimationActuator,
-)
 from sic_framework.devices.common_mini.mini_camera import (
     MiniCamera,
     MiniCameraSensor,
@@ -31,6 +33,32 @@ from sic_framework.devices.device import SICDeviceManager
 from sic_framework.core.exceptions import DeviceInstallationError, DeviceExecutionError
 
 
+@enum.unique
+class SDKAnimationType(enum.Enum):
+    ACTION = "action"
+    EXPRESSION = "expression"
+
+
+class WiFiDevice:
+    """
+    WifiDevice class that the MiniSdk.connect() method expects. Taken from mini/mini_sdk.py. Only the ip address is relevant
+    """
+    def __init__(self, name: str = "", address: str = "localhost", port: int = -1, s_type: str = "", server: str = ""):
+        super().__init__()
+        self.address = address
+        self.port = port
+        self.type = s_type
+        self.server = server
+
+        if name.endswith(s_type):
+            self.name = name[: -(len(s_type) + 1)]
+        else:
+            self.name = name
+
+    def __repr__(self):
+        return str(self.__class__) + " name:" + self.name + " address:" + self.address + " port:" + str(
+            self.port) + " type:" + self.type + " server:" + self.server
+
 class Alphamini(SICDeviceManager):
     def __init__(
         self,
@@ -44,6 +72,7 @@ class Alphamini(SICDeviceManager):
         speaker_conf=None,
         camera_conf=None,
         dev_test=False,
+        sdk_test_mode=False,
         test_repo=None,
         bypass_install=False,
         sic_version=None,
@@ -65,11 +94,17 @@ class Alphamini(SICDeviceManager):
 
         """
         self.mini_id = mini_id
+        self.mini_ip = ip
         self.mini_password = mini_password
         self.redis_ip = redis_ip
         self.dev_test = dev_test
+        self.sdk_test_mode = sdk_test_mode
         self.bypass_install = bypass_install
         self.test_repo = test_repo
+        self._mini_api = None
+        self._sdk_animation_futures = []
+        self._sdk_loop = None
+        self._sdk_loop_thread = None
 
         # Module path for the Alphamini device script. We invoke it via
         # "python -m sic_framework.devices.alphamini" on the robot, so we do not
@@ -106,6 +141,183 @@ class Alphamini(SICDeviceManager):
 
         # this should be blocking to make sure SIC starts on a remote mini before the main thread continues
         self.run_sic()
+        self._initialize_mini_sdk_controls()
+
+    def _initialize_mini_sdk_controls(self):
+        """
+        Initialize a background asyncio loop and connect to MiniSDK once.
+
+        If this fails, SIC connectors still work; SDK control methods will raise
+        until a successful reconnect.
+        """
+        if self.sdk_test_mode:
+            self.logger.info("MiniSDK test mode is enabled; SDK control calls are no-op.")
+            return
+
+        self._sdk_loop = asyncio.new_event_loop()
+        self._sdk_loop_thread = threading.Thread(target=self._run_sdk_loop, daemon=True)
+        self._sdk_loop_thread.start()
+        try:
+            self.connect_mini_sdk()
+        except Exception as e:
+            self.logger.warning("MiniSDK control channel is not available yet: %s", e)
+
+    def _run_sdk_loop(self):
+        asyncio.set_event_loop(self._sdk_loop)
+        self._sdk_loop.run_forever()
+
+    def _require_sdk_loop(self):
+        if not self._sdk_loop or not self._sdk_loop.is_running():
+            raise DeviceExecutionError("MiniSDK loop is not running")
+
+    def connect_mini_sdk(self, timeout: int = 10):
+        """
+        Connect this Alphamini device to the Mini SDK control channel.
+        """
+        if self.sdk_test_mode:
+            self.logger.debug("connect_mini_sdk called in sdk_test_mode.")
+            return None
+        self._require_sdk_loop()
+        fut = asyncio.run_coroutine_threadsafe(self._connect_mini_sdk_once(timeout=timeout), self._sdk_loop)
+        return fut.result()
+
+    async def _connect_mini_sdk_once(self, timeout: int = 10):
+        if not self._mini_api:
+            self._mini_api = WiFiDevice(name=self.mini_id, address=self.mini_ip)
+            await MiniSdk.connect(self._mini_api)
+        return self._mini_api
+
+    def disconnect_mini_sdk(self):
+        """
+        Release the Mini SDK control channel.
+        """
+        if self.sdk_test_mode:
+            self.logger.debug("disconnect_mini_sdk called in sdk_test_mode.")
+            return None
+        if not self._sdk_loop or not self._sdk_loop.is_running():
+            return
+        fut = asyncio.run_coroutine_threadsafe(self._disconnect_mini_sdk(), self._sdk_loop)
+        return fut.result()
+
+    async def _disconnect_mini_sdk(self):
+        await MiniSdk.release()
+        self._mini_api = None
+
+    async def _play_action(self, action_name: str):
+        async def command():
+            action = PlayAction(action_name=action_name)
+            return await action.execute()
+
+        return await self._execute_with_reconnect(command, action_name)
+
+    async def _play_expression(self, expression_name: str):
+        async def command():
+            expression = PlayExpression(express_name=expression_name)
+            return await expression.execute()
+
+        return await self._execute_with_reconnect(command, expression_name)
+
+    def animate(self, animation_type, animation_id: str, run_async: bool = False):
+        """
+        Unified SDK wrapper for action/expression controls.
+
+        animation_type supports:
+        - SDKAnimationType.ACTION / SDKAnimationType.EXPRESSION
+        - "action" / "expression" (case-insensitive)
+        """
+        normalized_type = self._normalize_animation_type(animation_type)
+        if self.sdk_test_mode:
+            self.logger.info("MiniSDK test mode: animate(type=%s, id=%s)", normalized_type.value, animation_id)
+            return self._test_mode_result(run_async)
+
+        self._require_sdk_loop()
+        target_coro = self._play_action(animation_id) if normalized_type == SDKAnimationType.ACTION else self._play_expression(animation_id)
+        fut = asyncio.run_coroutine_threadsafe(target_coro, self._sdk_loop)
+        self._sdk_animation_futures.append(fut)
+        if not run_async:
+            return fut.result()
+        return fut
+
+    def set_mouth_lamp(
+        self,
+        color: MouthLampColor,
+        mode: MouthLampMode,
+        duration: int = -1,
+        breath_duration: int = 1000,
+        run_async: bool = False,
+    ):
+        """
+        Set AlphaMini mouth lamp color/mode.
+        """
+        if self.sdk_test_mode:
+            self.logger.info(
+                "MiniSDK test mode: set_mouth_lamp(color=%s, mode=%s, duration=%s, breath_duration=%s)",
+                color,
+                mode,
+                duration,
+                breath_duration,
+            )
+            return self._test_mode_result(run_async)
+        self._require_sdk_loop()
+        fut = asyncio.run_coroutine_threadsafe(
+            self._set_mouth_lamp(color, mode, duration, breath_duration),
+            self._sdk_loop,
+        )
+        self._sdk_animation_futures.append(fut)
+        if not run_async:
+            return fut.result()
+        return fut
+
+    async def _set_mouth_lamp(
+        self,
+        color: MouthLampColor,
+        mode: MouthLampMode,
+        duration: int = -1,
+        breath_duration: int = 1000,
+    ):
+        async def command():
+            if mode == MouthLampMode.BREATH:
+                action = SetMouthLamp(color=color, mode=MouthLampMode.BREATH, breath_duration=breath_duration)
+            else:
+                action = SetMouthLamp(color=color, mode=MouthLampMode.NORMAL, duration=duration)
+            return await action.execute()
+
+        return await self._execute_with_reconnect(command, "mouth_lamp")
+
+    async def _execute_with_reconnect(self, command_factory, command_name: str):
+        await self._connect_mini_sdk_once()
+        try:
+            return await command_factory()
+        except Exception as first_error:
+            self.logger.warning("MiniSDK command '%s' failed, reconnecting once: %s", command_name, first_error)
+            try:
+                await self._disconnect_mini_sdk()
+            except Exception:
+                pass
+            await self._connect_mini_sdk_once()
+            return await command_factory()
+
+    @staticmethod
+    def _normalize_animation_type(animation_type):
+        if isinstance(animation_type, SDKAnimationType):
+            return animation_type
+        if isinstance(animation_type, str):
+            normalized = animation_type.strip().lower()
+            if normalized == SDKAnimationType.ACTION.value:
+                return SDKAnimationType.ACTION
+            if normalized == SDKAnimationType.EXPRESSION.value:
+                return SDKAnimationType.EXPRESSION
+        raise DeviceExecutionError(
+            f"Unsupported animation_type '{animation_type}'. Use SDKAnimationType or 'action'/'expression'."
+        )
+
+    @staticmethod
+    def _test_mode_result(run_async: bool):
+        if run_async:
+            completed = Future()
+            completed.set_result(None)
+            return completed
+        return None
 
     @property
     def mic(self):
@@ -114,10 +326,6 @@ class Alphamini(SICDeviceManager):
     @property
     def speaker(self):
         return self._get_connector(MiniSpeaker)
-
-    @property
-    def animation(self):
-        return self._get_connector(MiniAnimation)
 
     @property
     def camera(self):
@@ -571,6 +779,19 @@ class Alphamini(SICDeviceManager):
         # send StopRequest to ComponentManager
         self._redis.request(self.device_ip, SICStopServerRequest(), block=False)
 
+        # stop pending Mini SDK actions and release SDK resources
+        for fut in self._sdk_animation_futures:
+            fut.cancel()
+        self._sdk_animation_futures = []
+        try:
+            self.disconnect_mini_sdk()
+        except Exception:
+            pass
+        if self._sdk_loop and self._sdk_loop.is_running():
+            self._sdk_loop.call_soon_threadsafe(self._sdk_loop.stop)
+        if self._sdk_loop_thread:
+            self._sdk_loop_thread.join(timeout=2)
+
 
     @staticmethod
     def _is_ssh_available(host, port=8022, timeout=5):
@@ -592,10 +813,8 @@ class Alphamini(SICDeviceManager):
 mini_component_list = [
     MiniMicrophoneSensor,
     MiniSpeakerComponent,
-    MiniAnimationActuator,
     MiniCameraSensor,
 ]
-# mini_component_list = [MiniSpeakerComponent, MiniAnimationActuator]
 
 
 if __name__ == "__main__":

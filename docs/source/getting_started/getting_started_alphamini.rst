@@ -176,6 +176,41 @@ Once installed, the apps will appear in the Alphamini’s Android launcher, and
 SIC components (e.g. ``MiniCameraSensor`` / ``MiniMicrophoneSensor``) can start
 them via the Android Activity Manager (``am``) inside Termux.
 
+Uninstalling the Alphamini camera and microphone apps
+------------------------------------------------------
+
+If you need to remove old versions before reinstalling, you can uninstall the
+apps either from the command line (ADB) or from the Android UI (via Vysor).
+
+Uninstall via ADB (safe to re-run)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use the package names directly:
+
+.. code-block:: bash
+
+   # Camera app
+   adb uninstall com.example.alphamini.camera
+
+   # Microphone app
+   adb uninstall com.example.micarraytest
+
+If an app is not installed, ``adb uninstall`` returns a failure message. That is
+normal; you can ignore it and continue with installation.
+
+Uninstall via Vysor (GUI)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Connect Alphamini over USB and open it in Vysor.
+2. Open Android **Settings** on the mirrored device.
+3. Go to **Apps** (or **Apps & notifications**, depending on Android build).
+4. Find and open:
+
+   - ``com.example.alphamini.camera`` (camera app), and/or
+   - ``com.example.micarraytest`` (microphone app).
+
+5. Tap **Uninstall**.
+
 
 Using Vysor with Alphamini
 --------------------------
