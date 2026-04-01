@@ -35,6 +35,10 @@ extras_require = {
     "google-tts": [
         "google-cloud-texttospeech",
     ],
+    "elevenlabs-tts": [
+    "requests",
+    "websockets==13.1",
+    ],
     "face-detection-dnn": [
         "matplotlib",
         "pandas",
@@ -132,6 +136,7 @@ setup(
             "run-whisper=sic_framework.services.openai_whisper_stt:main",
             "run-webserver=sic_framework.services.webserver.webserver_component:main",
             "run-google-tts=sic_framework.services.google_tts.google_tts:main",
+            "run-elevenlabs-tts=sic_framework.services.elevenlabs_tts.elevenlabs_tts:main",
             "run-google-stt=sic_framework.services.google_stt.google_stt:main",
             "run-object-detection=sic_framework.services.object_detection:main",
             "run-voice-detection=sic_framework.services.voice_detection:main",
