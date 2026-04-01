@@ -363,8 +363,8 @@ class ElevenLabsTTSService(SICService):
         ):
             return self.execute(request)
 
-        self.logger.error(f"Invalid request type: {type(request)}")
-        raise ValueError(f"Invalid request type: {type(request)}")
+        self.logger.error("Invalid request type: {}".format(type(request)))
+        raise ValueError("Invalid request type: {}".format(type(request)))
 
     def execute(self, request: GetElevenLabsSpeechRequest):
         if not self.params.api_key:
@@ -398,11 +398,15 @@ class ElevenLabsTTSService(SICService):
         mode = mode.lower().strip()
 
         if mode not in ("ws", "batch"):
-            raise ValueError(f"Invalid mode '{mode}'. Use 'ws' or 'batch'.")
+            raise ValueError("Invalid mode '{}'. Use 'ws' or 'batch'.".format(mode))
 
         self.logger.info(
-            f"Synthesizing speech with mode={mode}, voice_id={voice_id}, "
-            f"model_id={model_id}, sample_rate={sample_rate}"
+            "Synthesizing speech with mode={}, voice_id={}, model_id={}, sample_rate={}".format(
+                mode,
+                voice_id,
+                model_id,
+                sample_rate,
+            )
         )
 
         if mode == "batch":
@@ -421,7 +425,7 @@ class ElevenLabsTTSService(SICService):
                     "ElevenLabs returned empty audio in batch mode."
                 )
 
-            self.logger.info(f"Generated {len(pcm_audio)} bytes of PCM audio")
+            self.logger.info("Generated {} bytes of PCM audio".format(len(pcm_audio)))
             return ElevenLabsSpeechResult(
                 pcm_audio=pcm_audio,
                 sample_rate=sample_rate,
