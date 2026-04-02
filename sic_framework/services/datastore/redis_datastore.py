@@ -1,27 +1,27 @@
 """
-Redis Database Service: Unified Key-Value Store + Vector RAG
+Redis Datastore Service: Unified Key-Value Store + Vector RAG
 
 This module provides both persistent key-value storage (user models) and vector-based
 retrieval-augmented generation (RAG) for document search, backed by Redis Stack.
 
-All functionality is accessed via SIC service requests through RedisDatabaseComponent.
+All functionality is accessed via SIC service requests through RedisDatastoreComponent.
 
 === ORGANIZATIONAL STRUCTURE ===
 
 1. Configuration:
-   - RedisDatabaseConf: Redis connection and keyspace namespacing
+   - RedisDatastoreConf: Redis connection and keyspace namespacing
 
 2. Request Classes:
    - User Model: SetUsermodelValuesRequest, GetUsermodelValuesRequest, DeleteUsermodelValuesRequest, etc.
-   - Database Management: DeleteDeveloperSegmentRequest, DeleteVersionSegmentRequest, DeleteNamespaceRequest
+   - Datastore Management: DeleteDeveloperSegmentRequest, DeleteVersionSegmentRequest, DeleteNamespaceRequest
    - Vector RAG: IngestVectorDocsRequest, QueryVectorDBRequest
 
 3. Response Messages:
    - UsermodelKeyValuesMessage, UsermodelKeysMessage, VectorDBResultsMessage, SICSuccessMessage
 
 4. Service Component:
-   - RedisDatabaseComponent: Handles all requests via on_request()
-   - RedisDatabase: SIC connector for client usage
+   - RedisDatastoreComponent: Handles all requests via on_request()
+   - RedisDatastore: SIC connector for client usage
 
 === USAGE ===
 
@@ -33,16 +33,16 @@ Start the service (components auto-start on launch):
 
 Send requests from your application:
 
-    from sic_framework.services.database import (
-        RedisDatabase,
-        RedisDatabaseConf,
+    from sic_framework.services.datastore import (
+        RedisDatastore,
+        RedisDatastoreConf,
         SetUsermodelValuesRequest,
         IngestVectorDocsRequest,
         QueryVectorDBRequest,
     )
 
     # Connect to the Redis service
-    db = RedisDatabase(conf=RedisDatabaseConf(redis_url="redis://:password@localhost:6379/0"))
+    db = RedisDatastore(conf=RedisDatastoreConf(redis_url="redis://:password@localhost:6379/0"))
 
     # User model operations
     db.request(SetUsermodelValuesRequest(user_id=123, keyvalues={"name": "Alice"}))
@@ -92,9 +92,9 @@ from sic_framework.core.utils import is_sic_instance
 # ============================================================================
 
 
-class RedisDatabaseConf(SICConfMessage):
+class RedisDatastoreConf(SICConfMessage):
     """
-    Configuration for setting up the connection to a persistent Redis database.
+    Configuration for setting up the connection to a persistent Redis datastore.
 
     Args:
         host: IP address of the Redis server. Default is localhost.
@@ -104,7 +104,7 @@ class RedisDatabaseConf(SICConfMessage):
         socket_connect_timeout: timeout for connecting to Redis server. Default is 2 seconds.
         socket_timeout: socket timeout in seconds. Default is 2 seconds.
         decode_responses: whether to decode standard byte response from Redis server. Default is True.
-        namespace: basic namespace of the redis database. Default is 'store'.
+        namespace: basic namespace of the redis datastore. Default is 'store'.
         version: version of the namespace. Default is 'v1'.
         developer_id: id of the developer user. Default is 0.
     """
@@ -225,14 +225,14 @@ class DeleteUserRequest(SICRequest):
 
 
 # ============================================================================
-# DATABASE MANAGEMENT REQUESTS
+# DATASTORE MANAGEMENT REQUESTS
 # ============================================================================
 
 class DeleteDeveloperSegmentRequest(SICRequest):
 
     def __init__(self, developer_id: int | str = None) -> None:
         """
-        Delete the database entries belonging to the specified developer.
+        Delete the datastore entries belonging to the specified developer.
 
         When no developer_id is provided, the segment of the active developer is deleted.
 
@@ -247,7 +247,7 @@ class DeleteVersionSegmentRequest(SICRequest):
 
     def __init__(self, version: str = None) -> None:
         """
-        Delete the database entries belonging to the specified version.
+        Delete the datastore entries belonging to the specified version.
 
         When no version is provided, the segment of the active version is deleted.
 
@@ -262,7 +262,7 @@ class DeleteNamespaceRequest(SICRequest):
 
     def __init__(self, namespace: str = None) -> None:
         """
-        Delete the database entries belonging to the specified namespace.
+        Delete the datastore entries belonging to the specified namespace.
 
         When no namespace is provided, the segment of the active namespace is deleted.
 
@@ -451,16 +451,16 @@ class StoreKeyspace:
 # SERVICE COMPONENT
 # ============================================================================
 
-class RedisDatabaseComponent(SICService):
+class RedisDatastoreComponent(SICService):
     """
-    Redis Database Service Component
+    Redis Datastore Service Component
     
     Provides persistent key-value storage and vector RAG functionality.
     Requires Redis Stack to be running before initialization.
     """
 
     def __init__(self, *args, **kwargs):
-        super(RedisDatabaseComponent, self).__init__(*args, **kwargs)
+        super(RedisDatastoreComponent, self).__init__(*args, **kwargs)
 
         if self.params.redis_url:
             self.redis = redis.Redis.from_url(
@@ -511,15 +511,15 @@ class RedisDatabaseComponent(SICService):
 
     @staticmethod
     def get_conf():
-        return RedisDatabaseConf()
+        return RedisDatastoreConf()
 
     def on_message(self, message):
         pass
 
     def on_request(self, request):
-        return self.handle_database_actions(request)
+        return self.handle_datastore_actions(request)
 
-    def handle_database_actions(self, request):
+    def handle_datastore_actions(self, request):
         try:
             # User model CRUD operations
             if is_sic_instance(request, SetUsermodelValuesRequest):
@@ -548,7 +548,7 @@ class RedisDatabaseComponent(SICService):
             elif is_sic_instance(request, DeleteUserRequest):
                 return self.delete(self.keyspace_manager.user(request.user_id))
 
-            # Database management operations
+            # Datastore management operations
             elif is_sic_instance(request, DeleteDeveloperSegmentRequest):
                 return self.delete(self.keyspace_manager.base_developer(request.developer_id))
 
@@ -583,7 +583,7 @@ class RedisDatabaseComponent(SICService):
         return SICSuccessMessage()
 
     def stop(self, *args):
-        super(RedisDatabaseComponent, self).stop(*args)
+        super(RedisDatastoreComponent, self).stop(*args)
 
     def _cleanup(self):
         try:
@@ -701,7 +701,7 @@ def _to_float32_blob(vec) -> bytes:
 
 # Redis connection helpers
 
-def _redis_binary_connection_from_conf(conf: RedisDatabaseConf) -> redis.Redis:
+def _redis_binary_connection_from_conf(conf: RedisDatastoreConf) -> redis.Redis:
     if conf.redis_url:
         return redis.Redis.from_url(
             conf.redis_url,
@@ -747,30 +747,62 @@ def _ensure_index(r: redis.Redis, index_name: str, dim: int, *, key_prefix: str,
     try:
         r.execute_command("FT.INFO", index_name)
         exists = True
-    except redis.ResponseError:
+    except redis.ResponseError as e:
+        error_msg = str(e).lower()
+        if "unknown command" in error_msg or "ft.info" in error_msg:
+            raise RuntimeError(
+                "RediSearch module is not available. You must use Redis Stack, not regular Redis.\n"
+                "Install Redis Stack with:\n"
+                "  docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 "
+                "-v redis-stack-data:/data redis/redis-stack:latest\n"
+                "Or download from: https://redis.io/downloads/#redis-stack\n"
+                "Original error: {}".format(e)
+            ) from e
         exists = False
     
     # Drop index if recreating
     if force_recreate and exists:
-        r.execute_command("FT.DROPINDEX", index_name, "DD")
+        try:
+            r.execute_command("FT.DROPINDEX", index_name, "DD")
+        except redis.ResponseError as e:
+            error_msg = str(e).lower()
+            if "unknown command" in error_msg:
+                raise RuntimeError(
+                    "RediSearch module is not available. You must use Redis Stack.\n"
+                    "Original error: {}".format(e)
+                ) from e
+            raise
         exists = False
     
     # Create index if needed
     if not exists:
-        r.execute_command(
-            "FT.CREATE", index_name,
-            "ON", "HASH",
-            "PREFIX", 1, key_prefix,
-            "SCHEMA",
-            "partition", "TAG", "SEPARATOR", "|",
-            "doc_path", "TEXT",
-            "chunk_id", "NUMERIC",
-            "content", "TEXT",
-            "embedding", "VECTOR", "HNSW", 6,
-            "TYPE", "FLOAT32",
-            "DIM", dim,
-            "DISTANCE_METRIC", "COSINE",
-        )
+        try:
+            r.execute_command(
+                "FT.CREATE", index_name,
+                "ON", "HASH",
+                "PREFIX", 1, key_prefix,
+                "SCHEMA",
+                "partition", "TAG", "SEPARATOR", "|",
+                "doc_path", "TEXT",
+                "chunk_id", "NUMERIC",
+                "content", "TEXT",
+                "embedding", "VECTOR", "HNSW", 6,
+                "TYPE", "FLOAT32",
+                "DIM", dim,
+                "DISTANCE_METRIC", "COSINE",
+            )
+        except redis.ResponseError as e:
+            error_msg = str(e).lower()
+            if "unknown command" in error_msg or "ft.create" in error_msg:
+                raise RuntimeError(
+                    "RediSearch module is not available. You must use Redis Stack, not regular Redis.\n"
+                    "Install Redis Stack with:\n"
+                    "  docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 "
+                    "-v redis-stack-data:/data redis/redis-stack:latest\n"
+                    "Or download from: https://redis.io/downloads/#redis-stack\n"
+                    "Original error: {}".format(e)
+                ) from e
+            raise
 
 
 def _delete_existing_docs(r: redis.Redis, *, key_prefix: str, partition: str, batch_size: int) -> int:
@@ -795,7 +827,7 @@ def _delete_existing_docs(r: redis.Redis, *, key_prefix: str, partition: str, ba
 
 def _ingest_one_index(
     *,
-    conf: RedisDatabaseConf,
+    conf: RedisDatastoreConf,
     index_name: str,
     partition: str,
     input_path: Path,
@@ -854,7 +886,7 @@ def _ingest_one_index(
     return {"ok": True, "index": index_name, "partition": partition, "files": len(files), "chunks": total_chunks}
 
 
-def _ingest_vector_docs(conf: RedisDatabaseConf, request: IngestVectorDocsRequest) -> dict[str, Any]:
+def _ingest_vector_docs(conf: RedisDatastoreConf, request: IngestVectorDocsRequest) -> dict[str, Any]:
     """Handle IngestVectorDocsRequest by ingesting documents into Redis vector indexes."""
     root = Path(request.input_path)
 
@@ -914,7 +946,7 @@ def _ingest_vector_docs(conf: RedisDatabaseConf, request: IngestVectorDocsReques
 
 # Query logic
 
-def _query_vector_db(conf: RedisDatabaseConf, request: QueryVectorDBRequest) -> dict[str, Any]:
+def _query_vector_db(conf: RedisDatastoreConf, request: QueryVectorDBRequest) -> dict[str, Any]:
     """Handle QueryVectorDBRequest by searching for similar documents in Redis vector index."""
     if request.k <= 0:
         raise ValueError("k must be > 0")
@@ -931,13 +963,31 @@ def _query_vector_db(conf: RedisDatabaseConf, request: QueryVectorDBRequest) -> 
     query = "{}=>[KNN {} @embedding $vec AS score]".format(filter_base, request.k)
     
     # Execute vector similarity search
-    res = r.execute_command(
-        "FT.SEARCH", index, query,
-        "PARAMS", 2, "vec", blob,
-        "SORTBY", "score",
-        "RETURN", 4, "score", "doc_path", "chunk_id", "content",
-        "DIALECT", 2,
-    )
+    try:
+        res = r.execute_command(
+            "FT.SEARCH", index, query,
+            "PARAMS", 2, "vec", blob,
+            "SORTBY", "score",
+            "RETURN", 4, "score", "doc_path", "chunk_id", "content",
+            "DIALECT", 2,
+        )
+    except redis.ResponseError as e:
+        error_msg = str(e).lower()
+        if "unknown command" in error_msg or "ft.search" in error_msg:
+            raise RuntimeError(
+                "RediSearch module is not available. You must use Redis Stack, not regular Redis.\n"
+                "Install Redis Stack with:\n"
+                "  docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 "
+                "-v redis-stack-data:/data redis/redis-stack:latest\n"
+                "Or download from: https://redis.io/downloads/#redis-stack\n"
+                "Original error: {}".format(e)
+            ) from e
+        if "no such index" in error_msg or "unknown index" in error_msg:
+            raise RuntimeError(
+                "Index '{}' does not exist. Ingest documents first using IngestVectorDocsRequest.\n"
+                "Original error: {}".format(index, e)
+            ) from e
+        raise
     
     if not res:
         return {"index": index, "total": 0, "results": []}
@@ -977,13 +1027,13 @@ def _query_vector_db(conf: RedisDatabaseConf, request: QueryVectorDBRequest) -> 
 # SERVICE CONNECTOR & ENTRY POINT
 # ============================================================================
 
-class RedisDatabase(SICConnector):
-    """Connector for Redis database component"""
-    component_class = RedisDatabaseComponent
+class RedisDatastore(SICConnector):
+    """Connector for Redis datastore component"""
+    component_class = RedisDatastoreComponent
 
 
 def main():
-    SICComponentManager([RedisDatabaseComponent], name="RedisDatabase", auto_start=True)
+    SICComponentManager([RedisDatastoreComponent], name="RedisDatastore")
 
 
 if __name__ == "__main__":

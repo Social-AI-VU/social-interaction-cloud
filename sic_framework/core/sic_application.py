@@ -219,7 +219,10 @@ class SICApplication(object):
             self._redis.close()
             self._redis = None
 
-        sys.exit(0)
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
 
     def register_exit_handler(self):
         """Idempotently register signal and atexit shutdown handlers."""
