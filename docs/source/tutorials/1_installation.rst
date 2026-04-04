@@ -193,6 +193,23 @@ To enable communication between all your devices, we have to start Redis server.
    
    If you're using Redis Stack, you can skip the standard Redis installation below and use Redis Stack instead (it's fully compatible with standard Redis operations).
 
+.. note::
+   **Configuring Redis Password in Your Application**
+   
+   SIC applications automatically load environment variables from ``sic_applications/conf/.env``. You **must** configure the correct ``DB_PASS`` in this file to match your Redis server password:
+   
+   - **If using standard Redis** with the provided ``redis.conf``: The default password is ``changemeplease`` (set in ``conf/redis/redis.conf``)
+   - **If using Redis Stack via Docker**: Use the password you specified in the ``-e REDIS_ARGS="--requirepass YOUR_PASSWORD"`` argument when starting the container
+   
+   Edit ``sic_applications/conf/.env`` and set:
+   
+   .. code-block:: bash
+   
+      DB_PASS=changemeplease  # Replace with your actual Redis password
+      DB_IP=127.0.0.1          # Use localhost for local Redis
+   
+   All SIC demos automatically load this file, so you only need to configure it once. If you change your Redis password, remember to update the ``.env`` file accordingly.
+
 **Ubuntu/Debian/MacOS**
 
 .. toggle:: Ubuntu/Debian/MacOS
