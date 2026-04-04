@@ -588,16 +588,34 @@ class RedisDatastoreComponent(SICService):
             self.redis.delete(*all_keys)
         return SICSuccessMessage()
 
-    def stop(self, *args):
-        super(RedisDatastoreComponent, self).stop(*args)
-
     def _cleanup(self):
+        """Clean up Redis connections when component stops."""
+        # Stop the handler threads for this component to prevent duplicate message handling
         try:
+            if hasattr(self, 'request_handler_thread') and self.request_handler_thread:
+                self.logger.debug("Unregistering request handler thread")
+                self._redis.unregister_callback(self.request_handler_thread)
+                self.logger.debug("Request handler thread unregistered")
+        except Exception as e:
+            self.logger.error(f"Error unregistering request handler thread: {e}")
+        
+        try:
+            if hasattr(self, 'message_handler_thread') and self.message_handler_thread:
+                self.logger.debug("Unregistering message handler thread")
+                self._redis.unregister_callback(self.message_handler_thread)
+                self.logger.debug("Message handler thread unregistered")
+        except Exception as e:
+            self.logger.error(f"Error unregistering message handler thread: {e}")
+        
+        try:
+            # Close only the datastore-specific Redis connection
             r = getattr(self, "redis", None)
             if r is not None and hasattr(r, "close"):
+                self.logger.debug("Closing datastore Redis connection")
                 r.close()
-        except Exception:
-            pass
+                self.logger.debug("Datastore Redis connection closed successfully")
+        except Exception as e:
+            self.logger.error(f"Error closing datastore Redis connection: {e}")
 
 
 # ============================================================================
