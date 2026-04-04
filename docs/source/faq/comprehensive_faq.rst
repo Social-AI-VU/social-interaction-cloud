@@ -45,6 +45,8 @@ Could not connect to Redis server
    1. Make sure Redis server is running.
    2. Try running Redis in another terminal.
    3. It could be that your firewall is blocking communication from the robot. Please turn off your firewall to allow the robot to connect to the Redis server.
+   
+   **Note:** If you need vector search capabilities (for RAG/semantic search), make sure to use `Redis Stack <https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/>`_ instead of standard Redis. Redis Stack is fully compatible with standard Redis but includes additional modules like RediSearch for vector operations.
 
 
 Could not connect to component

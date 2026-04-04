@@ -283,6 +283,7 @@ class IngestVectorDocsRequest(SICRequest):
         self,
         *,
         input_path: str,
+        openai_api_key: str,
         index_name: str = "",
         partition: str = "default",
         glob: str = "**/*",
@@ -300,6 +301,7 @@ class IngestVectorDocsRequest(SICRequest):
         
         Args:
             input_path: Path to file or directory containing documents
+            openai_api_key: OpenAI API key for generating embeddings
             index_name: Explicit index name (required if auto_index_from_folders=False)
             partition: Logical partition for isolation/filtering
             glob: File glob pattern when input_path is a directory
@@ -314,6 +316,7 @@ class IngestVectorDocsRequest(SICRequest):
         """
         super().__init__()
         self.input_path = input_path
+        self.openai_api_key = openai_api_key
         self.index_name = index_name
         self.partition = partition
         self.glob = glob
@@ -335,6 +338,7 @@ class QueryVectorDBRequest(SICRequest):
         episode: str,
         character: str,
         query_text: str,
+        openai_api_key: str,
         k: int = 5,
         partition: Optional[str] = None,
         index_prefix: str = "",
@@ -347,6 +351,7 @@ class QueryVectorDBRequest(SICRequest):
             episode: Episode name (used to compose index name)
             character: Character name (used to compose index name)
             query_text: Query string to find similar documents
+            openai_api_key: OpenAI API key for generating embeddings
             k: Number of top results to return
             partition: Optional partition filter
             index_prefix: Index name prefix
@@ -356,6 +361,7 @@ class QueryVectorDBRequest(SICRequest):
         self.episode = episode
         self.character = character
         self.query_text = query_text
+        self.openai_api_key = openai_api_key
         self.k = k
         self.partition = partition
         self.index_prefix = index_prefix
@@ -664,7 +670,7 @@ def _sha1(s: str) -> str:
 
 # OpenAI embedding helpers
 
-def _openai_embed_texts(texts: list[str], *, model: str) -> list[list[float]]:
+def _openai_embed_texts(texts: list[str], *, model: str, api_key: str) -> list[list[float]]:
     """Embed a list of texts using OpenAI embeddings API."""
     try:
         from openai import OpenAI  # type: ignore
@@ -674,17 +680,16 @@ def _openai_embed_texts(texts: list[str], *, model: str) -> list[list[float]]:
             "Install it with: pip install openai\n"
             "Original import error: {}".format(e)
         ) from e
-    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY is not set")
+        raise RuntimeError("openai_api_key parameter is required")
     client = OpenAI(api_key=api_key)
     resp = client.embeddings.create(model=model, input=texts)
     data = sorted(resp.data, key=lambda d: d.index)
     return [d.embedding for d in data]
 
 
-def _openai_embed_text(text: str, *, model: str) -> list[float]:
-    return _openai_embed_texts([text], model=model)[0]
+def _openai_embed_text(text: str, *, model: str, api_key: str) -> list[float]:
+    return _openai_embed_texts([text], model=model, api_key=api_key)[0]
 
 
 def _to_float32_blob(vec) -> bytes:
@@ -838,13 +843,14 @@ def _ingest_one_index(
     force_recreate_index: bool,
     override_existing: bool,
     embedding_model: str,
+    openai_api_key: str,
 ) -> dict[str, Any]:
     """Ingest documents from a path into a single Redis vector index."""
     r = _redis_binary_connection_from_conf(conf)
     key_prefix = "vec:{}:".format(index_name)
     
     # Ensure index exists with correct dimensionality
-    embedding_dim = len(_openai_embed_text("dimension probe", model=embedding_model))
+    embedding_dim = len(_openai_embed_text("dimension probe", model=embedding_model, api_key=openai_api_key))
     _ensure_index(r, index_name, embedding_dim, key_prefix=key_prefix, force_recreate=force_recreate_index)
     
     # Optionally clear existing docs for this partition
@@ -866,7 +872,7 @@ def _ingest_one_index(
         
         file_id = _sha1(str(file_path.resolve()))
         total_chunks += len(chunks)
-        embeddings = _openai_embed_texts(chunks, model=embedding_model)
+        embeddings = _openai_embed_texts(chunks, model=embedding_model, api_key=openai_api_key)
         
         for i, chunk in enumerate(chunks):
             key = "{}{}:{}:{}".format(key_prefix, partition, file_id, i).encode("utf-8")
@@ -918,6 +924,7 @@ def _ingest_vector_docs(conf: RedisDatastoreConf, request: IngestVectorDocsReque
                     force_recreate_index=request.force_recreate_index,
                     override_existing=request.override_existing,
                     embedding_model=request.embedding_model,
+                    openai_api_key=request.openai_api_key,
                 ))
         
         if not results:
@@ -940,6 +947,7 @@ def _ingest_vector_docs(conf: RedisDatastoreConf, request: IngestVectorDocsReque
         force_recreate_index=request.force_recreate_index,
         override_existing=request.override_existing,
         embedding_model=request.embedding_model,
+        openai_api_key=request.openai_api_key,
     )
     return {"ok": True, "results": [single]}
 
@@ -955,7 +963,7 @@ def _query_vector_db(conf: RedisDatastoreConf, request: QueryVectorDBRequest) ->
     index = compose_index_name(episode=request.episode, character=request.character, index_prefix=request.index_prefix)
     
     # Embed query and prepare vector search
-    query_embedding = _openai_embed_text(request.query_text, model=request.embedding_model)
+    query_embedding = _openai_embed_text(request.query_text, model=request.embedding_model, api_key=request.openai_api_key)
     blob = _to_float32_blob(query_embedding)
     
     # Build RediSearch query with optional partition filter
