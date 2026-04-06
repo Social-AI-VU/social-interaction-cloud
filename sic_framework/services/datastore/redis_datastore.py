@@ -957,28 +957,23 @@ def _ingest_vector_docs(redis_conn: redis.Redis, request: IngestVectorDocsReques
         
         results: list[dict[str, Any]] = []
         
-        # Recursively find all directories containing files matching the glob pattern
-        def find_document_dirs(base_path: Path, current_depth: int = 0) -> list[tuple[Path, list[str]]]:
+        # Recursively find directories that should each get their own index.
+        def find_document_dirs(base_path: Path) -> list[tuple[Path, list[str]]]:
             """
             Recursively find directories with matching documents.
             Returns list of (directory_path, folder_name_components) tuples.
             """
-            doc_dirs = []
-            
-            for item in sorted(base_path.iterdir()):
-                if not item.is_dir():
-                    continue
-                
-                # Check if this directory has matching files
-                if any(_iter_files(item, request.glob)):
-                    # Build folder name components relative to root
-                    relative_path = item.relative_to(root)
-                    folder_names = list(relative_path.parts)
-                    doc_dirs.append((item, folder_names))
-                else:
-                    # Recurse into subdirectories
-                    doc_dirs.extend(find_document_dirs(item, current_depth + 1))
-            
+            doc_dirs: list[tuple[Path, list[str]]] = []
+            subdirs = [p for p in sorted(base_path.iterdir()) if p.is_dir()]
+
+            for sub in subdirs:
+                doc_dirs.extend(find_document_dirs(sub))
+
+            if not doc_dirs and any(_iter_files(base_path, request.glob)):
+                relative_path = base_path.relative_to(root)
+                folder_names = list(relative_path.parts)
+                doc_dirs.append((base_path, folder_names))
+
             return doc_dirs
         
         document_directories = find_document_dirs(root)
