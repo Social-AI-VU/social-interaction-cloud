@@ -199,6 +199,37 @@ class SICComponentManager(object):
         component = None
 
         try:
+            # Check if a component with this channel already exists
+            if component_channel in self.active_components:
+                self.logger.warning(
+                    "Component channel {} already exists. Stopping old component before starting new one.".format(component_channel),
+                    extra={"client_id": client_id}
+                )
+                try:
+                    old_component = self.active_components[component_channel]
+                    
+                    # Stop the old component (this triggers _cleanup)
+                    old_component.stop()
+                    
+                    # Wait briefly for it to stop
+                    if old_component._stopped.wait(timeout=2):
+                        self.logger.debug("Old component stopped successfully", extra={"client_id": client_id})
+                    else:
+                        self.logger.warning("Old component did not stop within timeout", extra={"client_id": client_id})
+                    
+                    # Remove from active components
+                    del self.active_components[component_channel]
+                    
+                    # Clean up any thread references
+                    if component_channel in self.component_threads:
+                        del self.component_threads[component_channel]
+                        
+                except Exception as e:
+                    self.logger.error(
+                        "Error stopping old component: {}".format(e),
+                        extra={"client_id": client_id}
+                    )
+            
             self.logger.debug("Creating component {}".format(component_name), extra={"client_id": client_id})
             
             stop_event = threading.Event()

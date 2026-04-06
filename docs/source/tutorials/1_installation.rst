@@ -145,6 +145,71 @@ The code for this example is available in the ``sic_applications/demos`` folder 
 
 To enable communication between all your devices, we have to start Redis server. Make sure Redis is always up and running when you run any demos.
 
+.. note::
+   **Optional: Redis Stack for Advanced Features**
+   
+   While standard Redis is sufficient for basic SIC operations, you can optionally use `Redis Stack <https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/>`_ which includes additional features:
+   
+   - **Vector Search (RediSearch)**: Enables semantic document search and RAG (Retrieval-Augmented Generation) capabilities via the ``RedisDatastore`` service
+   - **RedisInsight GUI**: Visual interface for browsing and managing your Redis data
+   - **RedisJSON, RedisGraph, RedisTimeSeries**: Additional data structure modules
+   
+   Redis Stack is **not required** for most SIC applications, but is needed if you want to use:
+   
+   - The ``IngestVectorDocsRequest`` and ``QueryVectorDBRequest`` features in ``RedisDatastore``
+   - Document embedding and semantic similarity search
+   - The RAG demo (``demos/datastore/demo_RAG.py``)
+   
+   **Installing Redis Stack:**
+   
+   The easiest way to run Redis Stack is via Docker:
+   
+   .. code-block:: bash
+   
+      # Start Redis Stack with persistence, RedisInsight GUI, and password protection
+      docker run -d --name redis-stack \
+        -p 6379:6379 \
+        -p 8001:8001 \
+        -e REDIS_ARGS="--requirepass changemeplease" \
+        -v redis-stack-data:/data \
+        redis/redis-stack:latest
+   
+   **Important:** Change ``changemeplease`` to a secure password of your choice.
+   
+   Then access RedisInsight at http://localhost:8001 to visually explore your data.
+   
+   When connecting to Redis Stack from your SIC applications, make sure to provide the password in your configuration:
+   
+   .. code-block:: python
+   
+      # Example: RedisDatastore configuration
+      redis_conf = RedisDatastoreConf(
+          host="127.0.0.1",
+          port=6379,
+          password="changemeplease"  # Use your actual password here
+      )
+   
+   Alternatively, you can install Redis Stack directly on your system following the `official installation guide <https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/>`_.
+   
+   If you're using Redis Stack, you can skip the standard Redis installation below and use Redis Stack instead (it's fully compatible with standard Redis operations).
+
+.. note::
+   **Configuring Redis Password in Your Application**
+   
+   SIC applications automatically load environment variables from ``sic_applications/conf/.env``. You **must** configure the correct ``DB_PASS`` in this file to match your Redis server password:
+   
+   - **If using standard Redis** with the provided ``redis.conf``: The default password is ``changemeplease`` (set in ``conf/redis/redis.conf``)
+   - **If using Redis Stack via Docker**: Use the password you specified in the ``-e REDIS_ARGS="--requirepass YOUR_PASSWORD"`` argument when starting the container
+   
+   Edit ``sic_applications/conf/.env`` and set:
+   
+   .. code-block:: bash
+   
+      DB_PASS=changemeplease  # Replace with your actual Redis password
+      DB_IP=127.0.0.1          # Use localhost for local Redis
+   
+   All SIC demos automatically load this file, so you only need to configure it once. If you change your Redis password, remember to update the ``.env`` file accordingly.
+
 **Ubuntu/Debian/MacOS**
 
 .. toggle:: Ubuntu/Debian/MacOS

@@ -105,19 +105,27 @@ def ensure_binary(s, encoding="utf-8", errors="strict"):
     raise TypeError("not expecting type '%s'" % type(s))
 
 
-def str_if_bytes(data):
+def str_if_bytes(data, errors="replace"):
     """
-    Compatibility for the channel names between python2 and python3
-    a redis channel b'name' differes from "name"
+    Convert bytes to string if needed.
+    
+    Compatibility for the channel names between python2 and python3.
+    A redis channel b'name' differs from "name".
+    
+    Also useful for converting Redis responses that may be bytes or other types.
 
     :param data: The data to convert.
-    :type data: str or bytes
+    :type data: str, bytes, bytearray, or any other type
+    :param errors: Error handling strategy for decoding ('replace', 'ignore', 'strict').
+    :type errors: str
     :return: The converted string.
     :rtype: str
     """
-    if isinstance(data, bytes):
-        return data.decode("utf-8", errors="replace")
-    return data
+    if isinstance(data, (bytes, bytearray)):
+        return data.decode("utf-8", errors=errors)
+    if isinstance(data, str):
+        return data
+    return str(data)
 
 
 def random_hex(nbytes=8):

@@ -15,6 +15,9 @@ import tempfile
 import os
 import weakref
 import time
+import inspect
+from pathlib import Path
+from dotenv import load_dotenv
 try:
     import queue  # Python 3
 except ImportError:  # pragma: no cover
@@ -98,7 +101,7 @@ class SICApplication(object):
         """Set global log level for the application runtime."""
         sic_logging.set_log_level(level)
 
-    def set_log_file(self, path):
+    def set_log_file_path(self, path):
         """Write logs to directory at ``path`` (created if missing)."""
         # Python 2 compatibility: exist_ok is not supported.
         try:
@@ -107,6 +110,29 @@ class SICApplication(object):
             if not os.path.isdir(path):
                 raise
         sic_logging.set_log_file(path)
+
+    def load_env(self, path):
+        """
+        Load environment variables from a dotenv file.
+
+        ``path`` is resolved relative to the directory of the calling source file
+        (e.g. the demo script that invokes this method).
+        """
+        frame = inspect.currentframe()
+        try:
+            caller = frame.f_back
+            caller_file = caller.f_globals.get("__file__") if caller else None
+        finally:
+            del frame
+        if not caller_file:
+            raise RuntimeError(
+                "load_env() could not determine caller __file__; call it from demo or app module code."
+            )
+        base = Path(caller_file).resolve().parent
+        env_path = (base / path).resolve()
+        if not env_path.is_file():
+            raise IOError("Environment file not found: {}".format(env_path))
+        load_dotenv(env_path)
 
     def get_app_logger(self):
         """Return the shared application logger (backward compatibility wrapper)."""
@@ -219,7 +245,10 @@ class SICApplication(object):
             self._redis.close()
             self._redis = None
 
-        sys.exit(0)
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
 
     def register_exit_handler(self):
         """Idempotently register signal and atexit shutdown handlers."""
