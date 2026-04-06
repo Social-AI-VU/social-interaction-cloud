@@ -26,10 +26,10 @@ All functionality is accessed via SIC service requests through RedisDatastoreCom
 === USAGE ===
 
 Start Redis Stack manually:
-    docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 -v redis-stack-data:/data redis/redis-stack:latest
+    docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 -v redis-stack-data:/data -e REDIS_ARGS="--requirepass changemeplease" redis/redis-stack:latest
 
 Start the service (components auto-start on launch):
-    run-redis
+    run-datastore-redis
 
 Send requests from your application:
 
@@ -47,7 +47,10 @@ Send requests from your application:
     # User model operations
     db.request(SetUsermodelValuesRequest(user_id=123, keyvalues={"name": "Alice"}))
 
-    # Ingest documents into vector DB
+    # Ingest documents into vector DB (auto-index mode)
+    # Creates one index per directory containing matching files
+    # For example, if you have: docs/legal/contracts/*.pdf and docs/technical/specs/*.pdf
+    # This creates indices: "myproject_legal__contracts" and "myproject_technical__specs"
     result = db.request(IngestVectorDocsRequest(
         input_path="/path/to/documents",
         auto_index_from_folders=True,
@@ -56,22 +59,25 @@ Send requests from your application:
         override_existing=True,
     ))
 
-    # Query vector DB
+    # Or ingest into a single named index
+    result = db.request(IngestVectorDocsRequest(
+        input_path="/path/to/documents",
+        index_name="my_knowledge_base",
+        embedding_model="text-embedding-3-large",
+        override_existing=True,
+    ))
+
+    # Query vector DB using explicit index name
     response = db.request(QueryVectorDBRequest(
-        episode="episode1",
-        character="trudy",
+        index_name="my_knowledge_base",
         query_text="What is the main theme?",
         k=5,
-        index_prefix="myproject_",
+        openai_api_key="sk-...",
         embedding_model="text-embedding-3-large",
     ))
     print(response.payload)
-
-=== PREREQUISITES ===
-
-Redis Stack must be running and accessible before starting this service.
-The service will raise an error on startup if it cannot connect to Redis.
 """
+
 import hashlib
 import os
 from datetime import datetime, timezone
@@ -84,14 +90,31 @@ from redis.exceptions import OutOfMemoryError, DataError, RedisError
 from sic_framework import SICConfMessage, SICComponentManager, SICMessage, SICRequest, SICSuccessMessage
 from sic_framework.core.service_python2 import SICService
 from sic_framework.core.connector import SICConnector
-from sic_framework.core.utils import is_sic_instance
+from sic_framework.core.utils import is_sic_instance, str_if_bytes
+
+
+# ============================================================================
+# CONSTANTS
+# ============================================================================
+
+REDIS_STACK_INSTALL_MESSAGE = (
+    "RediSearch module is not available. You must use Redis Stack, not regular Redis.\n"
+    "Install Redis Stack with:\n"
+    "  docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 "
+    "-v redis-stack-data:/data -e REDIS_ARGS=\"--requirepass changemeplease\" redis/redis-stack:latest\n"
+    "Or download from: https://redis.io/downloads/#redis-stack"
+)
+
+REDIS_CONNECTION_ERROR_MESSAGE = (
+    "Failed to connect to Redis. Make sure Redis Stack is running.\n"
+    "Start Redis with: docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 "
+    "-v redis-stack-data:/data -e REDIS_ARGS=\"--requirepass changemeplease\" redis/redis-stack:latest"
+)
 
 
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-
-
 class RedisDatastoreConf(SICConfMessage):
     """
     Configuration for setting up the connection to a persistent Redis datastore.
@@ -299,20 +322,32 @@ class IngestVectorDocsRequest(SICRequest):
         """
         Request to ingest documents into Redis vector indexes.
         
+        Two modes are supported:
+        
+        1. Single Index Mode (auto_index_from_folders=False):
+           - Requires explicit index_name
+           - All documents from input_path go into one index
+           
+        2. Auto-Index Mode (auto_index_from_folders=True):
+           - Recursively finds all directories containing matching files
+           - Creates one index per directory using its path components
+           - Example: docs/legal/contracts/*.pdf -> index "legal__contracts"
+           - Use index_prefix to namespace your indices (e.g., "myapp_legal__contracts")
+        
         Args:
             input_path: Path to file or directory containing documents
             openai_api_key: OpenAI API key for generating embeddings
             index_name: Explicit index name (required if auto_index_from_folders=False)
-            partition: Logical partition for isolation/filtering
-            glob: File glob pattern when input_path is a directory
-            chunk_chars: Max characters per chunk
-            chunk_overlap: Character overlap between consecutive chunks
-            batch_size: Redis pipeline flush size
-            force_recreate_index: Drop and recreate index (destructive)
-            override_existing: Delete existing docs for this partition before ingesting
-            auto_index_from_folders: Auto-create indexes from <episode>/<character>/ structure
-            index_prefix: Prefix for auto-created index names
-            embedding_model: OpenAI embedding model name
+            partition: Logical partition for isolation/filtering within an index
+            glob: File glob pattern to match documents (default: "**/*")
+            chunk_chars: Max characters per chunk (default: 1200)
+            chunk_overlap: Character overlap between consecutive chunks (default: 150)
+            batch_size: Redis pipeline flush size (default: 256)
+            force_recreate_index: Drop and recreate index - DESTRUCTIVE (default: False)
+            override_existing: Delete existing docs for this partition before ingesting (default: False)
+            auto_index_from_folders: Auto-create one index per directory with matching files (default: False)
+            index_prefix: Prefix for auto-created index names (default: "")
+            embedding_model: OpenAI embedding model name (default: "text-embedding-3-large")
         """
         super().__init__()
         self.input_path = input_path
@@ -335,36 +370,30 @@ class QueryVectorDBRequest(SICRequest):
     def __init__(
         self,
         *,
-        episode: str,
-        character: str,
+        index_name: str,
         query_text: str,
         openai_api_key: str,
         k: int = 5,
         partition: Optional[str] = None,
-        index_prefix: str = "",
         embedding_model: str = "text-embedding-3-large",
     ) -> None:
         """
         Request to query the vector DB for documents similar to query_text.
         
         Args:
-            episode: Episode name (used to compose index name)
-            character: Character name (used to compose index name)
+            index_name: Name of the Redis vector index to query
             query_text: Query string to find similar documents
             openai_api_key: OpenAI API key for generating embeddings
-            k: Number of top results to return
-            partition: Optional partition filter
-            index_prefix: Index name prefix
-            embedding_model: OpenAI embedding model name
+            k: Number of top results to return (default: 5)
+            partition: Optional partition filter to limit search scope
+            embedding_model: OpenAI embedding model name (default: "text-embedding-3-large")
         """
         super().__init__()
-        self.episode = episode
-        self.character = character
+        self.index_name = index_name
         self.query_text = query_text
         self.openai_api_key = openai_api_key
         self.k = k
         self.partition = partition
-        self.index_prefix = index_prefix
         self.embedding_model = embedding_model
 
 
@@ -462,7 +491,7 @@ class RedisDatastoreComponent(SICService):
     Redis Datastore Service Component
     
     Provides persistent key-value storage and vector RAG functionality.
-    Requires Redis Stack to be running before initialization.
+    Requires Redis (preferably Redis Stack) to be running before initialization.
     """
 
     def __init__(self, *args, **kwargs):
@@ -472,6 +501,14 @@ class RedisDatastoreComponent(SICService):
             self.redis = redis.Redis.from_url(
                 self.params.redis_url,
                 decode_responses=self.params.decode_responses,
+                socket_connect_timeout=self.params.socket_connect_timeout,
+                socket_timeout=self.params.socket_timeout,
+                max_connections=self.params.max_connections,
+            )
+            # Binary connection for vector operations
+            self.redis_binary = redis.Redis.from_url(
+                self.params.redis_url,
+                decode_responses=False,
                 socket_connect_timeout=self.params.socket_connect_timeout,
                 socket_timeout=self.params.socket_timeout,
                 max_connections=self.params.max_connections,
@@ -489,16 +526,27 @@ class RedisDatastoreComponent(SICService):
                 max_connections=self.params.max_connections,
             )
             self.redis = redis.Redis(connection_pool=pool)
+            
+            # Binary connection pool for vector operations
+            binary_pool = redis.ConnectionPool(
+                host=self.params.host,
+                port=self.params.port,
+                username=self.params.username,
+                password=self.params.password,
+                db=self.params.db,
+                decode_responses=False,
+                socket_connect_timeout=self.params.socket_connect_timeout,
+                socket_timeout=self.params.socket_timeout,
+                max_connections=self.params.max_connections,
+            )
+            self.redis_binary = redis.Redis(connection_pool=binary_pool)
 
         # Fail fast: catch config/network issues early
         try:
             self.redis.ping()
         except Exception as e:
             raise RuntimeError(
-                "Failed to connect to Redis. Make sure Redis Stack is running.\n"
-                "Start Redis with: docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 "
-                "-v redis-stack-data:/data redis/redis-stack:latest\n"
-                "Original error: {}".format(e)
+                "{}\nOriginal error: {}".format(REDIS_CONNECTION_ERROR_MESSAGE, e)
             ) from e
 
         self.keyspace_manager = StoreKeyspace(namespace=self.params.namespace,
@@ -566,10 +614,10 @@ class RedisDatastoreComponent(SICService):
 
             # Vector RAG operations
             elif is_sic_instance(request, IngestVectorDocsRequest):
-                return VectorDBResultsMessage(payload=_ingest_vector_docs(self.params, request))
+                return VectorDBResultsMessage(payload=_ingest_vector_docs(self.redis_binary, request))
 
             elif is_sic_instance(request, QueryVectorDBRequest):
-                return VectorDBResultsMessage(payload=_query_vector_db(self.params, request))
+                return VectorDBResultsMessage(payload=_query_vector_db(self.redis_binary, request))
 
             else:
                 self.logger.error("Unknown request type: {}".format(type(request)))
@@ -608,7 +656,7 @@ class RedisDatastoreComponent(SICService):
             self.logger.error(f"Error unregistering message handler thread: {e}")
         
         try:
-            # Close only the datastore-specific Redis connection
+            # Close the text-mode Redis connection
             r = getattr(self, "redis", None)
             if r is not None and hasattr(r, "close"):
                 self.logger.debug("Closing datastore Redis connection")
@@ -616,6 +664,16 @@ class RedisDatastoreComponent(SICService):
                 self.logger.debug("Datastore Redis connection closed successfully")
         except Exception as e:
             self.logger.error(f"Error closing datastore Redis connection: {e}")
+        
+        try:
+            # Close the binary-mode Redis connection
+            r_binary = getattr(self, "redis_binary", None)
+            if r_binary is not None and hasattr(r_binary, "close"):
+                self.logger.debug("Closing datastore binary Redis connection")
+                r_binary.close()
+                self.logger.debug("Datastore binary Redis connection closed successfully")
+        except Exception as e:
+            self.logger.error(f"Error closing datastore binary Redis connection: {e}")
 
 
 # ============================================================================
@@ -724,33 +782,6 @@ def _to_float32_blob(vec) -> bytes:
 
 # Redis connection helpers
 
-def _redis_binary_connection_from_conf(conf: RedisDatastoreConf) -> redis.Redis:
-    if conf.redis_url:
-        return redis.Redis.from_url(
-            conf.redis_url,
-            decode_responses=False,
-            socket_connect_timeout=conf.socket_connect_timeout,
-            socket_timeout=conf.socket_timeout,
-        )
-    return redis.Redis(
-        host=conf.host,
-        port=conf.port,
-        username=conf.username,
-        password=conf.password,
-        db=conf.db,
-        decode_responses=False,
-        socket_connect_timeout=conf.socket_connect_timeout,
-        socket_timeout=conf.socket_timeout,
-    )
-
-
-def _b2s(x: Any) -> str:
-    """Convert bytes to string, pass through other types as str."""
-    if isinstance(x, (bytes, bytearray)):
-        return x.decode("utf-8", errors="ignore")
-    return str(x)
-
-
 # Index management
 
 def sanitize_index_name(name: str) -> str:
@@ -759,9 +790,26 @@ def sanitize_index_name(name: str) -> str:
     return cleaned or "index"
 
 
-def compose_index_name(*, episode: str, character: str, index_prefix: str = "") -> str:
-    """Create index name from episode and character: <prefix><episode>__<character>"""
-    return sanitize_index_name("{}{}__{}".format(index_prefix, episode, character))
+def compose_index_name_from_path(folder_names: list[str], index_prefix: str = "") -> str:
+    """
+    Utility: Compose index name from a list of folder names.
+    
+    This constructs an index name by joining folder names with double underscores.
+    Format: <prefix><folder1>__<folder2>__<folder3>
+    
+    Args:
+        folder_names: List of folder names to join (e.g., ["episode1", "character1"])
+        index_prefix: Optional prefix to prepend to the index name
+    
+    Returns:
+        Sanitized index name
+    
+    Example:
+        compose_index_name_from_path(["docs", "legal"], "myapp_")
+        # Returns: "myapp_docs__legal"
+    """
+    joined = "__".join(folder_names)
+    return sanitize_index_name("{}{}".format(index_prefix, joined))
 
 
 def _ensure_index(r: redis.Redis, index_name: str, dim: int, *, key_prefix: str, force_recreate: bool) -> None:
@@ -774,12 +822,7 @@ def _ensure_index(r: redis.Redis, index_name: str, dim: int, *, key_prefix: str,
         error_msg = str(e).lower()
         if "unknown command" in error_msg or "ft.info" in error_msg:
             raise RuntimeError(
-                "RediSearch module is not available. You must use Redis Stack, not regular Redis.\n"
-                "Install Redis Stack with:\n"
-                "  docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 "
-                "-v redis-stack-data:/data redis/redis-stack:latest\n"
-                "Or download from: https://redis.io/downloads/#redis-stack\n"
-                "Original error: {}".format(e)
+                "{}\nOriginal error: {}".format(REDIS_STACK_INSTALL_MESSAGE, e)
             ) from e
         exists = False
     
@@ -791,8 +834,7 @@ def _ensure_index(r: redis.Redis, index_name: str, dim: int, *, key_prefix: str,
             error_msg = str(e).lower()
             if "unknown command" in error_msg:
                 raise RuntimeError(
-                    "RediSearch module is not available. You must use Redis Stack.\n"
-                    "Original error: {}".format(e)
+                    "{}\nOriginal error: {}".format(REDIS_STACK_INSTALL_MESSAGE, e)
                 ) from e
             raise
         exists = False
@@ -818,12 +860,7 @@ def _ensure_index(r: redis.Redis, index_name: str, dim: int, *, key_prefix: str,
             error_msg = str(e).lower()
             if "unknown command" in error_msg or "ft.create" in error_msg:
                 raise RuntimeError(
-                    "RediSearch module is not available. You must use Redis Stack, not regular Redis.\n"
-                    "Install Redis Stack with:\n"
-                    "  docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 "
-                    "-v redis-stack-data:/data redis/redis-stack:latest\n"
-                    "Or download from: https://redis.io/downloads/#redis-stack\n"
-                    "Original error: {}".format(e)
+                    "{}\nOriginal error: {}".format(REDIS_STACK_INSTALL_MESSAGE, e)
                 ) from e
             raise
 
@@ -850,7 +887,7 @@ def _delete_existing_docs(r: redis.Redis, *, key_prefix: str, partition: str, ba
 
 def _ingest_one_index(
     *,
-    conf: RedisDatastoreConf,
+    redis_conn: redis.Redis,
     index_name: str,
     partition: str,
     input_path: Path,
@@ -864,16 +901,15 @@ def _ingest_one_index(
     openai_api_key: str,
 ) -> dict[str, Any]:
     """Ingest documents from a path into a single Redis vector index."""
-    r = _redis_binary_connection_from_conf(conf)
     key_prefix = "vec:{}:".format(index_name)
     
     # Ensure index exists with correct dimensionality
     embedding_dim = len(_openai_embed_text("dimension probe", model=embedding_model, api_key=openai_api_key))
-    _ensure_index(r, index_name, embedding_dim, key_prefix=key_prefix, force_recreate=force_recreate_index)
+    _ensure_index(redis_conn, index_name, embedding_dim, key_prefix=key_prefix, force_recreate=force_recreate_index)
     
     # Optionally clear existing docs for this partition
     if override_existing and not force_recreate_index:
-        _delete_existing_docs(r, key_prefix=key_prefix, partition=partition, batch_size=batch_size)
+        _delete_existing_docs(redis_conn, key_prefix=key_prefix, partition=partition, batch_size=batch_size)
     
     # Collect and validate files
     files = list(_iter_files(input_path, glob_pattern))
@@ -882,7 +918,7 @@ def _ingest_one_index(
     
     # Process each file: read → chunk → embed → store
     total_chunks = 0
-    pipe = r.pipeline(transaction=False)
+    pipe = redis_conn.pipeline(transaction=False)
     for file_path in files:
         chunks = _chunk_text(_read_document(file_path), chunk_chars, chunk_overlap)
         if not chunks:
@@ -910,43 +946,64 @@ def _ingest_one_index(
     return {"ok": True, "index": index_name, "partition": partition, "files": len(files), "chunks": total_chunks}
 
 
-def _ingest_vector_docs(conf: RedisDatastoreConf, request: IngestVectorDocsRequest) -> dict[str, Any]:
+def _ingest_vector_docs(redis_conn: redis.Redis, request: IngestVectorDocsRequest) -> dict[str, Any]:
     """Handle IngestVectorDocsRequest by ingesting documents into Redis vector indexes."""
     root = Path(request.input_path)
 
-    # Auto-index mode: create one index per episode/character folder
+    # Auto-index mode: create one index per leaf directory containing matching files
     if request.auto_index_from_folders:
         if not root.exists() or not root.is_dir():
             raise RuntimeError("input_path must be a directory when auto_index_from_folders=True")
         
         results: list[dict[str, Any]] = []
-        for episode_dir in sorted([p for p in root.iterdir() if p.is_dir()]):
-            for character_dir in sorted([p for p in episode_dir.iterdir() if p.is_dir()]):
-                if not any(_iter_files(character_dir, request.glob)):
+        
+        # Recursively find all directories containing files matching the glob pattern
+        def find_document_dirs(base_path: Path, current_depth: int = 0) -> list[tuple[Path, list[str]]]:
+            """
+            Recursively find directories with matching documents.
+            Returns list of (directory_path, folder_name_components) tuples.
+            """
+            doc_dirs = []
+            
+            for item in sorted(base_path.iterdir()):
+                if not item.is_dir():
                     continue
                 
-                index_name = compose_index_name(
-                    episode=episode_dir.name,
-                    character=character_dir.name,
-                    index_prefix=request.index_prefix,
-                )
-                results.append(_ingest_one_index(
-                    conf=conf,
-                    index_name=index_name,
-                    partition="default",
-                    input_path=character_dir,
-                    glob_pattern=request.glob,
-                    chunk_chars=request.chunk_chars,
-                    chunk_overlap=request.chunk_overlap,
-                    batch_size=request.batch_size,
-                    force_recreate_index=request.force_recreate_index,
-                    override_existing=request.override_existing,
-                    embedding_model=request.embedding_model,
-                    openai_api_key=request.openai_api_key,
-                ))
+                # Check if this directory has matching files
+                if any(_iter_files(item, request.glob)):
+                    # Build folder name components relative to root
+                    relative_path = item.relative_to(root)
+                    folder_names = list(relative_path.parts)
+                    doc_dirs.append((item, folder_names))
+                else:
+                    # Recurse into subdirectories
+                    doc_dirs.extend(find_document_dirs(item, current_depth + 1))
+            
+            return doc_dirs
         
-        if not results:
-            raise RuntimeError("No documents found under episode/character folders in {}".format(root))
+        document_directories = find_document_dirs(root)
+        
+        if not document_directories:
+            raise RuntimeError("No directories with matching documents found in {}".format(root))
+        
+        for doc_dir, folder_names in document_directories:
+            index_name = compose_index_name_from_path(folder_names, request.index_prefix)
+            
+            results.append(_ingest_one_index(
+                redis_conn=redis_conn,
+                index_name=index_name,
+                partition="default",
+                input_path=doc_dir,
+                glob_pattern=request.glob,
+                chunk_chars=request.chunk_chars,
+                chunk_overlap=request.chunk_overlap,
+                batch_size=request.batch_size,
+                force_recreate_index=request.force_recreate_index,
+                override_existing=request.override_existing,
+                embedding_model=request.embedding_model,
+                openai_api_key=request.openai_api_key,
+            ))
+        
         return {"ok": True, "results": results}
 
     # Single index mode: use explicit index_name
@@ -954,7 +1011,7 @@ def _ingest_vector_docs(conf: RedisDatastoreConf, request: IngestVectorDocsReque
         raise RuntimeError("index_name is required when auto_index_from_folders=False")
 
     single = _ingest_one_index(
-        conf=conf,
+        redis_conn=redis_conn,
         index_name=sanitize_index_name(request.index_name),
         partition=request.partition,
         input_path=root,
@@ -972,13 +1029,12 @@ def _ingest_vector_docs(conf: RedisDatastoreConf, request: IngestVectorDocsReque
 
 # Query logic
 
-def _query_vector_db(conf: RedisDatastoreConf, request: QueryVectorDBRequest) -> dict[str, Any]:
+def _query_vector_db(redis_conn: redis.Redis, request: QueryVectorDBRequest) -> dict[str, Any]:
     """Handle QueryVectorDBRequest by searching for similar documents in Redis vector index."""
     if request.k <= 0:
         raise ValueError("k must be > 0")
     
-    r = _redis_binary_connection_from_conf(conf)
-    index = compose_index_name(episode=request.episode, character=request.character, index_prefix=request.index_prefix)
+    index = sanitize_index_name(request.index_name)
     
     # Embed query and prepare vector search
     query_embedding = _openai_embed_text(request.query_text, model=request.embedding_model, api_key=request.openai_api_key)
@@ -990,7 +1046,7 @@ def _query_vector_db(conf: RedisDatastoreConf, request: QueryVectorDBRequest) ->
     
     # Execute vector similarity search
     try:
-        res = r.execute_command(
+        res = redis_conn.execute_command(
             "FT.SEARCH", index, query,
             "PARAMS", 2, "vec", blob,
             "SORTBY", "score",
@@ -1001,12 +1057,7 @@ def _query_vector_db(conf: RedisDatastoreConf, request: QueryVectorDBRequest) ->
         error_msg = str(e).lower()
         if "unknown command" in error_msg or "ft.search" in error_msg:
             raise RuntimeError(
-                "RediSearch module is not available. You must use Redis Stack, not regular Redis.\n"
-                "Install Redis Stack with:\n"
-                "  docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 "
-                "-v redis-stack-data:/data redis/redis-stack:latest\n"
-                "Or download from: https://redis.io/downloads/#redis-stack\n"
-                "Original error: {}".format(e)
+                "{}\nOriginal error: {}".format(REDIS_STACK_INSTALL_MESSAGE, e)
             ) from e
         if "no such index" in error_msg or "unknown index" in error_msg:
             raise RuntimeError(
@@ -1022,17 +1073,17 @@ def _query_vector_db(conf: RedisDatastoreConf, request: QueryVectorDBRequest) ->
     total = int(res[0])
     results = []
     for i in range(1, len(res), 2):
-        doc_id = _b2s(res[i])
+        doc_id = str_if_bytes(res[i], errors="ignore")
         fields = res[i + 1]
         
         # Parse field list into dict
         parsed = {}
         if isinstance(fields, list):
             for j in range(0, len(fields), 2):
-                parsed[_b2s(fields[j])] = fields[j + 1]
+                parsed[str_if_bytes(fields[j], errors="ignore")] = fields[j + 1]
         
         # Extract and parse score
-        score_str = _b2s(parsed.get("score", b""))
+        score_str = str_if_bytes(parsed.get("score", b""), errors="ignore")
         try:
             score = float(score_str)
         except Exception:
@@ -1041,9 +1092,9 @@ def _query_vector_db(conf: RedisDatastoreConf, request: QueryVectorDBRequest) ->
         results.append({
             "doc_id": doc_id,
             "score": score,
-            "doc_path": _b2s(parsed.get("doc_path", b"")),
-            "chunk_id": _b2s(parsed.get("chunk_id", b"")),
-            "content": _b2s(parsed.get("content", b"")).strip(),
+            "doc_path": str_if_bytes(parsed.get("doc_path", b""), errors="ignore"),
+            "chunk_id": str_if_bytes(parsed.get("chunk_id", b""), errors="ignore"),
+            "content": str_if_bytes(parsed.get("content", b""), errors="ignore").strip(),
         })
     
     return {"index": index, "total": total, "results": results}
