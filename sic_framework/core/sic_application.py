@@ -15,6 +15,9 @@ import tempfile
 import os
 import weakref
 import time
+import inspect
+from pathlib import Path
+from dotenv import load_dotenv
 try:
     import queue  # Python 3
 except ImportError:  # pragma: no cover
@@ -98,7 +101,7 @@ class SICApplication(object):
         """Set global log level for the application runtime."""
         sic_logging.set_log_level(level)
 
-    def set_log_file(self, path):
+    def set_log_file_path(self, path):
         """Write logs to directory at ``path`` (created if missing)."""
         # Python 2 compatibility: exist_ok is not supported.
         try:
@@ -107,6 +110,29 @@ class SICApplication(object):
             if not os.path.isdir(path):
                 raise
         sic_logging.set_log_file(path)
+
+    def load_env(self, path):
+        """
+        Load environment variables from a dotenv file.
+
+        ``path`` is resolved relative to the directory of the calling source file
+        (e.g. the demo script that invokes this method).
+        """
+        frame = inspect.currentframe()
+        try:
+            caller = frame.f_back
+            caller_file = caller.f_globals.get("__file__") if caller else None
+        finally:
+            del frame
+        if not caller_file:
+            raise RuntimeError(
+                "load_env() could not determine caller __file__; call it from demo or app module code."
+            )
+        base = Path(caller_file).resolve().parent
+        env_path = (base / path).resolve()
+        if not env_path.is_file():
+            raise IOError("Environment file not found: {}".format(env_path))
+        load_dotenv(env_path)
 
     def get_app_logger(self):
         """Return the shared application logger (backward compatibility wrapper)."""
@@ -172,66 +198,32 @@ class SICApplication(object):
             self.logger.info("Setting shutdown event")
             self.shutdown_event.set()
 
+        # First stop devices (which stops their remote component managers and their components).
         devices_to_stop = list(self._active_devices)
-        device_ips = set([getattr(d, "device_ip", None) for d in devices_to_stop if getattr(d, "device_ip", None)])
-
-        connectors_to_stop = list(self._active_connectors)
-        device_connectors = []
-        other_connectors = []
-        for c in connectors_to_stop:
-            c_ip = getattr(c, "component_ip", None)
-            if c_ip and c_ip in device_ips:
-                device_connectors.append(c)
-            else:
-                other_connectors.append(c)
-
-        # Stop device-owned connectors first while the remote manager is still alive.
-        self.logger.info(
-            "Stopping components (found {count} components)".format(
-                count=len(connectors_to_stop)
-            )
-        )
-        stopped = set()
-        for i, connector in enumerate(device_connectors):
-            connector_name = getattr(connector, "component_endpoint", "unknown")
-            self.logger.info(
-                "Stopping component {i}/{total}: {name}".format(
-                    i=i + 1, total=len(device_connectors), name=connector_name
-                )
-            )
-            try:
-                connector.stop_component()
-            except Exception as e:
-                self.logger.warning(
-                    "Warning: Error stopping component {name}: {e}".format(
-                        name=connector_name, e=e
-                    )
-                )
-            stopped.add(connector)
-
-        # Then stop devices (which stops their remote component manager).
         self.logger.info("Stopping devices")
         for device in devices_to_stop:
             try:
+                self.logger.info("Stopping device {}".format(device.name))
+                for connector in device.connectors.values():
+                    connector_name = getattr(connector, "component_endpoint", "unknown")
+                    self.logger.info("Stopping component {} from device {}".format(connector_name, device.name))
+                    connector.stop_component()
                 device.stop_device()
             except Exception as e:
-                self.logger.error(
-                    "Error stopping device {name}: {e}".format(
-                        name=getattr(
-                            device, "name", getattr(device, "device_ip", "unknown")
-                        ),
-                        e=e,
-                    )
-                )
+                self.logger.error("Error stopping device {}: {}".format(device.name, e))
 
-        # Finally stop any remaining connectors.
-        for i, connector in enumerate(other_connectors):
-            if connector in stopped:
-                continue
+        # Then stop any remaining connectors that are still alive (i.e. standalone AI services)
+        connectors_to_stop = [c for c in self._active_connectors if not getattr(c, "_stopped", False)]
+        self.logger.info(
+            "Stopping remaining non-device components (found {count})".format(
+                count=len(connectors_to_stop)
+            )
+        )
+        for i, connector in enumerate(connectors_to_stop):
             connector_name = getattr(connector, "component_endpoint", "unknown")
             self.logger.info(
                 "Stopping component {i}/{total}: {name}".format(
-                    i=i + 1, total=len(other_connectors), name=connector_name
+                    i=i + 1, total=len(connectors_to_stop), name=connector_name
                 )
             )
             try:
@@ -253,7 +245,10 @@ class SICApplication(object):
             self._redis.close()
             self._redis = None
 
-        sys.exit(0)
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
 
     def register_exit_handler(self):
         """Idempotently register signal and atexit shutdown handlers."""

@@ -100,6 +100,23 @@ class MiniMicrophoneSensor(SICSensor):
         #         "adb", "shell", "am", "start", "-n", f"{package_name}/{activity_name}"
         #     ])
 
+    def stop_app(self, package_name, activity_name):
+        """
+        Request a clean shutdown of the Android microphone activity by sending
+        it a broadcast that the activity listens for.
+        """
+        try:
+            subprocess.run(
+                ["am", "broadcast", "-a", "com.example.micarraytest.ACTION_STOP"],
+                check=False,
+            )
+        except Exception as e:
+            self.logger.error(
+                "MiniMicrophoneSensor failed to stop app {pkg}/{act}: {err}".format(
+                    pkg=package_name, act=activity_name, err=e
+                )
+            )
+
     def execute(self):
         try:
             if not self.client_conn:
@@ -149,6 +166,7 @@ class MiniMicrophoneSensor(SICSensor):
 
     def _cleanup(self):
         self.logger.info("Stopped microphone")
+        self.stop_app("com.example.micarraytest", ".MainActivity")
         try:
             if self.client_conn:
                 self.client_conn.close()

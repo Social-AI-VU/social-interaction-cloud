@@ -1,19 +1,25 @@
 import argparse
+import asyncio
+import enum
 import os
 import socket
 import threading
 import time
+from concurrent.futures import Future
 
 import mini.mini_sdk as MiniSdk
 import mini.pkg_tool as Tool
+from mini import MouthLampColor, MouthLampMode
+from mini.apis.api_action import GetActionList, PlayAction, RobotActionType
+from mini.apis.api_expression import PlayExpression, SetMouthLamp
 
 from sic_framework import SICComponentManager
 from sic_framework.core import utils
 from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage, SICStopServerRequest
 from sic_framework.core.utils import MAGIC_STARTED_COMPONENT_MANAGER_TEXT
-from sic_framework.devices.common_mini.mini_animation import (
-    MiniAnimation,
-    MiniAnimationActuator,
+from sic_framework.devices.common_mini.mini_camera import (
+    MiniCamera,
+    MiniCameraSensor,
 )
 from sic_framework.devices.common_mini.mini_microphone import (
     MiniMicrophone,
@@ -27,6 +33,32 @@ from sic_framework.devices.device import SICDeviceManager
 from sic_framework.core.exceptions import DeviceInstallationError, DeviceExecutionError
 
 
+@enum.unique
+class SDKAnimationType(enum.Enum):
+    ACTION = "action"
+    EXPRESSION = "expression"
+
+
+class WiFiDevice:
+    """
+    WifiDevice class that the MiniSdk.connect() method expects. Taken from mini/mini_sdk.py. Only the ip address is relevant
+    """
+    def __init__(self, name: str = "", address: str = "localhost", port: int = -1, s_type: str = "", server: str = ""):
+        super().__init__()
+        self.address = address
+        self.port = port
+        self.type = s_type
+        self.server = server
+
+        if name.endswith(s_type):
+            self.name = name[: -(len(s_type) + 1)]
+        else:
+            self.name = name
+
+    def __repr__(self):
+        return str(self.__class__) + " name:" + self.name + " address:" + self.address + " port:" + str(
+            self.port) + " type:" + self.type + " server:" + self.server
+
 class Alphamini(SICDeviceManager):
     def __init__(
         self,
@@ -38,7 +70,9 @@ class Alphamini(SICDeviceManager):
         port=8022,
         mic_conf=None,
         speaker_conf=None,
+        camera_conf=None,
         dev_test=False,
+        sdk_test_mode=False,
         test_repo=None,
         bypass_install=False,
         sic_version=None,
@@ -60,17 +94,22 @@ class Alphamini(SICDeviceManager):
 
         """
         self.mini_id = mini_id
+        self.mini_ip = ip
         self.mini_password = mini_password
         self.redis_ip = redis_ip
         self.dev_test = dev_test
+        self.sdk_test_mode = sdk_test_mode
         self.bypass_install = bypass_install
         self.test_repo = test_repo
-        self.device_path = "/data/data/com.termux/files/home/.venv_sic/lib/python3.12/site-packages/sic_framework/devices/alphamini.py"
-        self.test_device_path = "/data/data/com.termux/files/home/sic_in_test/social-interaction-cloud/sic_framework/devices/alphamini.py"
+        self._mini_api = None
+        self._sdk_animation_futures = []
+        self._sdk_loop = None
+        self._sdk_loop_thread = None
 
-        # if it's a dev_test, we want to use the device script within the test environment
-        if self.dev_test:
-            self.device_path = self.test_device_path
+        # Module path for the Alphamini device script. We invoke it via
+        # "python -m sic_framework.devices.alphamini" on the robot, so we do not
+        # depend on a specific Python minor version or site-packages path.
+        self.device_module = "sic_framework.devices.alphamini"
 
         MiniSdk.set_robot_type(MiniSdk.RobotType.EDU)
 
@@ -89,6 +128,7 @@ class Alphamini(SICDeviceManager):
         self.logger.info("SIC version on your local machine: {version}".format(version=self.sic_version))
         self.configs[MiniMicrophone] = mic_conf
         self.configs[MiniSpeaker] = speaker_conf
+        self.configs[MiniCamera] = camera_conf
 
         if self.dev_test:
             self.create_test_environment()
@@ -101,6 +141,183 @@ class Alphamini(SICDeviceManager):
 
         # this should be blocking to make sure SIC starts on a remote mini before the main thread continues
         self.run_sic()
+        self._initialize_mini_sdk_controls()
+
+    def _initialize_mini_sdk_controls(self):
+        """
+        Initialize a background asyncio loop and connect to MiniSDK once.
+
+        If this fails, SIC connectors still work; SDK control methods will raise
+        until a successful reconnect.
+        """
+        if self.sdk_test_mode:
+            self.logger.info("MiniSDK test mode is enabled; SDK control calls are no-op.")
+            return
+
+        self._sdk_loop = asyncio.new_event_loop()
+        self._sdk_loop_thread = threading.Thread(target=self._run_sdk_loop, daemon=True)
+        self._sdk_loop_thread.start()
+        try:
+            self.connect_mini_sdk()
+        except Exception as e:
+            self.logger.warning("MiniSDK control channel is not available yet: %s", e)
+
+    def _run_sdk_loop(self):
+        asyncio.set_event_loop(self._sdk_loop)
+        self._sdk_loop.run_forever()
+
+    def _require_sdk_loop(self):
+        if not self._sdk_loop or not self._sdk_loop.is_running():
+            raise DeviceExecutionError("MiniSDK loop is not running")
+
+    def connect_mini_sdk(self, timeout: int = 10):
+        """
+        Connect this Alphamini device to the Mini SDK control channel.
+        """
+        if self.sdk_test_mode:
+            self.logger.debug("connect_mini_sdk called in sdk_test_mode.")
+            return None
+        self._require_sdk_loop()
+        fut = asyncio.run_coroutine_threadsafe(self._connect_mini_sdk_once(timeout=timeout), self._sdk_loop)
+        return fut.result()
+
+    async def _connect_mini_sdk_once(self, timeout: int = 10):
+        if not self._mini_api:
+            self._mini_api = WiFiDevice(name=self.mini_id, address=self.mini_ip)
+            await MiniSdk.connect(self._mini_api)
+        return self._mini_api
+
+    def disconnect_mini_sdk(self):
+        """
+        Release the Mini SDK control channel.
+        """
+        if self.sdk_test_mode:
+            self.logger.debug("disconnect_mini_sdk called in sdk_test_mode.")
+            return None
+        if not self._sdk_loop or not self._sdk_loop.is_running():
+            return
+        fut = asyncio.run_coroutine_threadsafe(self._disconnect_mini_sdk(), self._sdk_loop)
+        return fut.result()
+
+    async def _disconnect_mini_sdk(self):
+        await MiniSdk.release()
+        self._mini_api = None
+
+    async def _play_action(self, action_name: str):
+        async def command():
+            action = PlayAction(action_name=action_name)
+            return await action.execute()
+
+        return await self._execute_with_reconnect(command, action_name)
+
+    async def _play_expression(self, expression_name: str):
+        async def command():
+            expression = PlayExpression(express_name=expression_name)
+            return await expression.execute()
+
+        return await self._execute_with_reconnect(command, expression_name)
+
+    def animate(self, animation_type, animation_id: str, run_async: bool = False):
+        """
+        Unified SDK wrapper for action/expression controls.
+
+        animation_type supports:
+        - SDKAnimationType.ACTION / SDKAnimationType.EXPRESSION
+        - "action" / "expression" (case-insensitive)
+        """
+        normalized_type = self._normalize_animation_type(animation_type)
+        if self.sdk_test_mode:
+            self.logger.info("MiniSDK test mode: animate(type=%s, id=%s)", normalized_type.value, animation_id)
+            return self._test_mode_result(run_async)
+
+        self._require_sdk_loop()
+        target_coro = self._play_action(animation_id) if normalized_type == SDKAnimationType.ACTION else self._play_expression(animation_id)
+        fut = asyncio.run_coroutine_threadsafe(target_coro, self._sdk_loop)
+        self._sdk_animation_futures.append(fut)
+        if not run_async:
+            return fut.result()
+        return fut
+
+    def set_mouth_lamp(
+        self,
+        color: MouthLampColor,
+        mode: MouthLampMode,
+        duration: int = -1,
+        breath_duration: int = 1000,
+        run_async: bool = False,
+    ):
+        """
+        Set AlphaMini mouth lamp color/mode.
+        """
+        if self.sdk_test_mode:
+            self.logger.info(
+                "MiniSDK test mode: set_mouth_lamp(color=%s, mode=%s, duration=%s, breath_duration=%s)",
+                color,
+                mode,
+                duration,
+                breath_duration,
+            )
+            return self._test_mode_result(run_async)
+        self._require_sdk_loop()
+        fut = asyncio.run_coroutine_threadsafe(
+            self._set_mouth_lamp(color, mode, duration, breath_duration),
+            self._sdk_loop,
+        )
+        self._sdk_animation_futures.append(fut)
+        if not run_async:
+            return fut.result()
+        return fut
+
+    async def _set_mouth_lamp(
+        self,
+        color: MouthLampColor,
+        mode: MouthLampMode,
+        duration: int = -1,
+        breath_duration: int = 1000,
+    ):
+        async def command():
+            if mode == MouthLampMode.BREATH:
+                action = SetMouthLamp(color=color, mode=MouthLampMode.BREATH, breath_duration=breath_duration)
+            else:
+                action = SetMouthLamp(color=color, mode=MouthLampMode.NORMAL, duration=duration)
+            return await action.execute()
+
+        return await self._execute_with_reconnect(command, "mouth_lamp")
+
+    async def _execute_with_reconnect(self, command_factory, command_name: str):
+        await self._connect_mini_sdk_once()
+        try:
+            return await command_factory()
+        except Exception as first_error:
+            self.logger.warning("MiniSDK command '%s' failed, reconnecting once: %s", command_name, first_error)
+            try:
+                await self._disconnect_mini_sdk()
+            except Exception:
+                pass
+            await self._connect_mini_sdk_once()
+            return await command_factory()
+
+    @staticmethod
+    def _normalize_animation_type(animation_type):
+        if isinstance(animation_type, SDKAnimationType):
+            return animation_type
+        if isinstance(animation_type, str):
+            normalized = animation_type.strip().lower()
+            if normalized == SDKAnimationType.ACTION.value:
+                return SDKAnimationType.ACTION
+            if normalized == SDKAnimationType.EXPRESSION.value:
+                return SDKAnimationType.EXPRESSION
+        raise DeviceExecutionError(
+            f"Unsupported animation_type '{animation_type}'. Use SDKAnimationType or 'action'/'expression'."
+        )
+
+    @staticmethod
+    def _test_mode_result(run_async: bool):
+        if run_async:
+            completed = Future()
+            completed.set_result(None)
+            return completed
+        return None
 
     @property
     def mic(self):
@@ -111,8 +328,8 @@ class Alphamini(SICDeviceManager):
         return self._get_connector(MiniSpeaker)
 
     @property
-    def animation(self):
-        return self._get_connector(MiniAnimation)
+    def camera(self):
+        return self._get_connector(MiniCamera)
 
     def install_ssh(self):
         # Updating the package manager
@@ -210,14 +427,17 @@ class Alphamini(SICDeviceManager):
         _, stdout, _, exit_status = self.ssh_command(
             """
                     # state if SIC is already installed
-                    if [ -d ~/.venv_sic/lib/python3.12/site-packages/sic_framework ]; then
-                        echo "SIC already installed";
-
+                    if [ -d ~/.venv_sic ]; then
                         # activate virtual environment if it exists
                         source ~/.venv_sic/bin/activate;
 
-                        # upgrade the social-interaction-cloud package
-                        pip install --upgrade social-interaction-cloud=={version} --no-deps
+                        # check if sic_framework is importable in this venv
+                        python -c "import sic_framework" >/dev/null 2>&1 && {{
+                            echo "SIC already installed";
+
+                            # upgrade the social-interaction-cloud package
+                            pip install --upgrade social-interaction-cloud=={version} --no-deps;
+                        }}
                     fi;
                     """.format(
                 version=self.sic_version
@@ -320,26 +540,29 @@ class Alphamini(SICDeviceManager):
             """
             # start with a clean slate just to be sure
             _, stdout, _, exit_status = self.ssh_command(
-                """
-                rm -rf ~/.test_venv
+                    """
+                    rm -rf ~/.test_venv
 
-                # create virtual environment
-                python -m venv .test_venv --system-site-packages;
-                source ~/.test_venv/bin/activate;
+                    # create virtual environment
+                    python -m venv .test_venv --system-site-packages;
+                    source ~/.test_venv/bin/activate;
 
-                # install required packages and perform a clean sic installation
-                pip install redis six pyaudio alphamini websockets==13.1 protobuf==3.20.3
-                """
-            )
+                    # install required packages and perform a clean sic installation
+                    pip install PyTurboJPEG redis six pyaudio alphamini websockets==13.1 protobuf==3.20.3
+                    """
+                )
 
-            # test to make sure the virtual environment was created
-            _, stdout, _, exit_status = self.ssh_command(
+            # test to make sure the virtual environment was created and that key
+            # packages can be imported
+            _, _, _, exit_status = self.ssh_command(
                 """
                 source ~/.test_venv/bin/activate;
                 """
             )
             if exit_status != 0:
-                raise DeviceInstallationError("Failed to create test virtual environment")
+                raise DeviceInstallationError(
+                    "Failed to create test virtual environment with required packages "
+                )
 
         def uninstall_old_repo():
             """
@@ -402,12 +625,25 @@ class Alphamini(SICDeviceManager):
             """
         )
 
-        if exit_status == 0 and not self.test_repo:
+        # if the environment can be activated, also verify that key Python
+        # packages are importable. If imports fail, we treat the environment
+        # as broken and re-initialise it.
+        pkg_status = 1
+        if exit_status == 0:
+            _, _, _, pkg_status = self.ssh_command(
+                """
+                source ~/.test_venv/bin/activate;
+                python -c "import sic_framework" && python -c "import mini"
+                """
+            )
+
+        if exit_status == 0 and pkg_status == 0 and not self.test_repo:
             self.logger.info(
-                "Test environment already created on Mini and no new dev repo provided... skipping test_venv setup"
+                "Test environment already created on Mini with required packages present "
+                "and no new dev repo provided... skipping test_venv setup"
             )
             return True
-        elif exit_status == 0 and self.test_repo:
+        elif exit_status == 0 and pkg_status == 0 and self.test_repo:
             self.logger.info(
                 "Test environment already created on Mini and new dev repo provided... uninstalling old repo and installing new one"
             )
@@ -416,6 +652,23 @@ class Alphamini(SICDeviceManager):
             )
             uninstall_old_repo()
             install_new_repo()
+        elif (exit_status == 0 and pkg_status != 0) and self.test_repo:
+            # environment exists but is missing required packages
+            self.logger.info(
+                "Test environment on Mini is missing required packages... reinitialising test environment and installing new repo"
+            )
+            self.logger.warning(
+                "This process may take a minute or two... Please hold tight!"
+            )
+            init_test_venv()
+            install_new_repo()
+        elif (exit_status == 0 and pkg_status != 0) and not self.test_repo:
+            self.logger.error(
+                "Test environment on Mini is missing required packages and no new dev repo provided... raising RuntimeError"
+            )
+            raise DeviceInstallationError(
+                "Need to provide repo to recreate broken test environment"
+            )
         elif exit_status == 1 and self.test_repo:
             # test environment not created, so create one
             self.logger.info(
@@ -447,9 +700,9 @@ class Alphamini(SICDeviceManager):
         self.stop_cmd = """
             echo 'Killing all previous robot wrapper processes';
             # pkill returns 1 when no process matched; treat that as success.
-            pkill -f "python {alphamini_device}" || true
+            pkill -f "python -m {alphamini_module}" || true
         """.format(
-            alphamini_device=self.device_path
+            alphamini_module=self.device_module
         )
 
         # stop alphamini
@@ -458,9 +711,9 @@ class Alphamini(SICDeviceManager):
         time.sleep(1)
 
         self.start_cmd = """
-            python {alphamini_device} --redis_ip={redis_ip} --client_id {client_id} --alphamini_id {mini_id};
+            python -m {alphamini_module} --redis_ip={redis_ip} --client_id {client_id} --alphamini_id {mini_id};
         """.format(
-            alphamini_device=self.device_path,
+            alphamini_module=self.device_module,
             redis_ip=self.redis_ip,
             client_id=self._client_id,
             mini_id=self.mini_id,
@@ -491,7 +744,7 @@ class Alphamini(SICDeviceManager):
         self.logger.info("Pinging ComponentManager on Alphamini")
 
         # Wait for SIC to start
-        ping_tries = 3
+        ping_tries = 5
         for i in range(ping_tries):
             try:
                 response = self._redis.request(
@@ -524,13 +777,20 @@ class Alphamini(SICDeviceManager):
         Makes sure the process is killed and the device is stopped.
         """
         # send StopRequest to ComponentManager
-        self._redis.request(self.device_ip, SICStopServerRequest())
+        self._redis.request(self.device_ip, SICStopServerRequest(), block=False)
 
-        # make sure the process is killed
-        stdin, stdout, stderr, status = self.ssh_command(self.stop_cmd)
-        if status != 0:
-            self.logger.error("Failed to stop device, exit code: {status}".format(status=status))
-            self.logger.error(stderr.read().decode("utf-8"))
+        # stop pending Mini SDK actions and release SDK resources
+        for fut in self._sdk_animation_futures:
+            fut.cancel()
+        self._sdk_animation_futures = []
+        try:
+            self.disconnect_mini_sdk()
+        except Exception:
+            pass
+        if self._sdk_loop and self._sdk_loop.is_running():
+            self._sdk_loop.call_soon_threadsafe(self._sdk_loop.stop)
+        if self._sdk_loop_thread:
+            self._sdk_loop_thread.join(timeout=2)
 
 
     @staticmethod
@@ -553,9 +813,8 @@ class Alphamini(SICDeviceManager):
 mini_component_list = [
     MiniMicrophoneSensor,
     MiniSpeakerComponent,
-    MiniAnimationActuator,
+    MiniCameraSensor,
 ]
-# mini_component_list = [MiniSpeakerComponent, MiniAnimationActuator]
 
 
 if __name__ == "__main__":

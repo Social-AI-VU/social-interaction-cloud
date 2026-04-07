@@ -1,4 +1,5 @@
 from setuptools import find_packages, setup
+import sys
 
 # Basic (bare minimum) requirements for local machine
 requirements = [
@@ -14,98 +15,106 @@ requirements = [
     "dotenv"
 ]
 
-# Dependencies specific to each component or server
-extras_require = {
-    "dev": [
-        "black==24.10.0",
-        "isort==5.13.2",
-        "pre-commit==4.0.1",
-        "twine",
-        "wheel",
-    ],
-    "dialogflow": [
-        "google-cloud-dialogflow",
-    ],
-    "dialogflow-cx": [
-        "google-cloud-dialogflow-cx",
-    ],
-    "google-stt": [
-        "google-cloud-speech",
-    ],
-    "google-tts": [
-        "google-cloud-texttospeech",
-    ],
-    "elevenlabs-tts": [
-    "requests",
-    "websockets==13.1",
-    ],
-    "face-detection-dnn": [
-        "matplotlib",
-        "pandas",
-        "pyyaml",
-        "torch",
-        "torchvision",
-        "tqdm",
-        "requests",
-    ],
-    "face-recognition": [
-        "scikit-learn",
-        "torch",
-        "torchvision",
-    ],
-    "object-detection": [
-        "ultralytics",
-    ],
-    "openai-gpt": [
-        "openai>=1.52.2",
-        "python-dotenv",
-    ],
-    "webserver": [
-        "Flask",
-        "Flask-SocketIO",
-    ],
-    "whisper-speech-to-text": [
-        "openai>=1.52.2",
-        "SpeechRecognition>=3.11.0",
-        "openai-whisper",
-        "soundfile",
-        "python-dotenv",
-    ],
-    "alphamini": [
-        "alphamini",
-        "protobuf==3.20.3",
-        "websockets==13.1",
-    ],
-    # There is another dependency needed for Franka but it requires manual installation- panda-python
-    # See Installation point 3 for instructions on installing the correct version: https://socialrobotics.atlassian.net/wiki/spaces/CBSR/pages/2412675074/Getting+started+with+Franka+Emika+Research+3#Installation%3A
-    "franka": [
-        "pyspacemouse",
-        "scipy",
-        "numpy<2.0.0",  # numpy 2.0.0 is not compatible with panda_py
-    ],
-    "docs": [
-        "sphinx",
-        "sphinx-togglebutton",
-        "sphinx-rtd-theme",
-        "sphinx-copybutton",
-    ],
-    "voice-detection": [
-        "torch",
-        "torchaudio",
-        "numpy",
-    ],
-    "nebula": [
-        "openai>=1.52.2",
-        "python-dotenv",
-    ],
-    "sortformer": [
-        "pandas",
-        "torch==2.9.0+cu130",
-        "torchvision==0.24.0+cu130",
-        "nemo_toolkit[asr]==2.5.2",
-        "huggingface-hub==0.36.0",
-    ], # requires a flag to set the URL, e.g. pip install .[asr] --extra-index-url https://download.pytorch.org/whl/cu130
-}
+# Dependencies specific to each component or server.
+# NOTE: Older setuptools on Python 2.7 is very strict about extras syntax.
+# To keep installs working on Pepper/NAO (Python 2), we disable extras_require there.
+if sys.version_info[0] == 2:
+    extras_require = {}
+else:
+    extras_require = {
+        "dev": [
+            "black==24.10.0",
+            "isort==5.13.2",
+            "pre-commit==4.0.1",
+            "twine",
+            "wheel",
+        ],
+        "dialogflow": [
+            "google-cloud-dialogflow",
+        ],
+        "dialogflow-cx": [
+            "google-cloud-dialogflow-cx",
+        ],
+        "google-stt": [
+            "google-cloud-speech",
+        ],
+        "google-tts": [
+            "google-cloud-texttospeech",
+        ],
+        "face-detection-dnn": [
+            "matplotlib",
+            "pandas",
+            "pyyaml",
+            "torch",
+            "torchvision",
+            "tqdm",
+            "requests",
+        ],
+        "face-recognition": [
+            "scikit-learn",
+            "torch",
+            "torchvision",
+        ],
+        "object-detection": [
+            "ultralytics",
+        ],
+        "openai-gpt": [
+            "openai>=1.52.2",
+            "python-dotenv",
+        ],
+        "webserver": [
+            "Flask",
+            "Flask-SocketIO",
+        ],
+        "whisper-speech-to-text": [
+            "openai>=1.52.2",
+            "SpeechRecognition>=3.11.0",
+            "openai-whisper",
+            "soundfile",
+            "python-dotenv",
+        ],
+        "alphamini": [
+            "alphamini",
+            "protobuf==3.20.3",
+            "websockets==13.1",
+        ],
+        # There is another dependency needed for Franka but it requires manual installation- panda-python
+        # See Installation point 3 for instructions on installing the correct version: https://socialrobotics.atlassian.net/wiki/spaces/CBSR/pages/2412675074/Getting+started+with+Franka+Emika+Research+3#Installation%3A
+        "franka": [
+            "pyspacemouse",
+            "scipy",
+            "numpy<2.0.0",  # numpy 2.0.0 is not compatible with panda_py
+        ],
+        "docs": [
+            "sphinx",
+            "sphinx-togglebutton",
+            "sphinx-rtd-theme",
+            "sphinx-copybutton",
+        ],
+        "voice-detection": [
+            "torch",
+            "torchaudio",
+            "numpy",
+        ],
+        "nebula": [
+            "openai>=1.52.2",
+            "python-dotenv",
+        ],
+        "sortformer": [
+            "pandas",
+            "torch==2.9.0+cu130",
+            "torchvision==0.24.0+cu130",
+            "nemo_toolkit[asr]==2.5.2",
+            "huggingface-hub==0.36.0",
+        ],  # requires a flag to set the URL, e.g. pip install .[asr] --extra-index-url https://download.pytorch.org/whl/cu130
+        "reachy-mini": [
+            "reachy-mini[mujoco]>=1.6.0",
+        ],
+        "elevenlabs-tts": [
+            "requests",
+            "websockets==13.1",
+        ],
+    }
 
 setup(
     name="social-interaction-cloud",
@@ -134,14 +143,14 @@ setup(
             "run-face-detection=sic_framework.services.face_detection:main",
             "run-gpt=sic_framework.services.llm.openai_gpt:main",
             "run-whisper=sic_framework.services.openai_whisper_stt:main",
-            "run-webserver=sic_framework.services.webserver.webserver_component:main",
+            "run-webserver=sic_framework.services.webserver.webserver_service:main",
             "run-google-tts=sic_framework.services.google_tts.google_tts:main",
             "run-elevenlabs-tts=sic_framework.services.elevenlabs_tts.elevenlabs_tts:main",
             "run-google-stt=sic_framework.services.google_stt.google_stt:main",
             "run-object-detection=sic_framework.services.object_detection:main",
             "run-voice-detection=sic_framework.services.voice_detection:main",
             "run-nebula=sic_framework.services.llm.nebula:main",
-            "run-database-redis=sic_framework.services.database.redis_database:main",
+            "run-datastore-redis=sic_framework.services.datastore.redis_datastore:main",
             "run-sortformer=sic_framework.services.streaming_sortformer.stm_sortformer:main",
         ],
     },
