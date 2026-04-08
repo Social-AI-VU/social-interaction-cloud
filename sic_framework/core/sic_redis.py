@@ -215,8 +215,9 @@ class SICRedisConnection:
 
         # convert single channel case to list of channels case
         channels = utils.str_if_bytes(channels)
-        if isinstance(channels, six.text_type):
+        if isinstance(channels, six.string_types):
             channels = [channels]
+        # if isinstance(channels, six.text_type):
 
         assert len(channels), "Must provide at least one channel"
 
