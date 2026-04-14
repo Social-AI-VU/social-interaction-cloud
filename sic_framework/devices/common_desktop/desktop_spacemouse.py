@@ -34,7 +34,9 @@ class DesktopSpaceMouseSensor(SICSensor):
         import pyspacemouse as pyspacemouse
         self.spacemouse = pyspacemouse
         self.logger.info("Initializing DesktopSpaceMouseSensor")
-        self.success = self.spacemouse.open(dof_callback=pyspacemouse.print_state, button_callback=pyspacemouse.print_buttons)
+        self.device = self.spacemouse.open()
+
+
     @staticmethod
     def get_inputs():
         return []
@@ -45,8 +47,8 @@ class DesktopSpaceMouseSensor(SICSensor):
 
     def execute(self):
 
-        if self.success:
-            state = self.spacemouse.read()
+        if self.device:
+            state = self.device.read()
             # print(state)
         else:
             self.logger.warning("Failed to read from the space mouse")

@@ -33,6 +33,13 @@ Getting started with the Reachy Mini
    :maxdepth: 2
 
    getting_started/getting_started_reachymini
+
+Getting started with the Spacemouse
+------------------------------------
+.. toctree::
+   :maxdepth: 2
+
+   getting_started/getting_started_spacemouse
    
 - Each robot has its own installation process, depending on its operating system and device specific constraints. For example, the Alphamini requires SSH to first be installed before SIC can be installed.
 - Test environments for development purposes are also set up differently per robot for the same reason.
