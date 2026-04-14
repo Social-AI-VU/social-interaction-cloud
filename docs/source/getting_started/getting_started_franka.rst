@@ -33,7 +33,7 @@ Press the power switch on the backside of the Control
 ~~~~~~~~~~~~~~~~~~
 Set up the connection between the Control and the workstation:
 
-1. The workstation's network settings have already been configured, so you simply need to connect the workstation and the Control box using an Ethernet cable. If you're using a workstation or laptop that doesn't have a fixed wired IP address (172.16.0.1) set up, please refer to the instructions `here <https://frankaemika.github.io/docs/getting_started.html#setting-up-the-network>`_
+1. The workstation's network settings have already been configured, so you simply need to connect the workstation and the Control box using an Ethernet cable. If you're using a workstation or laptop that doesn't have a fixed wired IP address (172.16.0.1) set up, please refer to the instructions `here <https://frankarobotics.github.io/docs/libfranka/docs/getting_started.html>`_
 2. Select network ``Wired connection 1``, where the IPv4 address is set to 172.16.0.1.
 
 **Preparing the robot for FCI usage in Desk**
