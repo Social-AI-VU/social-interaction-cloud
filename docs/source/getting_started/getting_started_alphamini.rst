@@ -147,6 +147,34 @@ network, to avoid extra configuration and authentication issues.
    run shell commands.
 
 
+Troubleshooting SSH on Alphamini
+--------------------------------
+
+If SIC reports SSH on port ``8022`` as unavailable, that does **not** always
+mean OpenSSH must be reinstalled. A common failure mode is that ``sshd`` is
+installed but not currently running.
+
+Use the SIC helper script first:
+
+1. From the repository root, run:
+
+   .. code-block:: bash
+
+      python sic_applications/utils/alphamini_restart_ssh.py --mini-id <mini-id>
+
+   This sends a lightweight command via ``Tool.run_py_pkg``. In environments
+   where shell startup triggers ``sshd``, this restores SSH availability
+   without a full reinstall.
+
+2. Verify from your computer:
+
+   .. code-block:: bash
+
+      ssh u0_a25@<mini-ip> -p 8022
+
+If ``sshd`` is missing or restart fails, run any Alphamini demo and SSH will be reinstalled.
+
+
 Installing the Alphamini camera and microphone apps
 ---------------------------------------------------
 
