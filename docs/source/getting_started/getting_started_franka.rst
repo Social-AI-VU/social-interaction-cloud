@@ -36,6 +36,21 @@ Set up the connection between the Control and the workstation:
 1. The workstation's network settings have already been configured, so you simply need to connect the workstation and the Control box using an Ethernet cable. If you're using a workstation or laptop that doesn't have a fixed wired IP address (172.16.0.1) set up, please refer to the instructions `here <https://frankarobotics.github.io/docs/libfranka/docs/getting_started.html>`_
 2. Select network ``Wired connection 1``, where the IPv4 address is set to 172.16.0.1.
 
+**MacBook Ethernet setup (example)**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you are connecting from a MacBook, these steps worked in practice:
+
+1. Connect the control box to your MacBook with an Ethernet cable.
+2. Open macOS **System Settings** and go to **Network**.
+3. Select your Ethernet adapter (for example ``AX88179A``; yours may have a different name).
+4. Click **Details**.
+5. Go to **TCP/IP**.
+6. Set **Configure IPv4** to **Manually**.
+7. Set **IP address** to ``172.16.0.1`` (do not use ``172.16.0.2``, which is the robot IP).
+8. Set **Subnet mask** to ``255.255.255.0``.
+9. You can keep Wi-Fi enabled; Ethernet and Wi-Fi can be used at the same time.
+10. Optional: in **Network**, click the three dots menu and choose **Set Service Order**, then place the Ethernet adapter above **Wi-Fi**.
+
 **Preparing the robot for FCI usage in Desk**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 1. Open a browser, \*Desk (you will need to log in; ask Lilly for the username and password) can be accessed via https://172.16.0.2, although you will see a certificate warning in your browser
