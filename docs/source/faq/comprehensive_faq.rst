@@ -102,6 +102,38 @@ Cannot connect to robot from IDE terminal
       the issue is specifically related to VSCode's terminal permissions, not your network or robot configuration.
 
 
+AlphaMini SSH connection refused
+--------------------------------
+
+.. toggle::
+
+   **Problem:** ``ssh u0_a25@<mini-ip> -p 8022`` returns ``Connection refused``.
+
+   **Solution:**
+
+   On AlphaMini, this usually means ``sshd`` is down (not listening), even if OpenSSH is already installed.
+   Before reinstalling SSH packages, run the lightweight recovery helper:
+
+   .. code-block:: bash
+
+      python sic_applications/utils/alphamini_restart_ssh.py --mini-id <mini-id>
+
+   Then retry SSH:
+
+   .. code-block:: bash
+
+      ssh u0_a25@<mini-ip> -p 8022
+
+   To intentionally test recovery behavior, first stop ``sshd``:
+
+   .. code-block:: bash
+
+      python sic_applications/utils/alphamini_restart_ssh.py --mini-id <mini-id> --kill-sshd
+
+   Then run the helper again without ``--kill-sshd`` (or start an SIC app using ``Alphamini``)
+   and verify that SSH becomes available again.
+
+
 Windows WSL Connection Issues
 ------------------------------
 
