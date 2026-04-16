@@ -564,9 +564,9 @@ class Alphamini(SICDeviceManager):
             if [ ! -x ~/tailscale/tailscale ]; then
                 pkg install -y wget socat
                 mkdir -p ~/tailscale && cd ~/tailscale
-                wget -q https://pkgs.tailscale.com/stable/tailscale_1.62.1_arm64.tgz
-                tar xzf tailscale_1.62.1_arm64.tgz --strip-components=1
-                rm -f tailscale_1.62.1_arm64.tgz
+                wget -q https://pkgs.tailscale.com/stable/tailscale_1.96.4_arm64.tgz
+                tar xzf tailscale_1.96.4_arm64.tgz --strip-components=1
+                rm -f tailscale_1.96.4_arm64.tgz
             fi
             mkdir -p ~/.tailscale_state
             if ! pgrep -f tailscaled > /dev/null 2>&1; then
