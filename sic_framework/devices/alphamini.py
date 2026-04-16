@@ -134,11 +134,13 @@ class Alphamini(SICDeviceManager):
         self.configs[MiniSpeaker] = speaker_conf
         self.configs[MiniCamera] = camera_conf
 
-        # If Tailscale is requested or already on the robot, ensure it's set up
+        # If Tailscale is explicitly enabled (or already on the robot), ensure it's set up
+        use_tailscale = os.environ.get("USE_TAILSCALE", "").lower() in ("1", "true", "yes")
         _, stdout, _, _ = self.ssh_command(
             "[ -x ~/tailscale/tailscale ] && echo 'ts_yes' || echo 'ts_no'"
         )
-        if self.tailscale_authkey or "ts_yes" in stdout.read().decode():
+        ts_installed = "ts_yes" in stdout.read().decode()
+        if use_tailscale and (self.tailscale_authkey or ts_installed):
             self.install_tailscale()
             _, stdout, _, _ = self.ssh_command(
                 "~/tailscale/tailscale --socket ~/tailscale/tailscaled.sock ip -4"
@@ -559,6 +561,7 @@ class Alphamini(SICDeviceManager):
         """
         Install, start, and authenticate Tailscale in userspace mode on the robot.
         """
+        # Install binary if missing
         self.ssh_command(
             """
             if [ ! -x ~/tailscale/tailscale ]; then
@@ -569,14 +572,38 @@ class Alphamini(SICDeviceManager):
                 rm -f tailscale_1.96.4_arm64.tgz
             fi
             mkdir -p ~/.tailscale_state
-            if ! pgrep -f tailscaled > /dev/null 2>&1; then
-                cd ~/tailscale
-                nohup ./tailscaled --tun=userspace-networking --socks5-server=localhost:1055 \
-                    --statedir=$HOME/.tailscale_state > ~/tailscale/tailscaled.log 2>&1 &
-                sleep 2
-            fi
             """
         )
+
+        # Check if daemon is already running with the correct socket
+        _, stdout, _, _ = self.ssh_command(
+            "pgrep -f tailscaled > /dev/null 2>&1 && [ -S ~/tailscale/tailscaled.sock ] && echo ok"
+        )
+        daemon_running = "ok" in stdout.read().decode()
+
+        if not daemon_running:
+            self.ssh_command("pkill -f tailscaled || true; rm -f ~/tailscale/tailscaled.sock")
+            time.sleep(1)
+            # Start daemon in its own thread (same pattern as run_sic for SIC)
+            self.ssh_command(
+                "cd ~/tailscale && ./tailscaled --tun=userspace-networking "
+                "--socks5-server=localhost:1055 "
+                "--statedir=$HOME/.tailscale_state "
+                "--socket=$HOME/tailscale/tailscaled.sock "
+                "> ~/tailscale/tailscaled.log 2>&1",
+                create_thread=True, get_pty=False
+            )
+            # Wait up to 10s for socket to appear
+            for _ in range(10):
+                _, stdout, _, _ = self.ssh_command("[ -S ~/tailscale/tailscaled.sock ] && echo ok")
+                if "ok" in stdout.read().decode():
+                    break
+                time.sleep(1)
+            else:
+                raise DeviceInstallationError(
+                    "Tailscale daemon failed to start. Check ~/tailscale/tailscaled.log"
+                )
+
         # Check auth state
         _, stdout, _, _ = self.ssh_command(
             "~/tailscale/tailscale --socket ~/tailscale/tailscaled.sock status >/dev/null 2>&1 && echo ok"
@@ -590,11 +617,12 @@ class Alphamini(SICDeviceManager):
                     "Generate one at https://login.tailscale.com/admin/settings/keys"
                 )
             self.logger.info("Authenticating Tailscale with auth key...")
-            self.ssh_command(
-                "~/tailscale/tailscale --socket ~/tailscale/tailscaled.sock up --authkey {key}".format(
+            _, stdout, _, _ = self.ssh_command(
+                "~/tailscale/tailscale --socket ~/tailscale/tailscaled.sock up --authkey {key} 2>&1".format(
                     key=self.tailscale_authkey
                 )
             )
+            self.logger.info("tailscale up output: {}".format(stdout.read().decode()))
             # Verify auth succeeded
             _, stdout, _, _ = self.ssh_command(
                 "~/tailscale/tailscale --socket ~/tailscale/tailscaled.sock status >/dev/null 2>&1 && echo ok"
@@ -608,19 +636,6 @@ class Alphamini(SICDeviceManager):
             self.logger.info("Tailscale authenticated successfully")
         else:
             self.logger.info("Tailscale already authenticated")
-
-        # Ensure auto-start on future boots
-        self.ssh_command(
-            """
-            grep -q 'tailscaled' ~/.bashrc || cat >> ~/.bashrc << 'EOF'
-if ! pgrep -f tailscaled > /dev/null 2>&1; then
-    cd ~/tailscale && nohup ./tailscaled --tun=userspace-networking \
-        --socks5-server=localhost:1055 --statedir=$HOME/.tailscale_state \
-        > ~/tailscale/tailscaled.log 2>&1 & sleep 1
-fi
-EOF
-            """
-        )
 
     def _configure_tailscale_env(self, venv_name):
         """Add Tailscale env vars to a venv's activate script (no-op if venv missing)."""
@@ -644,7 +659,9 @@ EOF
             return  # Not a Tailscale IP, skip
         self.ssh_command(
             """
-            if [ -x ~/tailscale/tailscale ] && ! ss -tlnp 2>/dev/null | grep -q ':6379 '; then
+            if [ -x ~/tailscale/tailscale ]; then
+                pkill -f socat || true
+                sleep 1
                 nohup socat TCP4-LISTEN:6379,bind=127.0.0.1,reuseaddr,fork \
                     SOCKS5:127.0.0.1:{ts_host_ip}:6379,socksport=1055 > ~/socat_redis.log 2>&1 &
             fi
