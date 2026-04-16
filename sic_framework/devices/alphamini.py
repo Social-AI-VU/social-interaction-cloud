@@ -76,6 +76,7 @@ class Alphamini(SICDeviceManager):
         test_repo=None,
         bypass_install=False,
         sic_version=None,
+        tailscale_authkey=None,
     ):
         """
         Initialize the Alphamini device.
@@ -105,6 +106,7 @@ class Alphamini(SICDeviceManager):
         self._sdk_animation_futures = []
         self._sdk_loop = None
         self._sdk_loop_thread = None
+        self.tailscale_authkey = tailscale_authkey
 
         # Module path for the Alphamini device script. We invoke it via
         # "python -m sic_framework.devices.alphamini" on the robot, so we do not
@@ -131,6 +133,19 @@ class Alphamini(SICDeviceManager):
         self.configs[MiniMicrophone] = mic_conf
         self.configs[MiniSpeaker] = speaker_conf
         self.configs[MiniCamera] = camera_conf
+
+        # If Tailscale is requested or already on the robot, ensure it's set up
+        _, stdout, _, _ = self.ssh_command(
+            "[ -x ~/tailscale/tailscale ] && echo 'ts_yes' || echo 'ts_no'"
+        )
+        if self.tailscale_authkey or "ts_yes" in stdout.read().decode():
+            self.install_tailscale()
+            _, stdout, _, _ = self.ssh_command(
+                "~/tailscale/tailscale --socket ~/tailscale/tailscaled.sock ip -4"
+            )
+            ts_ip = stdout.read().decode().strip()
+            if ts_ip:
+                self.device_ip = ts_ip
 
         if self.dev_test:
             self.create_test_environment()
@@ -540,6 +555,102 @@ class Alphamini(SICDeviceManager):
         else:
             self.logger.info("SIC successfully installed")
 
+    def install_tailscale(self):
+        """
+        Install, start, and authenticate Tailscale in userspace mode on the robot.
+        """
+        self.ssh_command(
+            """
+            if [ ! -x ~/tailscale/tailscale ]; then
+                pkg install -y wget socat
+                mkdir -p ~/tailscale && cd ~/tailscale
+                wget -q https://pkgs.tailscale.com/stable/tailscale_1.62.1_arm64.tgz
+                tar xzf tailscale_1.62.1_arm64.tgz --strip-components=1
+                rm -f tailscale_1.62.1_arm64.tgz
+            fi
+            mkdir -p ~/.tailscale_state
+            if ! pgrep -f tailscaled > /dev/null 2>&1; then
+                cd ~/tailscale
+                nohup ./tailscaled --tun=userspace-networking --socks5-server=localhost:1055 \
+                    --statedir=$HOME/.tailscale_state > ~/tailscale/tailscaled.log 2>&1 &
+                sleep 2
+            fi
+            """
+        )
+        # Check auth state
+        _, stdout, _, _ = self.ssh_command(
+            "~/tailscale/tailscale --socket ~/tailscale/tailscaled.sock status >/dev/null 2>&1 && echo ok"
+        )
+        authenticated = "ok" in stdout.read().decode()
+
+        if not authenticated:
+            if not self.tailscale_authkey:
+                raise DeviceInstallationError(
+                    "Tailscale is not authenticated and no tailscale_authkey provided. "
+                    "Generate one at https://login.tailscale.com/admin/settings/keys"
+                )
+            self.logger.info("Authenticating Tailscale with auth key...")
+            self.ssh_command(
+                "~/tailscale/tailscale --socket ~/tailscale/tailscaled.sock up --authkey {key}".format(
+                    key=self.tailscale_authkey
+                )
+            )
+            # Verify auth succeeded
+            _, stdout, _, _ = self.ssh_command(
+                "~/tailscale/tailscale --socket ~/tailscale/tailscaled.sock status >/dev/null 2>&1 && echo ok"
+            )
+            if "ok" not in stdout.read().decode():
+                raise DeviceInstallationError(
+                    "Tailscale authentication failed. The auth key may be invalid, "
+                    "expired, or already consumed. Generate a new one at "
+                    "https://login.tailscale.com/admin/settings/keys"
+                )
+            self.logger.info("Tailscale authenticated successfully")
+        else:
+            self.logger.info("Tailscale already authenticated")
+
+        # Ensure auto-start on future boots
+        self.ssh_command(
+            """
+            grep -q 'tailscaled' ~/.bashrc || cat >> ~/.bashrc << 'EOF'
+if ! pgrep -f tailscaled > /dev/null 2>&1; then
+    cd ~/tailscale && nohup ./tailscaled --tun=userspace-networking \
+        --socks5-server=localhost:1055 --statedir=$HOME/.tailscale_state \
+        > ~/tailscale/tailscaled.log 2>&1 & sleep 1
+fi
+EOF
+            """
+        )
+
+    def _configure_tailscale_env(self, venv_name):
+        """Add Tailscale env vars to a venv's activate script (no-op if venv missing)."""
+        self.ssh_command(
+            """
+            ACT=~/{venv}/bin/activate
+            [ -f "$ACT" ] && ! grep -q 'USE_TAILSCALE' "$ACT" && cat >> "$ACT" << 'EOF'
+export PATH="$HOME/tailscale:$PATH"
+export TS_SOCKET="$HOME/tailscale/tailscaled.sock"
+export USE_TAILSCALE=1
+EOF
+            true
+            """.format(venv=venv_name)
+        )
+
+    def _ensure_socat_bridge(self):
+        """Start a socat bridge so Redis on robot's 127.0.0.1:6379 tunnels to the host's Tailscale IP."""
+        # Get this host's Tailscale IP (the machine running SIC)
+        ts_host_ip = utils.get_ip_adress()
+        if not ts_host_ip.startswith("100."):
+            return  # Not a Tailscale IP, skip
+        self.ssh_command(
+            """
+            if [ -x ~/tailscale/tailscale ] && ! ss -tlnp 2>/dev/null | grep -q ':6379 '; then
+                nohup socat TCP4-LISTEN:6379,bind=127.0.0.1,reuseaddr,fork \
+                    SOCKS5:127.0.0.1:{ts_host_ip}:6379,socksport=1055 > ~/socat_redis.log 2>&1 &
+            fi
+            """.format(ts_host_ip=ts_host_ip)
+        )
+
     def create_test_environment(self):
         """
         Creates a test environment on the Alphamini
@@ -632,9 +743,11 @@ class Alphamini(SICDeviceManager):
 
             self.logger.info("Transferring zip file over to Mini")
 
-            # scp transfer file over
-            with self.SCPClient(self.ssh.get_transport()) as scp:
-                scp.put(zipped_path, "/data/data/com.termux/files/home/sic_in_test/")
+            # Use SFTP instead of SCP to avoid Android FORTIFY umask issue
+            sftp = self.ssh.open_sftp()
+            remote_path = "/data/data/com.termux/files/home/sic_in_test/" + os.path.basename(zipped_path)
+            sftp.put(zipped_path, remote_path)
+            sftp.close()
 
             _, stdout, _, exit_status = self.ssh_command(
                 """
@@ -730,6 +843,9 @@ class Alphamini(SICDeviceManager):
 
     def run_sic(self):
         self.logger.info("Running sic on alphamini...")
+        self._configure_tailscale_env(".venv_sic")
+        self._configure_tailscale_env(".test_venv")
+        self._ensure_socat_bridge()
 
         self.stop_cmd = """
             echo 'Killing all previous robot wrapper processes';

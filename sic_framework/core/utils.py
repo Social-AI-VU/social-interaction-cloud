@@ -26,6 +26,32 @@ def get_ip_adress():
     :return: The IP address of the device.
     :rtype: str
     """
+    use_tailscale = os.environ.get("USE_TAILSCALE", "").lower() in ("1", "true", "yes")
+
+    if use_tailscale:
+        import json
+        import subprocess
+
+        ts_socket = os.environ.get("TS_SOCKET")
+
+        for ts_cmd in ("tailscale", "./tailscale"):
+            try:
+                cmd = [ts_cmd]
+                if ts_socket:
+                    cmd += ["--socket", ts_socket]
+                cmd += ["status", "--json"]
+
+                result = subprocess.run(
+                    cmd, capture_output=True, text=True, timeout=5
+                )
+                if result.returncode == 0:
+                    data = json.loads(result.stdout)
+                    ips = data.get("Self", {}).get("TailscaleIPs", [])
+                    if ips:
+                        return ips[0]
+            except (FileNotFoundError, ValueError, KeyError, subprocess.TimeoutExpired):
+                continue
+
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.settimeout(0)
     try:
