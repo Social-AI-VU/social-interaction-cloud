@@ -657,16 +657,27 @@ EOF
         ts_host_ip = utils.get_ip_adress()
         if not ts_host_ip.startswith("100."):
             return  # Not a Tailscale IP, skip
+
+        # Kill any stale socat first
+        self.ssh_command("pkill -f socat || true")
+        time.sleep(1)
+
+        # Start socat in its own thread (same pattern as tailscaled / SIC)
         self.ssh_command(
-            """
-            if [ -x ~/tailscale/tailscale ]; then
-                pkill -f socat || true
-                sleep 1
-                nohup socat TCP4-LISTEN:6379,bind=127.0.0.1,reuseaddr,fork \
-                    SOCKS5:127.0.0.1:{ts_host_ip}:6379,socksport=1055 > ~/socat_redis.log 2>&1 &
-            fi
-            """.format(ts_host_ip=ts_host_ip)
+            "socat TCP4-LISTEN:6379,bind=127.0.0.1,reuseaddr,fork "
+            "SOCKS5:127.0.0.1:{ts_host_ip}:6379,socksport=1055".format(ts_host_ip=ts_host_ip),
+            create_thread=True, get_pty=False
         )
+
+        # Wait up to 5s for port to be listening
+        for _ in range(5):
+            _, stdout, _, _ = self.ssh_command(
+                "ss -tln | grep -q ':6379 ' && echo ok"
+            )
+            if "ok" in stdout.read().decode():
+                return
+            time.sleep(1)
+        self.logger.warning("socat Redis bridge may not have started")
 
     def create_test_environment(self):
         """
