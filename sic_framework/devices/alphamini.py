@@ -642,10 +642,9 @@ class Alphamini(SICDeviceManager):
         self.ssh_command(
             """
             ACT=~/{venv}/bin/activate
-            [ -f "$ACT" ] && ! grep -q 'USE_TAILSCALE' "$ACT" && cat >> "$ACT" << 'EOF'
+            [ -f "$ACT" ] && ! grep -q 'TS_SOCKET' "$ACT" && cat >> "$ACT" << 'EOF'
 export PATH="$HOME/tailscale:$PATH"
 export TS_SOCKET="$HOME/tailscale/tailscaled.sock"
-export USE_TAILSCALE=1
 EOF
             true
             """.format(venv=venv_name)
@@ -915,6 +914,10 @@ EOF
             """
                 + self.start_cmd
             )
+
+        # Inject USE_TAILSCALE for this session only (non-persistent)
+        if use_tailscale:
+            self.start_cmd = "export USE_TAILSCALE=1; " + self.start_cmd
 
         self.logger.info("starting SIC on alphamini")
 
