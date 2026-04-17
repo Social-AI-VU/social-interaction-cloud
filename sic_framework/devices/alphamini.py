@@ -871,9 +871,11 @@ EOF
 
     def run_sic(self):
         self.logger.info("Running sic on alphamini...")
-        self._configure_tailscale_env(".venv_sic")
-        self._configure_tailscale_env(".test_venv")
-        self._ensure_socat_bridge()
+        use_tailscale = os.environ.get("USE_TAILSCALE", "").lower() in ("1", "true", "yes")
+        if use_tailscale:
+            self._configure_tailscale_env(".venv_sic")
+            self._configure_tailscale_env(".test_venv")
+            self._ensure_socat_bridge()
 
         self.stop_cmd = """
             echo 'Killing all previous robot wrapper processes';

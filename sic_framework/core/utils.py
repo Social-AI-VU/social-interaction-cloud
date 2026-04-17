@@ -33,29 +33,26 @@ def get_ip_adress():
         import subprocess
 
         ts_socket = os.environ.get("TS_SOCKET")
+        cmd = ["tailscale"]
+        if ts_socket:
+            cmd += ["--socket", ts_socket]
+        cmd += ["status", "--json"]
 
-        for ts_cmd in ("tailscale", "./tailscale"):
-            try:
-                cmd = [ts_cmd]
-                if ts_socket:
-                    cmd += ["--socket", ts_socket]
-                cmd += ["status", "--json"]
-
-                result = subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=5
-                )
-                if result.returncode == 0:
-                    data = json.loads(result.stdout)
-                    ips = data.get("Self", {}).get("TailscaleIPs", [])
-                    if ips:
-                        return ips[0]
-            except (FileNotFoundError, ValueError, KeyError, subprocess.TimeoutExpired):
-                continue
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0:
+                data = json.loads(result.stdout)
+                ips = data.get("Self", {}).get("TailscaleIPs", [])
+                if ips:
+                    return ips[0]
+        except (FileNotFoundError, ValueError, KeyError, subprocess.TimeoutExpired):
+            pass
 
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.settimeout(0)
     try:
-        # doesn't even have to be reachable
         s.connect(("10.254.254.254", 1))
         IP = s.getsockname()[0]
     except Exception:
