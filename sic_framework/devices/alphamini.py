@@ -148,6 +148,11 @@ class Alphamini(SICDeviceManager):
             ts_ip = stdout.read().decode().strip()
             if ts_ip:
                 self.device_ip = ts_ip
+            else:
+                raise DeviceInstallationError(
+                    "Tailscale is authenticated but could not retrieve its IP address. "
+                    "Check that the daemon is running and connected."
+                )
 
         if self.dev_test:
             self.create_test_environment()
