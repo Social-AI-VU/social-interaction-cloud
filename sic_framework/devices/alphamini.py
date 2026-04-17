@@ -673,15 +673,19 @@ EOF
             create_thread=True, get_pty=False
         )
 
-        # Wait up to 5s for port to be listening
-        for _ in range(5):
+        # Verify bridge works end-to-end with a Redis ping
+        for i in range(5):
             _, stdout, _, _ = self.ssh_command(
-                "ss -tln | grep -q ':6379 ' && echo ok"
+                "(printf 'AUTH changemeplease\\r\\nPING\\r\\n'; sleep 1) | nc 127.0.0.1 6379"
             )
-            if "ok" in stdout.read().decode():
+            if "PONG" in stdout.read().decode():
+                self.logger.info("Socat Redis bridge verified")
                 return
-            time.sleep(1)
-        self.logger.warning("socat Redis bridge may not have started")
+            time.sleep(2)
+        raise DeviceExecutionError(
+            "Socat Redis bridge failed to connect to host Redis. "
+            "Check that Redis is running on the host and accessible via Tailscale."
+        )
 
     def create_test_environment(self):
         """
