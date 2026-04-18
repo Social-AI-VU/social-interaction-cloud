@@ -119,7 +119,7 @@ else:
 
 setup(
     name="social-interaction-cloud",
-    version="2.2.1",
+    version="2.2.2",
     author="Mike Ligthart",
     author_email="m.e.u.ligthart@vu.nl",
     long_description=open("README.md").read(),
