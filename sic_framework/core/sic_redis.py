@@ -113,10 +113,11 @@ class SICRedisConnection:
         self.stopping = False
         self._running_callbacks = []
 
-        # hash map of data streams
+        # Multi-user shared Redis: component_channel -> JSON(client_id, endpoint, input_channel).
+        # See docs: architecture/redis_registries.rst
         self.data_stream_map = "cache:data_streams"
 
-        # hash map of component reservations
+        # Multi-user shared Redis: device_id (e.g. IP) -> client_id. See architecture/redis_registries.rst
         self.reservation_map = "cache:reservations"
 
         # we assume that a password is required

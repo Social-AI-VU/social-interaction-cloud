@@ -26,3 +26,10 @@ Processes and Threads
 .. toctree::
 
    architecture/processes_threads
+
+Redis registries (multi-user)
+-----------------------------
+
+.. toctree::
+
+   architecture/redis_registries
