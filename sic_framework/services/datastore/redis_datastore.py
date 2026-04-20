@@ -1405,15 +1405,12 @@ def ensure_redis_stack_container(
         abs_conf = str(Path(redis_conf).expanduser().resolve())
         if not Path(abs_conf).is_file():
             raise FileNotFoundError("redis-conf not found: {}".format(abs_conf))
-        cmd.extend(["-v", "{p}:/usr/local/etc/redis/redis.conf:ro".format(p=abs_conf)])
+        cmd.extend(["-v", "{p}:/redis-stack.conf:ro".format(p=abs_conf)])
         if redis_args is not None:
             cmd.extend(["-e", "REDIS_ARGS={}".format(redis_args)])
     else:
         cmd.extend(["-e", "REDIS_ARGS={}".format(redis_args if redis_args is not None else default_args)])
     cmd.append(image)
-    if redis_conf:
-        # Image entrypoint is typically ``redis-stack-server``; pass config path as argv.
-        cmd.append("/usr/local/etc/redis/redis.conf")
 
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
