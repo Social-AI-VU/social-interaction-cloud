@@ -1,5 +1,5 @@
 from sic_framework import SICComponentManager, SICConfMessage, SICMessage, utils
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.sensor_python2 import SICSensor
 from sic_framework.core.connector import SICConnector
 
 if utils.PYTHON_VERSION_IS_2:
@@ -25,7 +25,7 @@ class PepperTactileSensorMessage(SICMessage):
         self.value = value
 
 
-class PepperTopTactileSensor(SICComponent):
+class PepperTopTactileSensor(SICSensor):
     """
     Sensor component for Pepper's top head tactile sensor.
     

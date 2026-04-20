@@ -1,5 +1,5 @@
 from sic_framework import SICComponentManager, SICConfMessage, SICMessage, utils
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.sensor_python2 import SICSensor
 from sic_framework.core.connector import SICConnector
 
 if utils.PYTHON_VERSION_IS_2:
@@ -23,7 +23,7 @@ class PepperLeftBumperMessage(SICMessage):
         self.value = value
 
 
-class PepperLeftBumperSensor(SICComponent):
+class PepperLeftBumperSensor(SICSensor):
     """
     Sensor component for Pepper's left bumper.
     

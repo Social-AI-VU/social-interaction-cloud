@@ -8,7 +8,6 @@ from sic_framework import (
     SICRequest,
     utils,
 )
-from sic_framework.core.component_python2 import SICComponent
 from sic_framework.core.connector import SICConnector
 from sic_framework.devices.common_naoqi.common_naoqi_motion import NaoqiMotionTools
 from sic_framework.core.service_python2 import SICService

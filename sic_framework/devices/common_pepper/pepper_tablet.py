@@ -1,5 +1,5 @@
 from sic_framework import SICComponentManager, SICMessage, utils, SICRequest
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.actuator_python2 import SICActuator
 from sic_framework.core.connector import SICConnector
 
 if utils.PYTHON_VERSION_IS_2:
@@ -57,7 +57,7 @@ class ClearDisplayMessage(SICMessage):
         super(ClearDisplayMessage, self).__init__()
 
 
-class NaoqiTabletComponent(SICComponent):
+class NaoqiTabletComponent(SICActuator):
     """
     Component for controlling Pepper's tablet display.
     
