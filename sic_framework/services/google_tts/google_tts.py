@@ -223,6 +223,7 @@ class Text2Speech(SICConnector):
     Connector for the SIC Google Text-to-Speech Component.
     """
     component_class = Text2SpeechService
+    component_group = "GoogleTTS"
 
 
 def main():

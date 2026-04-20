@@ -94,6 +94,7 @@ class FaceDetectionComponent(SICService):
 
 class FaceDetection(SICConnector):
     component_class = FaceDetectionComponent
+    component_group = "FaceDetection"
 
 
 def main():

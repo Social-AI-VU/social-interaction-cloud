@@ -508,6 +508,7 @@ class PepperMotionStreamer(SICConnector):
         pepper.motion_streaming().request(SetLockedJointsRequest(["RArm"]))
     """
     component_class = PepperMotionStreamerService
+    component_group = "Pepper"
 
 
 if __name__ == "__main__":

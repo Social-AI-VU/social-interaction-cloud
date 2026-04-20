@@ -350,6 +350,7 @@ class VoiceDetection(SICConnector):
     Connector for the Voice Detection Component.
     """
     component_class = VoiceDetectionComponent
+    component_group = "VoiceDetection"
 
 
 def main():

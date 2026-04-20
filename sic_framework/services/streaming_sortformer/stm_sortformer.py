@@ -608,6 +608,7 @@ class STMSortformerUtils:
 
 class STMSortformer(SICConnector):
     component_class = STMSortformerComponent
+    component_group = "StreamingSortformer"
 
 
 def main():

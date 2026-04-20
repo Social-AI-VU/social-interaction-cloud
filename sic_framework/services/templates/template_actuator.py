@@ -63,6 +63,7 @@ class ExampleActuator(SICActuator):
 
 class Example(SICConnector):
     component_class = ExampleActuator
+    component_group = "ExampleActuator"
 
 
 if __name__ == "__main__":

@@ -141,6 +141,7 @@ class PepperBackBumper(SICConnector):
     Access this through the Pepper device's ``back_bumper`` property.
     """
     component_class = PepperBackBumperSensor
+    component_group = "Pepper"
 
 
 if __name__ == "__main__":

@@ -276,6 +276,7 @@ class NaoqiTopCameraSensor(BaseNaoqiCameraSensor):
 
 class NaoqiTopCamera(SICConnector):
     component_class = NaoqiTopCameraSensor
+    component_group = "Naoqi"
 
 
 ##################
@@ -303,6 +304,7 @@ class NaoqiBottomCameraSensor(BaseNaoqiCameraSensor):
 
 class NaoqiBottomCamera(SICConnector):
     component_class = NaoqiBottomCameraSensor
+    component_group = "Naoqi"
 
 
 ##################
@@ -462,6 +464,7 @@ class StereoPepperCameraSensor(BaseNaoqiCameraSensor):
 class StereoPepperCamera(SICConnector):
 
     component_class = StereoPepperCameraSensor
+    component_group = "Naoqi"
 
 
 ##################
@@ -488,6 +491,7 @@ class DepthPepperCameraSensor(BaseNaoqiCameraSensor):
 class DepthPepperCamera(SICConnector):
 
     component_class = DepthPepperCameraSensor
+    component_group = "Naoqi"
 
 
 # Example: run the top and bottom camera sensors directly.

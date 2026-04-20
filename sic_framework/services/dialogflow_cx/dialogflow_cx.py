@@ -488,6 +488,7 @@ class DialogflowCXComponent(SICService):
 class DialogflowCX(SICConnector):
     """Connector for the Conversational Agents (Dialogflow CX) component."""
     component_class = DialogflowCXComponent
+    component_group = "DialogflowCX"
 
 
 def main():

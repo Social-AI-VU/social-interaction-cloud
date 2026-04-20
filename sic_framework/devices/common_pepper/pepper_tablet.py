@@ -236,6 +236,7 @@ class NaoqiTablet(SICConnector):
     Access this through the Pepper device's ``tablet`` property.
     """
     component_class = NaoqiTabletComponent
+    component_group = "Pepper"
 
 
 if __name__ == "__main__":

@@ -278,3 +278,4 @@ class NaoqiMotionRecorderActuator(SICActuator, NaoqiMotionTools):
 
 class NaoqiMotionRecorder(SICConnector):
     component_class = NaoqiMotionRecorderActuator
+    component_group = "Naoqi"

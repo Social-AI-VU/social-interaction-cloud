@@ -1102,6 +1102,7 @@ def _query_vector_db(redis_conn: redis.Redis, request: QueryVectorDBRequest) -> 
 class RedisDatastore(SICConnector):
     """Connector for Redis datastore component"""
     component_class = RedisDatastoreComponent
+    component_group = "RedisDatastore"
 
 
 def main():

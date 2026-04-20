@@ -11,7 +11,11 @@ import sys
 
 from sic_framework.core.sensor_python2 import SICSensor
 from sic_framework.core.service_python2 import SICService
-from sic_framework.core.utils import is_sic_instance, create_data_stream_id
+from sic_framework.core.utils import (
+    is_sic_instance,
+    create_data_stream_id,
+    create_component_manager_channel,
+)
 
 from . import utils
 from .component_manager_python2 import (
@@ -41,11 +45,9 @@ class SICConnector(object):
 
     # define how long an "instant" reply should take at most (ping sometimes takes more than 150ms)
     _PING_TIMEOUT = 1
+    component_group = None
 
-    def __init__(self, 
-                 ip="localhost", 
-                 conf=None,
-                 input_source=None):
+    def __init__(self, ip="localhost", conf=None, input_source=None):
 
         assert isinstance(ip, str), "IP must be string"
         self.app = SICApplication()
@@ -64,8 +66,18 @@ class SICConnector(object):
             ip = self.app.client_ip
 
         self.component_name = self.component_class.get_component_name()
+        assert (
+            isinstance(self.__class__.component_group, str)
+            and self.__class__.component_group.strip()
+        ), "Connector class {} must define a non-empty component_group".format(
+            self.__class__.__name__
+        )
+        self.component_group = self.__class__.component_group
         self.component_ip = ip
         self.component_endpoint = self.component_name + ":" + self.component_ip
+        self.component_manager_channel = create_component_manager_channel(
+            self.component_group, self.component_ip
+        )
 
         if input_source is None:    
             # If an input source is not provided, assume the client ID (IP address) is the input channel (i.e. Component is a Sensor/Actuator)
@@ -185,7 +197,7 @@ class SICConnector(object):
             
         self.logger.debug("Connector sending StopComponentRequest to ComponentManager")
         stop_result = self._redis.request(
-            self.component_ip,
+            self.component_manager_channel,
             SICStopComponentRequest(self.component_channel, self.component_name, client_id=self.app.client_ip),
             timeout=5,
         )
@@ -260,7 +272,7 @@ class SICConnector(object):
             # if successful, the component manager will send a SICComponentStartedMessage,
             # which contains the ID of the output and req/reply channel
             return_message = self._redis.request(
-                self.component_ip,
+                self.component_manager_channel,
                 component_request,
                 timeout=self.component_class.COMPONENT_STARTUP_TIMEOUT,
             )

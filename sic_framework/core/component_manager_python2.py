@@ -17,7 +17,8 @@ import sic_framework.core.sic_logging
 from sic_framework.core.utils import (
     MAGIC_STARTED_COMPONENT_MANAGER_TEXT,
     is_sic_instance,
-    create_data_stream_id
+    create_data_stream_id,
+    create_component_manager_channel,
 )
 
 from . import sic_logging, utils
@@ -109,7 +110,15 @@ class SICComponentManager(object):
     # Number of seconds we wait at most for a component to start
     COMPONENT_START_TIMEOUT = 10
 
-    def __init__(self, component_classes, client_id="", auto_serve=True, name="", stop_timeout=5):
+    def __init__(
+        self,
+        component_classes,
+        client_id="",
+        auto_serve=True,
+        component_group="",
+        stop_timeout=5,
+        name=None,
+    ):
         # Redis initialization
         self.redis = SICRedisConnection()
         self.ip = utils.get_ip_adress()
@@ -128,7 +137,14 @@ class SICComponentManager(object):
         self.ready_event = threading.Event()
         self._components_stopped = threading.Event()
 
-        self.name = "{}ComponentManager".format(name)
+        # Backward compatibility for existing callsites still using `name=`.
+        if not component_group and name:
+            component_group = name
+        self.component_group = component_group
+        if not self.component_group and component_classes:
+            self.component_group = component_classes[0].get_component_name()
+
+        self.name = "{}ComponentManager".format(self.component_group)
 
         self.logger = sic_logging.get_sic_logger(name=self.name, client_id=self.client_id, redis=self.redis)
         
@@ -137,6 +153,7 @@ class SICComponentManager(object):
         # The _handle_request function is calls execute directly, as we must reply when execution done to allow the user
         # to wait for this. New messages will be buffered by redis. The component manager listens to
         self.redis.register_request_handler(self.ip, self._handle_request)
+        self._register_component_manager_channels()
 
         self.logger.info(
             MAGIC_STARTED_COMPONENT_MANAGER_TEXT
@@ -158,6 +175,17 @@ class SICComponentManager(object):
             atexit.register(self.stop_component_manager)
         if auto_serve:
             self.serve()
+
+    def _register_component_manager_channels(self):
+        """
+        Register one scoped channel for this manager's component group.
+        """
+        channel = create_component_manager_channel(self.component_group, self.ip)
+        self.redis.register_request_handler(channel, self._handle_request)
+        self.logger.debug(
+            "Listening on component manager channel {}".format(channel),
+            extra={"client_id": self.client_id},
+        )
 
     def serve(self):
         """

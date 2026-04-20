@@ -104,6 +104,7 @@ class DesktopCameraSensor(SICSensor):
 
 class DesktopCamera(SICConnector):
     component_class = DesktopCameraSensor
+    component_group = "Desktop"
 
 
 if __name__ == "__main__":

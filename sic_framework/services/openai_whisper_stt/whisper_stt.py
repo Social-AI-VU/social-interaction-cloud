@@ -260,6 +260,7 @@ class SICWhisper(SICConnector):
     Connector for the OpenAI Whisper STT Component.
     """
     component_class = WhisperComponent
+    component_group = "Whisper"
 
 
 def main():

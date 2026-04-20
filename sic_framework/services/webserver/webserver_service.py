@@ -640,6 +640,7 @@ class WebserverComponent(SICService):
 
 class Webserver(SICConnector):
     component_class = WebserverComponent
+    component_group = "Webserver"
 
 
 def main():

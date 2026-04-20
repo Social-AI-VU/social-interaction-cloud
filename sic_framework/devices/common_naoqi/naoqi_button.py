@@ -115,6 +115,7 @@ class NaoqiButtonSensor(SICComponent):
 
 class NaoqiButton(SICConnector):
     component_class = NaoqiButtonSensor
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":

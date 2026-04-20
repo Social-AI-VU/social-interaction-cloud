@@ -126,6 +126,7 @@ class NaoqiSpeakerComponent(SICComponent):
 
 class NaoqiSpeaker(SICConnector):
     component_class = NaoqiSpeakerComponent
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":

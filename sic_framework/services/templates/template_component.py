@@ -68,6 +68,7 @@ class ExampleComponent(SICService):
 
 class Example(SICConnector):
     component_class = ExampleComponent
+    component_group = "ExampleComponent"
 
 
 if __name__ == "__main__":

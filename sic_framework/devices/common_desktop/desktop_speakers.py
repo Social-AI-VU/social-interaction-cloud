@@ -69,6 +69,7 @@ class DesktopSpeakersActuator(SICActuator):
 
 class DesktopSpeakers(SICConnector):
     component_class = DesktopSpeakersActuator
+    component_group = "Desktop"
 
 
 if __name__ == "__main__":

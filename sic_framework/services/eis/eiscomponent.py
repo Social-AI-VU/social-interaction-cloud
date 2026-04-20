@@ -356,6 +356,7 @@ class EISComponent(SICService):
 
 class EISConnector(SICConnector):
     component_class = EISComponent
+    component_group = "EIS"
 
 
 if __name__ == "__main__":

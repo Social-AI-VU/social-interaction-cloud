@@ -194,6 +194,7 @@ class NaoqiLEDsActuator(SICActuator):
 
 class NaoqiLEDs(SICConnector):
     component_class = NaoqiLEDsActuator
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":

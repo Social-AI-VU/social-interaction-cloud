@@ -49,6 +49,7 @@ class ExampleService(SICSensor):
 
 class Example(SICConnector):
     component_class = ExampleService
+    component_group = "ExampleService"
 
 
 if __name__ == "__main__":

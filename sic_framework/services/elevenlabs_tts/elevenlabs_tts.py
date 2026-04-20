@@ -466,6 +466,7 @@ class ElevenLabsTTSService(SICService):
 
 class ElevenLabsTTS(SICConnector):
     component_class = ElevenLabsTTSService
+    component_group = "ElevenLabsTTS"
 
 
 def main():

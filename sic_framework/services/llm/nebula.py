@@ -161,6 +161,7 @@ class Nebula(SICConnector):
     Connector for the SIC Nebula Component.
     """
     component_class = NebulaComponent
+    component_group = "Nebula"
 
 
 def main():

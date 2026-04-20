@@ -251,5 +251,24 @@ def create_data_stream_id(component_endpoint, input_source, length=16):
         raise e
     return encoded[:length]
 
+
+def create_component_manager_channel(component_group, component_ip):
+    """
+    Create a deterministic channel name for a component manager.
+
+    This lets multiple managers run on the same host without all receiving
+    every start/stop request.
+
+    :param component_group: Shared group identifier for a component manager.
+    :type component_group: str
+    :param component_ip: The host IP where the manager is running.
+    :type component_ip: str
+    :return: Channel name scoped to one manager/component family.
+    :rtype: str
+    """
+    return "sic:cm:{component_group}:{component_ip}".format(
+        component_group=component_group, component_ip=component_ip
+    )
+
 if __name__ == "__main__":
     pass
