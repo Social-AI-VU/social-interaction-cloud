@@ -1106,7 +1106,7 @@ class RedisDatastore(SICConnector):
 
 
 def main():
-    SICComponentManager([RedisDatastoreComponent], name="RedisDatastore")
+    SICComponentManager([RedisDatastoreComponent], component_group="RedisDatastore")
 
 
 if __name__ == "__main__":

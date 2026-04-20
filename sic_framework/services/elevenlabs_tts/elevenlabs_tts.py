@@ -470,7 +470,7 @@ class ElevenLabsTTS(SICConnector):
 
 
 def main():
-    SICComponentManager([ElevenLabsTTSService], name="ElevenLabsTTS")
+    SICComponentManager([ElevenLabsTTSService], component_group="ElevenLabsTTS")
 
 
 if __name__ == "__main__":

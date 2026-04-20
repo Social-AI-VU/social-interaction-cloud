@@ -117,7 +117,6 @@ class SICComponentManager(object):
         auto_serve=True,
         component_group="",
         stop_timeout=5,
-        name=None,
     ):
         # Redis initialization
         self.redis = SICRedisConnection()
@@ -137,12 +136,7 @@ class SICComponentManager(object):
         self.ready_event = threading.Event()
         self._components_stopped = threading.Event()
 
-        # Backward compatibility for existing callsites still using `name=`.
-        if not component_group and name:
-            component_group = name
         self.component_group = component_group
-        if not self.component_group and component_classes:
-            self.component_group = component_classes[0].get_component_name()
 
         self.name = "{}ComponentManager".format(self.component_group)
 
@@ -153,7 +147,7 @@ class SICComponentManager(object):
         # The _handle_request function is calls execute directly, as we must reply when execution done to allow the user
         # to wait for this. New messages will be buffered by redis. The component manager listens to
         self.redis.register_request_handler(self.ip, self._handle_request)
-        self._register_component_manager_channels()
+        self._register_component_manager_channel()
 
         self.logger.info(
             MAGIC_STARTED_COMPONENT_MANAGER_TEXT
@@ -176,7 +170,7 @@ class SICComponentManager(object):
         if auto_serve:
             self.serve()
 
-    def _register_component_manager_channels(self):
+    def _register_component_manager_channel(self):
         """
         Register one scoped channel for this manager's component group.
         """

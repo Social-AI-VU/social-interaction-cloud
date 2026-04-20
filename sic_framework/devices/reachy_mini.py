@@ -348,4 +348,4 @@ reachy_mini_component_list = [
 
 
 if __name__ == "__main__":
-    SICComponentManager(reachy_mini_component_list, name="ReachyMini")
+    SICComponentManager(reachy_mini_component_list, component_group="ReachyMini")

@@ -615,7 +615,7 @@ def main():
     """
     Run a ComponentManager that can start the Streaming Sortformer diarization Component.
     """
-    SICComponentManager([STMSortformerComponent], name="StreamingSortformer")
+    SICComponentManager([STMSortformerComponent], component_group="StreamingSortformer")
 
 
 if __name__ == "__main__":

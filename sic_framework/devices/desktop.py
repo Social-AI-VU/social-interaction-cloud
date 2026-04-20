@@ -107,4 +107,4 @@ desktop_component_list = [
 ]
 
 if __name__ == "__main__":
-    SICComponentManager(desktop_component_list, name="Desktop")
+    SICComponentManager(desktop_component_list, component_group="Desktop")

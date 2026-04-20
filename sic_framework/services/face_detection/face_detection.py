@@ -98,7 +98,7 @@ class FaceDetection(SICConnector):
 
 
 def main():
-    SICComponentManager([FaceDetectionComponent], name="FaceDetection")
+    SICComponentManager([FaceDetectionComponent], component_group="FaceDetection")
 
 
 if __name__ == "__main__":

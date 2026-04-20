@@ -382,7 +382,7 @@ class Dialogflow(SICConnector):
 
 
 def main():
-    SICComponentManager([DialogflowComponent], name="Dialogflow")
+    SICComponentManager([DialogflowComponent], component_group="Dialogflow")
 
 
 if __name__ == "__main__":

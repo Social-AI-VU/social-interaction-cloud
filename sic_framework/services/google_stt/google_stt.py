@@ -284,7 +284,7 @@ def main():
     """
     Run a ComponentManager that can start the Google Speech-to-Text Component.
     """
-    SICComponentManager([GoogleSpeechToTextComponent], name="GoogleSpeechToText")
+    SICComponentManager([GoogleSpeechToTextComponent], component_group="GoogleSpeechToText")
 
 
 if __name__ == "__main__":

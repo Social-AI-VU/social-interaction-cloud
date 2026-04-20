@@ -26,7 +26,7 @@ def start_franka_components():
     """
 
     global franka_active
-    manager = SICComponentManager(franka_component_list, client_id=utils.get_ip_adress(), auto_serve=False, name="Franka")
+    manager = SICComponentManager(franka_component_list, client_id=utils.get_ip_adress(), auto_serve=False, component_group="Franka")
 
     atexit.register(manager.stop)
     from contextlib import redirect_stderr
@@ -78,4 +78,4 @@ franka_component_list = [FrankaMotionRecorderActuator, FrankaMotionActuator]
 
 
 if __name__ == '__main__':
-    SICComponentManager(franka_component_list, name="Franka")
+    SICComponentManager(franka_component_list, component_group="Franka")
