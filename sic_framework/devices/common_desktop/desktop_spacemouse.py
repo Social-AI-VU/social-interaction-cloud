@@ -69,4 +69,4 @@ class DesktopSpaceMouse(SICConnector):
 
 
 if __name__ == '__main__':
-    SICComponentManager([DesktopSpaceMouseSensor])
+    SICComponentManager([DesktopSpaceMouseSensor], component_group="Desktop")

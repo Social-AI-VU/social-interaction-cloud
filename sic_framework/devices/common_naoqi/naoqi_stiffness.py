@@ -91,4 +91,4 @@ class NaoqiStiffness(SICConnector):
 
 
 if __name__ == "__main__":
-    SICComponentManager([NaoqiStiffnessActuator])
+    SICComponentManager([NaoqiStiffnessActuator], component_group="Naoqi")

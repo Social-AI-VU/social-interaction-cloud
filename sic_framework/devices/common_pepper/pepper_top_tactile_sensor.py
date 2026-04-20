@@ -148,8 +148,8 @@ class PepperTopTactile(SICConnector):
     Access this through the Pepper device's ``tactile_sensor`` property.
     """
     component_class = PepperTopTactileSensor
-    component_group = "Pepper"
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":
-    SICComponentManager([PepperTopTactileSensor])
+    SICComponentManager([PepperTopTactileSensor], component_group="Naoqi")

@@ -496,4 +496,4 @@ class DepthPepperCamera(SICConnector):
 
 # Example: run the top and bottom camera sensors directly.
 if __name__ == "__main__":
-    SICComponentManager([NaoqiTopCameraSensor, NaoqiBottomCameraSensor])
+    SICComponentManager([NaoqiTopCameraSensor, NaoqiBottomCameraSensor], component_group="Naoqi")

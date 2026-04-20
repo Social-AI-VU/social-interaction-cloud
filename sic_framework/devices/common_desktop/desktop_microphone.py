@@ -80,4 +80,4 @@ class DesktopMicrophone(SICConnector):
 
 
 if __name__ == "__main__":
-    SICComponentManager([DesktopMicrophoneSensor])
+    SICComponentManager([DesktopMicrophoneSensor], component_group="Desktop")

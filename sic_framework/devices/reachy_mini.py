@@ -110,7 +110,7 @@ class ReachyMiniDevice(SICDeviceManager):
                 components,
                 client_id=utils.get_ip_adress(),
                 auto_serve=False,
-                name="ReachyMini",
+                component_group="ReachyMini",
             )
             self.manager.is_main_thread = False
 

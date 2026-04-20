@@ -141,8 +141,8 @@ class PepperBackBumper(SICConnector):
     Access this through the Pepper device's ``back_bumper`` property.
     """
     component_class = PepperBackBumperSensor
-    component_group = "Pepper"
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":
-    SICComponentManager([PepperBackBumperSensor])
+    SICComponentManager([PepperBackBumperSensor], component_group="Naoqi")

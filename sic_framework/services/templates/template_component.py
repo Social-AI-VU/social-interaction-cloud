@@ -73,4 +73,4 @@ class Example(SICConnector):
 
 if __name__ == "__main__":
     # Request the service to start using the SICServiceManager on this device
-    SICComponentManager([ExampleComponent])
+    SICComponentManager([ExampleComponent], component_group="ExampleComponent")

@@ -241,4 +241,4 @@ class NaoqiMotionStreamer(SICConnector):
 
 
 if __name__ == "__main__":
-    SICComponentManager([NaoqiMotionStreamerService])
+    SICComponentManager([NaoqiMotionStreamerService], component_group="Naoqi")

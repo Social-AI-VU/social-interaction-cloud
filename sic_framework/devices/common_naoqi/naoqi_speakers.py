@@ -130,4 +130,4 @@ class NaoqiSpeaker(SICConnector):
 
 
 if __name__ == "__main__":
-    SICComponentManager([NaoqiSpeakerComponent])
+    SICComponentManager([NaoqiSpeakerComponent], component_group="Naoqi")

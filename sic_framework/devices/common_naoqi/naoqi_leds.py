@@ -198,4 +198,4 @@ class NaoqiLEDs(SICConnector):
 
 
 if __name__ == "__main__":
-    SICComponentManager([NaoqiLEDs])
+    SICComponentManager([NaoqiLEDs], component_group="Naoqi")

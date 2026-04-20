@@ -416,4 +416,4 @@ if __name__ == "__main__":
         PepperLeftBumperSensor,
     ]
 
-    SICComponentManager(pepper_components, client_id=args.client_id, component_group="Pepper")
+    SICComponentManager(pepper_components, client_id=args.client_id, component_group="Naoqi")

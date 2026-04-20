@@ -166,4 +166,4 @@ class NaoqiTextToSpeech(SICConnector):
 
 
 if __name__ == "__main__":
-    SICComponentManager([NaoqiTextToSpeechActuator])
+    SICComponentManager([NaoqiTextToSpeechActuator], component_group="Naoqi")

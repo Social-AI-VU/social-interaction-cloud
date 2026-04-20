@@ -200,6 +200,6 @@ class FrankaMotionRecorder(SICConnector):
 
 
 if __name__ == '__main__':
-    SICComponentManager([FrankaMotionRecorderActuator])
+    SICComponentManager([FrankaMotionRecorderActuator], component_group="Franka")
 
 

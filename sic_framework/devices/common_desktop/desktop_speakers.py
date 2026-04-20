@@ -73,4 +73,4 @@ class DesktopSpeakers(SICConnector):
 
 
 if __name__ == "__main__":
-    SICComponentManager([DesktopSpeakersActuator])
+    SICComponentManager([DesktopSpeakersActuator], component_group="Desktop")

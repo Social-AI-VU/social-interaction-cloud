@@ -40,4 +40,4 @@ class Example(SICConnector):
 
 
 if __name__ == "__main__":
-    SICComponentManager([ExampleService])
+    SICComponentManager([ExampleService], component_group="ExampleService")
