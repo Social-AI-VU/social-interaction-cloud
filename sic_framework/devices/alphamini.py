@@ -148,6 +148,11 @@ class Alphamini(SICDeviceManager):
             ts_ip = stdout.read().decode().strip()
             if ts_ip:
                 self.device_ip = ts_ip
+            else:
+                raise DeviceInstallationError(
+                    "Tailscale is authenticated but could not retrieve its IP address. "
+                    "Check that the daemon is running and connected."
+                )
 
         if self.dev_test:
             self.create_test_environment()
@@ -642,10 +647,9 @@ class Alphamini(SICDeviceManager):
         self.ssh_command(
             """
             ACT=~/{venv}/bin/activate
-            [ -f "$ACT" ] && ! grep -q 'USE_TAILSCALE' "$ACT" && cat >> "$ACT" << 'EOF'
+            [ -f "$ACT" ] && ! grep -q 'TS_SOCKET' "$ACT" && cat >> "$ACT" << 'EOF'
 export PATH="$HOME/tailscale:$PATH"
 export TS_SOCKET="$HOME/tailscale/tailscaled.sock"
-export USE_TAILSCALE=1
 EOF
             true
             """.format(venv=venv_name)
@@ -669,15 +673,19 @@ EOF
             create_thread=True, get_pty=False
         )
 
-        # Wait up to 5s for port to be listening
-        for _ in range(5):
+        # Verify bridge works end-to-end with a Redis ping
+        for i in range(5):
             _, stdout, _, _ = self.ssh_command(
-                "ss -tln | grep -q ':6379 ' && echo ok"
+                "(printf 'AUTH changemeplease\\r\\nPING\\r\\n'; sleep 1) | nc 127.0.0.1 6379"
             )
-            if "ok" in stdout.read().decode():
+            if "PONG" in stdout.read().decode():
+                self.logger.info("Socat Redis bridge verified")
                 return
-            time.sleep(1)
-        self.logger.warning("socat Redis bridge may not have started")
+            time.sleep(2)
+        raise DeviceExecutionError(
+            "Socat Redis bridge failed to connect to host Redis. "
+            "Check that Redis is running on the host and accessible via Tailscale."
+        )
 
     def create_test_environment(self):
         """
@@ -871,9 +879,11 @@ EOF
 
     def run_sic(self):
         self.logger.info("Running sic on alphamini...")
-        self._configure_tailscale_env(".venv_sic")
-        self._configure_tailscale_env(".test_venv")
-        self._ensure_socat_bridge()
+        use_tailscale = os.environ.get("USE_TAILSCALE", "").lower() in ("1", "true", "yes")
+        if use_tailscale:
+            self._configure_tailscale_env(".venv_sic")
+            self._configure_tailscale_env(".test_venv")
+            self._ensure_socat_bridge()
 
         self.stop_cmd = """
             echo 'Killing all previous robot wrapper processes';
@@ -913,6 +923,10 @@ EOF
             """
                 + self.start_cmd
             )
+
+        # Inject USE_TAILSCALE for this session only (non-persistent)
+        if use_tailscale:
+            self.start_cmd = "export USE_TAILSCALE=1; " + self.start_cmd
 
         self.logger.info("starting SIC on alphamini")
 
