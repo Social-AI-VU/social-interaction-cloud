@@ -194,7 +194,14 @@ class SICConnector(object):
         """
         if self._stopped:
             return
-            
+
+        # Stop local subscriber callbacks first so no new component output is
+        # consumed while the remote component is shutting down.
+        self.logger.debug("Closing callback threads")
+        for ct in self._callback_threads[:]:
+            self._redis.unregister_callback(ct)
+        self._callback_threads = []
+
         self.logger.debug("Connector sending StopComponentRequest to ComponentManager")
         stop_result = self._redis.request(
             self.component_manager_channel,
@@ -208,11 +215,6 @@ class SICConnector(object):
             self.logger.error("Stop request failed")
             raise RuntimeError("Stop request failed")
 
-        # close callback threads
-        self.logger.debug("Closing callback threads")
-        for ct in self._callback_threads[:]:
-            self._redis.unregister_callback(ct)
-        
         self._stopped = True
 
 

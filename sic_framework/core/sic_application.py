@@ -237,6 +237,23 @@ class SICApplication(object):
                     )
                 )
 
+        # Best-effort cleanup in case any reservations/data streams survived
+        # component/device shutdown (e.g. abrupt exits or partial failures).
+        if self._redis is not None:
+            try:
+                self.logger.info(
+                    "Removing lingering reservations/data streams for client {}".format(
+                        self.client_ip
+                    )
+                )
+                self._redis.remove_client(self.client_ip)
+            except Exception as e:
+                self.logger.warning(
+                    "Warning: Could not fully cleanup client reservation state: {}".format(
+                        e
+                    )
+                )
+
         self.logger.info("All components stopped, stopping logging thread")
         
         # Stop the SICClientLog thread before closing Redis
