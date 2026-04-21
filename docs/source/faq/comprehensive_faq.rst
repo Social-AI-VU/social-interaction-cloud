@@ -169,6 +169,39 @@ Personal Apple device sensors being used
    On your iPhone, go to Settings > General > AirPlay & Handoff. Turn off Continuity Camera
 
 
+Microphone not capturing audio on Desktop
+-----------------------------------------
+
+.. toggle::
+
+   **Problem:** Voice or speech demos run, but no microphone audio is captured (or the wrong input device is used), especially on Linux workstations.
+
+   **Solution:**
+
+   1. List available audio input devices and their default sample rates:
+
+      .. code-block:: bash
+
+         python sic_applications/utils/available_audio.py
+
+   2. In the output, pick the microphone you want and note:
+
+      - ``Index`` (device id)
+      - ``Sample rate`` (default sample rate)
+
+   3. Pass those values into your ``DesktopMicrophoneConf`` so SIC uses the intended microphone configuration.
+
+      .. code-block:: python
+
+         # Example values from available_audio.py output
+         mic_conf = DesktopMicrophoneConf(
+             device_index=3,
+             sampling_rate=48000,
+         )
+
+   If the selected device still does not capture audio, rerun the utility and verify the device index did not change.
+
+
 Portaudio.h file not found
 ---------------------------
 

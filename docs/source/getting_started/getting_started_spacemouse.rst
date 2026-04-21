@@ -42,14 +42,11 @@ The steps are as follows:
 Verification/Usage
 ----------------------------
 
-To test the correct installation or as a template for using the spacemouse in your code, here is an example script. Plug the spacemouse in and run the following script.
+To test the installation, use the utility script in ``sic_applications``.
+Plug in the SpaceMouse and run:
 
-.. code-block:: python
+.. code-block:: bash
 
-    import pyspacemouse
+    python sic_applications/utils/spacemouse_test.py
 
-    # Context manager (recommended) - automatically closes device
-    with pyspacemouse.open() as device:
-        while True:
-            state = device.read()
-            print(state.x, state.y, state.z)
+If this script prints changing ``x``, ``y``, and ``z`` values while you move the device, the setup is working.
