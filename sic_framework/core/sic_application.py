@@ -16,8 +16,7 @@ import os
 import weakref
 import time
 import inspect
-from pathlib import Path
-from dotenv import load_dotenv
+
 try:
     import queue  # Python 3
 except ImportError:  # pragma: no cover
@@ -118,6 +117,9 @@ class SICApplication(object):
         ``path`` is resolved relative to the directory of the calling source file
         (e.g. the demo script that invokes this method).
         """
+        from pathlib import Path
+        from dotenv import load_dotenv
+
         frame = inspect.currentframe()
         try:
             caller = frame.f_back
