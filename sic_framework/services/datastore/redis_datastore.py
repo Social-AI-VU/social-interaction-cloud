@@ -1,8 +1,9 @@
 """
 Redis Datastore Service: Unified Key-Value Store + Vector RAG
 
-This module provides both persistent key-value storage (user models) and vector-based
-retrieval-augmented generation (RAG) for document search, backed by Redis Stack.
+This module provides persistent **scoped key-value** storage (the same Redis keyspace is
+often used for per-user / interactant records with general scope identifiers) and
+vector-based retrieval-augmented generation (RAG), backed by **Redis Stack**.
 
 All functionality is accessed via SIC service requests through RedisDatastoreComponent.
 
@@ -12,12 +13,13 @@ All functionality is accessed via SIC service requests through RedisDatastoreCom
    - RedisDatastoreConf: Redis connection and keyspace namespacing
 
 2. Request Classes:
-   - User Model: SetUsermodelValuesRequest, GetUsermodelValuesRequest, DeleteUsermodelValuesRequest, etc.
+   - Scoped key-value storage: SetScopedKeyValuesRequest, GetScopedKeyValuesRequest,
+     DeleteScopedKeyValuesRequest, GetScopedKeysRequest, GetScopedRecordRequest
    - Datastore Management: DeleteDeveloperSegmentRequest, DeleteVersionSegmentRequest, DeleteNamespaceRequest
    - Vector RAG: IngestVectorDocsRequest, QueryVectorDBRequest
 
 3. Response Messages:
-   - UsermodelKeyValuesMessage, UsermodelKeysMessage, VectorDBResultsMessage, SICSuccessMessage
+   - ScopedKeyValuesMessage, ScopedKeysMessage, VectorDBResultsMessage, SICSuccessMessage
 
 4. Service Component:
    - RedisDatastoreComponent: Handles all requests via on_request()
@@ -25,18 +27,21 @@ All functionality is accessed via SIC service requests through RedisDatastoreCom
 
 === USAGE ===
 
-Start Redis Stack manually:
-    docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 -v redis-stack-data:/data -e REDIS_ARGS="--requirepass changemeplease" redis/redis-stack:latest
+**Single command (Docker + datastore service)** — requires Docker installed:
 
-Start the service (components auto-start on launch):
-    run-datastore-redis
+    run-redis --data-dir /path/to/persist/redis-data
+
+Optional: ``--skip-docker`` if Redis Stack is already running; tune Redis with
+``--redis-args`` (``REDIS_ARGS``) and/or ``--redis-conf`` (host file mounted into the
+container). Default password matches ``DB_PASS`` / ``changemeplease`` used by SIC Redis.
+
 
 Send requests from your application:
 
     from sic_framework.services.datastore import (
         RedisDatastore,
         RedisDatastoreConf,
-        SetUsermodelValuesRequest,
+        SetScopedKeyValuesRequest,
         IngestVectorDocsRequest,
         QueryVectorDBRequest,
     )
@@ -44,8 +49,10 @@ Send requests from your application:
     # Connect to the Redis service
     db = RedisDatastore(conf=RedisDatastoreConf(redis_url="redis://:password@localhost:6379/0"))
 
-    # User model operations
-    db.request(SetUsermodelValuesRequest(user_id=123, keyvalues={"name": "Alice"}))
+    # Key-value (per-user example)
+    db.request(SetScopedKeyValuesRequest(scope_id=123, keyvalues={"name": "Alice"}))
+    # Same storage, arbitrary scope id (session, device bucket, etc.)
+    db.request(SetScopedKeyValuesRequest(scope_id="sess-1", keyvalues={"state": "idle"}))
 
     # Ingest documents into vector DB (auto-index mode)
     # Creates one index per directory containing matching files
@@ -78,8 +85,14 @@ Send requests from your application:
     print(response.payload)
 """
 
+import argparse
 import hashlib
+import json
 import os
+import shutil
+import socket
+import subprocess
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Optional
@@ -102,13 +115,19 @@ REDIS_STACK_INSTALL_MESSAGE = (
     "Install Redis Stack with:\n"
     "  docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 "
     "-v redis-stack-data:/data -e REDIS_ARGS=\"--requirepass changemeplease\" redis/redis-stack:latest\n"
-    "Or download from: https://redis.io/downloads/#redis-stack"
 )
 
 REDIS_CONNECTION_ERROR_MESSAGE = (
     "Failed to connect to Redis. Make sure Redis Stack is running.\n"
     "Start Redis with: docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 "
-    "-v redis-stack-data:/data -e REDIS_ARGS=\"--requirepass changemeplease\" redis/redis-stack:latest"
+    "-v redis-stack-data:/data -e REDIS_ARGS=\"--requirepass changemeplease\" redis/redis-stack:latest\n"
+    "Or use: run-redis [--data-dir HOST_PATH]"
+)
+
+DEFAULT_REDIS_STACK_IMAGE = "redis/redis-stack:latest"
+DOCKER_NOT_INSTALLED_MESSAGE = (
+    "Docker is not installed or not on PATH. Install Docker to use run-redis, "
+    "or start Redis Stack yourself and pass --skip-docker."
 )
 
 
@@ -120,8 +139,8 @@ class RedisDatastoreConf(SICConfMessage):
     Configuration for setting up the connection to a persistent Redis datastore.
 
     Args:
-        host: IP address of the Redis server. Default is localhost.
-        port: Port of the Redis server. Default is 6379.
+        host: IP address of the Redis server. If omitted, uses ``DB_IP`` (default ``127.0.0.1``).
+        port: Port of the Redis server. If omitted, uses ``DB_PORT`` (default ``6379``).
         password: optional password to redis server.
         username: optional username to redis server.
         socket_connect_timeout: timeout for connecting to Redis server. Default is 2 seconds.
@@ -132,7 +151,7 @@ class RedisDatastoreConf(SICConfMessage):
         developer_id: id of the developer user. Default is 0.
     """
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 6379, db: int = 0,
+    def __init__(self, host: Optional[str] = None, port: Optional[int] = None, db: int = 0,
                  redis_url: Optional[str] = None,
                  password: Optional[str] = None, username: Optional[str] = None,
                  socket_connect_timeout: float = 2.0, socket_timeout: float = 2.0,
@@ -140,9 +159,9 @@ class RedisDatastoreConf(SICConfMessage):
                  namespace: str = "store", version: str = "v1", developer_id: str | int = 0):
         super(SICConfMessage, self).__init__()
 
-        # Redis basic configuration
-        self.host = host
-        self.port = port
+        # Redis basic configuration (``DB_IP`` / ``DB_PORT`` match SIC messaging + ``run-redis``)
+        self.host = host if host is not None else os.getenv("DB_IP", "127.0.0.1")
+        self.port = port if port is not None else int(os.getenv("DB_PORT", "6379"))
         self.db = db
         self.redis_url = redis_url
         self.password = password
@@ -159,92 +178,91 @@ class RedisDatastoreConf(SICConfMessage):
 
 
 # ============================================================================
-# USER MODEL REQUESTS
+# SCOPED KEY-VALUE REQUESTS
 # ============================================================================
 
-class SetUsermodelValuesRequest(SICRequest):
+class SetScopedKeyValuesRequest(SICRequest):
 
-    def __init__(self, user_id: str | int, keyvalues: dict) -> None:
+    def __init__(self, scope_id: str | int, keyvalues: dict) -> None:
         """
-
-        Sets a value in the user model under the specified key of the user with the specified ID
+        Set fields on the scoped key-value record for ``scope_id``.
 
         Args:
-            user_id: the ID of the user (i.e. interactant)
-            keyvalues: dictionary with all the key value pairs e.g. {'key_1': 'value_1', 'key_2': 'value_2'}
+            scope_id: partition id (user/interactant/session/device bucket/etc.)
+            keyvalues: fields to set, e.g. ``{'key_1': 'value_1'}``
         """
         super().__init__()
-        self.user_id = user_id
+        self.scope_id = scope_id
         self.keyvalues = keyvalues
 
 
-class GetUsermodelValuesRequest(SICRequest):
+class GetScopedKeyValuesRequest(SICRequest):
 
-    def __init__(self, user_id: str | int, keys: list) -> None:
+    def __init__(self, scope_id: str | int, keys: list) -> None:
         """
-        Request to retrieve values from user models based on the provided list of keys
+        Read selected keys from the scoped key-value record for ``scope_id``.
 
         Args:
-            user_id: the ID of the user (i.e. interactant)
-            keys: list of keys of which the values need to be retrieved
+            scope_id: partition id
+            keys: field names to read
         """
         super().__init__()
-        self.user_id = user_id
+        self.scope_id = scope_id
         self.keys = keys
 
 
-class DeleteUsermodelValuesRequest(SICRequest):
+class DeleteScopedKeyValuesRequest(SICRequest):
 
-    def __init__(self, user_id: str | int, keys: list) -> None:
+    def __init__(self, scope_id: str | int, keys: list) -> None:
         """
-        Message to delete values from user models based on the provided list of keys
+        Delete selected fields from the scoped key-value record for ``scope_id``.
 
         Args:
-            user_id: the ID of the user (i.e. interactant)
-            keys: list of keys of which the values need to be deleted
+            scope_id: partition id
+            keys: field names to remove
         """
         super().__init__()
-        self.user_id = user_id
+        self.scope_id = scope_id
         self.keys = keys
 
 
-class GetUsermodelKeysRequest(SICRequest):
+class GetScopedKeysRequest(SICRequest):
 
-    def __init__(self, user_id: str | int) -> None:
+    def __init__(self, scope_id: str | int) -> None:
         """
-        Request to inspect the existing user model keys for the user with the specified ID
+        List field names on the scoped key-value record for ``scope_id``.
 
         Args:
-            user_id: the ID of the user (i.e. interactant)
+            scope_id: partition id
         """
         super().__init__()
-        self.user_id = user_id
+        self.scope_id = scope_id
 
 
-class GetUsermodelRequest(SICRequest):
+class GetScopedRecordRequest(SICRequest):
 
-    def __init__(self, user_id: str | int) -> None:
+    def __init__(self, scope_id: str | int) -> None:
         """
-        Request to retrieve the whole user model for the user with the specified ID
+        Read the full scoped key-value hash for ``scope_id``.
 
         Args:
-            user_id: the ID of the user (i.e. interactant)
+            scope_id: partition id
         """
         super().__init__()
-        self.user_id = user_id
+        self.scope_id = scope_id
 
 
-class DeleteUserRequest(SICRequest):
+class DeleteScopedRecordRequest(SICRequest):
 
-    def __init__(self, user_id: str | int) -> None:
+    def __init__(self, scope_id: str | int) -> None:
         """
-        Delete user with ID user_id
+        Delete all datastore keys for ``scope_id``.
 
         Args:
-            user_id: the ID of the user (i.e. interactant)
+            scope_id: partition id
         """
         super().__init__()
-        self.user_id = user_id
+        self.scope_id = scope_id
 
 
 # ============================================================================
@@ -414,33 +432,33 @@ class VectorDBResultsMessage(SICMessage):
         self.payload = payload
 
 
-class UsermodelKeyValuesMessage(SICMessage):
+class ScopedKeyValuesMessage(SICMessage):
 
-    def __init__(self, user_id: str | int, keyvalues: dict) -> None:
+    def __init__(self, scope_id: str | int, keyvalues: dict) -> None:
         """
-        Dictionary containing the user model (or a selection thereof) of the user with the specified ID
+        Key-value payload for partition ``scope_id``.
 
         Args:
-            user_id: the ID of the user (i.e. interactant)
-            keyvalues: dictionary with all the key value pairs e.g. {'key_1': 'value_1', 'key_2': 'value_2'}
+            scope_id: partition id
+            keyvalues: field map returned from Redis
         """
         super().__init__()
-        self.user_id = user_id
+        self.scope_id = scope_id
         self.keyvalues = keyvalues
 
 
-class UsermodelKeysMessage(SICMessage):
+class ScopedKeysMessage(SICMessage):
 
-    def __init__(self, user_id: str | int, keys: list) -> None:
+    def __init__(self, scope_id: str | int, keys: list) -> None:
         """
-        List containing all the keys in the user model of the user with the specified ID
+        Field names present on the scoped key-value record for ``scope_id``.
 
         Args:
-            user_id: the ID of the user (i.e. interactant)
-            keys: list containing all the user model keys.
+            scope_id: partition id
+            keys: Redis hash field names
         """
         super().__init__()
-        self.user_id = user_id
+        self.scope_id = scope_id
         self.keys = keys
 
 
@@ -449,7 +467,7 @@ class UsermodelKeysMessage(SICMessage):
 # ============================================================================
 
 class StoreKeyspace:
-    """Manages hierarchical Redis keyspace: namespace:version:dev:developer_id:user:user_id"""
+    """Hierarchical Redis keyspace: ``namespace:version:dev:developer_id:user:{id}`` (id is often a user / interactant)."""
 
     def __init__(self, namespace: str, version: str, developer_id: str | int):
         self.namespace = namespace
@@ -555,13 +573,28 @@ class RedisDatastoreComponent(SICService):
 
     @staticmethod
     def get_inputs():
-        return [SetUsermodelValuesRequest, GetUsermodelValuesRequest, DeleteUsermodelValuesRequest,
-                GetUsermodelKeysRequest, GetUsermodelRequest, DeleteUserRequest,
-                IngestVectorDocsRequest, QueryVectorDBRequest]
+        return [
+            SetScopedKeyValuesRequest,
+            GetScopedKeyValuesRequest,
+            DeleteScopedKeyValuesRequest,
+            GetScopedKeysRequest,
+            GetScopedRecordRequest,
+            DeleteScopedRecordRequest,
+            IngestVectorDocsRequest,
+            QueryVectorDBRequest,
+            DeleteDeveloperSegmentRequest,
+            DeleteVersionSegmentRequest,
+            DeleteNamespaceRequest,
+        ]
 
     @staticmethod
     def get_output():
-        return [SICSuccessMessage, UsermodelKeyValuesMessage, UsermodelKeysMessage, VectorDBResultsMessage]
+        return [
+            SICSuccessMessage,
+            ScopedKeyValuesMessage,
+            ScopedKeysMessage,
+            VectorDBResultsMessage,
+        ]
 
     @staticmethod
     def get_conf():
@@ -576,31 +609,31 @@ class RedisDatastoreComponent(SICService):
     def handle_datastore_actions(self, request):
         try:
             # User model CRUD operations
-            if is_sic_instance(request, SetUsermodelValuesRequest):
-                redis_key_user = self.keyspace_manager.user(request.user_id)
+            if is_sic_instance(request, SetScopedKeyValuesRequest):
+                redis_key_user = self.keyspace_manager.user(request.scope_id)
                 if not self.redis.exists(redis_key_user):
                     self.redis.hset(redis_key_user, mapping={'created_at': datetime.now(timezone.utc).isoformat()})
-                self.redis.hset(self.keyspace_manager.user_model(request.user_id), mapping=request.keyvalues)
+                self.redis.hset(self.keyspace_manager.user_model(request.scope_id), mapping=request.keyvalues)
                 return SICSuccessMessage()
 
-            elif is_sic_instance(request, GetUsermodelValuesRequest):
-                values = self.redis.hmget(self.keyspace_manager.user_model(request.user_id), request.keys)
-                return UsermodelKeyValuesMessage(user_id=request.user_id, keyvalues=dict(zip(request.keys, values)))
+            elif is_sic_instance(request, GetScopedKeyValuesRequest):
+                values = self.redis.hmget(self.keyspace_manager.user_model(request.scope_id), request.keys)
+                return ScopedKeyValuesMessage(scope_id=request.scope_id, keyvalues=dict(zip(request.keys, values)))
 
-            elif is_sic_instance(request, GetUsermodelKeysRequest):
-                keys = self.redis.hkeys(self.keyspace_manager.user_model(request.user_id))
-                return UsermodelKeysMessage(user_id=request.user_id, keys=keys)
+            elif is_sic_instance(request, GetScopedKeysRequest):
+                keys = self.redis.hkeys(self.keyspace_manager.user_model(request.scope_id))
+                return ScopedKeysMessage(scope_id=request.scope_id, keys=keys)
 
-            elif is_sic_instance(request, GetUsermodelRequest):
-                keyvalues = self.redis.hgetall(self.keyspace_manager.user_model(request.user_id))
-                return UsermodelKeyValuesMessage(user_id=request.user_id, keyvalues=keyvalues)
+            elif is_sic_instance(request, GetScopedRecordRequest):
+                keyvalues = self.redis.hgetall(self.keyspace_manager.user_model(request.scope_id))
+                return ScopedKeyValuesMessage(scope_id=request.scope_id, keyvalues=keyvalues)
 
-            elif is_sic_instance(request, DeleteUsermodelValuesRequest):
-                self.redis.hdel(self.keyspace_manager.user_model(request.user_id), *request.keys)
+            elif is_sic_instance(request, DeleteScopedKeyValuesRequest):
+                self.redis.hdel(self.keyspace_manager.user_model(request.scope_id), *request.keys)
                 return SICSuccessMessage()
 
-            elif is_sic_instance(request, DeleteUserRequest):
-                return self.delete(self.keyspace_manager.user(request.user_id))
+            elif is_sic_instance(request, DeleteScopedRecordRequest):
+                return self.delete(self.keyspace_manager.user(request.scope_id))
 
             # Datastore management operations
             elif is_sic_instance(request, DeleteDeveloperSegmentRequest):
@@ -1095,6 +1128,302 @@ def _query_vector_db(redis_conn: redis.Redis, request: QueryVectorDBRequest) -> 
     return {"index": index, "total": total, "results": results}
 
 
+def _default_redis_args_for_datastore(persist_data: bool) -> str:
+    """
+    Build default Redis server args used when creating a new Redis Stack container.
+
+    Notes:
+    - Always sets ``--requirepass changemeplease`` to match SIC defaults (``DB_PASS``).
+    - Adds ``--appendonly yes`` only when ``persist_data`` is True (i.e. a ``--data-dir``
+      host bind mount is requested), so writes are durably appended to AOF files in ``/data``.
+    """
+    args = "--requirepass changemeplease"
+    if persist_data:
+        args += " --appendonly yes"
+    return args
+
+
+def _docker_inspect_running(container_name: str) -> Optional[bool]:
+    """
+    Return True if container exists and is running, False if stopped, None if missing.
+    """
+    r = subprocess.run(
+        [
+            "docker",
+            "inspect",
+            "-f",
+            "{{.State.Running}}",
+            container_name,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if r.returncode != 0:
+        return None
+    out = (r.stdout or "").strip().lower()
+    if out == "true":
+        return True
+    if out == "false":
+        return False
+    return None
+
+
+def _docker_inspect_config(container_name: str) -> Optional[dict]:
+    """
+    Return full ``docker inspect`` config JSON for a container.
+
+    Used to compare an already-existing container with the currently requested
+    ``run-redis`` arguments (image, port mappings, mounts, REDIS_ARGS, command).
+    Returns ``None`` when the container does not exist or inspect output is invalid.
+    """
+    r = subprocess.run(
+        ["docker", "inspect", container_name],
+        capture_output=True,
+        text=True,
+    )
+    if r.returncode != 0:
+        return None
+    try:
+        parsed = json.loads(r.stdout or "[]")
+    except Exception:
+        return None
+    return parsed[0] if parsed else None
+
+
+def _container_matches_spec(
+    inspect_data: dict,
+    *,
+    image: str,
+    host_port: int,
+    insight_port: int,
+    data_dir: Optional[str],
+    redis_conf: Optional[str],
+    redis_args: Optional[str],
+) -> tuple[bool, list[str]]:
+    """
+    Validate an existing container against the desired datastore runtime spec.
+
+    This protects persistence semantics: if a user changes ``--data-dir`` (or other
+    container-shaping args), we should not silently keep running an old container that
+    points at a different storage location.
+
+    Compared attributes:
+    - image
+    - host ports (6379 and 8001)
+    - mount sources for ``/data`` and optional ``redis.conf``
+    - ``REDIS_ARGS`` env (where applicable)
+    - command argument including optional redis.conf path
+
+    Returns:
+        (is_match, mismatch_reasons)
+    """
+    reasons: list[str] = []
+    desired_data_dir = str(Path(data_dir).expanduser().resolve()) if data_dir else None
+    desired_conf = str(Path(redis_conf).expanduser().resolve()) if redis_conf else None
+    desired_args = redis_args if redis_args is not None else _default_redis_args_for_datastore(bool(data_dir))
+
+    current_image = (inspect_data.get("Config") or {}).get("Image", "")
+    if current_image != image:
+        reasons.append("image")
+
+    ports = ((inspect_data.get("NetworkSettings") or {}).get("Ports") or {})
+    p6379 = ports.get("6379/tcp")
+    p8001 = ports.get("8001/tcp")
+    current_6379 = p6379[0].get("HostPort") if p6379 else None
+    current_8001 = p8001[0].get("HostPort") if p8001 else None
+    if current_6379 != str(host_port):
+        reasons.append("host-port")
+    if current_8001 != str(insight_port):
+        reasons.append("insight-port")
+
+    mounts = inspect_data.get("Mounts") or []
+    mount_map = {m.get("Destination"): m for m in mounts if m.get("Destination")}
+    data_mount = mount_map.get("/data")
+    conf_mount = mount_map.get("/usr/local/etc/redis/redis.conf")
+
+    if desired_data_dir:
+        if not data_mount or str(Path(data_mount.get("Source", "")).resolve()) != desired_data_dir:
+            reasons.append("data-dir")
+    else:
+        if data_mount:
+            reasons.append("data-dir")
+
+    if desired_conf:
+        if not conf_mount or str(Path(conf_mount.get("Source", "")).resolve()) != desired_conf:
+            reasons.append("redis-conf")
+    else:
+        if conf_mount:
+            reasons.append("redis-conf")
+
+    env = (inspect_data.get("Config") or {}).get("Env") or []
+    env_map = {}
+    for item in env:
+        if "=" in item:
+            k, v = item.split("=", 1)
+            env_map[k] = v
+    current_args = env_map.get("REDIS_ARGS")
+    if redis_conf:
+        if redis_args is not None and current_args != desired_args:
+            reasons.append("redis-args")
+    else:
+        if current_args != desired_args:
+            reasons.append("redis-args")
+
+    current_cmd = (inspect_data.get("Config") or {}).get("Cmd") or []
+    has_conf_cmd = "/usr/local/etc/redis/redis.conf" in current_cmd
+    if bool(desired_conf) != bool(has_conf_cmd):
+        reasons.append("redis-conf-cmd")
+
+    return len(reasons) == 0, reasons
+
+
+def _wait_for_tcp(
+    host: str,
+    port: int,
+    timeout_sec: float = 30.0,
+    container_name: Optional[str] = None,
+) -> None:
+    """
+    Wait for TCP readiness on ``host:port``.
+
+    If ``container_name`` is provided, this also checks that the container has not
+    transitioned to stopped state while waiting. If it has stopped, we surface recent
+    container logs to make startup/persistence failures easier to debug.
+    """
+    deadline = time.time() + timeout_sec
+    last_err = None
+    while time.time() < deadline:
+        if container_name:
+            state = _docker_inspect_running(container_name)
+            if state is False:
+                logs = subprocess.run(
+                    ["docker", "logs", "--tail", "40", container_name],
+                    capture_output=True,
+                    text=True,
+                )
+                raise RuntimeError(
+                    "Redis container '{name}' is not running while waiting for {host}:{port}.\n"
+                    "Recent logs:\n{logs}".format(
+                        name=container_name,
+                        host=host,
+                        port=port,
+                        logs=(logs.stdout or logs.stderr or "").strip(),
+                    )
+                )
+        try:
+            with socket.create_connection((host, port), timeout=2.0):
+                return
+        except OSError as e:
+            last_err = e
+            time.sleep(0.4)
+    raise RuntimeError(
+        "Timed out waiting for Redis at {host}:{port}. Last error: {err}".format(
+            host=host, port=port, err=last_err
+        )
+    )
+
+
+def ensure_redis_stack_container(
+    container_name: str,
+    host_port: int,
+    insight_port: int,
+    data_dir: Optional[str],
+    redis_conf: Optional[str],
+    redis_args: Optional[str],
+    image: str = DEFAULT_REDIS_STACK_IMAGE,
+) -> None:
+    """
+    Ensure a Redis Stack container is running with the requested runtime configuration.
+
+    Behavior:
+    1. If the container does not exist, create it.
+    2. If it exists and matches the requested spec, start it if needed.
+    3. If it exists but differs (ports/mounts/image/args/conf), recreate it so the
+       runtime actually reflects current CLI arguments.
+
+    Persistence semantics with ``data_dir``:
+    - ``data_dir`` is bind-mounted to container ``/data``.
+    - Redis loads existing AOF/RDB files from that directory on startup when present.
+    - Redis does not blindly wipe the directory; data loss requires explicit destructive
+      actions (deleting files, flush commands, changing mount target, etc.).
+
+    :param data_dir: optional host directory bind-mounted to ``/data`` in the container.
+    :param redis_conf: optional host path to ``redis.conf``, mounted read-only and passed to ``redis-stack-server``.
+    :param redis_args: optional ``REDIS_ARGS`` env value for the container (redis-server arguments).
+        If omitted, a default with ``--requirepass changemeplease`` is used (and ``--appendonly yes`` when ``data_dir`` is set).
+    """
+    if not shutil.which("docker"):
+        raise RuntimeError(DOCKER_NOT_INSTALLED_MESSAGE)
+
+    subprocess.run(["docker", "version"], capture_output=True, check=True)
+
+    state = _docker_inspect_running(container_name)
+    persist = bool(data_dir)
+    default_args = _default_redis_args_for_datastore(persist)
+    inspect_data = _docker_inspect_config(container_name) if state is not None else None
+    if state is not None and inspect_data is not None:
+        is_match, mismatches = _container_matches_spec(
+            inspect_data,
+            image=image,
+            host_port=host_port,
+            insight_port=insight_port,
+            data_dir=data_dir,
+            redis_conf=redis_conf,
+            redis_args=redis_args,
+        )
+        if not is_match:
+            if state is True:
+                subprocess.run(["docker", "stop", container_name], check=True)
+            subprocess.run(["docker", "rm", container_name], check=True)
+            state = None
+        elif state is True:
+            _wait_for_tcp("127.0.0.1", host_port, container_name=container_name)
+            return
+        else:
+            subprocess.run(["docker", "start", container_name], check=True)
+            _wait_for_tcp("127.0.0.1", host_port, container_name=container_name)
+            return
+
+    cmd = [
+        "docker",
+        "run",
+        "-d",
+        "--name",
+        container_name,
+        "--restart",
+        "unless-stopped",
+        "-p",
+        "{h}:6379".format(h=host_port),
+        "-p",
+        "{ins}:8001".format(ins=insight_port),
+    ]
+    if data_dir:
+        abs_data = str(Path(data_dir).expanduser().resolve())
+        Path(abs_data).mkdir(parents=True, exist_ok=True)
+        cmd.extend(["-v", "{p}:/data".format(p=abs_data)])
+    if redis_conf:
+        abs_conf = str(Path(redis_conf).expanduser().resolve())
+        if not Path(abs_conf).is_file():
+            raise FileNotFoundError("redis-conf not found: {}".format(abs_conf))
+        cmd.extend(["-v", "{p}:/redis-stack.conf:ro".format(p=abs_conf)])
+        if redis_args is not None:
+            cmd.extend(["-e", "REDIS_ARGS={}".format(redis_args)])
+    else:
+        cmd.extend(["-e", "REDIS_ARGS={}".format(redis_args if redis_args is not None else default_args)])
+    cmd.append(image)
+
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0:
+        raise RuntimeError(
+            "docker run failed (exit {code}): {err}\n{out}".format(
+                code=r.returncode,
+                err=(r.stderr or "").strip(),
+                out=(r.stdout or "").strip(),
+            )
+        )
+    _wait_for_tcp("127.0.0.1", host_port, container_name=container_name)
+
+
 # ============================================================================
 # SERVICE CONNECTOR & ENTRY POINT
 # ============================================================================
@@ -1105,6 +1434,74 @@ class RedisDatastore(SICConnector):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Start Redis Stack in Docker (unless skipped) and run the SIC Redis datastore service."
+    )
+    parser.add_argument(
+        "--skip-docker",
+        action="store_true",
+        help="Do not start Docker; Redis Stack must already be reachable (e.g. messaging-only apps unchanged).",
+    )
+    parser.add_argument(
+        "--container-name",
+        default="sic-redis-stack",
+        help="Docker container name for Redis Stack (default: sic-redis-stack).",
+    )
+    parser.add_argument(
+        "--image",
+        default=DEFAULT_REDIS_STACK_IMAGE,
+        help="Redis Stack image (default: redis/redis-stack:latest).",
+    )
+    parser.add_argument(
+        "--data-dir",
+        default=None,
+        metavar="PATH",
+        help="Host directory bind-mounted to /data in the container for persistence.",
+    )
+    parser.add_argument(
+        "--host-port",
+        type=int,
+        default=6379,
+        metavar="PORT",
+        help="Host TCP port mapped to Redis 6379 inside the container. Sets DB_PORT for SIC.",
+    )
+    parser.add_argument(
+        "--insight-port",
+        type=int,
+        default=8001,
+        metavar="PORT",
+        help="Host port mapped to RedisInsight 8001 in the container.",
+    )
+    parser.add_argument(
+        "--redis-conf",
+        default=None,
+        metavar="PATH",
+        help="Host path to redis.conf, mounted read-only at /usr/local/etc/redis/redis.conf.",
+    )
+    parser.add_argument(
+        "--redis-args",
+        default=None,
+        metavar="STRING",
+        help="REDIS_ARGS for the container. Default: --requirepass changemeplease "
+        "(and --appendonly yes if --data-dir is set). With --redis-conf, omit unless you need extra flags.",
+    )
+    args = parser.parse_args()
+
+    if not args.skip_docker:
+        ensure_redis_stack_container(
+            container_name=args.container_name,
+            host_port=args.host_port,
+            insight_port=args.insight_port,
+            data_dir=args.data_dir,
+            redis_conf=args.redis_conf,
+            redis_args=args.redis_args,
+            image=args.image,
+        )
+
+    os.environ.setdefault("DB_IP", "127.0.0.1")
+    os.environ["DB_PORT"] = str(args.host_port)
+    os.environ.setdefault("DB_PASS", "changemeplease")
+
     SICComponentManager([RedisDatastoreComponent], name="RedisDatastore")
 
 

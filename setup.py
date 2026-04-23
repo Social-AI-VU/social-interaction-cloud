@@ -151,7 +151,7 @@ setup(
             "run-object-detection=sic_framework.services.object_detection:main",
             "run-voice-detection=sic_framework.services.voice_detection:main",
             "run-nebula=sic_framework.services.llm.nebula:main",
-            "run-datastore-redis=sic_framework.services.datastore.redis_datastore:main",
+            "run-redis=sic_framework.services.datastore.redis_datastore:main",
             "run-sortformer=sic_framework.services.streaming_sortformer.stm_sortformer:main",
         ],
     },

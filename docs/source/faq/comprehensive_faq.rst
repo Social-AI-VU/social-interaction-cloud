@@ -60,6 +60,24 @@ Could not connect to Redis server
    
    **Note:** If you need vector search capabilities (for RAG/semantic search), make sure to use `Redis Stack <https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/>`_ instead of standard Redis. Redis Stack is fully compatible with standard Redis but includes additional modules like RediSearch for vector operations.
 
+   **Shared Redis / multiple clients:** If several machines use the same ``DB_IP``, SIC stores device reservations and data-stream metadata in Redis hashes. See :doc:`../architecture/redis_registries`.
+
+
+Device already reserved (multi-client or shared Redis)
+------------------------------------------------------
+
+.. toggle::
+
+   **Problem:** ``DeviceReservationError`` or logs say the device is already reserved by another client.
+
+   **Context:** Reservations map device identifier (usually the IP you pass to the device manager) to a **client id**. They prevent two unrelated clients from driving the same robot when sharing one Redis.
+
+   **What to try:**
+
+   1. Ensure only one script per machine “owns” that device, or stop the other client cleanly so its reservation is released.
+   2. If the other client crashed, the framework may clear stale reservations when it detects the old client is no longer connected; if stale entries remain, restart Redis or inspect hashes ``cache:reservations`` and ``cache:data_streams`` (see :doc:`../architecture/redis_registries`).
+   3. Local development against ``localhost`` / ``127.0.0.1`` skips writing reservations; behavior differs from a real LAN IP.
+
 
 Could not connect to component
 -------------------------------
