@@ -20,20 +20,6 @@ from sic_framework.devices.common_franka.franka_motion_recorder import (
 
 franka_active = False
 
-def start_franka_components():
-    """
-    Initialize and run the Franka component manager
-    """
-
-    global franka_active
-    manager = SICComponentManager(franka_component_list, client_id=utils.get_ip_adress(), auto_serve=False, component_group="Franka")
-
-    atexit.register(manager.stop)
-    from contextlib import redirect_stderr
-    with redirect_stderr(None):
-        manager.serve()
-
-
 class Franka(SICDeviceManager):
     """
     Franka device interface that automatically starts the component manager
@@ -50,9 +36,30 @@ class Franka(SICDeviceManager):
 
         global franka_active
         if not franka_active:
-            # run the component manager in a thread
-            thread = threading.Thread(target=start_franka_components, name="FrankaComponentManager-singelton")
-            thread.start()
+            self.manager = SICComponentManager(
+                franka_component_list,
+                client_id=utils.get_ip_adress(),
+                auto_serve=False,
+                name="Franka",
+            )
+            # Prevent this embedded manager from force-exiting the whole process.
+            self.manager.is_main_thread = False
+            
+            def managed_serve():
+                try:
+                    self.manager.serve()
+                finally:
+                    # Ensure cleanup happens even if serve exits unexpectedly
+                    self.manager.stop_component_manager()
+            
+            # Run serve in a thread
+            self.thread = threading.Thread(
+                target=managed_serve,
+                name="FrankaComponentManager-singleton",
+                daemon=True
+            )
+            self.thread.start()
+
             franka_active = True
 
     @property
@@ -61,7 +68,6 @@ class Franka(SICDeviceManager):
         Get the Franka motion recorder connector.
         :return: The FrankaMotionRecorder connector.
         """
-
         return self._get_connector(FrankaMotionRecorder)
 
     @property

@@ -60,6 +60,24 @@ Could not connect to Redis server
    
    **Note:** If you need vector search capabilities (for RAG/semantic search), make sure to use `Redis Stack <https://redis.io/docs/latest/operate/oss_and_stack/install/install-stack/>`_ instead of standard Redis. Redis Stack is fully compatible with standard Redis but includes additional modules like RediSearch for vector operations.
 
+   **Shared Redis / multiple clients:** If several machines use the same ``DB_IP``, SIC stores device reservations and data-stream metadata in Redis hashes. See :doc:`../architecture/redis_registries`.
+
+
+Device already reserved (multi-client or shared Redis)
+------------------------------------------------------
+
+.. toggle::
+
+   **Problem:** ``DeviceReservationError`` or logs say the device is already reserved by another client.
+
+   **Context:** Reservations map device identifier (usually the IP you pass to the device manager) to a **client id**. They prevent two unrelated clients from driving the same robot when sharing one Redis.
+
+   **What to try:**
+
+   1. Ensure only one script per machine “owns” that device, or stop the other client cleanly so its reservation is released.
+   2. If the other client crashed, the framework may clear stale reservations when it detects the old client is no longer connected; if stale entries remain, restart Redis or inspect hashes ``cache:reservations`` and ``cache:data_streams`` (see :doc:`../architecture/redis_registries`).
+   3. Local development against ``localhost`` / ``127.0.0.1`` skips writing reservations; behavior differs from a real LAN IP.
+
 
 Could not connect to component
 -------------------------------
@@ -199,6 +217,39 @@ Personal Apple device sensors being used
    On Mac you can turn off "Continuity Camera" or 
 
    On your iPhone, go to Settings > General > AirPlay & Handoff. Turn off Continuity Camera
+
+
+Microphone not capturing audio on Desktop
+-----------------------------------------
+
+.. toggle::
+
+   **Problem:** Voice or speech demos run, but no microphone audio is captured (or the wrong input device is used), especially on Linux workstations.
+
+   **Solution:**
+
+   1. List available audio input devices and their default sample rates:
+
+      .. code-block:: bash
+
+         python sic_applications/utils/available_audio.py
+
+   2. In the output, pick the microphone you want and note:
+
+      - ``Index`` (device id)
+      - ``Sample rate`` (default sample rate)
+
+   3. Pass those values into your ``DesktopMicrophoneConf`` so SIC uses the intended microphone configuration.
+
+      .. code-block:: python
+
+         # Example values from available_audio.py output
+         mic_conf = DesktopMicrophoneConf(
+             device_index=3,
+             sampling_rate=48000,
+         )
+
+   If the selected device still does not capture audio, rerun the utility and verify the device index did not change.
 
 
 Portaudio.h file not found
