@@ -135,7 +135,9 @@ class SICRedisConnection:
                 socket_connect_timeout=5.0,  # 5 second timeout for connection
                 retry_on_timeout=True  # Retry on timeout errors
             )
+            self._redis.ping()
         except redis.exceptions.AuthenticationError:
+            print("Redis is running without a password, trying to connect without it")
             # redis is running without a password, do not supply it.
             self._redis = redis.Redis(
                 host=host,
@@ -145,6 +147,7 @@ class SICRedisConnection:
                 socket_connect_timeout=5.0,
                 retry_on_timeout=True
             )
+            self._redis.ping()
         except redis.exceptions.ConnectionError as e:
             # Must be a connection error; so now let's try to connect with TLS
             ssl_ca_certs = os.path.join(os.path.dirname(__file__), "cert.pem")
@@ -163,6 +166,10 @@ class SICRedisConnection:
                 socket_connect_timeout=5.0,
                 retry_on_timeout=True
             )
+            self._redis.ping()
+        except Exception as e:
+            print("Unknown error: ", e)
+            raise e
 
         try:
             self._redis.ping()

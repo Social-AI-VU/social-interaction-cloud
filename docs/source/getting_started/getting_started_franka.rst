@@ -33,8 +33,35 @@ Press the power switch on the backside of the Control
 ~~~~~~~~~~~~~~~~~~
 Set up the connection between the Control and the workstation:
 
-1. The workstation's network settings have already been configured, so you simply need to connect the workstation and the Control box using an Ethernet cable. If you're using a workstation or laptop that doesn't have a fixed wired IP address (172.16.0.1) set up, please refer to the instructions `here <https://frankaemika.github.io/docs/getting_started.html#setting-up-the-network>`_
+1. The workstation's network settings have already been configured, so you simply need to connect the workstation and the Control box using an Ethernet cable. If you're using a workstation or laptop that doesn't have a fixed wired IP address (172.16.0.1) set up, please refer to the instructions `here <https://frankarobotics.github.io/docs/libfranka/docs/getting_started.html>`_
 2. Select network ``Wired connection 1``, where the IPv4 address is set to 172.16.0.1.
+
+**Audio input on the Linux workstation**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you run voice-based applications from the Linux workstation (the one mostly used with the Franka arm), be careful to select the correct audio input device. The default microphone/source can change between sessions or after reconnecting peripherals, which may cause apps to receive no audio.
+
+Use this utility to list available input devices before running demos:
+
+.. code-block:: bash
+
+    python sic_applications/utils/available_audio.py
+
+You can use this information to pass into your DesktopMicrophoneConf. You will need to change the device index to the one you want to use, as well as the sample rate.
+
+**MacBook Ethernet setup (example)**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you are connecting from a MacBook, these steps worked in practice:
+
+1. Connect the control box to your MacBook with an Ethernet cable.
+2. Open macOS **System Settings** and go to **Network**.
+3. Select your Ethernet adapter (for example ``AX88179A``; yours may have a different name).
+4. Click **Details**.
+5. Go to **TCP/IP**.
+6. Set **Configure IPv4** to **Manually**.
+7. Set **IP address** to ``172.16.0.1`` (do not use ``172.16.0.2``, which is the robot IP).
+8. Set **Subnet mask** to ``255.255.255.0``.
+9. You can keep Wi-Fi enabled; Ethernet and Wi-Fi can be used at the same time.
+10. Optional: in **Network**, click the three dots menu and choose **Set Service Order**, then place the Ethernet adapter above **Wi-Fi**.
 
 **Preparing the robot for FCI usage in Desk**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

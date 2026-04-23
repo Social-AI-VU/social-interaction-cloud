@@ -10,6 +10,8 @@ from sic_framework.core.message_python2 import (
     SICRequest,
     SICMessage,
 )
+from sic_framework.core.utils import is_sic_instance
+
 """
 Instead of using ROS, we use panda_py, which provides lightweight Python bindings for the Panda,
 enabling direct control of Franka using libfranka. More details can be found here: https://github.com/JeanElsner/panda-py
@@ -80,7 +82,7 @@ class PandaJointsRecording(SICMessage):
     :param recorded_joints_vel: List of 7-element arrays representing recorded joint velocities.
     """
     def __init__(self, recorded_joints_pos, recorded_joints_vel):
-        super().__init__()
+        super(PandaJointsRecording, self).__init__()
         self.recorded_joints_pos = recorded_joints_pos
         self.recorded_joints_vel = recorded_joints_vel
 
@@ -107,12 +109,13 @@ class PandaJointsRecording(SICMessage):
 
 class FrankaMotionRecorderActuator(SICActuator):
     def __init__(self, *args, **kwargs):
-        SICActuator.__init__(self, *args, **kwargs)
+        super(FrankaMotionRecorderActuator, self).__init__(*args, **kwargs)
         self.panda = panda_py.Panda("172.16.0.2")
         self.recorded_joints_pos = []
         self.recorded_joints_vel = []
         self.recording = threading.Event()
         self.record_thread = threading.Thread(target=self.record_motion)
+        self.record_thread.name = self.get_component_name()
         self.record_thread.start()
 
     @staticmethod
@@ -164,12 +167,12 @@ class FrankaMotionRecorderActuator(SICActuator):
                 i += 1
 
     def execute(self, request):
-        if request == StartRecordingRequest:
+        if is_sic_instance(request, StartRecordingRequest):
             self.reset_recording_variables(request)
             self.recording.set()
             return SICMessage()
 
-        if request == StopRecordingRequest:
+        if is_sic_instance(request, StopRecordingRequest):
             self.recording.clear()
             if not self.recording.is_set():
                 print("Stop recording")
@@ -177,21 +180,19 @@ class FrankaMotionRecorderActuator(SICActuator):
             # print(len(self.recorded_joints_pos))
             return PandaJointsRecording(self.recorded_joints_pos, self.recorded_joints_vel)
 
-        if request == StartTeachingRequest:
+        if is_sic_instance(request, StartTeachingRequest):
             self.panda.teaching_mode(True)
-            return SICMessage()
 
-        if request == StopTeachingRequest:
+        if is_sic_instance(request, StopTeachingRequest):
             self.panda.teaching_mode(False)
-            return SICMessage()
-
-        if request == GoHomeRequest:
+        
+        if is_sic_instance(request, GoHomeRequest):
             self.panda.move_to_start()
-            return SICMessage()
 
-        if request == PlayRecordingRequest:
+        if is_sic_instance(request, PlayRecordingRequest):
             self.replay_recording(request)
-            return SICMessage()
+            
+        return SICMessage()
 
 
 class FrankaMotionRecorder(SICConnector):
