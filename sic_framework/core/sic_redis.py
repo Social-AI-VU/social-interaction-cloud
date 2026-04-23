@@ -113,20 +113,23 @@ class SICRedisConnection:
         self.stopping = False
         self._running_callbacks = []
 
-        # hash map of data streams
+        # Multi-user shared Redis: component_channel -> JSON(client_id, endpoint, input_channel).
+        # See docs: architecture/redis_registries.rst
         self.data_stream_map = "cache:data_streams"
 
-        # hash map of component reservations
+        # Multi-user shared Redis: device_id (e.g. IP) -> client_id. See architecture/redis_registries.rst
         self.reservation_map = "cache:reservations"
 
         # we assume that a password is required
         host, password = get_redis_db_ip_password()
+        port = int(os.getenv("DB_PORT", "6379"))
 
         # Let's try to connect first without TLS / working without TLS facilitates simple use of redis-cli
         try:
             self._redis = redis.Redis(
-                host=host, 
-                ssl=False, 
+                host=host,
+                port=port,
+                ssl=False,
                 password=password,
                 socket_timeout=1.0,  # 1 second timeout for socket operations
                 socket_connect_timeout=5.0,  # 5 second timeout for connection
@@ -135,7 +138,8 @@ class SICRedisConnection:
         except redis.exceptions.AuthenticationError:
             # redis is running without a password, do not supply it.
             self._redis = redis.Redis(
-                host=host, 
+                host=host,
+                port=port,
                 ssl=False,
                 socket_timeout=1.0,
                 socket_connect_timeout=5.0,
@@ -150,9 +154,10 @@ class SICRedisConnection:
                 "(Source error {})".format(e),
             )
             self._redis = redis.Redis(
-                host=host, 
-                ssl=True, 
-                ssl_ca_certs=ssl_ca_certs, 
+                host=host,
+                port=port,
+                ssl=True,
+                ssl_ca_certs=ssl_ca_certs,
                 password=password,
                 socket_timeout=1.0,
                 socket_connect_timeout=5.0,
@@ -163,8 +168,8 @@ class SICRedisConnection:
             self._redis.ping()
         except redis.exceptions.ConnectionError:
             e = Exception(
-                "Could not connect to redis at {} \n\n Have you started redis? Use: `redis-server conf/redis/redis.conf`".format(
-                    host
+                "Could not connect to redis at {}:{} \n\n Have you started redis? Use: `redis-server conf/redis/redis.conf`".format(
+                    host, port
                 )
             )
             # six.raise_from(e, None) # unsupported on some peppers
