@@ -106,22 +106,7 @@ class ElevenLabsSpeechResult(AudioMessage):
         )
 
 
-def run_coro_sync(coro):
-    """
-    Run an async coroutine from synchronous code safely.
-
-    - If no loop is running: asyncio.run
-    - If a loop is already running: run in a dedicated thread + event loop
-    """
-    try:
-        loop = asyncio.get_running_loop()
-        loop_running = loop.is_running()
-    except RuntimeError:
-        loop_running = False
-
-    if not loop_running:
-        return asyncio.run(coro)
-
+def run_coro_sync(coro, timeout=25.0):
     result_container = {"result": None, "error": None}
     done = threading.Event()
 
@@ -134,7 +119,6 @@ def run_coro_sync(coro):
             result_container["error"] = e
         finally:
             try:
-                tloop.stop()
                 tloop.close()
             except Exception:
                 pass
@@ -142,11 +126,15 @@ def run_coro_sync(coro):
 
     t = threading.Thread(target=_thread_main, daemon=True)
     t.start()
-    done.wait()
+    finished = done.wait(timeout=timeout)
+
+    if not finished:
+        raise RuntimeError("run_coro_sync timed out after {}s".format(timeout))
 
     if result_container["error"] is not None:
         raise result_container["error"]
     return result_container["result"]
+
 
 
 
@@ -182,7 +170,7 @@ class ElevenLabsWSClient:
             f"&inactivity_timeout={self.inactivity_timeout}"
             f"&auto_mode=false"
         )
-        self.websocket = await websockets.connect(uri)
+        self.websocket = await asyncio.wait_for(websockets.connect(uri), timeout=15.0)
 
         voice_settings = {
             "stability": self.stability,
@@ -203,7 +191,6 @@ class ElevenLabsWSClient:
     async def close(self):
         if self.websocket:
             try:
-                await self.websocket.send(dumps({"text": ""}))
                 await self.websocket.close()
             finally:
                 self.websocket = None
@@ -212,12 +199,15 @@ class ElevenLabsWSClient:
         if not self.websocket or self.websocket.closed:
             await self.connect()
 
-        await self.websocket.send(dumps({"text": text, "flush": True}))
+        await self.websocket.send(dumps({"text": text}))
+        await self.websocket.send(dumps({"text": ""}))
+        ws = self.websocket
+        self.websocket = None  # stream is closed, force reconnect next call
 
         chunks = []
         while True:
             msg = await asyncio.wait_for(
-                self.websocket.recv(),
+                ws.recv(),
                 timeout=recv_timeout_s,
             )
             data = loads(msg)
