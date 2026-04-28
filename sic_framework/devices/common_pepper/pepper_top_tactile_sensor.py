@@ -1,6 +1,7 @@
 from sic_framework import SICComponentManager, SICConfMessage, SICMessage, utils
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.sensor_python2 import SICSensor
 from sic_framework.core.connector import SICConnector
+import time
 
 if utils.PYTHON_VERSION_IS_2:
     import qi
@@ -25,7 +26,7 @@ class PepperTactileSensorMessage(SICMessage):
         self.value = value
 
 
-class PepperTopTactileSensor(SICComponent):
+class PepperTopTactileSensor(SICSensor):
     """
     Sensor component for Pepper's top head tactile sensor.
     
@@ -116,22 +117,21 @@ class PepperTopTactileSensor(SICComponent):
         Connects to the NAOqi ``MiddleTactilTouched`` event and begins emitting
         messages when the tactile sensor state changes.
         """
-        super(PepperTopTactileSensor, self).start()
-
         self.touch = self.memory_service.subscriber('MiddleTactilTouched')
         id = self.touch.signal.connect(self.onTouchChanged)
         self.ids.append(id)
+        super(PepperTopTactileSensor, self).start()
 
-    def stop(self, *args):
-        # This component doesn't have a long-running worker loop, so mark it stopped
-        # immediately and let the base class run `_cleanup()`.
-        self._stopped.set()
-        super(PepperTopTactileSensor, self).stop(*args)
+    def execute(self, *args, **kwargs):
+        # Event-driven sensor: keep loop alive while callbacks publish messages.
+        time.sleep(0.05)
+        return None
 
     def _cleanup(self):
         try:
-            for id in self.ids:
-                self.touch.signal.disconnect(id)
+            if hasattr(self, "touch"):
+                for id in self.ids:
+                    self.touch.signal.disconnect(id)
         except Exception:
             pass
         try:
@@ -148,7 +148,8 @@ class PepperTopTactile(SICConnector):
     Access this through the Pepper device's ``tactile_sensor`` property.
     """
     component_class = PepperTopTactileSensor
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":
-    SICComponentManager([PepperTopTactileSensor])
+    SICComponentManager([PepperTopTactileSensor], component_group="Naoqi")

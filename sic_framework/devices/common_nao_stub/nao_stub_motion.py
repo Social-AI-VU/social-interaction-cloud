@@ -70,8 +70,10 @@ class NaoStubMotionRecorderActuator(SICActuator):
 
 class NaoStubMotion(SICConnector):
     component_class = NaoStubMotionActuator
+    component_group = "NaoStub"
 
 
 class NaoStubMotionRecorder(SICConnector):
     component_class = NaoStubMotionRecorderActuator
+    component_group = "NaoStub"
 

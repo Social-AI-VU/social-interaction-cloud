@@ -68,7 +68,8 @@ class ReachyMiniCameraSensor(SICSensor):
 
 class ReachyMiniCamera(SICConnector):
     component_class = ReachyMiniCameraSensor
+    component_group = "ReachyMini"
 
 
 if __name__ == "__main__":
-    SICComponentManager([ReachyMiniCameraSensor])
+    SICComponentManager([ReachyMiniCameraSensor], component_group="ReachyMini")

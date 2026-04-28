@@ -405,8 +405,9 @@ class MiniCameraSensor(SICSensor):
 
 class MiniCamera(SICConnector):
     component_class = MiniCameraSensor
+    component_group = "Alphamini"
 
 
 if __name__ == "__main__":
-    SICComponentManager([MiniCameraSensor])
+    SICComponentManager([MiniCameraSensor], component_group="Alphamini")
 

@@ -144,7 +144,8 @@ class FrankaMotionActuator(SICActuator):
 
 class FrankaMotion(SICConnector):
     component_class = FrankaMotionActuator
+    component_group = "Franka"
 
 
 if __name__ == '__main__':
-    SICComponentManager([FrankaMotionActuator])
+    SICComponentManager([FrankaMotionActuator], component_group="Franka")

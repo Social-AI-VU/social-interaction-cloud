@@ -34,6 +34,7 @@ class NaoStubButtonsSensor(SICSensor):
 
 class NaoStubButtons(SICConnector):
     component_class = NaoStubButtonsSensor
+    component_group = "NaoStub"
     
     def register_callback(self, callback):
         """Stub callback registration for buttons."""

@@ -277,13 +277,14 @@ class GoogleSpeechToText(SICConnector):
     Connector for the Google Speech-to-Text Component.
     """
     component_class = GoogleSpeechToTextComponent
+    component_group = "GoogleSpeechToText"
 
 
 def main():
     """
     Run a ComponentManager that can start the Google Speech-to-Text Component.
     """
-    SICComponentManager([GoogleSpeechToTextComponent], name="GoogleSpeechToText")
+    SICComponentManager([GoogleSpeechToTextComponent], component_group="GoogleSpeechToText")
 
 
 if __name__ == "__main__":

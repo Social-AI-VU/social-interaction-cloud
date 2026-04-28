@@ -112,10 +112,11 @@ class ObjectDetectionComponent(SICService):
 
 class ObjectDetection(SICConnector):
     component_class = ObjectDetectionComponent
+    component_group = "ObjectDetection"
 
 
 def main():
-    SICComponentManager([ObjectDetectionComponent], name="ObjectDetection")
+    SICComponentManager([ObjectDetectionComponent], component_group="ObjectDetection")
 
 
 if __name__ == "__main__":

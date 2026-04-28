@@ -237,7 +237,8 @@ class NaoqiMotionStreamer(SICConnector):
     Connector binding to `NaoqiMotionStreamerService`.
     """
     component_class = NaoqiMotionStreamerService
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":
-    SICComponentManager([NaoqiMotionStreamerService])
+    SICComponentManager([NaoqiMotionStreamerService], component_group="Naoqi")

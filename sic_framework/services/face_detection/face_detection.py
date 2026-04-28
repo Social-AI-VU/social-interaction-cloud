@@ -94,10 +94,11 @@ class FaceDetectionComponent(SICService):
 
 class FaceDetection(SICConnector):
     component_class = FaceDetectionComponent
+    component_group = "FaceDetection"
 
 
 def main():
-    SICComponentManager([FaceDetectionComponent], name="FaceDetection")
+    SICComponentManager([FaceDetectionComponent], component_group="FaceDetection")
 
 
 if __name__ == "__main__":

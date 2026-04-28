@@ -132,7 +132,8 @@ class NaoqiLookAtComponent(SICComponent):
 
 class NaoqiLookAt(SICConnector):
     component_class = NaoqiLookAtComponent
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":
-    SICComponentManager([NaoqiLookAtComponent])
+    SICComponentManager([NaoqiLookAtComponent], component_group="Naoqi")

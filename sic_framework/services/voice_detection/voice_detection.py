@@ -350,13 +350,14 @@ class VoiceDetection(SICConnector):
     Connector for the Voice Detection Component.
     """
     component_class = VoiceDetectionComponent
+    component_group = "VoiceDetection"
 
 
 def main():
     """
     Run a ComponentManager that can start the Voice Detection Component.
     """
-    SICComponentManager([VoiceDetectionComponent], name="VoiceDetection")
+    SICComponentManager([VoiceDetectionComponent], component_group="VoiceDetection")
 
 
 if __name__ == "__main__":

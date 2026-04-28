@@ -110,7 +110,7 @@ class ReachyMiniDevice(SICDeviceManager):
                 components,
                 client_id=utils.get_ip_adress(),
                 auto_serve=False,
-                name="ReachyMini",
+                component_group="ReachyMini",
             )
             self.manager.is_main_thread = False
 
@@ -348,4 +348,4 @@ reachy_mini_component_list = [
 
 
 if __name__ == "__main__":
-    SICComponentManager(reachy_mini_component_list, name="ReachyMini")
+    SICComponentManager(reachy_mini_component_list, component_group="ReachyMini")

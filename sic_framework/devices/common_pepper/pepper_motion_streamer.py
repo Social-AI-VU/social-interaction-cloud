@@ -8,7 +8,6 @@ from sic_framework import (
     SICRequest,
     utils,
 )
-from sic_framework.core.component_python2 import SICComponent
 from sic_framework.core.connector import SICConnector
 from sic_framework.devices.common_naoqi.common_naoqi_motion import NaoqiMotionTools
 from sic_framework.core.service_python2 import SICService
@@ -474,8 +473,13 @@ class PepperMotionStreamerService(SICService, NaoqiMotionTools):
                 
             self._stopped.set()
         except Exception as e:
+            if self._signal_to_stop.is_set():
+                # Ignore shutdown races from the NAOqi runtime while stopping.
+                self._stopped.set()
+                return
             self.logger.exception(e)
-            self.stop()
+            self._signal_to_stop.set()
+            self._stopped.set()
 
     def _cleanup(self):
         try:
@@ -508,7 +512,8 @@ class PepperMotionStreamer(SICConnector):
         pepper.motion_streaming().request(SetLockedJointsRequest(["RArm"]))
     """
     component_class = PepperMotionStreamerService
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":
-    SICComponentManager([PepperMotionStreamerService])
+    SICComponentManager([PepperMotionStreamerService], component_group="Naoqi")

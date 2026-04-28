@@ -41,4 +41,5 @@ class NaoStubStiffnessActuator(SICActuator):
 
 class NaoStubStiffness(SICConnector):
     component_class = NaoStubStiffnessActuator
+    component_group = "NaoStub"
 
