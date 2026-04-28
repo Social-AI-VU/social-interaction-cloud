@@ -216,6 +216,9 @@ class NaoqiTabletComponent(SICActuator):
             self.tablet_service.cleanWebview()
         except Exception as exc:
             raise RuntimeError("Failed to clear tablet display: {}".format(exc))
+    
+    def execute(self, *args, **kwargs):
+        pass
 
     def _cleanup(self):
         try:

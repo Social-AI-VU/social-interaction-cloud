@@ -1,6 +1,7 @@
 from sic_framework import SICComponentManager, SICConfMessage, SICMessage, utils
 from sic_framework.core.sensor_python2 import SICSensor
 from sic_framework.core.connector import SICConnector
+import time
 
 if utils.PYTHON_VERSION_IS_2:
     import qi
@@ -110,21 +111,21 @@ class PepperRightBumperSensor(SICSensor):
         Connects to the NAOqi ``RightBumperPressed`` event and begins emitting
         messages when the bumper state changes.
         """
-        super(PepperRightBumperSensor, self).start()
-
         self.bumper = self.memory_service.subscriber("RightBumperPressed")
         id = self.bumper.signal.connect(self.onBumperChanged)
         self.ids.append(id)
+        super(PepperRightBumperSensor, self).start()
 
-    def stop(self, *args):
-        # No long-running worker loop; mark stopped immediately so cleanup runs.
-        self._stopped.set()
-        super(PepperRightBumperSensor, self).stop(*args)
+    def execute(self, *args, **kwargs):
+        # Event-driven sensor: keep loop alive while callbacks publish messages.
+        time.sleep(0.05)
+        return None
 
     def _cleanup(self):
         try:
-            for id in self.ids:
-                self.bumper.signal.disconnect(id)
+            if hasattr(self, "bumper"):
+                for id in self.ids:
+                    self.bumper.signal.disconnect(id)
         except Exception:
             pass
         try:

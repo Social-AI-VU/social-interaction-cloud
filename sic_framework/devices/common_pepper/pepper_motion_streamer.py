@@ -473,8 +473,13 @@ class PepperMotionStreamerService(SICService, NaoqiMotionTools):
                 
             self._stopped.set()
         except Exception as e:
+            if self._signal_to_stop.is_set():
+                # Ignore shutdown races from the NAOqi runtime while stopping.
+                self._stopped.set()
+                return
             self.logger.exception(e)
-            self.stop()
+            self._signal_to_stop.set()
+            self._stopped.set()
 
     def _cleanup(self):
         try:
