@@ -77,4 +77,4 @@ class ReachyMiniIMU(SICConnector):
 
 
 if __name__ == "__main__":
-    SICComponentManager([ReachyMiniIMUSensor])
+    SICComponentManager([ReachyMiniIMUSensor], component_group="ReachyMini")

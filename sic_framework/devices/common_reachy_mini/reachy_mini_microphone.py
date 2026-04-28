@@ -73,4 +73,4 @@ class ReachyMiniMicrophone(SICConnector):
 
 
 if __name__ == "__main__":
-    SICComponentManager([ReachyMiniMicrophoneSensor])
+    SICComponentManager([ReachyMiniMicrophoneSensor], component_group="ReachyMini")

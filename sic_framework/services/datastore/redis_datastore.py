@@ -1503,7 +1503,7 @@ def main():
     os.environ["DB_PORT"] = str(args.host_port)
     os.environ.setdefault("DB_PASS", "changemeplease")
 
-    SICComponentManager([RedisDatastoreComponent], name="RedisDatastore")
+    SICComponentManager([RedisDatastoreComponent], component_group="RedisDatastore")
 
 
 if __name__ == "__main__":

@@ -79,4 +79,4 @@ class ReachyMiniSpeakers(SICConnector):
 
 
 if __name__ == "__main__":
-    SICComponentManager([ReachyMiniSpeakersActuator])
+    SICComponentManager([ReachyMiniSpeakersActuator], component_group="ReachyMini")

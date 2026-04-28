@@ -209,4 +209,4 @@ class ReachyMiniMotion(SICConnector):
 
 
 if __name__ == "__main__":
-    SICComponentManager([ReachyMiniMotionActuator])
+    SICComponentManager([ReachyMiniMotionActuator], component_group="ReachyMini")

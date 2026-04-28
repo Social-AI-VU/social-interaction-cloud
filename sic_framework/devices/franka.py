@@ -40,7 +40,7 @@ class Franka(SICDeviceManager):
                 franka_component_list,
                 client_id=utils.get_ip_adress(),
                 auto_serve=False,
-                name="Franka",
+                component_group="Franka",
             )
             # Prevent this embedded manager from force-exiting the whole process.
             self.manager.is_main_thread = False
