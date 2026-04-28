@@ -1,0 +1,223 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Redis registries (multi-user and shared Redis) &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=b8b12719"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="API Reference" href="../api.html" />
+    <link rel="prev" title="Processes and Threads" href="processes_threads.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../architecture.html">How SIC Works</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../architecture.html#sic-101-building-blocks">SIC 101: Building Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../architecture.html#messaging-system">Messaging System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../architecture.html#processes-and-threads">Processes and Threads</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../architecture.html#redis-registries-multi-user">Redis registries (multi-user)</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Redis registries (multi-user and shared Redis)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#purpose">Purpose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#redis-keys-and-storage-model">Redis keys and storage model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#device-reservations">Device reservations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#data-streams">Data streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#operational-expectations">Operational expectations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../architecture.html">How SIC Works</a></li>
+      <li class="breadcrumb-item active">Redis registries (multi-user and shared Redis)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/architecture/redis_registries.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="redis-registries-multi-user-and-shared-redis">
+<h1>Redis registries (multi-user and shared Redis)<a class="headerlink" href="#redis-registries-multi-user-and-shared-redis" title="Link to this heading"></a></h1>
+<p>SIC uses Redis both as a <strong>pub/sub message broker</strong> and as a small <strong>metadata store</strong> for two Redis hashes. Together they support <strong>multiple clients</strong> talking to the <strong>same Redis instance</strong> without accidentally sharing physical hardware or confusing one client’s component pipeline with another’s.</p>
+<section id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Link to this heading"></a></h2>
+<p>When several users or processes share one Redis host (for example a lab server), SIC must answer:</p>
+<ol class="arabic simple">
+<li><p><strong>Who may use this robot or device?</strong> A <strong>device reservation</strong> maps a stable device identifier (typically the device IP used when constructing a device manager) to the <strong>client id</strong> of the machine that reserved it. That gives <strong>exclusive use</strong> of that device key for one client at a time, which avoids the failure mode where two scripts both drive the same robot.</p></li>
+<li><p><strong>Which client owns which logical data stream?</strong> A <strong>data stream</strong> entry ties a <strong>stream id</strong> (the component’s <code class="docutils literal notranslate"><span class="pre">component_channel</span></code>) to <strong>which client</strong> started the component, which <strong>component endpoint</strong> it is, and which <strong>input channel</strong> feeds it. That keeps pipelines <strong>traceable</strong> and distinct when many clients run components against the same broker.</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Many tutorials assume <strong>one developer</strong> and <strong>Redis on localhost</strong>. In that setup you may never hit reservation conflicts, and the registries still exist but often hold only your client’s entries. The same code paths are used when you point <code class="docutils literal notranslate"><span class="pre">DB_IP</span></code> at a <strong>shared</strong> Redis server.</p>
+</div>
+</section>
+<section id="redis-keys-and-storage-model">
+<h2>Redis keys and storage model<a class="headerlink" href="#redis-keys-and-storage-model" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">SICRedisConnection</span></code> in <code class="docutils literal notranslate"><span class="pre">sic_framework/core/sic_redis.py</span></code> defines two hash names:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Redis key</p></th>
+<th class="head"><p>Role</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cache:reservations</span></code></p></td>
+<td><p>Field: <strong>device id</strong> (string, e.g. device IP). Value: <strong>client id</strong> (string).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cache:data_streams</span></code></p></td>
+<td><p>Field: <strong>data stream id</strong> (string, the component channel id). Value: <strong>JSON object</strong> (see below).</p></td>
+</tr>
+</tbody>
+</table>
+<p>The API surface on <code class="docutils literal notranslate"><span class="pre">SICRedisConnection</span></code> includes:</p>
+<ul class="simple">
+<li><p>Reservations: <code class="docutils literal notranslate"><span class="pre">get_reservation_map</span></code>, <code class="docutils literal notranslate"><span class="pre">get_reservation</span></code>, <code class="docutils literal notranslate"><span class="pre">set_reservation</span></code>, <code class="docutils literal notranslate"><span class="pre">unset_reservation</span></code></p></li>
+<li><p>Data streams: <code class="docutils literal notranslate"><span class="pre">get_data_stream_map</span></code>, <code class="docutils literal notranslate"><span class="pre">get_data_stream</span></code>, <code class="docutils literal notranslate"><span class="pre">set_data_stream</span></code>, <code class="docutils literal notranslate"><span class="pre">unset_data_stream</span></code></p></li>
+<li><p>Cleanup: <code class="docutils literal notranslate"><span class="pre">remove_client</span></code>, <code class="docutils literal notranslate"><span class="pre">ping_client</span></code></p></li>
+</ul>
+</section>
+<section id="device-reservations">
+<h2>Device reservations<a class="headerlink" href="#device-reservations" title="Link to this heading"></a></h2>
+<p><strong>When reservations are set</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">SICDeviceManager</span></code> (<code class="docutils literal notranslate"><span class="pre">sic_framework/devices/device.py</span></code>) calls <code class="docutils literal notranslate"><span class="pre">set_reservation()</span></code> during construction, after the Redis connection and client id are available.</p>
+<p><strong>Localhost exception</strong></p>
+<p>If the device IP is <code class="docutils literal notranslate"><span class="pre">localhost</span></code> or <code class="docutils literal notranslate"><span class="pre">127.0.0.1</span></code>, <strong>no reservation is written</strong>. That keeps local-only workflows simple; it also means the <strong>exclusive-device</strong> guarantee does not apply to that key in the same way as for a distinct LAN IP.</p>
+<p><strong>Conflict behavior</strong></p>
+<p>For non-localhost devices, the manager reads any existing mapping with <code class="docutils literal notranslate"><span class="pre">get_reservation(device_ip)</span></code>:</p>
+<ul class="simple">
+<li><p>If <strong>no</strong> reservation exists, it calls <code class="docutils literal notranslate"><span class="pre">set_reservation(device_ip,</span> <span class="pre">client_id)</span></code>. A return value other than <code class="docutils literal notranslate"><span class="pre">1</span></code> raises <code class="docutils literal notranslate"><span class="pre">DeviceReservationError</span></code>.</p></li>
+<li><p>If the device is <strong>already reserved by this client</strong>, it returns without error.</p></li>
+<li><p>If another client holds the reservation, the code <strong>pings</strong> that client with <code class="docutils literal notranslate"><span class="pre">ping_client(other_client_id)</span></code>. <code class="docutils literal notranslate"><span class="pre">ping_client</span></code> returns true if a Redis pub/sub channel exists whose name matches the logging subscription pattern for that client (implementation in <code class="docutils literal notranslate"><span class="pre">sic_redis.py</span></code>).</p></li>
+<li><p>If the other client <strong>does not</strong> appear connected, <code class="docutils literal notranslate"><span class="pre">remove_client(other_client_id)</span></code> clears <strong>all</strong> of that client’s reservations and data stream entries, then this client proceeds to reserve.</p></li>
+<li><p>If the other client <strong>does</strong> appear connected, <code class="docutils literal notranslate"><span class="pre">DeviceReservationError</span></code> is raised (the familiar “device already reserved” case).</p></li>
+</ul>
+<p><strong>Stale state</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">remove_client</span></code> walks the reservation hash and the data stream hash and deletes any entry belonging to the given <code class="docutils literal notranslate"><span class="pre">client_id</span></code>. It is used when a client disconnects without cleaning up, or when the stale-holder check above decides the old client is gone.</p>
+</section>
+<section id="data-streams">
+<h2>Data streams<a class="headerlink" href="#data-streams" title="Link to this heading"></a></h2>
+<p>After a component starts successfully, the device-side <code class="docutils literal notranslate"><span class="pre">SICComponentManager</span></code> (<code class="docutils literal notranslate"><span class="pre">sic_framework/core/component_manager_python2.py</span></code>) registers the stream with <code class="docutils literal notranslate"><span class="pre">set_data_stream(component_channel,</span> <span class="pre">data_stream_info)</span></code> where <code class="docutils literal notranslate"><span class="pre">data_stream_info</span></code> is a dict containing at least:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">component_endpoint</span></code> — which component this is</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">input_channel</span></code> — where its input is wired</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">client_id</span></code> — which client owns this pipeline</p></li>
+</ul>
+<p>When <code class="docutils literal notranslate"><span class="pre">stop_component</span></code> runs, the manager calls <code class="docutils literal notranslate"><span class="pre">unset_data_stream(component.component_channel)</span></code> so the registry matches running components.</p>
+<p>Together with pub/sub channel names derived from these ids, this makes it possible to see <strong>who</strong> registered <strong>which</strong> stream on a shared broker and to tear down <strong>all</strong> of one client’s metadata via <code class="docutils literal notranslate"><span class="pre">remove_client</span></code>.</p>
+</section>
+<section id="operational-expectations">
+<h2>Operational expectations<a class="headerlink" href="#operational-expectations" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Solo + local Redis:</strong> Typical getting-started flows use a single <code class="docutils literal notranslate"><span class="pre">DB_IP</span></code> and one client; registries may contain only one client’s keys. Reservation conflicts are uncommon unless you run multiple scripts against the same remote device IP.</p></li>
+<li><p><strong>Shared Redis:</strong> Point multiple machines at the same <code class="docutils literal notranslate"><span class="pre">DB_IP</span></code> / <code class="docutils literal notranslate"><span class="pre">DB_PORT</span></code> / <code class="docutils literal notranslate"><span class="pre">DB_PASS</span></code>. Reservations and data stream entries then matter for <strong>correct routing and exclusivity</strong>; misconfiguration can look like reservation errors or confusing stream ownership.</p></li>
+</ul>
+<p>For Redis connectivity and passwords, see <a class="reference internal" href="../faq/comprehensive_faq.html"><span class="doc">Comprehensive FAQ</span></a> (Redis sections). For the pub/sub side of Redis, see <span class="xref std std-doc">architecture/message_system</span>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="processes_threads.html" class="btn btn-neutral float-left" title="Processes and Threads" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../api.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
