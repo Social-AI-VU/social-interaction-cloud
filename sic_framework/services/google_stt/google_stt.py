@@ -209,8 +209,8 @@ class GoogleSpeechToTextComponent(SICService):
         """
         Stop the request side and let the gRPC stream finish.
 
-        Do **not** call ``responses.cancel()`` on the shared ``SpeechClient`` — that can
-        leave the next ``streaming_recognize`` returning immediately with no audio wait.
+        Do not call responses.cancel() on the shared SpeechClient; that can leave the
+        next streaming_recognize returning immediately with no audio wait.
         """
         self.message_was_final.set()
         if responses is None:

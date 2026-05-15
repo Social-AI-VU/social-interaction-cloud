@@ -18,20 +18,31 @@ from sic_framework.devices.common_naoqi.naoqi_leds import NaoFadeRGBRequest
 from sic_framework.devices.common_naoqi.naoqi_text_to_speech import (
     NaoqiTextToSpeechRequest,
 )
-from sic_framework.mcp.nao_expressions import (
+from sic_framework.mcp.nao.nao_client import require_robot_ip
+from sic_framework.mcp.nao.nao_expressions import (
     get_expressions_json,
     play_nao_expression,
 )
 
 _LOG_DIR = os.path.join(os.path.dirname(__file__), "logs")
-os.makedirs(_LOG_DIR, exist_ok=True)
+
+
+def configure_mcp_server_log_dir(path: str) -> str:
+    """Set the directory for SIC file logs (used by stdio clients and HTTP transports)."""
+    global _LOG_DIR
+    _LOG_DIR = os.path.abspath(path)
+    os.makedirs(_LOG_DIR, exist_ok=True)
+    sic_logging.set_log_file(_LOG_DIR)
+    return _LOG_DIR
+
+
+configure_mcp_server_log_dir(_LOG_DIR)
 
 # IMPORTANT: stdio MCP requires stdout to be ONLY JSON-RPC. SIC's Redis client logger
 # would otherwise print to the terminal and corrupt that stream, so by default we
-# silence it here (logs still go to files under _LOG_DIR). For ``sse`` / ``streamable-http``,
-# ``main()`` lowers the threshold again: MCP does not use process stdout, and
-# ``sic_logging.print`` is redirected to stderr anyway.
-sic_logging.set_log_file(_LOG_DIR)
+# silence it here (logs still go to files under _LOG_DIR). For sse / streamable-http,
+# main() lowers the threshold again: MCP does not use process stdout, and
+# sic_logging.print is redirected to stderr anyway.
 sic_logging.SIC_CLIENT_LOG.threshold = sic_logging.CRITICAL + 1
 
 # SIC prints Redis log messages using a bare `print(...)` in `sic_logging.py`.
@@ -99,20 +110,6 @@ def _require_app() -> NaoMCPServer:
     return APP
 
 
-def _resolve_robot_ip(robot_ip: Optional[str]) -> str:
-    if robot_ip and robot_ip.strip():
-        return robot_ip.strip()
-    env_ip = os.getenv("ROBOT_IP", "").strip()
-    if env_ip:
-        return env_ip
-    env_ip = os.getenv("NAO_IP", "").strip()
-    if env_ip:
-        return env_ip
-    raise RuntimeError(
-        "No robot IP provided. Pass robot_ip to the 'connect' tool or set ROBOT_IP (or NAO_IP)."
-    )
-
-
 def _is_stub_enabled() -> bool:
     """Return True when NAO actions should be stubbed out."""
     return STUB_MODE
@@ -147,7 +144,7 @@ def _ensure_connected(robot_ip: Optional[str] = None) -> NaoMCPServer:
         # Back-compat: some tooling may still reference NAO_IP.
         os.environ["NAO_IP"] = robot_ip.strip()
 
-    ip = _resolve_robot_ip(None)
+    ip = require_robot_ip(None)
     APP = NaoMCPServer(nao_ip=ip, stub=False)
     return APP
 
@@ -330,9 +327,9 @@ def get_expressions() -> str:
     """
     Return a JSON catalog of expressions this robot can play.
 
-    Use the ``id`` field of each entry as ``expression_id`` in ``play_expression``.
-    The catalog includes the ``play_expression`` parameter schema (required/optional
-    fields differ per robot; on NAO, optional ``speed`` applies only to postures).
+    Use the id field of each entry as expression_id in play_expression.
+    The catalog includes the play_expression parameter schema (required/optional
+    fields differ per robot; on NAO, optional speed applies only to postures).
     """
     return get_expressions_json()
 
@@ -342,8 +339,8 @@ def play_expression(expression_id: str, speed: Optional[float] = None) -> str:
     """
     Play a predefined expression (posture or animation) on the NAO.
 
-    Call ``get_expressions()`` first to list valid ``expression_id`` values and defaults.
-    For postures, ``speed`` (0.0–1.0) overrides the catalog default transition speed.
+    Call get_expressions() first to list valid expression_id values and defaults.
+    For postures, speed (0.0-1.0) overrides the catalog default transition speed.
     """
     if not expression_id or not str(expression_id).strip():
         return "ERROR: expression_id must be a non-empty string."
@@ -444,7 +441,7 @@ def _call_tool_text(result: Any) -> str:
 
 async def stdio_client_stub_demo(server_args: list[str]) -> None:
     """
-    Spawn this module as ``python -m sic_framework.mcp.mcp_nao`` and exercise a few tools.
+    Spawn this module as ``python -m sic_framework.mcp.nao.nao_mcp_server`` and exercise a few tools.
 
     Intended for local testing without a robot when ``server_args`` includes ``--stub``.
     """
@@ -454,7 +451,7 @@ async def stdio_client_stub_demo(server_args: list[str]) -> None:
     env = {**os.environ}
     params = StdioServerParameters(
         command=sys.executable,
-        args=["-m", "sic_framework.mcp.mcp_nao", *server_args],
+        args=["-m", "sic_framework.mcp.nao.nao_mcp_server", *server_args],
         env=env,
     )
 
@@ -596,7 +593,17 @@ def main() -> None:
             "Ignored for robot hardware while --stub is set, but still exported for tools."
         ),
     )
+    parser.add_argument(
+        "--log-dir",
+        type=str,
+        default=None,
+        metavar="DIR",
+        help="Directory for SIC file logs (default: sic_framework/mcp/logs).",
+    )
     args = parser.parse_args()
+
+    if args.log_dir and args.log_dir.strip():
+        configure_mcp_server_log_dir(args.log_dir.strip())
 
     if args.robot_ip and args.robot_ip.strip():
         ip = args.robot_ip.strip()
@@ -607,7 +614,7 @@ def main() -> None:
         # HTTP-based MCP: stdout is not the JSON-RPC byte stream; safe to show SIC logs.
         sic_logging.SIC_CLIENT_LOG.threshold = sic_logging.INFO
         print(
-            f"NAO MCP: transport={args.transport!r} — SIC Redis client logs (INFO+) go to stderr; "
+            f"NAO MCP: transport={args.transport!r} - SIC Redis client logs (INFO+) go to stderr; "
             f"file logs under {_LOG_DIR!r}.",
             file=sys.stderr,
         )

@@ -228,6 +228,32 @@ def zip_directory(path):
         raise IOError("Error while zipping: {}".format(str(e)))
 
 
+def flatten_exception_group(exc):
+    """
+    Return leaf exceptions from a possibly nested ExceptionGroup chain.
+
+    If ``exc`` is not a group, returns a single-element list containing ``exc``.
+    """
+    if type(exc).__name__ in ("BaseExceptionGroup", "ExceptionGroup"):
+        leaves = []
+        for sub in exc.exceptions:
+            leaves.extend(flatten_exception_group(sub))
+        return leaves
+    return [exc]
+
+
+def format_exception_message(exc):
+    """
+    Format an exception (including ExceptionGroup) for human-readable logs.
+    """
+    leaves = flatten_exception_group(exc)
+    if len(leaves) == 1:
+        leaf = leaves[0]
+        return "{0}: {1}".format(type(leaf).__name__, leaf)
+    parts = ["{0}: {1}".format(type(e).__name__, e) for e in leaves]
+    return "{0} ({1})".format(type(exc).__name__, "; ".join(parts))
+
+
 def create_data_stream_id(component_endpoint, input_source, length=16):
     """
     Hashes component info into a short, random-looking string.

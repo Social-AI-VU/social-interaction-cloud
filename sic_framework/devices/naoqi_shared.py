@@ -153,7 +153,7 @@ class Naoqi(SICDeviceManager):
         )
 
         # Second ``Nao()`` / ``Pepper()`` in another process on the same host (e.g. stdio
-        # ``mcp_nao_server`` while a voice app already runs SIC on the robot) would
+        # ``nao_mcp_server`` while a voice app already runs SIC on the robot) would
         # otherwise SSH-pkill the remote wrapper and break the microphone stream.
         # Set ``SIC_NAO_REUSE_REMOTE_SIC=1`` to skip wrapper restart when Redis already
         # reaches a live ComponentManager on this device.

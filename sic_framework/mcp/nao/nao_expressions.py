@@ -3,11 +3,11 @@ NAO expression catalog and playback for MCP servers.
 
 This module is the NAO-specific half of a small template pattern:
 
-- ``get_expressions_catalog()`` — JSON-serializable catalog (no robot connection).
-- ``play_nao_expression()`` — map ``expression_id`` + optional overrides to SIC motion requests.
+- get_expressions_catalog() - JSON-serializable catalog (no robot connection).
+- play_nao_expression() - map expression_id + optional overrides to SIC motion requests.
 
-Other robots can mirror the same shape (catalog + ``play_*_expression``) with different
-``kind`` values and ``default_args`` fields.
+Other robots can mirror the same shape (catalog + play_*_expression) with different
+kind values and default_args fields.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from sic_framework.mcp.expression_catalog import build_catalog, catalog_to_json
 CATALOG_VERSION = 2
 ROBOT_TYPE = "nao"
 
-# Rudimentary starter set (extend as needed). See also ``demo_nao_motion.py`` and
+# Rudimentary starter set (extend as needed). See also demo_nao_motion.py and
 # http://doc.aldebaran.com/2-4/naoqi/motion/alanimationplayer-advanced.html
 NAO_EXPRESSIONS: list[dict[str, Any]] = [
     {
@@ -101,9 +101,9 @@ _EXPRESSION_BY_ID: dict[str, dict[str, Any]] = {
 
 def _normalize_nao_animation_path(animation_path: str) -> str:
     """
-    NAOqi requires ``package/path`` (e.g. ``animations/Stand/Gestures/Hey_1``).
+    NAOqi requires package/path (e.g. animations/Stand/Gestures/Hey_1).
 
-    Short names like ``Enthusiastic_4`` fail on many images with "Wrong path format".
+    Short names like Enthusiastic_4 fail on many images with "Wrong path format".
     """
     path = (animation_path or "").strip()
     if not path:
@@ -114,7 +114,7 @@ def _normalize_nao_animation_path(animation_path: str) -> str:
 
 
 def _build_expression_aliases() -> dict[str, str]:
-    """Map common agent/user labels to catalog ``id`` values."""
+    """Map common agent/user labels to catalog id values."""
     aliases: dict[str, str] = {}
     for entry in NAO_EXPRESSIONS:
         eid = entry["id"]
@@ -144,10 +144,10 @@ def get_expressions_catalog() -> dict[str, Any]:
     """
     Return the full expression catalog for agents and other MCP clients.
 
-    ``play_expression`` contract (NAO):
+    play_expression contract (NAO):
 
-    - **Required:** ``expression_id`` — one of the ``id`` values in ``expressions``.
-    - **Optional:** ``speed`` (float) — overrides posture transition speed for ``kind=posture`` only.
+    - Required: expression_id, one of the id values in expressions.
+    - Optional: speed (float), overrides posture transition speed for kind=posture only.
     """
     return build_catalog(
         robot_type=ROBOT_TYPE,
@@ -156,7 +156,7 @@ def get_expressions_catalog() -> dict[str, Any]:
         play_expression={
             "description": (
                 "Play a catalogued expression on the robot. Pass expression_id; "
-                "for postures you may override speed (0.0–1.0)."
+                "for postures you may override speed (0.0-1.0)."
             ),
             "parameters": {
                 "expression_id": {
@@ -195,7 +195,7 @@ def get_expressions_json(*, indent: int = 2) -> str:
 
 
 def resolve_expression(expression_id: str) -> dict[str, Any]:
-    """Look up a catalog entry or raise ``KeyError``."""
+    """Look up a catalog entry or raise KeyError."""
     key = (expression_id or "").strip()
     if key in _EXPRESSION_BY_ID:
         return _EXPRESSION_BY_ID[key]
@@ -217,9 +217,9 @@ def play_nao_expression(
     logger: Any = None,
 ) -> str:
     """
-    Play one catalogued expression via ``nao.motion``.
+    Play one catalogued expression via nao.motion.
 
-    :param nao: Connected ``Nao`` device (ignored when ``stub`` is True).
+    :param nao: Connected Nao device (ignored when stub is True).
     :returns: Human-readable result message.
     """
     entry = resolve_expression(expression_id)
@@ -248,9 +248,12 @@ def play_nao_expression(
         msg = f"NAO posture {target!r} (speed={posture_speed:.2f})."
     elif kind == "animation":
         path = _normalize_nao_animation_path(args["animation_path"])
-        # Do not block until the clip finishes (can exceed MCP / Ctrl+C patience).
-        motion.request(NaoqiAnimationRequest(path), block=False)
-        msg = f"NAO animation {path!r} (started)."
+        try:
+            # Block so NAOqi errors (e.g. invalid BodyTalk paths) reach the MCP client.
+            motion.request(NaoqiAnimationRequest(path), block=True, timeout=60.0)
+        except Exception as exc:
+            return f"ERROR: Failed to play animation {path!r}: {exc!r}"
+        msg = f"NAO animation {path!r} (played)."
     else:
         raise ValueError(f"Unsupported expression kind {kind!r} for NAO.")
 

@@ -156,7 +156,7 @@ setup(
             "run-nebula=sic_framework.services.llm.nebula:main",
             "run-redis=sic_framework.services.datastore.redis_datastore:main",
             "run-sortformer=sic_framework.services.streaming_sortformer.stm_sortformer:main",
-            "run-nao-mcp=sic_framework.mcp.mcp_nao_server:main",
+            "run-nao-mcp=sic_framework.mcp.nao.nao_mcp_server:main",
         ],
     },
 )
