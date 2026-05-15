@@ -33,3 +33,10 @@ Redis registries (multi-user)
 .. toctree::
 
    architecture/redis_registries
+
+Model Context Protocol (MCP)
+----------------------------
+
+.. toctree::
+
+   architecture/mcp
