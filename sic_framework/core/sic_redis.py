@@ -131,7 +131,7 @@ class SICRedisConnection:
                 port=port,
                 ssl=False,
                 password=password,
-                socket_timeout=1.0,  # 1 second timeout for socket operations
+                socket_timeout=3.0,  # tolerate brief Redis load from high-rate sensors (e.g. NAO mic)
                 socket_connect_timeout=5.0,  # 5 second timeout for connection
                 retry_on_timeout=True  # Retry on timeout errors
             )
@@ -143,7 +143,7 @@ class SICRedisConnection:
                 host=host,
                 port=port,
                 ssl=False,
-                socket_timeout=1.0,
+                socket_timeout=3.0,
                 socket_connect_timeout=5.0,
                 retry_on_timeout=True
             )
@@ -162,7 +162,7 @@ class SICRedisConnection:
                 ssl=True,
                 ssl_ca_certs=ssl_ca_certs,
                 password=password,
-                socket_timeout=1.0,
+                socket_timeout=3.0,
                 socket_connect_timeout=5.0,
                 retry_on_timeout=True
             )

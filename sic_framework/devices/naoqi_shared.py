@@ -2,6 +2,7 @@ from __future__ import print_function
 
 from abc import ABCMeta, abstractmethod
 import os
+import time
 import posixpath
 import shlex
 
@@ -150,6 +151,38 @@ class Naoqi(SICDeviceManager):
         """.format(
             robot_wrapper_file=robot_wrapper_file
         )
+
+        # Second ``Nao()`` / ``Pepper()`` in another process on the same host (e.g. stdio
+        # ``mcp_nao_server`` while a voice app already runs SIC on the robot) would
+        # otherwise SSH-pkill the remote wrapper and break the microphone stream.
+        # Set ``SIC_NAO_REUSE_REMOTE_SIC=1`` to skip wrapper restart when Redis already
+        # reaches a live ComponentManager on this device.
+        reuse = os.environ.get("SIC_NAO_REUSE_REMOTE_SIC", "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        if reuse:
+            try:
+                response = self._redis.request(
+                    self.device_ip,
+                    SICPingRequest(),
+                    timeout=self._PING_TIMEOUT,
+                    block=True,
+                )
+                if response == SICPongMessage():
+                    self.logger.info(
+                        "SIC_NAO_REUSE_REMOTE_SIC: remote ComponentManager on %s is up; "
+                        "skipping SSH wrapper restart and SIC reinstall/start.",
+                        self.device_ip,
+                    )
+                    return
+            except Exception as exc:
+                self.logger.info(
+                    "SIC_NAO_REUSE_REMOTE_SIC set but ping failed (%s); "
+                    "continuing with normal Naoqi startup (SSH restart).",
+                    exc,
+                )
 
         # stop SIC
         self.ssh_command(self.stop_cmd)

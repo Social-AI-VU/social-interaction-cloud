@@ -3,6 +3,7 @@ Service that transcribes audio to text in real time using the Google Speech-to-T
 """
 
 import threading
+import time
 
 from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech as cloud_speech_types
@@ -125,7 +126,7 @@ class GoogleSpeechToTextComponent(SICService):
         )
 
         self.message_was_final = threading.Event()
-        self.audio_buffer = queue.Queue(maxsize=1)
+        self.audio_buffer = queue.Queue(maxsize=8)
 
     def on_message(self, message):
         """
@@ -135,7 +136,6 @@ class GoogleSpeechToTextComponent(SICService):
         :type message: AudioMessage
         """
         if is_sic_instance(message, AudioMessage):
-            # update the audio message in the queue
             try:
                 self.audio_buffer.put_nowait(message.waveform)
             except queue.Full:
@@ -164,14 +164,13 @@ class GoogleSpeechToTextComponent(SICService):
         Generate requests to Google Speech-to-Text.
         """
         try:
-            # first request to Google needs to be a setup request with the session parameters
             yield self.config_request
 
-            start_time = self._redis.time()
+            start_time = time.time()
 
             while not self.message_was_final.is_set() and not self._signal_to_stop.is_set():
-                if self.params.timeout != None:
-                    if self._redis.time() - start_time > self.params.timeout:
+                if self.params.timeout is not None:
+                    if time.time() - start_time > self.params.timeout:
                         self.logger.warning(
                             "Request is longer than {timeout} seconds, stopping Google request".format(
                                 timeout=self.params.timeout
@@ -180,7 +179,6 @@ class GoogleSpeechToTextComponent(SICService):
                         self.message_was_final.set()
                         break
 
-                # Use a timeout so stop() can terminate promptly even if no audio arrives.
                 try:
                     chunk = self.audio_buffer.get(timeout=0.1)
                 except queue.Empty:
@@ -192,7 +190,6 @@ class GoogleSpeechToTextComponent(SICService):
                 yield cloud_speech_types.StreamingRecognizeRequest(audio=chunk)
 
         except Exception as e:
-            # log the message instead of gRPC hiding the error, but do crash
             self.logger.exception("Exception in request iterator: {}".format(e))
             raise e
 
@@ -202,11 +199,28 @@ class GoogleSpeechToTextComponent(SICService):
 
     @staticmethod
     def get_inputs():
-        return [GetStatementRequest, AudioMessage]
+        return [AudioMessage]
 
     @staticmethod
     def get_output():
         return RecognitionResult
+
+    def _end_streaming_recognize_session(self, responses):
+        """
+        Stop the request side and let the gRPC stream finish.
+
+        Do **not** call ``responses.cancel()`` on the shared ``SpeechClient`` — that can
+        leave the next ``streaming_recognize`` returning immediately with no audio wait.
+        """
+        self.message_was_final.set()
+        if responses is None:
+            return
+        close = getattr(responses, "close", None)
+        if callable(close):
+            try:
+                close()
+            except Exception:
+                pass
 
     def get_statement(self):
         """
@@ -215,47 +229,42 @@ class GoogleSpeechToTextComponent(SICService):
         :return: the recognition result
         :rtype: RecognitionResult
         """
-        # unset final message flag
         self.message_was_final.clear()
 
-        # get bi-directional request iterator
-        requests = self.request_generator() 
-
+        # Keep buffered mic chunks so speech during GetStatement / gRPC setup is not lost.
+        requests = self.request_generator()
+        responses = None
         try:
-            responses = self.google_speech_client.streaming_recognize(requests)
-        except Exception as e:
-            self.logger.error("Exception in get_statement: {}".format(e))
-            return RecognitionResult(dict())
-
-        for response in responses:
-            if self._signal_to_stop.is_set():
-                # Shutdown: ensure we still return a SICMessage reply to satisfy the
-                # Redis request-handler contract.
+            try:
+                responses = self.google_speech_client.streaming_recognize(requests)
+            except Exception as e:
+                self.logger.error("Exception in get_statement: {}".format(e))
+                if "409" in str(e):
+                    self.init_google_speech()
                 return RecognitionResult(dict())
 
-            if not response.results:
-                continue
+            for response in responses:
+                if self._signal_to_stop.is_set():
+                    return RecognitionResult(dict())
 
-            # The `results` list is consecutive. For streaming, we only care about
-            # the first result being considered, since once it's `is_final` is set, it
-            # moves on to considering the next utterance.
-            result = response.results[0]
+                if not response.results:
+                    continue
 
-            # if there are no alternatives, then there is no transcript, so we skip
-            if not result.alternatives:
-                continue
+                result = response.results[0]
 
-            # if the result is not final, then we output the interim result if enabled
-            if not result.is_final and self.params.interim_results:
-                self.output_message(RecognitionResult(result))
-            else:
-                # stop the generator function and return the final result
-                self.message_was_final.set()
+                if not result.alternatives:
+                    continue
+
+                if not result.is_final:
+                    if self.params.interim_results:
+                        self.output_message(RecognitionResult(result))
+                    continue
+
                 return RecognitionResult(result)
 
-        # If the streaming iterator ended (or we broke out) without a final result,
-        # still return a valid SICMessage to avoid request-handler assertion errors.
-        return RecognitionResult(dict())
+            return RecognitionResult(dict())
+        finally:
+            self._end_streaming_recognize_session(responses)
 
     def stop(self, *args):
         """
