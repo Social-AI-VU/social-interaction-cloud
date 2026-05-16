@@ -4,11 +4,13 @@ NAO-specific MCP LangChain client configuration and helpers.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, Optional
 
 from sic_framework.mcp.mcp_client import (
     DEFAULT_SSE_MCP_URL,
+    NAO_STT_CONF_ENV,
     McpClientTransport,
     McpRobotClientConfig,
     mcp_sse_connection as _mcp_sse_connection,
@@ -21,6 +23,31 @@ from sic_framework.mcp.mcp_client import (
 
 MCP_SERVER_MODULE = "sic_framework.mcp.nao.nao_mcp_server"
 MCP_SERVER_NAME = "nao"
+NAO_MIC_SAMPLE_RATE_HZ = 16000
+
+
+def build_google_stt_conf(
+    *,
+    google_keyfile: str,
+    language: str = "en-US",
+    sample_rate_hertz: int = NAO_MIC_SAMPLE_RATE_HZ,
+    interim_results: bool = False,
+    timeout: float = 20.0,
+) -> dict[str, Any]:
+    """
+    Build a JSON-serializable Google STT config for the NAO MCP server subprocess.
+
+    Passed via ``SIC_NAO_STT_CONF`` when spawning stdio MCP (see :func:`mcp_stdio_connection`).
+    """
+    with open(google_keyfile, encoding="utf-8") as f:
+        keyfile_json = json.load(f)
+    return {
+        "keyfile_json": keyfile_json,
+        "sample_rate_hertz": sample_rate_hertz,
+        "language": language,
+        "interim_results": interim_results,
+        "timeout": timeout,
+    }
 
 def nao_mcp_session_log_dir(*, caller_file: str) -> str:
     """
@@ -65,6 +92,7 @@ def mcp_stdio_connection(
     server_stub: bool,
     extra_server_args: list[str],
     log_dir: Optional[str] = None,
+    stt_conf: Optional[dict[str, Any]] = None,
 ) -> dict[str, dict[str, Any]]:
     return _mcp_stdio_connection(
         config=NAO_MCP_CLIENT,
@@ -72,6 +100,7 @@ def mcp_stdio_connection(
         server_stub=server_stub,
         extra_server_args=extra_server_args,
         log_dir=log_dir,
+        stt_conf=stt_conf,
     )
 
 
@@ -102,7 +131,10 @@ __all__ = [
     "MCP_SERVER_MODULE",
     "MCP_SERVER_NAME",
     "McpClientTransport",
+    "NAO_MIC_SAMPLE_RATE_HZ",
     "NAO_MCP_CLIENT",
+    "NAO_STT_CONF_ENV",
+    "build_google_stt_conf",
     "mcp_sse_connection",
     "mcp_stdio_connection",
     "nao_mcp_session_log_dir",

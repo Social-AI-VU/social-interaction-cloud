@@ -11,6 +11,7 @@ from typing import Any, Optional, Tuple
 from mcp.server.fastmcp import FastMCP
 
 from sic_framework.core.message_python2 import AudioRequest
+from sic_framework.core.utils import extract_google_stt_transcript
 from sic_framework.devices import Nao
 from sic_framework.mcp.mcp_server import (
     SICMcpServer,
@@ -27,6 +28,36 @@ from sic_framework.mcp.nao.nao_expressions import (
     get_expressions_json,
     play_nao_expression,
 )
+from sic_framework.mcp.mcp_client import NAO_STT_CONF_ENV
+from sic_framework.services.google_stt.google_stt import (
+    GetStatementRequest,
+    GoogleSpeechToText,
+    GoogleSpeechToTextConf,
+)
+
+LISTEN_REQUEST_TIMEOUT_S = 28.0
+
+STT_CONF: Optional[dict] = None
+
+
+def _google_stt_conf_from_dict(data: dict) -> GoogleSpeechToTextConf:
+    keyfile_json = data.get("keyfile_json")
+    if keyfile_json is None:
+        keyfile_path = data.get("google_keyfile")
+        if not keyfile_path:
+            raise ValueError(
+                "STT config must include 'keyfile_json' or 'google_keyfile'."
+            )
+        with open(str(keyfile_path), encoding="utf-8") as f:
+            keyfile_json = json.load(f)
+    return GoogleSpeechToTextConf(
+        keyfile_json=keyfile_json,
+        sample_rate_hertz=int(data.get("sample_rate_hertz", 16000)),
+        language=str(data.get("language", "en-US")),
+        interim_results=bool(data.get("interim_results", False)),
+        timeout=data.get("timeout"),
+        model=str(data.get("model", "long")),
+    )
 
 
 class NaoMCPServer(SICMcpServer):
@@ -37,23 +68,42 @@ class NaoMCPServer(SICMcpServer):
     LED commands without having to manage the full SIC lifecycle themselves.
     """
 
-    def __init__(self, nao_ip: str, stub: bool = False):
+    def __init__(
+        self,
+        nao_ip: str,
+        stub: bool = False,
+        stt_conf: Optional[dict] = None,
+    ):
         super(NaoMCPServer, self).__init__()
 
         self.nao_ip: str = nao_ip
         self.stub: bool = stub
         self.nao: Optional[Nao] = None
+        self.stt: Optional[GoogleSpeechToText] = None
+        self._stt_conf = stt_conf
 
         self.setup()
 
     def setup(self) -> None:
-        """Initialize the NAO device for MCP tools."""
+        """Initialize NAO and optional Google STT (NAO mic) from STT config."""
         if self.stub:
             self.logger.info("STUB mode active. Skipping NAO device initialization.")
             return
 
         self.logger.info("Initializing NAO robot at %s...", self.nao_ip)
         self.nao = Nao(ip=self.nao_ip)
+
+        if self._stt_conf:
+            conf = _google_stt_conf_from_dict(self._stt_conf)
+            self.stt = GoogleSpeechToText(
+                conf=conf,
+                input_source=self.nao.mic,
+            )
+            self.logger.info(
+                "Google STT bound to NAO microphone (%s Hz).",
+                conf.sample_rate_hertz,
+            )
+
         self.logger.info("NAO MCP application setup complete.")
 
 
@@ -101,7 +151,7 @@ def _ensure_connected(robot_ip: Optional[str] = None) -> NaoMCPServer:
     if _is_stub_enabled():
         # In stub mode, skip all NAO connectivity and allow missing/placeholder IPs.
         ip = (robot_ip or os.getenv("ROBOT_IP") or os.getenv("NAO_IP") or "stub").strip()
-        APP = NaoMCPServer(nao_ip=ip, stub=True)
+        APP = NaoMCPServer(nao_ip=ip, stub=True, stt_conf=None)
         return APP
 
     if robot_ip is not None and robot_ip.strip():
@@ -110,8 +160,42 @@ def _ensure_connected(robot_ip: Optional[str] = None) -> NaoMCPServer:
         os.environ["NAO_IP"] = robot_ip.strip()
 
     ip = require_robot_ip(None)
-    APP = NaoMCPServer(nao_ip=ip, stub=False)
+    APP = NaoMCPServer(nao_ip=ip, stub=False, stt_conf=STT_CONF)
     return APP
+
+
+@mcp.tool()
+def listen_for_speech() -> str:
+    """
+    Block until the user speaks on the NAO microphone (Google Speech-to-Text).
+
+    Requires STT config via ``SIC_NAO_STT_CONF`` when the client spawns this server.
+    """
+    if _is_stub_enabled():
+        _emit_stub_action("listen_for_speech (stub)")
+        return ""
+
+    app = _ensure_connected()
+    if app.stt is None:
+        return (
+            "ERROR: Google STT is not configured. "
+            "Spawn the MCP server with SIC_NAO_STT_CONF set (voice client does this automatically)."
+        )
+    try:
+        result = app.stt.request(
+            GetStatementRequest(),
+            timeout=LISTEN_REQUEST_TIMEOUT_S,
+        )
+    except TimeoutError:
+        return ""
+    except Exception as exc:
+        app.logger.error("listen_for_speech failed: %r", exc)
+        return "ERROR: listen_for_speech failed: {!r}".format(exc)
+
+    transcript = (extract_google_stt_transcript(result) or "").strip()
+    if transcript:
+        app.logger.info("[heard] %s", transcript)
+    return transcript
 
 
 @mcp.tool()
@@ -539,8 +623,11 @@ def _configure_nao_server(args: argparse.Namespace) -> None:
         os.environ["ROBOT_IP"] = ip
         os.environ["NAO_IP"] = ip
 
-    global STUB_MODE
+    global STUB_MODE, STT_CONF
     STUB_MODE = bool(args.stub)
+    raw = os.environ.get(NAO_STT_CONF_ENV, "").strip()
+    if raw:
+        STT_CONF = json.loads(raw)
     if STUB_MODE:
         _emit_stub_action("Server started in STUB mode.")
 

@@ -4,6 +4,7 @@ Robot-agnostic LangChain MCP client helpers (connections, env IP, CLI errors).
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 from dataclasses import dataclass, field
@@ -14,6 +15,7 @@ from sic_framework.core.utils import format_exception_message
 McpClientTransport = Literal["stdio", "sse"]
 DEFAULT_SSE_MCP_URL = "http://127.0.0.1:8000/sse"
 PRIMARY_ROBOT_IP_ENV = "ROBOT_IP"
+NAO_STT_CONF_ENV = "SIC_NAO_STT_CONF"
 
 
 @dataclass(frozen=True)
@@ -85,6 +87,7 @@ def mcp_stdio_connection(
     server_stub: bool,
     extra_server_args: list[str],
     log_dir: Optional[str] = None,
+    stt_conf: Optional[dict] = None,
 ) -> dict[str, dict[str, Any]]:
     server_args = ["-m", config.mcp_server_module]
     if server_stub:
@@ -94,15 +97,15 @@ def mcp_stdio_connection(
     if log_dir and str(log_dir).strip():
         server_args.extend(["--log-dir", os.path.abspath(str(log_dir).strip())])
     server_args.extend(extra_server_args)
+    env = {**os.environ, **dict(config.stdio_extra_env)}
+    if stt_conf is not None:
+        env[NAO_STT_CONF_ENV] = json.dumps(stt_conf)
     return {
         config.server_name: {
             "transport": "stdio",
             "command": sys.executable,
             "args": server_args,
-            "env": {
-                **os.environ,
-                **dict(config.stdio_extra_env),
-            },
+            "env": env,
         }
     }
 

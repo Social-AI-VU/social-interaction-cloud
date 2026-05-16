@@ -15,6 +15,7 @@ from sic_framework.mcp.nao.nao_client import (
     print_mcp_stdio_spawn_help,
     require_robot_ip,
     resolve_robot_ip,
+    build_google_stt_conf
 )
 from sic_framework.mcp.nao.nao_expressions import (
     CATALOG_VERSION,

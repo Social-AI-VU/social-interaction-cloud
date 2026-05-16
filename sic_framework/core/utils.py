@@ -254,6 +254,38 @@ def format_exception_message(exc):
     return "{0} ({1})".format(type(exc).__name__, "; ".join(parts))
 
 
+def extract_google_stt_transcript(result_message):
+    """
+    Extract transcript text from a Google Speech-to-Text ``RecognitionResult``.
+
+    Handles both a single streaming result (``.alternatives``) and a full
+    response (``.results[0].alternatives``). Returns ``None`` when there is no
+    final transcript (including an empty ``response`` dict).
+
+    :param result_message: Value returned from ``GoogleSpeechToText.request(...)``.
+    :returns: Transcript string, or ``None``.
+    :rtype: str | None
+    """
+    if not result_message or not hasattr(result_message, "response"):
+        return None
+
+    response = result_message.response
+    if isinstance(response, dict):
+        return None
+
+    if hasattr(response, "alternatives") and response.alternatives:
+        transcript = response.alternatives[0].transcript
+        return transcript if transcript else None
+
+    if hasattr(response, "results") and response.results:
+        first = response.results[0]
+        if hasattr(first, "alternatives") and first.alternatives:
+            transcript = first.alternatives[0].transcript
+            return transcript if transcript else None
+
+    return None
+
+
 def create_data_stream_id(component_endpoint, input_source, length=16):
     """
     Hashes component info into a short, random-looking string.
