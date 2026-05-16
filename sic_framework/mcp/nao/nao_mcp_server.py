@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import os
 import sys
 import wave
@@ -9,11 +10,8 @@ from typing import Any, Optional, Tuple
 
 from mcp.server.fastmcp import FastMCP
 
-from sic_framework.core import utils
 from sic_framework.core.message_python2 import AudioRequest
-from sic_framework.core.sic_redis import SICRedisConnection
 from sic_framework.devices import Nao
-from sic_framework.devices.device import remote_sic_available_for_client
 from sic_framework.mcp.mcp_server import (
     SICMcpServer,
     call_tool_text,
@@ -29,6 +27,7 @@ from sic_framework.mcp.nao.nao_expressions import (
     get_expressions_json,
     play_nao_expression,
 )
+
 
 class NaoMCPServer(SICMcpServer):
     """
@@ -48,15 +47,14 @@ class NaoMCPServer(SICMcpServer):
         self.setup()
 
     def setup(self) -> None:
-        """Initialize the NAO device for LED control."""
+        """Initialize the NAO device for MCP tools."""
         if self.stub:
             self.logger.info("STUB mode active. Skipping NAO device initialization.")
             return
 
-        self.logger.info("Initializing NAO robot at %s for LED control...", self.nao_ip)
-        # Use dev_test=True so we don't interfere with production devices by default.
+        self.logger.info("Initializing NAO robot at %s...", self.nao_ip)
         self.nao = Nao(ip=self.nao_ip)
-        self.logger.info("NAO LED application setup complete.")
+        self.logger.info("NAO MCP application setup complete.")
 
 
 # Global application instance used by MCP tools.
@@ -493,14 +491,6 @@ def _warmup_nao_app_before_serving() -> None:
         log_server_message(
             "NAO MCP: no ROBOT_IP/NAO_IP at startup; listening without a warm NAO link "
             "(use the `connect` tool or restart with --robot-ip / env).",
-            app=APP,
-        )
-        return
-
-    redis = SICRedisConnection()
-    if remote_sic_available_for_client(redis, ip, utils.get_ip_adress()):
-        log_server_message(
-            "NAO MCP: remote SIC already up for this client; skipping warmup Nao().",
             app=APP,
         )
         return

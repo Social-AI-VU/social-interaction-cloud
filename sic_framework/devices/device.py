@@ -16,31 +16,7 @@ from sic_framework.core.exceptions import (
     DeviceExecutionError,
     DeviceAuthError,
 )
-from sic_framework.core.message_python2 import SICPingRequest, SICPongMessage
 from sic_framework.core.sic_application import SICApplication
-
-
-def remote_sic_available_for_client(
-    redis, device_ip, client_id, ping_timeout=3, force_restart=False
-):
-    """
-    True when a live remote ComponentManager responds to ping and no other live
-    client holds the device reservation.
-    """
-    if force_restart:
-        return False
-    if device_ip not in ("localhost", "127.0.0.1"):
-        holder = redis.get_reservation(device_ip)
-        if holder is not None and holder != client_id:
-            if redis.ping_client(holder):
-                return False
-    try:
-        response = redis.request(
-            device_ip, SICPingRequest(), timeout=ping_timeout, block=True
-        )
-        return response == SICPongMessage()
-    except Exception:
-        return False
 
 
 class SICLibrary(object):
@@ -98,16 +74,13 @@ class SICDeviceManager(object):
         username=None,
         passwords=None,
         port=22,
-        force_restart=False,
     ):
         """
         Connect to the device and ensure an up to date version of the framework is installed
         :param ip: the ip adress of the device
         :param username: the ssh login name
         :param passwords: the (list) of passwords to use
-        :param force_restart: If True, always SSH-restart remote SIC even when it is pingable
         """
-        self.force_restart = force_restart
         self.app = SICApplication()
         self._redis = self.app.get_redis_instance()
         self.device_ip = ip
@@ -223,31 +196,6 @@ class SICDeviceManager(object):
             raise DeviceReservationError("Reservation for device {} failed: {}".format(self.device_ip, reservation_result))
         else:
             self.logger.info("Device {} has been reserved for this client".format(self.device_ip))
-
-    def skip_remote_sic_restart_if_reusable(self):
-        """
-        If the remote ComponentManager answers a Redis ping and this client may use
-        the device (unreserved, reserved by us, or stale reservation), skip SSH restart.
-        """
-        if self.force_restart or getattr(self, "dev_test", False):
-            return False
-        if not remote_sic_available_for_client(
-            self._redis,
-            self.device_ip,
-            self._client_id,
-            self._PING_TIMEOUT,
-            force_restart=self.force_restart,
-        ):
-            self.logger.info(
-                "Remote ComponentManager on %s is not available; SSH wrapper restart required.",
-                self.device_ip,
-            )
-            return False
-        self.logger.info(
-            "Remote ComponentManager on %s is up; skipping SSH wrapper restart.",
-            self.device_ip,
-        )
-        return True
 
     def get_last_modified(self, root, paths):
         last_modified = 0

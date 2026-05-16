@@ -76,14 +76,12 @@ class Naoqi(SICDeviceManager):
         lookat_conf=None,
         username=None,
         passwords=None,
-        force_restart=False,
     ):
         super().__init__(
             ip,
             sic_version=sic_version,
             username=username,
             passwords=passwords,
-            force_restart=force_restart,
         )
 
         # Set the component configs
@@ -153,9 +151,6 @@ class Naoqi(SICDeviceManager):
         """.format(
             robot_wrapper_file=robot_wrapper_file
         )
-
-        if self.skip_remote_sic_restart_if_reusable():
-            return
 
         # stop SIC
         self.ssh_command(self.stop_cmd)
