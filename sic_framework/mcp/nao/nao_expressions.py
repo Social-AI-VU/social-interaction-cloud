@@ -94,6 +94,7 @@ NAO_EXPRESSIONS: list[dict[str, Any]] = [
     },
 ]
 
+# Fast lookup by catalog id; aliases (names, posture labels) go through _EXPRESSION_ALIASES.
 _EXPRESSION_BY_ID: dict[str, dict[str, Any]] = {
     entry["id"]: entry for entry in NAO_EXPRESSIONS
 }

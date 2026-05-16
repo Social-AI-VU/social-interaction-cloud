@@ -26,6 +26,7 @@ def build_catalog(
     Each ``expressions[]`` entry should include at least:
     ``id``, ``name``, ``description``, ``kind``, ``default_args``.
     """
+    # Top-level keys are stable across robots so agents can parse any get_expressions() payload.
     catalog: dict[str, Any] = {
         "robot_type": robot_type,
         "catalog_version": catalog_version,

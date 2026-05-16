@@ -15,6 +15,7 @@ from sic_framework.core.utils import format_exception_message
 McpClientTransport = Literal["stdio", "sse"]
 DEFAULT_SSE_MCP_URL = "http://127.0.0.1:8000/sse"
 PRIMARY_ROBOT_IP_ENV = "ROBOT_IP"
+# Voice clients pass Google STT settings to the stdio MCP subprocess via this env var.
 NAO_STT_CONF_ENV = "SIC_NAO_STT_CONF"
 
 
@@ -77,6 +78,7 @@ def require_robot_ip(
 
 
 def mcp_sse_connection(*, server_name: str, url: str) -> dict[str, dict[str, Any]]:
+    # Use when the MCP server is already running (e.g. run-nao-mcp --transport sse in another terminal).
     return {server_name: {"transport": "sse", "url": url}}
 
 
@@ -99,9 +101,11 @@ def mcp_stdio_connection(
     server_args.extend(extra_server_args)
     env = {**os.environ, **dict(config.stdio_extra_env)}
     if stt_conf is not None:
+        # Server reads this JSON in main() so mic+STT live in one process (not the LangChain client).
         env[NAO_STT_CONF_ENV] = json.dumps(stt_conf)
     return {
         config.server_name: {
+            # LangChain spawns the server module as a child process with these args/env.
             "transport": "stdio",
             "command": sys.executable,
             "args": server_args,

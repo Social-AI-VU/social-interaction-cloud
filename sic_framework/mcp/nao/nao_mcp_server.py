@@ -1,3 +1,7 @@
+"""
+MCP server for NAO over SIC: tools for LEDs, TTS, motion, and optional Google STT on the robot mic.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -35,8 +39,9 @@ from sic_framework.services.google_stt.google_stt import (
     GoogleSpeechToTextConf,
 )
 
-LISTEN_REQUEST_TIMEOUT_S = 28.0
+LISTEN_REQUEST_TIMEOUT_S = 25.0
 
+# Parsed from SIC_NAO_STT_CONF in _configure_nao_server; shared by lazy _ensure_connected().
 STT_CONF: Optional[dict] = None
 
 
@@ -95,6 +100,7 @@ class NaoMCPServer(SICMcpServer):
 
         if self._stt_conf:
             conf = _google_stt_conf_from_dict(self._stt_conf)
+            # Single mic owner in this process avoids ALAudioDevice singleton conflicts on NAO.
             self.stt = GoogleSpeechToText(
                 conf=conf,
                 input_source=self.nao.mic,
@@ -107,11 +113,12 @@ class NaoMCPServer(SICMcpServer):
         self.logger.info("NAO MCP application setup complete.")
 
 
-# Global application instance used by MCP tools.
+# One NaoMCPServer per MCP process; MCP tools are plain functions that read this global.
 APP: Optional[NaoMCPServer] = None
 STUB_MODE: bool = False
 
 
+# json_response=True returns structured tool results for LangChain and other MCP clients.
 mcp = FastMCP("Nao MCP Server", json_response=True)
 
 
@@ -149,15 +156,13 @@ def _ensure_connected(robot_ip: Optional[str] = None) -> NaoMCPServer:
         return APP
 
     if _is_stub_enabled():
-        # In stub mode, skip all NAO connectivity and allow missing/placeholder IPs.
+        # Stub skips hardware and STT so agents can be tested without Redis or a robot.
         ip = (robot_ip or os.getenv("ROBOT_IP") or os.getenv("NAO_IP") or "stub").strip()
         APP = NaoMCPServer(nao_ip=ip, stub=True, stt_conf=None)
         return APP
 
     if robot_ip is not None and robot_ip.strip():
         os.environ["ROBOT_IP"] = robot_ip.strip()
-        # Back-compat: some tooling may still reference NAO_IP.
-        os.environ["NAO_IP"] = robot_ip.strip()
 
     ip = require_robot_ip(None)
     APP = NaoMCPServer(nao_ip=ip, stub=False, stt_conf=STT_CONF)
@@ -187,6 +192,7 @@ def listen_for_speech() -> str:
             timeout=LISTEN_REQUEST_TIMEOUT_S,
         )
     except TimeoutError:
+        # Empty string means "no utterance" so the voice client can keep polling listen_for_speech.
         return ""
     except Exception as exc:
         app.logger.error("listen_for_speech failed: %r", exc)
@@ -572,6 +578,7 @@ def _warmup_nao_app_before_serving() -> None:
 
     ip = os.getenv("ROBOT_IP", "").strip() or os.getenv("NAO_IP", "").strip()
     if not ip:
+        # Cold start: SSE/stdio can still serve tools; connect(robot_ip=...) warms up later.
         log_server_message(
             "NAO MCP: no ROBOT_IP/NAO_IP at startup; listening without a warm NAO link "
             "(use the `connect` tool or restart with --robot-ip / env).",
@@ -627,6 +634,7 @@ def _configure_nao_server(args: argparse.Namespace) -> None:
     STUB_MODE = bool(args.stub)
     raw = os.environ.get(NAO_STT_CONF_ENV, "").strip()
     if raw:
+        # Voice stdio clients set this env when spawning the server subprocess.
         STT_CONF = json.loads(raw)
     if STUB_MODE:
         _emit_stub_action("Server started in STUB mode.")

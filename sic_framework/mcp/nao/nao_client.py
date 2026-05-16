@@ -23,6 +23,7 @@ from sic_framework.mcp.mcp_client import (
 
 MCP_SERVER_MODULE = "sic_framework.mcp.nao.nao_mcp_server"
 MCP_SERVER_NAME = "nao"
+# NAO onboard mic is fixed at 16 kHz; must match GoogleSpeechToTextConf.sample_rate_hertz.
 NAO_MIC_SAMPLE_RATE_HZ = 16000
 
 
@@ -39,6 +40,7 @@ def build_google_stt_conf(
 
     Passed via ``SIC_NAO_STT_CONF`` when spawning stdio MCP (see :func:`mcp_stdio_connection`).
     """
+    # Embed credentials in JSON so the subprocess never needs the client's filesystem path.
     with open(google_keyfile, encoding="utf-8") as f:
         keyfile_json = json.load(f)
     return {
@@ -53,12 +55,14 @@ def nao_mcp_session_log_dir(*, caller_file: str) -> str:
     """
     Default SIC log directory for NAO MCP demo clients (under sic_applications/logs/mcp).
     """
+    # demos/mcp/*.py -> sic_applications/logs/mcp (three parents up from the demo file).
     root = Path(caller_file).resolve().parent.parent.parent
     log_dir = root / "logs" / "mcp"
     log_dir.mkdir(parents=True, exist_ok=True)
     return str(log_dir)
 
 
+# Shared metadata for spawning or connecting to the NAO MCP server from demo/agent clients.
 NAO_MCP_CLIENT = McpRobotClientConfig(
     server_name=MCP_SERVER_NAME,
     mcp_server_module=MCP_SERVER_MODULE,

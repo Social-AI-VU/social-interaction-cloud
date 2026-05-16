@@ -31,6 +31,7 @@ def configure_mcp_server_log_dir(path: str) -> str:
     Call from ``main()`` before creating the robot SIC application.
     """
     global _log_dir
+    # MCP stdio must not flood the JSON-RPC stream with Redis log lines on stderr.
     _log_dir = os.path.abspath(path.strip())
     os.makedirs(_log_dir, exist_ok=True)
     sic_logging.set_log_file(_log_dir)
@@ -89,6 +90,7 @@ class SICMcpServer(SICApplication):
         return object.__new__(cls)
 
     def register_exit_handler(self) -> None:
+        # Mark handlers as registered without wiring SIGINT/atexit that call sys.exit.
         self._shutdown_handler_registered = True
 
     def __init__(self) -> None:
@@ -140,8 +142,10 @@ def run_mcp_server(
     args = parser.parse_args()
 
     configure_mcp_server_log_dir(args.log_dir.strip())
+    # Robot-specific flags (stub, STT env, IP) are applied after logging is ready.
     configure(args)
 
+    # Eager connect when IP is known so the first tool call does not pay cold-start cost.
     warmup()
 
     try:
@@ -152,6 +156,7 @@ def run_mcp_server(
             try:
                 app.shutdown()
             except SystemExit:
+                # SICApplication.shutdown() may call sys.exit; keep the MCP process exit clean.
                 pass
 
 

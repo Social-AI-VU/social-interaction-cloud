@@ -271,13 +271,16 @@ def extract_google_stt_transcript(result_message):
 
     response = result_message.response
     if isinstance(response, dict):
+        # Empty dict is used when the STT stream ends without a final hypothesis.
         return None
 
     if hasattr(response, "alternatives") and response.alternatives:
+        # Streaming recognition returns a single result object with .alternatives.
         transcript = response.alternatives[0].transcript
         return transcript if transcript else None
 
     if hasattr(response, "results") and response.results:
+        # Batch/non-streaming responses nest hypotheses under .results[0].
         first = response.results[0]
         if hasattr(first, "alternatives") and first.alternatives:
             transcript = first.alternatives[0].transcript

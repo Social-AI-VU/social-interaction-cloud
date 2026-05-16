@@ -47,6 +47,7 @@ __all__ = [
 
 
 def __getattr__(name: str):
+    # Defer importing the server module so `from sic_framework.mcp.nao import nao_client` stays light.
     if name in ("configure_mcp_server_log_dir", "main"):
         from sic_framework.mcp.nao import nao_mcp_server
 
