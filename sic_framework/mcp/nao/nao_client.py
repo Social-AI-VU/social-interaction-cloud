@@ -38,7 +38,6 @@ NAO_MCP_CLIENT = McpRobotClientConfig(
     robot_display_name="NAO",
     run_server_command="run-nao-mcp",
     extra_ip_env_vars=("NAO_IP",),
-    stdio_extra_env={"SIC_NAO_REUSE_REMOTE_SIC": "1"},
 )
 
 

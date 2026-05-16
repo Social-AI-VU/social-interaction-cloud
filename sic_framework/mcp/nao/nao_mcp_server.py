@@ -9,8 +9,11 @@ from typing import Any, Optional, Tuple
 
 from mcp.server.fastmcp import FastMCP
 
+from sic_framework.core import utils
 from sic_framework.core.message_python2 import AudioRequest
+from sic_framework.core.sic_redis import SICRedisConnection
 from sic_framework.devices import Nao
+from sic_framework.devices.device import remote_sic_available_for_client
 from sic_framework.mcp.mcp_server import (
     SICMcpServer,
     call_tool_text,
@@ -494,19 +497,16 @@ def _warmup_nao_app_before_serving() -> None:
         )
         return
 
-    if os.environ.get("SIC_NAO_REUSE_REMOTE_SIC", "").strip().lower() in (
-        "1",
-        "true",
-        "yes",
-    ):
+    redis = SICRedisConnection()
+    if remote_sic_available_for_client(redis, ip, utils.get_ip_adress()):
         log_server_message(
-            "NAO MCP: SIC_NAO_REUSE_REMOTE_SIC set; skipping warmup (voice client owns the robot link).",
+            "NAO MCP: remote SIC already up for this client; skipping warmup Nao().",
             app=APP,
         )
         return
 
     try:
-        _ensure_connected()
+        app = _ensure_connected()
     except Exception as exc:
         log_server_message(
             "NAO MCP: could not connect to NAO at {!r} before serving: {!r}\n"
@@ -517,12 +517,11 @@ def _warmup_nao_app_before_serving() -> None:
         )
         sys.exit(1)
 
-    assert APP is not None
     log_server_message(
         "NAO MCP: NAO application ready at {!r} (tools can run immediately).".format(
-            APP.nao_ip
+            app.nao_ip
         ),
-        app=APP,
+        app=app,
     )
 
 

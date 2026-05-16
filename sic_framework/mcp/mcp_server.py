@@ -83,6 +83,11 @@ class SICMcpServer(SICApplication):
     terminal (see :func:`configure_mcp_server_log_dir`).
     """
 
+    def __new__(cls, *args, **kwargs):
+        # MCP server apps are full subclasses; do not return the process-wide
+        # SICApplication singleton (see SICApplication.__new__).
+        return object.__new__(cls)
+
     def register_exit_handler(self) -> None:
         self._shutdown_handler_registered = True
 

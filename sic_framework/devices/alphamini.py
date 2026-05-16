@@ -77,6 +77,7 @@ class Alphamini(SICDeviceManager):
         bypass_install=False,
         sic_version=None,
         tailscale_authkey=None,
+        force_restart=False,
     ):
         """
         Initialize the Alphamini device.
@@ -128,6 +129,7 @@ class Alphamini(SICDeviceManager):
             passwords=mini_password,
             port=port,
             sic_version=sic_version,
+            force_restart=force_restart,
         )
         self.logger.info("SIC version on your local machine: {version}".format(version=self.sic_version))
         self.configs[MiniMicrophone] = mic_conf
@@ -879,6 +881,8 @@ EOF
 
     def run_sic(self):
         self.logger.info("Running sic on alphamini...")
+        if self.skip_remote_sic_restart_if_reusable():
+            return
         use_tailscale = os.environ.get("USE_TAILSCALE", "").lower() in ("1", "true", "yes")
         if use_tailscale:
             self._configure_tailscale_env(".venv_sic")

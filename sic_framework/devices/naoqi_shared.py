@@ -76,12 +76,14 @@ class Naoqi(SICDeviceManager):
         lookat_conf=None,
         username=None,
         passwords=None,
+        force_restart=False,
     ):
         super().__init__(
             ip,
             sic_version=sic_version,
             username=username,
             passwords=passwords,
+            force_restart=force_restart,
         )
 
         # Set the component configs
@@ -152,37 +154,8 @@ class Naoqi(SICDeviceManager):
             robot_wrapper_file=robot_wrapper_file
         )
 
-        # Second ``Nao()`` / ``Pepper()`` in another process on the same host (e.g. stdio
-        # ``nao_mcp_server`` while a voice app already runs SIC on the robot) would
-        # otherwise SSH-pkill the remote wrapper and break the microphone stream.
-        # Set ``SIC_NAO_REUSE_REMOTE_SIC=1`` to skip wrapper restart when Redis already
-        # reaches a live ComponentManager on this device.
-        reuse = os.environ.get("SIC_NAO_REUSE_REMOTE_SIC", "").strip().lower() in (
-            "1",
-            "true",
-            "yes",
-        )
-        if reuse:
-            try:
-                response = self._redis.request(
-                    self.device_ip,
-                    SICPingRequest(),
-                    timeout=self._PING_TIMEOUT,
-                    block=True,
-                )
-                if response == SICPongMessage():
-                    self.logger.info(
-                        "SIC_NAO_REUSE_REMOTE_SIC: remote ComponentManager on %s is up; "
-                        "skipping SSH wrapper restart and SIC reinstall/start.",
-                        self.device_ip,
-                    )
-                    return
-            except Exception as exc:
-                self.logger.info(
-                    "SIC_NAO_REUSE_REMOTE_SIC set but ping failed (%s); "
-                    "continuing with normal Naoqi startup (SSH restart).",
-                    exc,
-                )
+        if self.skip_remote_sic_restart_if_reusable():
+            return
 
         # stop SIC
         self.ssh_command(self.stop_cmd)
