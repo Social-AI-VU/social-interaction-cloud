@@ -7,7 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Optional
 
-from sic_framework.mcp.client import (
+from sic_framework.mcp.mcp_client import (
     DEFAULT_SSE_MCP_URL,
     McpClientTransport,
     McpRobotClientConfig,

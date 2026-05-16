@@ -5,15 +5,18 @@ import asyncio
 import os
 import sys
 import wave
-import builtins
 from typing import Any, Optional, Tuple
 
 from mcp.server.fastmcp import FastMCP
 
-from sic_framework.core import sic_logging
 from sic_framework.core.message_python2 import AudioRequest
-from sic_framework.core.sic_application import SICApplication
 from sic_framework.devices import Nao
+from sic_framework.mcp.mcp_server import (
+    SICMcpServer,
+    call_tool_text,
+    log_server_message,
+    run_mcp_server,
+)
 from sic_framework.devices.common_naoqi.naoqi_leds import NaoFadeRGBRequest
 from sic_framework.devices.common_naoqi.naoqi_text_to_speech import (
     NaoqiTextToSpeechRequest,
@@ -24,44 +27,7 @@ from sic_framework.mcp.nao.nao_expressions import (
     play_nao_expression,
 )
 
-_LOG_DIR = os.path.join(os.path.dirname(__file__), "logs")
-
-
-def configure_mcp_server_log_dir(path: str) -> str:
-    """Set the directory for SIC file logs (used by stdio clients and HTTP transports)."""
-    global _LOG_DIR
-    _LOG_DIR = os.path.abspath(path)
-    os.makedirs(_LOG_DIR, exist_ok=True)
-    sic_logging.set_log_file(_LOG_DIR)
-    return _LOG_DIR
-
-
-configure_mcp_server_log_dir(_LOG_DIR)
-
-# IMPORTANT: stdio MCP requires stdout to be ONLY JSON-RPC. SIC's Redis client logger
-# would otherwise print to the terminal and corrupt that stream, so by default we
-# silence it here (logs still go to files under _LOG_DIR). For sse / streamable-http,
-# main() lowers the threshold again: MCP does not use process stdout, and
-# sic_logging.print is redirected to stderr anyway.
-sic_logging.SIC_CLIENT_LOG.threshold = sic_logging.CRITICAL + 1
-
-# SIC prints Redis log messages using a bare `print(...)` in `sic_logging.py`.
-# Redirect that module-level print to stderr so it cannot corrupt MCP's stdout JSON-RPC.
-def _sic_print_to_stderr(*args, **kwargs):
-    kwargs.setdefault("file", sys.stderr)
-    return builtins.print(*args, **kwargs)
-
-
-sic_logging.print = _sic_print_to_stderr  # type: ignore[attr-defined]
-
-# Encourage line-buffered stderr (helps in terminals).
-try:
-    sys.stderr.reconfigure(line_buffering=True)
-except Exception:
-    pass
-
-
-class NaoMCPServer(SICApplication):
+class NaoMCPServer(SICMcpServer):
     """
     Minimal SIC application that connects to a NAO robot.
 
@@ -76,8 +42,6 @@ class NaoMCPServer(SICApplication):
         self.stub: bool = stub
         self.nao: Optional[Nao] = None
 
-        self.set_log_level(sic_logging.DEBUG)
-        self.set_log_file_path(_LOG_DIR)
         self.setup()
 
     def setup(self) -> None:
@@ -116,8 +80,8 @@ def _is_stub_enabled() -> bool:
 
 
 def _emit_stub_action(action: str) -> None:
-    """Print stubbed NAO action to stderr (safe for MCP stdio transport)."""
-    print(f"[NAO STUB] {action}", file=sys.stderr)
+    """Log stubbed NAO action to the configured log file only."""
+    log_server_message("[NAO STUB] {}".format(action), app=APP)
 
 
 def _ensure_connected(robot_ip: Optional[str] = None) -> NaoMCPServer:
@@ -424,21 +388,6 @@ def shutdown_nao() -> str:
     return shutdown_robot()
 
 
-def _call_tool_text(result: Any) -> str:
-    """Flatten MCP ``CallToolResult`` content into a single string for printing."""
-    import mcp.types as mcp_types
-
-    lines: list[str] = []
-    for block in result.content:
-        if isinstance(block, mcp_types.TextContent):
-            lines.append(block.text)
-    if lines:
-        return "\n".join(lines)
-    if getattr(result, "structuredContent", None):
-        return str(result.structuredContent)
-    return str(result)
-
-
 async def stdio_client_stub_demo(server_args: list[str]) -> None:
     """
     Spawn this module as ``python -m sic_framework.mcp.nao.nao_mcp_server`` and exercise a few tools.
@@ -473,7 +422,7 @@ async def stdio_client_stub_demo(server_args: list[str]) -> None:
             ):
                 out = await session.call_tool(tool_name, arguments)
                 print(f"--- {tool_name}({arguments}) ---")
-                print(_call_tool_text(out))
+                print(call_tool_text(out))
 
 
 def main_client_stub() -> None:
@@ -518,70 +467,70 @@ def _warmup_nao_app_before_serving() -> None:
     """
     Block until ``_ensure_connected()`` succeeds when a robot address is available.
 
-    This runs before ``mcp.run()`` so stderr can report a warm NAO/SIC app before the
-    transport accepts clients. If no address is configured (non-stub), the server
-    still starts and ``connect`` can supply ``robot_ip`` later.
+    Runs before ``mcp.run()``. Status is written to the log file only (see ``--log-dir``).
+    If no address is configured (non-stub), the server still starts and ``connect`` can
+    supply ``robot_ip`` later.
     """
     if _is_stub_enabled():
         try:
             _ensure_connected()
         except Exception as exc:
-            print(f"NAO MCP: stub warmup failed: {exc!r}", file=sys.stderr)
+            log_server_message(
+                "NAO MCP: stub warmup failed: {!r}".format(exc), app=APP
+            )
             sys.exit(1)
-        print(
+        log_server_message(
             "NAO MCP: stub application ready (stdio/SSE clients can call tools).",
-            file=sys.stderr,
+            app=APP,
         )
         return
 
     ip = os.getenv("ROBOT_IP", "").strip() or os.getenv("NAO_IP", "").strip()
     if not ip:
-        print(
+        log_server_message(
             "NAO MCP: no ROBOT_IP/NAO_IP at startup; listening without a warm NAO link "
             "(use the `connect` tool or restart with --robot-ip / env).",
-            file=sys.stderr,
+            app=APP,
+        )
+        return
+
+    if os.environ.get("SIC_NAO_REUSE_REMOTE_SIC", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    ):
+        log_server_message(
+            "NAO MCP: SIC_NAO_REUSE_REMOTE_SIC set; skipping warmup (voice client owns the robot link).",
+            app=APP,
         )
         return
 
     try:
         _ensure_connected()
     except Exception as exc:
-        print(
-            f"NAO MCP: could not connect to NAO at {ip!r} before serving: {exc!r}\n"
-            "Fix networking/SIC on the robot or clear ROBOT_IP to start cold.",
-            file=sys.stderr,
+        log_server_message(
+            "NAO MCP: could not connect to NAO at {!r} before serving: {!r}\n"
+            "Fix networking/SIC on the robot or clear ROBOT_IP to start cold.".format(
+                ip, exc
+            ),
+            app=APP,
         )
         sys.exit(1)
 
     assert APP is not None
-    print(
-        f"NAO MCP: NAO application ready at {APP.nao_ip!r} (tools can run immediately).",
-        file=sys.stderr,
+    log_server_message(
+        "NAO MCP: NAO application ready at {!r} (tools can run immediately).".format(
+            APP.nao_ip
+        ),
+        app=APP,
     )
 
 
-def main() -> None:
-    """
-    Entry point for running this module as an MCP server (also exposed as ``run-nao-mcp``).
-
-    The server can start without connecting to a robot. To connect, call the
-    ``connect`` tool, or pass ``--robot-ip`` / set ``ROBOT_IP`` / ``NAO_IP`` before
-    starting so the first real tool call can resolve the NAO address.
-    """
-    parser = argparse.ArgumentParser(
-        description="MCP server exposing tools to control NAO eye LEDs via SIC."
-    )
-    parser.add_argument(
-        "--transport",
-        type=str,
-        default="stdio",
-        choices=["stdio", "sse", "streamable-http"],
-        help="MCP transport to use (default: stdio).",
-    )
+def _add_nao_server_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--stub",
         action="store_true",
-        help="Run in stub mode: print intended NAO actions and skip robot connection.",
+        help="Run in stub mode: log intended NAO actions and skip robot connection.",
     )
     parser.add_argument(
         "--robot-ip",
@@ -593,51 +542,36 @@ def main() -> None:
             "Ignored for robot hardware while --stub is set, but still exported for tools."
         ),
     )
-    parser.add_argument(
-        "--log-dir",
-        type=str,
-        default=None,
-        metavar="DIR",
-        help="Directory for SIC file logs (default: sic_framework/mcp/logs).",
-    )
-    args = parser.parse_args()
 
-    if args.log_dir and args.log_dir.strip():
-        configure_mcp_server_log_dir(args.log_dir.strip())
 
+def _configure_nao_server(args: argparse.Namespace) -> None:
     if args.robot_ip and args.robot_ip.strip():
         ip = args.robot_ip.strip()
         os.environ["ROBOT_IP"] = ip
         os.environ["NAO_IP"] = ip
-
-    if args.transport != "stdio":
-        # HTTP-based MCP: stdout is not the JSON-RPC byte stream; safe to show SIC logs.
-        sic_logging.SIC_CLIENT_LOG.threshold = sic_logging.INFO
-        print(
-            f"NAO MCP: transport={args.transport!r} - SIC Redis client logs (INFO+) go to stderr; "
-            f"file logs under {_LOG_DIR!r}.",
-            file=sys.stderr,
-        )
 
     global STUB_MODE
     STUB_MODE = bool(args.stub)
     if STUB_MODE:
         _emit_stub_action("Server started in STUB mode.")
 
-    _warmup_nao_app_before_serving()
 
-    try:
-        mcp.run(transport=args.transport)
-    finally:
-        # Ensure SICApplication shutdown is always invoked when the MCP server
-        # stops, so that all devices and connectors are cleaned up.
-        if APP is not None:
-            try:
-                APP.shutdown()
-            except SystemExit:
-                # SICApplication.exit_handler will call sys.exit(0); ignore it
-                # here so that normal process teardown can continue.
-                pass
+def main() -> None:
+    """
+    Entry point for running this module as an MCP server (also exposed as ``run-nao-mcp``).
+
+    The server can start without connecting to a robot. To connect, call the
+    ``connect`` tool, or pass ``--robot-ip`` / set ``ROBOT_IP`` / ``NAO_IP`` before
+    starting so the first real tool call can resolve the NAO address.
+    """
+    run_mcp_server(
+        mcp,
+        description="MCP server exposing tools to control NAO via SIC.",
+        configure=_configure_nao_server,
+        warmup=_warmup_nao_app_before_serving,
+        get_app=lambda: APP,
+        extra_arguments=_add_nao_server_arguments,
+    )
 
 
 if __name__ == "__main__":
