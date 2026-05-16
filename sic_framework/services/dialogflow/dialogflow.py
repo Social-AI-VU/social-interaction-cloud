@@ -378,10 +378,11 @@ class DialogflowComponent(SICService):
 
 class Dialogflow(SICConnector):
     component_class = DialogflowComponent
+    component_group = "Dialogflow"
 
 
 def main():
-    SICComponentManager([DialogflowComponent], name="Dialogflow")
+    SICComponentManager([DialogflowComponent], component_group="Dialogflow")
 
 
 if __name__ == "__main__":

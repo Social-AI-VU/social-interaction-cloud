@@ -41,4 +41,5 @@ class NaoStubTTSActuator(SICActuator):
 
 class NaoStubTTS(SICConnector):
     component_class = NaoStubTTSActuator
+    component_group = "NaoStub"
 

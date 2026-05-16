@@ -254,13 +254,14 @@ class GPT(SICConnector):
     Connector for the SIC OpenAI GPT Component.
     """
     component_class = GPTComponent
+    component_group = "GPT"
 
 
 def main():
     """
     Run a ComponentManager that can start the OpenAI GPT Component, called by 'run-gpt'
     """
-    SICComponentManager([GPTComponent], name="GPT")
+    SICComponentManager([GPTComponent], component_group="GPT")
 
 
 if __name__ == "__main__":

@@ -456,10 +456,11 @@ class ElevenLabsTTSService(SICService):
 
 class ElevenLabsTTS(SICConnector):
     component_class = ElevenLabsTTSService
+    component_group = "ElevenLabsTTS"
 
 
 def main():
-    SICComponentManager([ElevenLabsTTSService], name="ElevenLabsTTS")
+    SICComponentManager([ElevenLabsTTSService], component_group="ElevenLabsTTS")
 
 
 if __name__ == "__main__":

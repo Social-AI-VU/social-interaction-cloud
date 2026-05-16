@@ -107,7 +107,8 @@ class NaoqiMicrophoneSensor(SICSensor):
 
 class NaoqiMicrophone(SICConnector):
     component_class = NaoqiMicrophoneSensor
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":
-    SICComponentManager([NaoqiMicrophoneSensor])
+    SICComponentManager([NaoqiMicrophoneSensor], component_group="Naoqi")

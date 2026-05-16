@@ -1,5 +1,5 @@
 from sic_framework import SICComponentManager, SICMessage, utils, SICRequest
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.actuator_python2 import SICActuator
 from sic_framework.core.connector import SICConnector
 
 if utils.PYTHON_VERSION_IS_2:
@@ -57,7 +57,7 @@ class ClearDisplayMessage(SICMessage):
         super(ClearDisplayMessage, self).__init__()
 
 
-class NaoqiTabletComponent(SICComponent):
+class NaoqiTabletComponent(SICActuator):
     """
     Component for controlling Pepper's tablet display.
     
@@ -121,35 +121,31 @@ class NaoqiTabletComponent(SICComponent):
         :param SICMessage message: Message to process.
         """
         self.logger.debug("Received message of type: %s", type(message))
-        if isinstance(message, UrlMessage):
-            self.show_webview(message.url)
-        elif isinstance(message, WifiConnectRequest):
+        self._handle_tablet_command(message)
+
+    def execute(self, request):
+        """
+        Execute actuator requests (required by SICActuator).
+        """
+        self._handle_tablet_command(request)
+        return SICMessage()
+
+    def _handle_tablet_command(self, command):
+        """
+        Handle supported tablet commands for both request and message flows.
+        """
+        if isinstance(command, UrlMessage):
+            self.show_webview(command.url)
+        elif isinstance(command, WifiConnectRequest):
             self.wifi_connect(
-                network_name=message.network_name,
-                network_password=message.network_password,
-                network_type=message.network_type,
+                network_name=command.network_name,
+                network_password=command.network_password,
+                network_type=command.network_type,
             )
-        elif isinstance(message, ClearDisplayMessage):
+        elif isinstance(command, ClearDisplayMessage):
             self.clear_display()
         else:
-            self.logger.error("Unsupported message type: %s", type(message))
-
-    def on_request(self, request):
-        """
-        Handle incoming tablet request messages.
-        
-        :param SICMessage message: Message to process.
-        """
-        if isinstance(request, WifiConnectRequest):
-            try:
-                self.wifi_connect(
-                network_name=request.network_name,
-                    network_password=request.network_password,
-                    network_type=request.network_type,
-                )
-                return SICMessage()
-            except Exception as e:
-                raise e
+            self.logger.error("Unsupported message type: %s", type(command))
 
     def show_webview(self, url):
         """
@@ -220,6 +216,9 @@ class NaoqiTabletComponent(SICComponent):
             self.tablet_service.cleanWebview()
         except Exception as exc:
             raise RuntimeError("Failed to clear tablet display: {}".format(exc))
+    
+    def execute(self, *args, **kwargs):
+        pass
 
     def _cleanup(self):
         try:
@@ -236,7 +235,8 @@ class NaoqiTablet(SICConnector):
     Access this through the Pepper device's ``tablet`` property.
     """
     component_class = NaoqiTabletComponent
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":
-    SICComponentManager([NaoqiTabletComponent])
+    SICComponentManager([NaoqiTabletComponent], component_group="Naoqi")

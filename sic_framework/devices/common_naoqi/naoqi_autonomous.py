@@ -202,7 +202,8 @@ class NaoqiAutonomousActuator(SICActuator):
 
 class NaoqiAutonomous(SICConnector):
     component_class = NaoqiAutonomousActuator
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":
-    SICComponentManager([NaoqiAutonomousActuator])
+    SICComponentManager([NaoqiAutonomousActuator], component_group="Naoqi")

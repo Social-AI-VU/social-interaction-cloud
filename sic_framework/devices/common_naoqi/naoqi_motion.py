@@ -415,7 +415,8 @@ class NaoqiMotionActuator(SICActuator):
 
 class NaoqiMotion(SICConnector):
     component_class = NaoqiMotionActuator
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":
-    SICComponentManager([NaoqiMotionActuator])
+    SICComponentManager([NaoqiMotionActuator], component_group="Naoqi")

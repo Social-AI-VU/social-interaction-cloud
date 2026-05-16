@@ -114,6 +114,7 @@ class DesktopTextToSpeechActuator(SICActuator):
 
 class DesktopTextToSpeech(SICConnector):
     component_class = DesktopTextToSpeechActuator
+    component_group = "Desktop"
 
 if __name__ == "__main__":
-    SICComponentManager([DesktopTextToSpeechActuator])
+    SICComponentManager([DesktopTextToSpeechActuator], component_group="Desktop")

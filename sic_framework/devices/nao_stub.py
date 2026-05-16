@@ -135,7 +135,7 @@ class NaoStub(SICDeviceManager):
                 stub_components,
                 client_id=utils.get_ip_adress(),
                 auto_serve=False,
-                name="NaoStub"
+                component_group="NaoStub"
             )
             
             def managed_serve():

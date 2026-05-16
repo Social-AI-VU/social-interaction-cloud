@@ -1431,6 +1431,7 @@ def ensure_redis_stack_container(
 class RedisDatastore(SICConnector):
     """Connector for Redis datastore component"""
     component_class = RedisDatastoreComponent
+    component_group = "RedisDatastore"
 
 
 def main():
@@ -1502,7 +1503,7 @@ def main():
     os.environ["DB_PORT"] = str(args.host_port)
     os.environ.setdefault("DB_PASS", "changemeplease")
 
-    SICComponentManager([RedisDatastoreComponent], name="RedisDatastore")
+    SICComponentManager([RedisDatastoreComponent], component_group="RedisDatastore")
 
 
 if __name__ == "__main__":

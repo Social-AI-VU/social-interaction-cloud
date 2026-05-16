@@ -75,7 +75,8 @@ class ReachyMiniSpeakersActuator(SICActuator):
 
 class ReachyMiniSpeakers(SICConnector):
     component_class = ReachyMiniSpeakersActuator
+    component_group = "ReachyMini"
 
 
 if __name__ == "__main__":
-    SICComponentManager([ReachyMiniSpeakersActuator])
+    SICComponentManager([ReachyMiniSpeakersActuator], component_group="ReachyMini")

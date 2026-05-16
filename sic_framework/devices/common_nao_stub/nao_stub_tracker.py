@@ -72,8 +72,10 @@ class NaoStubLookAtActuator(SICActuator):
 
 class NaoStubTracker(SICConnector):
     component_class = NaoStubTrackerActuator
+    component_group = "NaoStub"
 
 
 class NaoStubLookAt(SICConnector):
     component_class = NaoStubLookAtActuator
+    component_group = "NaoStub"
 

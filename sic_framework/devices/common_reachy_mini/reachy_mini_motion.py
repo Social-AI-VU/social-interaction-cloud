@@ -205,7 +205,8 @@ class ReachyMiniMotionActuator(SICActuator):
 
 class ReachyMiniMotion(SICConnector):
     component_class = ReachyMiniMotionActuator
+    component_group = "ReachyMini"
 
 
 if __name__ == "__main__":
-    SICComponentManager([ReachyMiniMotionActuator])
+    SICComponentManager([ReachyMiniMotionActuator], component_group="ReachyMini")

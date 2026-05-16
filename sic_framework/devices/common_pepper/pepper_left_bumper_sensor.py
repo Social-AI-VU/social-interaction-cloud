@@ -1,6 +1,7 @@
 from sic_framework import SICComponentManager, SICConfMessage, SICMessage, utils
-from sic_framework.core.component_python2 import SICComponent
+from sic_framework.core.sensor_python2 import SICSensor
 from sic_framework.core.connector import SICConnector
+import time
 
 if utils.PYTHON_VERSION_IS_2:
     import qi
@@ -23,7 +24,7 @@ class PepperLeftBumperMessage(SICMessage):
         self.value = value
 
 
-class PepperLeftBumperSensor(SICComponent):
+class PepperLeftBumperSensor(SICSensor):
     """
     Sensor component for Pepper's left bumper.
     
@@ -110,21 +111,21 @@ class PepperLeftBumperSensor(SICComponent):
         Connects to the NAOqi ``LeftBumperPressed`` event and begins emitting
         messages when the bumper state changes.
         """
-        super(PepperLeftBumperSensor, self).start()
-
         self.bumper = self.memory_service.subscriber("LeftBumperPressed")
         id = self.bumper.signal.connect(self.onBumperChanged)
         self.ids.append(id)
+        super(PepperLeftBumperSensor, self).start()
 
-    def stop(self, *args):
-        # No long-running worker loop; mark stopped immediately so cleanup runs.
-        self._stopped.set()
-        super(PepperLeftBumperSensor, self).stop(*args)
+    def execute(self, *args, **kwargs):
+        # Event-driven sensor: keep loop alive while callbacks publish messages.
+        time.sleep(0.05)
+        return None
 
     def _cleanup(self):
         try:
-            for id in self.ids:
-                self.bumper.signal.disconnect(id)
+            if hasattr(self, "bumper"):
+                for id in self.ids:
+                    self.bumper.signal.disconnect(id)
         except Exception:
             pass
         try:
@@ -141,7 +142,8 @@ class PepperLeftBumper(SICConnector):
     Access this through the Pepper device's ``left_bumper`` property.
     """
     component_class = PepperLeftBumperSensor
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":
-    SICComponentManager([PepperLeftBumperSensor]) 
+    SICComponentManager([PepperLeftBumperSensor], component_group="Naoqi") 

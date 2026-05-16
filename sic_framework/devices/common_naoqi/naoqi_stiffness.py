@@ -87,7 +87,8 @@ class NaoqiStiffnessActuator(SICActuator, NaoqiMotionTools):
 
 class NaoqiStiffness(SICConnector):
     component_class = NaoqiStiffnessActuator
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":
-    SICComponentManager([NaoqiStiffnessActuator])
+    SICComponentManager([NaoqiStiffnessActuator], component_group="Naoqi")

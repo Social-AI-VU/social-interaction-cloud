@@ -181,6 +181,7 @@ class MiniMicrophoneSensor(SICSensor):
 
 class MiniMicrophone(SICConnector):
     component_class = MiniMicrophoneSensor
+    component_group = "Alphamini"
 
 if __name__ == "__main__":
-    SICComponentManager([MiniMicrophoneSensor])
+    SICComponentManager([MiniMicrophoneSensor], component_group="Alphamini")

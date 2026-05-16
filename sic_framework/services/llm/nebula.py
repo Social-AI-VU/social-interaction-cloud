@@ -161,13 +161,14 @@ class Nebula(SICConnector):
     Connector for the SIC Nebula Component.
     """
     component_class = NebulaComponent
+    component_group = "Nebula"
 
 
 def main():
     """
     Run a ComponentManager that can start the Nebula Component, called by 'run-nebula'
     """
-    SICComponentManager([NebulaComponent], name="Nebula")
+    SICComponentManager([NebulaComponent], component_group="Nebula")
 
 
 if __name__ == "__main__":

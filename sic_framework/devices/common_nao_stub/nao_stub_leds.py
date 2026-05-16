@@ -40,4 +40,5 @@ class NaoStubLEDsActuator(SICActuator):
 
 class NaoStubLEDs(SICConnector):
     component_class = NaoStubLEDsActuator
+    component_group = "NaoStub"
 

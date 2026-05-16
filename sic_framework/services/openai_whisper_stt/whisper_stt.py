@@ -260,13 +260,14 @@ class SICWhisper(SICConnector):
     Connector for the OpenAI Whisper STT Component.
     """
     component_class = WhisperComponent
+    component_group = "Whisper"
 
 
 def main():
     """
     Run a ComponentManager that can start the OpenAI Whisper STT Component.
     """
-    SICComponentManager([WhisperComponent], name="Whisper")
+    SICComponentManager([WhisperComponent], component_group="Whisper")
 
 
 if __name__ == "__main__":

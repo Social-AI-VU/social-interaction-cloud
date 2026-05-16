@@ -36,7 +36,8 @@ class ExampleService(SICService):
 
 class Example(SICConnector):
     component_class = ExampleService
+    component_group = "ExampleService"
 
 
 if __name__ == "__main__":
-    SICComponentManager([ExampleService])
+    SICComponentManager([ExampleService], component_group="ExampleService")

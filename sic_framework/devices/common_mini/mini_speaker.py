@@ -69,7 +69,8 @@ class MiniSpeakerComponent(SICComponent):
 
 class MiniSpeaker(SICConnector):
     component_class = MiniSpeakerComponent
+    component_group = "Alphamini"
 
 
 if __name__ == "__main__":
-    SICComponentManager([MiniSpeakerComponent])
+    SICComponentManager([MiniSpeakerComponent], component_group="Alphamini")

@@ -6,6 +6,7 @@ from sic_framework import (
     SICConfMessage,
     SICMessage,
     SICService,
+    SICConnector,
     UncompressedImageMessage,
     utils,
 )
@@ -93,6 +94,9 @@ class DepthEstimationService(SICService):
         # depth_img[depth_img > 10000] = self.INVALID_VALUE  # Max distance
         # return ImageMessage(depth_img)
 
+class DepthEstimation(SICConnector):
+    component_class = DepthEstimationService
+    component_group = "DepthEstimation"
 
 if __name__ == "__main__":
-    SICComponentManager([DepthEstimationService], "local")
+    SICComponentManager([DepthEstimationService], component_group="DepthEstimation")

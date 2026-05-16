@@ -157,7 +157,8 @@ class NaoqiTrackerActuator(SICActuator):
 
 class NaoqiTracker(SICConnector):
     component_class = NaoqiTrackerActuator
+    component_group = "Naoqi"
 
 
 if __name__ == "__main__":
-    SICComponentManager([NaoqiTrackerActuator])
+    SICComponentManager([NaoqiTrackerActuator], component_group="Naoqi")

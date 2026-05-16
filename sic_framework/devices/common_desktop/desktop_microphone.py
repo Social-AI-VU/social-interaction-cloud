@@ -76,7 +76,8 @@ class DesktopMicrophoneSensor(SICSensor):
 
 class DesktopMicrophone(SICConnector):
     component_class = DesktopMicrophoneSensor
+    component_group = "Desktop"
 
 
 if __name__ == "__main__":
-    SICComponentManager([DesktopMicrophoneSensor])
+    SICComponentManager([DesktopMicrophoneSensor], component_group="Desktop")
