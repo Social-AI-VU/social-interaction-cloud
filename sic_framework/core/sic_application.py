@@ -110,6 +110,10 @@ class SICApplication(object):
                 raise
         sic_logging.set_log_file(path)
 
+    def get_log_file_path(self):
+        """Return the directory used for SIC file logs, or None if not configured."""
+        return sic_logging.SIC_CLIENT_LOG.log_dir
+
     def load_env(self, path):
         """
         Load environment variables from a dotenv file.
@@ -185,49 +189,62 @@ class SICApplication(object):
         """Gracefully stop connectors and close Redis, then exit main thread."""
         self.exit_handler()
 
-    def exit_handler(self, signum=None, frame=None):
-        """Gracefully stop connectors and close Redis, then exit main thread.
+    def cleanup_resources(self, log_shutdown=True):
+        """
+        Stop devices, connectors, logging, and Redis without exiting the process.
 
-        Called on SIGINT/SIGTERM and at process exit (atexit).
+        Idempotent: returns immediately if cleanup already ran.
         """
         if self._cleanup_in_progress:
             return
+
         self._cleanup_in_progress = True
 
-        self.logger.info("signal interrupt received, exiting...")
+        if log_shutdown:
+            self.logger.info("signal interrupt received, exiting...")
 
         if self.shutdown_event is not None:
-            self.logger.info("Setting shutdown event")
+            if log_shutdown:
+                self.logger.info("Setting shutdown event")
             self.shutdown_event.set()
 
-        # First stop devices (which stops their remote component managers and their components).
         devices_to_stop = list(self._active_devices)
-        self.logger.info("Stopping devices")
+        if log_shutdown:
+            self.logger.info("Stopping devices")
         for device in devices_to_stop:
             try:
-                self.logger.info("Stopping device {}".format(device.name))
+                if log_shutdown:
+                    self.logger.info("Stopping device {}".format(device.name))
                 for connector in device.connectors.values():
                     connector_name = getattr(connector, "component_endpoint", "unknown")
-                    self.logger.info("Stopping component {} from device {}".format(connector_name, device.name))
+                    if log_shutdown:
+                        self.logger.info(
+                            "Stopping component {} from device {}".format(
+                                connector_name, device.name
+                            )
+                        )
                     connector.stop_component()
                 device.stop_device()
             except Exception as e:
                 self.logger.error("Error stopping device {}: {}".format(device.name, e))
 
-        # Then stop any remaining connectors that are still alive (i.e. standalone AI services)
-        connectors_to_stop = [c for c in self._active_connectors if not getattr(c, "_stopped", False)]
-        self.logger.info(
-            "Stopping remaining non-device components (found {count})".format(
-                count=len(connectors_to_stop)
-            )
-        )
-        for i, connector in enumerate(connectors_to_stop):
-            connector_name = getattr(connector, "component_endpoint", "unknown")
+        connectors_to_stop = [
+            c for c in self._active_connectors if not getattr(c, "_stopped", False)
+        ]
+        if log_shutdown:
             self.logger.info(
-                "Stopping component {i}/{total}: {name}".format(
-                    i=i + 1, total=len(connectors_to_stop), name=connector_name
+                "Stopping remaining non-device components (found {count})".format(
+                    count=len(connectors_to_stop)
                 )
             )
+        for i, connector in enumerate(connectors_to_stop):
+            connector_name = getattr(connector, "component_endpoint", "unknown")
+            if log_shutdown:
+                self.logger.info(
+                    "Stopping component {i}/{total}: {name}".format(
+                        i=i + 1, total=len(connectors_to_stop), name=connector_name
+                    )
+                )
             try:
                 connector.stop_component()
             except Exception as e:
@@ -258,11 +275,22 @@ class SICApplication(object):
         
         # Stop the SICClientLog thread before closing Redis
         sic_logging.SIC_CLIENT_LOG.stop()
-        
-        self.logger.info("Shutting down Redis connection")
+
+        if log_shutdown:
+            self.logger.info("Shutting down Redis connection")
         if self._redis is not None:
             self._redis.close()
             self._redis = None
+
+    def exit_handler(self, signum=None, frame=None):
+        """Gracefully stop connectors and close Redis, then exit main thread.
+
+        Called on SIGINT/SIGTERM and at process exit (atexit).
+        """
+        if self._cleanup_in_progress:
+            return
+
+        self.cleanup_resources(log_shutdown=True)
 
         try:
             sys.exit(0)

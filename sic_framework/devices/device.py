@@ -67,7 +67,14 @@ class SICDeviceManager(object):
 
         return instance
 
-    def __init__(self, ip, sic_version=None, username=None, passwords=None, port=22):
+    def __init__(
+        self,
+        ip,
+        sic_version=None,
+        username=None,
+        passwords=None,
+        port=22,
+    ):
         """
         Connect to the device and ensure an up to date version of the framework is installed
         :param ip: the ip adress of the device

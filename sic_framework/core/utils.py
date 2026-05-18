@@ -228,6 +228,67 @@ def zip_directory(path):
         raise IOError("Error while zipping: {}".format(str(e)))
 
 
+def flatten_exception_group(exc):
+    """
+    Return leaf exceptions from a possibly nested ExceptionGroup chain.
+
+    If ``exc`` is not a group, returns a single-element list containing ``exc``.
+    """
+    if type(exc).__name__ in ("BaseExceptionGroup", "ExceptionGroup"):
+        leaves = []
+        for sub in exc.exceptions:
+            leaves.extend(flatten_exception_group(sub))
+        return leaves
+    return [exc]
+
+
+def format_exception_message(exc):
+    """
+    Format an exception (including ExceptionGroup) for human-readable logs.
+    """
+    leaves = flatten_exception_group(exc)
+    if len(leaves) == 1:
+        leaf = leaves[0]
+        return "{0}: {1}".format(type(leaf).__name__, leaf)
+    parts = ["{0}: {1}".format(type(e).__name__, e) for e in leaves]
+    return "{0} ({1})".format(type(exc).__name__, "; ".join(parts))
+
+
+def extract_google_stt_transcript(result_message):
+    """
+    Extract transcript text from a Google Speech-to-Text ``RecognitionResult``.
+
+    Handles both a single streaming result (``.alternatives``) and a full
+    response (``.results[0].alternatives``). Returns ``None`` when there is no
+    final transcript (including an empty ``response`` dict).
+
+    :param result_message: Value returned from ``GoogleSpeechToText.request(...)``.
+    :returns: Transcript string, or ``None``.
+    :rtype: str | None
+    """
+    if not result_message or not hasattr(result_message, "response"):
+        return None
+
+    response = result_message.response
+    if isinstance(response, dict):
+        # Empty dict is used when the STT stream ends without a final hypothesis.
+        return None
+
+    if hasattr(response, "alternatives") and response.alternatives:
+        # Streaming recognition returns a single result object with .alternatives.
+        transcript = response.alternatives[0].transcript
+        return transcript if transcript else None
+
+    if hasattr(response, "results") and response.results:
+        # Batch/non-streaming responses nest hypotheses under .results[0].
+        first = response.results[0]
+        if hasattr(first, "alternatives") and first.alternatives:
+            transcript = first.alternatives[0].transcript
+            return transcript if transcript else None
+
+    return None
+
+
 def create_data_stream_id(component_endpoint, input_source, length=16):
     """
     Hashes component info into a short, random-looking string.

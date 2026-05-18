@@ -72,6 +72,7 @@ class SICClientLog(object):
         self.write_to_logfile = False
         self.lock = threading.Lock()
         self.threshold = DEBUG
+        self.file_log_threshold = DEBUG
         self.callback_thread = None
 
     def subscribe_to_redis_log(self, client_id=""):
@@ -132,19 +133,15 @@ class SICClientLog(object):
         :param message: The message to handle.
         :type message: SICLogMessage
         """
-        # default to INFO level if not set
-        level = getattr(message, 'level', logging.INFO)
-        # check if the level is greater than or equal to the threshold
+        level = getattr(message, "level", logging.INFO)
+        file_threshold = getattr(self, "file_log_threshold", self.threshold)
+        if self.write_to_logfile and level >= file_threshold:
+            self._write_to_logfile(message.msg)
         if level >= self.threshold:
-            # outputs to terminal
-            try:    
+            try:
                 print(message.msg, end="\n")
             except BrokenPipeError:
                 pass
-
-            if self.write_to_logfile:
-                # writes to logfile
-                self._write_to_logfile(message.msg)
     
     def _write_to_logfile(self, message):
         """
