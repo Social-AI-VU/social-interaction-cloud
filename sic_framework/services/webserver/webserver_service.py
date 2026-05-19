@@ -495,11 +495,22 @@ class WebserverComponent(SICService):
 
     def register_routes(self):
         """Register Flask routes."""
+        pages = getattr(self.params, "pages", None) or {}
+        root_template = None
+        if isinstance(pages, dict):
+            root_template = pages.get("/") or pages.get("")
+
         @self.app.route("/")
         def index():
+            template_name = root_template or "index.html"
             try:
-                return render_template("index.html")
+                return render_template(template_name)
             except Exception:
+                if root_template:
+                    return (
+                        f"<h1>SIC Webserver Running</h1>"
+                        f"<p>Template {root_template!r} not found.</p>"
+                    )
                 return "<h1>SIC Webserver Running</h1><p>No index.html found.</p>"
 
         @self.app.route("/healthz", methods=["GET"])
@@ -538,14 +549,15 @@ class WebserverComponent(SICService):
             self.output_message(ButtonClicked(button=data))
             return ("", 204)
 
-        # Configurable page registry (safe allowlist).
-        pages = getattr(self.params, "pages", None) or {}
+        # Configurable page registry (safe allowlist). Skip "/" — handled above.
         for route, template_name in pages.items():
             try:
                 if not isinstance(route, str) or not route:
                     continue
                 if not route.startswith("/"):
                     route = "/" + route
+                if route in ("/", ""):
+                    continue
                 if not isinstance(template_name, str) or not template_name:
                     continue
 
