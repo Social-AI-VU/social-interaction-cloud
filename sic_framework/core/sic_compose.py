@@ -22,6 +22,105 @@ DOCKER_NOT_INSTALLED_MESSAGE = (
     "services_compose, or start required services manually."
 )
 
+DOCKER_ROOT_MISSING_MESSAGE = (
+    "Docker files not found in the installed social-interaction-cloud package. "
+    "Reinstall or upgrade the package, set SIC_DOCKER_ROOT manually, or use "
+    "pre-built images in your compose file."
+)
+
+
+def _sic_framework_dir() -> Path:
+    import sic_framework
+
+    return Path(sic_framework.__file__).resolve().parent
+
+
+def resolve_docker_root() -> Path:
+    """
+    Return the directory containing shipped Docker files (``sic_framework/docker/``).
+
+    Uses ``SIC_DOCKER_ROOT`` when set, otherwise derives the path from the installed
+    ``sic_framework`` package location.
+    """
+    override = os.environ.get("SIC_DOCKER_ROOT")
+    if override:
+        root = Path(override).expanduser().resolve()
+    else:
+        root = _sic_framework_dir()
+
+    dockerfile = root / "docker" / "sic-base" / "Dockerfile"
+    if not dockerfile.is_file():
+        legacy = root.parent / "docker" / "sic-base" / "Dockerfile"
+        if legacy.is_file():
+            return root.parent
+        raise RuntimeError(DOCKER_ROOT_MISSING_MESSAGE)
+    return root
+
+
+def resolve_build_context(docker_root: Optional[Path] = None) -> Path:
+    """
+    Return the Docker build context for service images.
+
+    Source checkouts use the repo root (parent of ``sic_framework/``) so local
+    ``COPY`` installs work. PyPI installs use the package directory (PyPI target
+    ignores context).
+    """
+    override = os.environ.get("SIC_BUILD_CONTEXT")
+    if override:
+        return Path(override).expanduser().resolve()
+
+    docker_root = docker_root or resolve_docker_root()
+    repo_root = docker_root.parent
+    if (repo_root / "setup.py").is_file():
+        return repo_root.resolve()
+    return docker_root
+
+
+def resolve_build_target(docker_root: Optional[Path] = None) -> str:
+    """Return ``local`` for source checkouts, ``pypi`` for PyPI-only installs."""
+    override = os.environ.get("SIC_BUILD_TARGET")
+    if override:
+        return override
+
+    docker_root = docker_root or resolve_docker_root()
+    repo_root = docker_root.parent
+    if (repo_root / "setup.py").is_file():
+        return "local"
+    return "pypi"
+
+
+def resolve_sic_version() -> str:
+    override = os.environ.get("SIC_VERSION")
+    if override:
+        return override
+
+    try:
+        from importlib.metadata import version
+
+        return version("social-interaction-cloud")
+    except Exception:
+        pass
+
+    setup_py = _sic_framework_dir().parent / "setup.py"
+    if setup_py.is_file():
+        for line in setup_py.read_text().splitlines():
+            stripped = line.strip()
+            if stripped.startswith("version="):
+                return stripped.split("=", 1)[1].strip().strip('"').strip("'").rstrip(",")
+    return "2.2.3"
+
+
+def _compose_env(host_ip: Optional[str] = None) -> dict[str, str]:
+    env = os.environ.copy()
+    docker_root = resolve_docker_root()
+    env["SIC_DOCKER_ROOT"] = str(docker_root)
+    env["SIC_BUILD_CONTEXT"] = str(resolve_build_context(docker_root))
+    env["SIC_BUILD_TARGET"] = resolve_build_target(docker_root)
+    env["SIC_VERSION"] = resolve_sic_version()
+    if host_ip is not None:
+        env["SIC_HOST_IP"] = host_ip
+    return env
+
 
 def resolve_compose_path(path: str, caller_file: Optional[str] = None) -> Path:
     """
@@ -100,10 +199,16 @@ def _wait_for_tcp(host: str, port: int, timeout_sec: float = 60.0) -> None:
     )
 
 
+def _compose_file_paths(compose_path: Path) -> list[str]:
+    return [str(compose_path)]
+
+
 def _compose_cmd(
     compose_path: Path, project_name: Optional[str] = None
 ) -> list[str]:
-    cmd = _docker_compose_base_cmd() + ["-f", str(compose_path)]
+    cmd = _docker_compose_base_cmd()
+    for compose_file in _compose_file_paths(compose_path):
+        cmd.extend(["-f", compose_file])
     if project_name:
         cmd.extend(["-p", project_name])
     return cmd
@@ -200,8 +305,7 @@ def start(
     The compose project name comes from the top-level ``name:`` field in the compose
     file unless ``project_name`` is passed to override it.
     """
-    env = os.environ.copy()
-    env["SIC_HOST_IP"] = host_ip
+    env = _compose_env(host_ip)
 
     display_name = compose_project_name(compose_path, project_name)
     base = _compose_cmd(compose_path, project_name)
@@ -235,4 +339,4 @@ def stop(compose_path: Path, project_name: Optional[str] = None) -> None:
         "down",
         "--remove-orphans",
     ]
-    subprocess.run(cmd, capture_output=True, text=True)
+    subprocess.run(cmd, env=_compose_env(), capture_output=True, text=True)
