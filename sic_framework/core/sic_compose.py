@@ -53,6 +53,24 @@ def resolve_compose_path(path: str, caller_file: Optional[str] = None) -> Path:
     return resolved
 
 
+def compose_project_name(
+    compose_path: Path, override: Optional[str] = None
+) -> str:
+    """
+    Return the Docker Compose project name for status messages.
+
+    Uses ``override`` when provided, otherwise the top-level ``name:`` field in
+    the compose file, otherwise a name derived from the compose directory.
+    """
+    if override:
+        return override
+    for line in compose_path.read_text().splitlines():
+        stripped = line.strip()
+        if stripped.startswith("name:"):
+            return stripped.split(":", 1)[1].strip().strip("'\"")
+    return default_project_name(compose_path)
+
+
 def default_project_name(compose_path: Path) -> str:
     """Derive a stable compose project name from the compose file location."""
     slug = compose_path.parent.name.replace("_", "-").lower()
@@ -82,18 +100,76 @@ def _wait_for_tcp(host: str, port: int, timeout_sec: float = 60.0) -> None:
     )
 
 
-def _compose_cmd(compose_path: Path, project_name: str) -> list[str]:
-    return _docker_compose_base_cmd() + [
-        "-f",
-        str(compose_path),
-        "-p",
-        project_name,
-    ]
+def _compose_cmd(
+    compose_path: Path, project_name: Optional[str] = None
+) -> list[str]:
+    cmd = _docker_compose_base_cmd() + ["-f", str(compose_path)]
+    if project_name:
+        cmd.extend(["-p", project_name])
+    return cmd
 
 
 def _notify(message: str) -> None:
     """Print a user-facing status line (compose starts before SIC logging is up)."""
     print(message, file=sys.stderr, flush=True)
+
+
+def _image_exists(image_ref: str) -> bool:
+    ref = image_ref if ":" in image_ref else image_ref + ":latest"
+    return (
+        subprocess.run(
+            ["docker", "image", "inspect", ref],
+            capture_output=True,
+        ).returncode
+        == 0
+    )
+
+
+def _rebuild_requested() -> bool:
+    return os.environ.get("SIC_COMPOSE_REBUILD", "").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
+def _service_image_names(project_name: str) -> list[str]:
+    return ["{}-{}".format(project_name, svc) for svc in ("gpt", "datastore")]
+
+
+def _ensure_images(
+    base: list[str],
+    env: dict[str, str],
+    project_name: str,
+) -> bool:
+    """
+    Build images that are not present locally (or all images when rebuild requested).
+
+    Returns True if any build step ran.
+    """
+    built = False
+    rebuild = _rebuild_requested()
+
+    if rebuild or not _image_exists("sic-base:local"):
+        _notify("Building shared sic-base image...")
+        _run_compose(
+            base + ["--profile", "build", "build", "sic-base"],
+            env,
+            "build (sic-base)",
+        )
+        built = True
+
+    missing_services = [
+        img
+        for img in _service_image_names(project_name)
+        if rebuild or not _image_exists(img)
+    ]
+    if missing_services:
+        _notify("Building service images ({})...".format(", ".join(missing_services)))
+        _run_compose(base + ["build", "gpt", "datastore"], env, "build")
+        built = True
+
+    return built
 
 
 def _run_compose(cmd: list[str], env: dict[str, str], action: str) -> None:
@@ -111,8 +187,8 @@ def _run_compose(cmd: list[str], env: dict[str, str], action: str) -> None:
 
 def start(
     compose_path: Path,
-    project_name: str,
     host_ip: str,
+    project_name: Optional[str] = None,
     *,
     redis_host: str = "127.0.0.1",
     redis_port: int = 6379,
@@ -120,37 +196,37 @@ def start(
 ) -> None:
     """
     Build and start the compose stack, then wait until Redis is reachable on the host.
+
+    The compose project name comes from the top-level ``name:`` field in the compose
+    file unless ``project_name`` is passed to override it.
     """
     env = os.environ.copy()
     env["SIC_HOST_IP"] = host_ip
 
+    display_name = compose_project_name(compose_path, project_name)
     base = _compose_cmd(compose_path, project_name)
 
     _notify(
         "Starting background services from {} (project: {})...".format(
-            compose_path.name, project_name
+            compose_path.name, display_name
         )
     )
-    _notify(
-        "Hold tight — the first run builds Docker images and can take a few minutes."
-    )
 
-    _notify("Building shared sic-base image...")
-    # Build shared sic-base image before service images that FROM sic-base:local.
-    _run_compose(
-        base + ["--profile", "build", "build", "sic-base"],
-        env,
-        "build (sic-base)",
-    )
+    built = _ensure_images(base, env, display_name)
+    if built:
+        _notify(
+            "Hold tight — building Docker images can take a few minutes on first run."
+        )
+    else:
+        _notify("Using existing Docker images, starting containers...")
 
-    _notify("Building and starting service containers...")
-    _run_compose(base + ["up", "-d", "--build", "--wait"], env, "up")
+    _run_compose(base + ["up", "-d", "--wait"], env, "up")
 
     _wait_for_tcp(redis_host, redis_port, timeout_sec=startup_timeout_sec)
     _notify("Background services are ready.")
 
 
-def stop(compose_path: Path, project_name: str) -> None:
+def stop(compose_path: Path, project_name: Optional[str] = None) -> None:
     """Stop and remove containers for the compose project."""
     if shutil.which("docker") is None:
         return

@@ -58,8 +58,8 @@ class SICApplication(object):
         :param services_compose: Optional path to a docker-compose.yml (relative to the
             caller's source file). When set, the stack is started before Redis connects
             and stopped during cleanup.
-        :param services_compose_project: Optional docker compose project name. Defaults
-            to a name derived from the compose file's directory.
+        :param services_compose_project: Optional override for the Docker Compose
+            project name. By default the ``name:`` field in the compose file is used.
         """
         # Only initialize once (singleton pattern)
         if getattr(self, "_initialized", False):
@@ -73,6 +73,7 @@ class SICApplication(object):
         self._shutdown_handler_registered = False
         self._services_compose_path = None
         self._services_compose_project = None
+        self._services_compose_project_override = None
         self._services_compose_started = False
 
         if services_compose:
@@ -86,12 +87,16 @@ class SICApplication(object):
                 services_compose, caller_file=caller_file
             )
             self.client_ip = utils.get_ip_adress()
-            project_name = services_compose_project or sic_compose.default_project_name(
-                compose_path
+            sic_compose.start(
+                compose_path,
+                self.client_ip,
+                project_name=services_compose_project,
             )
-            sic_compose.start(compose_path, project_name, self.client_ip)
             self._services_compose_path = compose_path
-            self._services_compose_project = project_name
+            self._services_compose_project = sic_compose.compose_project_name(
+                compose_path, services_compose_project
+            )
+            self._services_compose_project_override = services_compose_project
             self._services_compose_started = True
         else:
             self.client_ip = utils.get_ip_adress()
@@ -324,7 +329,8 @@ class SICApplication(object):
                     )
                 )
             sic_compose.stop(
-                self._services_compose_path, self._services_compose_project
+                self._services_compose_path,
+                project_name=self._services_compose_project_override,
             )
             self._services_compose_started = False
 
