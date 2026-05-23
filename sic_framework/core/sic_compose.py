@@ -81,6 +81,28 @@ def _wait_for_tcp(host: str, port: int, timeout_sec: float = 60.0) -> None:
     )
 
 
+def _compose_cmd(compose_path: Path, project_name: str) -> list[str]:
+    return _docker_compose_base_cmd() + [
+        "-f",
+        str(compose_path),
+        "-p",
+        project_name,
+    ]
+
+
+def _run_compose(cmd: list[str], env: dict[str, str], action: str) -> None:
+    result = subprocess.run(cmd, env=env, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(
+            "docker compose {action} failed (exit {code}):\n{out}\n{err}".format(
+                action=action,
+                code=result.returncode,
+                out=(result.stdout or "").strip(),
+                err=(result.stderr or "").strip(),
+            )
+        )
+
+
 def start(
     compose_path: Path,
     project_name: str,
@@ -96,30 +118,16 @@ def start(
     env = os.environ.copy()
     env["SIC_HOST_IP"] = host_ip
 
-    cmd = _docker_compose_base_cmd() + [
-        "-f",
-        str(compose_path),
-        "-p",
-        project_name,
-        "up",
-        "-d",
-        "--build",
-        "--wait",
-    ]
-    result = subprocess.run(
-        cmd,
-        env=env,
-        capture_output=True,
-        text=True,
+    base = _compose_cmd(compose_path, project_name)
+
+    # Build shared sic-base image before service images that FROM sic-base:local.
+    _run_compose(
+        base + ["--profile", "build", "build", "sic-base"],
+        env,
+        "build (sic-base)",
     )
-    if result.returncode != 0:
-        raise RuntimeError(
-            "docker compose up failed (exit {code}):\n{out}\n{err}".format(
-                code=result.returncode,
-                out=(result.stdout or "").strip(),
-                err=(result.stderr or "").strip(),
-            )
-        )
+
+    _run_compose(base + ["up", "-d", "--build", "--wait"], env, "up")
 
     _wait_for_tcp(redis_host, redis_port, timeout_sec=startup_timeout_sec)
 
@@ -129,11 +137,7 @@ def stop(compose_path: Path, project_name: str) -> None:
     if shutil.which("docker") is None:
         return
 
-    cmd = _docker_compose_base_cmd() + [
-        "-f",
-        str(compose_path),
-        "-p",
-        project_name,
+    cmd = _compose_cmd(compose_path, project_name) + [
         "down",
         "--remove-orphans",
     ]
