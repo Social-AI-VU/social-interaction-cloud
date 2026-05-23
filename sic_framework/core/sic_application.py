@@ -75,6 +75,7 @@ class SICApplication(object):
         self._services_compose_project = None
         self._services_compose_project_override = None
         self._services_compose_started = False
+        self._services_compose_monitor = None
 
         if services_compose:
             frame = inspect.currentframe()
@@ -98,6 +99,12 @@ class SICApplication(object):
             )
             self._services_compose_project_override = services_compose_project
             self._services_compose_started = True
+            self._services_compose_monitor = sic_compose.start_service_monitor(
+                compose_path,
+                services_compose_project,
+                self.client_ip,
+                self.report_background_exception,
+            )
         else:
             self.client_ip = utils.get_ip_adress()
 
@@ -322,6 +329,9 @@ class SICApplication(object):
             self._redis = None
 
         if self._services_compose_started:
+            if self._services_compose_monitor is not None:
+                self._services_compose_monitor.stop()
+                self._services_compose_monitor = None
             if log_shutdown:
                 self.logger.info(
                     "Stopping docker compose stack {}".format(

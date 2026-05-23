@@ -7,14 +7,16 @@ Starts and stops per-demo service stacks declared in a docker-compose.yml file.
 from __future__ import annotations
 
 import inspect
+import json
 import os
 import shutil
 import socket
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 
 DOCKER_NOT_INSTALLED_MESSAGE = (
@@ -340,3 +342,187 @@ def stop(compose_path: Path, project_name: Optional[str] = None) -> None:
         "--remove-orphans",
     ]
     subprocess.run(cmd, env=_compose_env(), capture_output=True, text=True)
+
+
+def _monitor_poll_interval_sec() -> float:
+    raw = os.environ.get("SIC_COMPOSE_MONITOR_INTERVAL", "3.0")
+    try:
+        return max(0.5, float(raw))
+    except ValueError:
+        return 3.0
+
+
+def _monitor_log_tail() -> int:
+    raw = os.environ.get("SIC_COMPOSE_MONITOR_LOG_TAIL", "25")
+    try:
+        return max(5, int(raw))
+    except ValueError:
+        return 25
+
+
+def _parse_compose_ps_json(stdout: str) -> list[dict]:
+    entries = []
+    for line in stdout.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        entries.append(json.loads(stripped))
+    return entries
+
+
+def _fetch_service_logs(
+    compose_path: Path,
+    project_name: Optional[str],
+    services: list[str],
+    *,
+    tail: int,
+    host_ip: Optional[str] = None,
+) -> str:
+    if not services:
+        return ""
+    cmd = _compose_cmd(compose_path, project_name) + [
+        "logs",
+        "--no-color",
+        "--tail={}".format(tail),
+    ] + services
+    result = subprocess.run(
+        cmd, env=_compose_env(host_ip), capture_output=True, text=True
+    )
+    output = (result.stdout or "") + (result.stderr or "")
+    return output.strip()
+
+
+def check_service_errors(
+    compose_path: Path,
+    project_name: Optional[str] = None,
+    host_ip: Optional[str] = None,
+) -> Optional[str]:
+    """
+    Return a descriptive error if any compose service is exited or unhealthy.
+
+    Returns ``None`` when all monitored services look healthy.
+    """
+    if shutil.which("docker") is None:
+        return None
+
+    cmd = _compose_cmd(compose_path, project_name) + ["ps", "-a", "--format", "json"]
+    result = subprocess.run(cmd, env=_compose_env(host_ip), capture_output=True, text=True)
+    if result.returncode != 0:
+        err = (result.stderr or result.stdout or "").strip()
+        return "Failed to inspect compose services: {}".format(err or result.returncode)
+
+    problems = []
+    problem_services = []
+    ok_states = {"running", "created"}
+
+    for entry in _parse_compose_ps_json(result.stdout):
+        service = entry.get("Service") or entry.get("Name") or "unknown"
+        if service == "sic-base":
+            continue
+
+        state = (entry.get("State") or "").lower()
+        health = (entry.get("Health") or "").lower()
+        exit_code = entry.get("ExitCode")
+
+        if state == "exited":
+            problems.append(
+                "{service} exited (code {code})".format(
+                    service=service, code=exit_code
+                )
+            )
+            problem_services.append(service)
+        elif health == "unhealthy":
+            problems.append("{service} is unhealthy".format(service=service))
+            problem_services.append(service)
+        elif state in ("dead", "restarting"):
+            problems.append(
+                "{service} is {state}".format(service=service, state=state)
+            )
+            problem_services.append(service)
+        elif state and state not in ok_states:
+            problems.append(
+                "{service} is in unexpected state '{state}'".format(
+                    service=service, state=state
+                )
+            )
+            problem_services.append(service)
+
+    if not problems:
+        return None
+
+    logs = _fetch_service_logs(
+        compose_path,
+        project_name,
+        problem_services,
+        tail=_monitor_log_tail(),
+        host_ip=host_ip,
+    )
+    message = "Docker compose service failure:\n- " + "\n- ".join(problems)
+    if logs:
+        message += "\n\nRecent service logs:\n{}".format(logs)
+    return message
+
+
+class ComposeServiceMonitor(object):
+    """Background poll of ``docker compose ps`` for exited/unhealthy services."""
+
+    def __init__(
+        self,
+        compose_path: Path,
+        project_name: Optional[str],
+        host_ip: str,
+        on_error: Callable[[Exception], None],
+        poll_interval_sec: Optional[float] = None,
+    ):
+        self._compose_path = compose_path
+        self._project_name = project_name
+        self._host_ip = host_ip
+        self._on_error = on_error
+        self._poll_interval_sec = (
+            poll_interval_sec
+            if poll_interval_sec is not None
+            else _monitor_poll_interval_sec()
+        )
+        self._stop_event = threading.Event()
+        self._thread = None
+
+    def start(self) -> None:
+        self._stop_event.clear()
+        self._thread = threading.Thread(
+            target=self._run,
+            name="sic-compose-monitor",
+            daemon=True,
+        )
+        self._thread.start()
+
+    def stop(self, timeout_sec: float = 5.0) -> None:
+        self._stop_event.set()
+        if self._thread is not None:
+            self._thread.join(timeout=timeout_sec)
+
+    def _run(self) -> None:
+        while not self._stop_event.is_set():
+            try:
+                error = check_service_errors(
+                    self._compose_path, self._project_name, self._host_ip
+                )
+                if error and not self._stop_event.is_set():
+                    self._on_error(RuntimeError(error))
+                    return
+            except Exception as exc:
+                if not self._stop_event.is_set():
+                    self._on_error(exc)
+                    return
+            self._stop_event.wait(self._poll_interval_sec)
+
+
+def start_service_monitor(
+    compose_path: Path,
+    project_name: Optional[str],
+    host_ip: str,
+    on_error: Callable[[Exception], None],
+) -> ComposeServiceMonitor:
+    """Start a daemon thread that reports compose service failures via ``on_error``."""
+    monitor = ComposeServiceMonitor(compose_path, project_name, host_ip, on_error)
+    monitor.start()
+    return monitor
