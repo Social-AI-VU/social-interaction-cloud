@@ -26,6 +26,10 @@ def get_ip_adress():
     :return: The IP address of the device.
     :rtype: str
     """
+    sic_ip = os.environ.get("SIC_IP") or os.environ.get("SIC_HOST_IP")
+    if sic_ip:
+        return sic_ip
+
     use_tailscale = os.environ.get("USE_TAILSCALE", "").lower() in ("1", "true", "yes")
 
     if use_tailscale:

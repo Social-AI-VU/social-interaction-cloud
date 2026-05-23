@@ -504,6 +504,19 @@ class StoreKeyspace:
 # SERVICE COMPONENT
 # ============================================================================
 
+def _service_redis_host(configured_host: str) -> str:
+    """
+    Resolve the Redis host for a service process.
+
+    Clients often pass ``127.0.0.1`` because Redis is published on localhost.
+    When the service runs inside Docker Compose, ``DB_IP`` points at the internal
+    ``redis`` service name instead.
+    """
+    if configured_host in ("127.0.0.1", "localhost", "::1"):
+        return os.getenv("DB_IP", configured_host)
+    return configured_host
+
+
 class RedisDatastoreComponent(SICService):
     """
     Redis Datastore Service Component
@@ -532,8 +545,9 @@ class RedisDatastoreComponent(SICService):
                 max_connections=self.params.max_connections,
             )
         else:
+            redis_host = _service_redis_host(self.params.host)
             pool = redis.ConnectionPool(
-                host=self.params.host,
+                host=redis_host,
                 port=self.params.port,
                 username=self.params.username,
                 password=self.params.password,
@@ -547,7 +561,7 @@ class RedisDatastoreComponent(SICService):
             
             # Binary connection pool for vector operations
             binary_pool = redis.ConnectionPool(
-                host=self.params.host,
+                host=redis_host,
                 port=self.params.port,
                 username=self.params.username,
                 password=self.params.password,

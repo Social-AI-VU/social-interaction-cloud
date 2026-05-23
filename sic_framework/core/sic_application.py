@@ -22,6 +22,7 @@ try:
 except ImportError:  # pragma: no cover
     import Queue as queue  # Python 2
 from sic_framework.core.sic_redis import SICRedisConnection
+from sic_framework.core import sic_compose
 
 class SICApplication(object):
     """
@@ -46,9 +47,19 @@ class SICApplication(object):
                 cls._instance = super(SICApplication, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self):
+    def __init__(
+        self,
+        services_compose=None,
+        services_compose_project=None,
+    ):
         """
         Initialize runtime state and register exit handler once.
+
+        :param services_compose: Optional path to a docker-compose.yml (relative to the
+            caller's source file). When set, the stack is started before Redis connects
+            and stopped during cleanup.
+        :param services_compose_project: Optional docker compose project name. Defaults
+            to a name derived from the compose file's directory.
         """
         # Only initialize once (singleton pattern)
         if getattr(self, "_initialized", False):
@@ -60,9 +71,32 @@ class SICApplication(object):
         self._active_connectors = weakref.WeakSet()
         self._active_devices = weakref.WeakSet()
         self._shutdown_handler_registered = False
-        
+        self._services_compose_path = None
+        self._services_compose_project = None
+        self._services_compose_started = False
+
+        if services_compose:
+            frame = inspect.currentframe()
+            try:
+                caller = frame.f_back
+                caller_file = caller.f_globals.get("__file__") if caller else None
+            finally:
+                del frame
+            compose_path = sic_compose.resolve_compose_path(
+                services_compose, caller_file=caller_file
+            )
+            self.client_ip = utils.get_ip_adress()
+            project_name = services_compose_project or sic_compose.default_project_name(
+                compose_path
+            )
+            sic_compose.start(compose_path, project_name, self.client_ip)
+            self._services_compose_path = compose_path
+            self._services_compose_project = project_name
+            self._services_compose_started = True
+        else:
+            self.client_ip = utils.get_ip_adress()
+
         self.shutdown_event = threading.Event()
-        self.client_ip = utils.get_ip_adress()
 
         # Background exception handling
         self._background_exception_queue = queue.Queue()
@@ -281,6 +315,18 @@ class SICApplication(object):
         if self._redis is not None:
             self._redis.close()
             self._redis = None
+
+        if self._services_compose_started:
+            if log_shutdown:
+                self.logger.info(
+                    "Stopping docker compose stack {}".format(
+                        self._services_compose_project
+                    )
+                )
+            sic_compose.stop(
+                self._services_compose_path, self._services_compose_project
+            )
+            self._services_compose_started = False
 
     def exit_handler(self, signum=None, frame=None):
         """Gracefully stop connectors and close Redis, then exit main thread.
