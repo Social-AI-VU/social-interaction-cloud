@@ -11,6 +11,7 @@ import os
 import shutil
 import socket
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Optional
@@ -90,6 +91,11 @@ def _compose_cmd(compose_path: Path, project_name: str) -> list[str]:
     ]
 
 
+def _notify(message: str) -> None:
+    """Print a user-facing status line (compose starts before SIC logging is up)."""
+    print(message, file=sys.stderr, flush=True)
+
+
 def _run_compose(cmd: list[str], env: dict[str, str], action: str) -> None:
     result = subprocess.run(cmd, env=env, capture_output=True, text=True)
     if result.returncode != 0:
@@ -120,6 +126,16 @@ def start(
 
     base = _compose_cmd(compose_path, project_name)
 
+    _notify(
+        "Starting background services from {} (project: {})...".format(
+            compose_path.name, project_name
+        )
+    )
+    _notify(
+        "Hold tight — the first run builds Docker images and can take a few minutes."
+    )
+
+    _notify("Building shared sic-base image...")
     # Build shared sic-base image before service images that FROM sic-base:local.
     _run_compose(
         base + ["--profile", "build", "build", "sic-base"],
@@ -127,9 +143,11 @@ def start(
         "build (sic-base)",
     )
 
+    _notify("Building and starting service containers...")
     _run_compose(base + ["up", "-d", "--build", "--wait"], env, "up")
 
     _wait_for_tcp(redis_host, redis_port, timeout_sec=startup_timeout_sec)
+    _notify("Background services are ready.")
 
 
 def stop(compose_path: Path, project_name: str) -> None:
