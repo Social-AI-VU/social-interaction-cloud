@@ -1,5 +1,6 @@
 FROM sic-base:local AS pypi
-RUN pip install --no-cache-dir "openai>=1.52.2" "python-dotenv"
+ARG SIC_VERSION
+RUN pip install --no-cache-dir "social-interaction-cloud[openai-gpt]==${SIC_VERSION}"
 CMD ["run-gpt"]
 
 FROM sic-base:local AS local

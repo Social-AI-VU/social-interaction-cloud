@@ -109,7 +109,11 @@ def resolve_sic_version() -> str:
             stripped = line.strip()
             if stripped.startswith("version="):
                 return stripped.split("=", 1)[1].strip().strip('"').strip("'").rstrip(",")
-    return "2.2.3"
+
+    raise RuntimeError(
+        "Could not determine social-interaction-cloud version. Install the package, "
+        "set SIC_VERSION, or run via SICApplication (which sets it automatically)."
+    )
 
 
 def _compose_env(host_ip: Optional[str] = None) -> dict[str, str]:

@@ -13,7 +13,7 @@ WORKDIR /app
 
 # PyPI installs: build context is unused; sic_compose sets target=pypi.
 FROM base AS pypi
-ARG SIC_VERSION=2.2.3
+ARG SIC_VERSION
 RUN pip install --no-cache-dir "social-interaction-cloud==${SIC_VERSION}"
 
 # Source checkout: build context is the repo root; sic_compose sets target=local.
