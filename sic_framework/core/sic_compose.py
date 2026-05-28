@@ -244,8 +244,34 @@ def _rebuild_requested() -> bool:
     )
 
 
-def _service_image_names(project_name: str) -> list[str]:
-    return ["{}-{}".format(project_name, svc) for svc in ("gpt", "datastore")]
+def _buildable_services(base: list[str], env: dict[str, str]) -> list[str]:
+    """Return compose service names that declare a ``build`` section (excluding sic-base)."""
+    result = subprocess.run(
+        base + ["config", "--format", "json"],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            "docker compose config failed (exit {code}):\n{out}\n{err}".format(
+                code=result.returncode,
+                out=(result.stdout or "").strip(),
+                err=(result.stderr or "").strip(),
+            )
+        )
+
+    config = json.loads(result.stdout)
+    services = config.get("services") or {}
+    return [
+        name
+        for name, service in services.items()
+        if name != "sic-base" and service.get("build") is not None
+    ]
+
+
+def _service_image_names(project_name: str, service_names: list[str]) -> list[str]:
+    return ["{}-{}".format(project_name, svc) for svc in service_names]
 
 
 def _ensure_images(
@@ -270,14 +296,18 @@ def _ensure_images(
         )
         built = True
 
-    missing_services = [
+    buildable = _buildable_services(base, env)
+    if not buildable:
+        return built
+
+    missing_images = [
         img
-        for img in _service_image_names(project_name)
+        for img in _service_image_names(project_name, buildable)
         if rebuild or not _image_exists(img)
     ]
-    if missing_services:
-        _notify("Building service images ({})...".format(", ".join(missing_services)))
-        _run_compose(base + ["build", "gpt", "datastore"], env, "build")
+    if missing_images:
+        _notify("Building service images ({})...".format(", ".join(missing_images)))
+        _run_compose(base + ["build"] + buildable, env, "build")
         built = True
 
     return built
@@ -330,7 +360,11 @@ def start(
     else:
         _notify("Using existing Docker images, starting containers...")
 
-    _run_compose(base + ["up", "-d", "--wait"], env, "up")
+    try:
+        _run_compose(base + ["up", "-d", "--wait"], env, "up")
+    except RuntimeError:
+        stop(compose_path, project_name)
+        raise
 
     _wait_for_tcp(redis_host, redis_port, timeout_sec=startup_timeout_sec)
     _notify("Background services are ready.")
