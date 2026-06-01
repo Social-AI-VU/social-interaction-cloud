@@ -57,6 +57,14 @@ class SICApplication(object):
         """
         # Only initialize once (singleton pattern)
         if getattr(self, "_initialized", False):
+            if services_compose and not self._services_compose_path:
+                frame = inspect.currentframe()
+                try:
+                    caller = frame.f_back
+                    caller_file = caller.f_globals.get("__file__") if caller else None
+                finally:
+                    del frame
+                self._start_services_compose(services_compose, caller_file)
             return
 
         # Runtime state
@@ -105,32 +113,23 @@ class SICApplication(object):
         compose_path = sic_compose.resolve_compose_path(
             services_compose, caller_file=caller_file
         )
-        sic_compose.start(compose_path, self.client_ip)
         self._services_compose_path = compose_path
         self._services_compose_project = sic_compose.compose_project_name(compose_path)
+        sic_compose.start(
+            compose_path, self.client_ip, project_name=self._services_compose_project
+        )
         self._services_compose_started = True
         self._services_compose_monitor = sic_compose.start_service_monitor(
             compose_path,
-            None,
+            self._services_compose_project,
             self.client_ip,
             self.report_background_exception,
         )
 
     def _stop_services_compose(self, log_shutdown=True):
-        """Stop the compose monitor and tear down containers."""
-        if not self._services_compose_started:
-            return
-
-        if self._services_compose_monitor is not None:
-            self._services_compose_monitor.stop()
-            self._services_compose_monitor = None
-        if log_shutdown:
-            self.logger.info(
-                "Stopping docker compose stack {}".format(
-                    self._services_compose_project
-                )
-            )
-        sic_compose.stop(self._services_compose_path)
+        """Tear down the docker-compose stack (after connectors and Redis are closed)."""
+        sic_compose.stop_running()
+        self._services_compose_path = None
         self._services_compose_started = False
 
     # ------------ Public API (instance methods) ------------
@@ -252,89 +251,96 @@ class SICApplication(object):
 
         self._cleanup_in_progress = True
 
-        if log_shutdown:
-            self.logger.info("signal interrupt received, exiting...")
+        if self._services_compose_monitor is not None:
+            self._services_compose_monitor.stop()
+            self._services_compose_monitor = None
 
-        if self.shutdown_event is not None:
+        try:
             if log_shutdown:
-                self.logger.info("Setting shutdown event")
-            self.shutdown_event.set()
+                self.logger.info("signal interrupt received, exiting...")
 
-        devices_to_stop = list(self._active_devices)
-        if log_shutdown:
-            self.logger.info("Stopping devices")
-        for device in devices_to_stop:
-            try:
+            if self.shutdown_event is not None:
                 if log_shutdown:
-                    self.logger.info("Stopping device {}".format(device.name))
-                for connector in device.connectors.values():
-                    connector_name = getattr(connector, "component_endpoint", "unknown")
-                    if log_shutdown:
-                        self.logger.info(
-                            "Stopping component {} from device {}".format(
-                                connector_name, device.name
-                            )
-                        )
-                    connector.stop_component()
-                device.stop_device()
-            except Exception as e:
-                self.logger.error("Error stopping device {}: {}".format(device.name, e))
+                    self.logger.info("Setting shutdown event")
+                self.shutdown_event.set()
 
-        connectors_to_stop = [
-            c for c in self._active_connectors if not getattr(c, "_stopped", False)
-        ]
-        if log_shutdown:
-            self.logger.info(
-                "Stopping remaining non-device components (found {count})".format(
-                    count=len(connectors_to_stop)
-                )
-            )
-        for i, connector in enumerate(connectors_to_stop):
-            connector_name = getattr(connector, "component_endpoint", "unknown")
+            devices_to_stop = list(self._active_devices)
+            if log_shutdown:
+                self.logger.info("Stopping devices")
+            for device in devices_to_stop:
+                try:
+                    if log_shutdown:
+                        self.logger.info("Stopping device {}".format(device.name))
+                    for connector in device.connectors.values():
+                        connector_name = getattr(
+                            connector, "component_endpoint", "unknown"
+                        )
+                        if log_shutdown:
+                            self.logger.info(
+                                "Stopping component {} from device {}".format(
+                                    connector_name, device.name
+                                )
+                            )
+                        connector.stop_component()
+                    device.stop_device()
+                except Exception as e:
+                    self.logger.error(
+                        "Error stopping device {}: {}".format(device.name, e)
+                    )
+
+            connectors_to_stop = [
+                c
+                for c in self._active_connectors
+                if not getattr(c, "_stopped", False)
+            ]
             if log_shutdown:
                 self.logger.info(
-                    "Stopping component {i}/{total}: {name}".format(
-                        i=i + 1, total=len(connectors_to_stop), name=connector_name
+                    "Stopping remaining non-device components (found {count})".format(
+                        count=len(connectors_to_stop)
                     )
                 )
-            try:
-                connector.stop_component()
-            except Exception as e:
-                self.logger.warning(
-                    "Warning: Error stopping component {name}: {e}".format(
-                        name=connector_name, e=e
+            for i, connector in enumerate(connectors_to_stop):
+                connector_name = getattr(connector, "component_endpoint", "unknown")
+                if log_shutdown:
+                    self.logger.info(
+                        "Stopping component {i}/{total}: {name}".format(
+                            i=i + 1, total=len(connectors_to_stop), name=connector_name
+                        )
                     )
-                )
-
-        # Best-effort cleanup in case any reservations/data streams survived
-        # component/device shutdown (e.g. abrupt exits or partial failures).
-        if self._redis is not None:
-            try:
-                self.logger.info(
-                    "Removing lingering reservations/data streams for client {}".format(
-                        self.client_ip
+                try:
+                    connector.stop_component()
+                except Exception as e:
+                    self.logger.warning(
+                        "Warning: Error stopping component {name}: {e}".format(
+                            name=connector_name, e=e
+                        )
                     )
-                )
-                self._redis.remove_client(self.client_ip)
-            except Exception as e:
-                self.logger.warning(
-                    "Warning: Could not fully cleanup client reservation state: {}".format(
-                        e
+
+            if self._redis is not None:
+                try:
+                    self.logger.info(
+                        "Removing lingering reservations/data streams for client {}".format(
+                            self.client_ip
+                        )
                     )
-                )
+                    self._redis.remove_client(self.client_ip)
+                except Exception as e:
+                    self.logger.warning(
+                        "Warning: Could not fully cleanup client reservation state: {}".format(
+                            e
+                        )
+                    )
 
-        self.logger.info("All components stopped, stopping logging thread")
-        
-        # Stop the SICClientLog thread before closing Redis
-        sic_logging.SIC_CLIENT_LOG.stop()
+            self.logger.info("All components stopped, stopping logging thread")
+            sic_logging.SIC_CLIENT_LOG.stop()
 
-        if log_shutdown:
-            self.logger.info("Shutting down Redis connection")
-        if self._redis is not None:
-            self._redis.close()
-            self._redis = None
-
-        self._stop_services_compose(log_shutdown=log_shutdown)
+            if log_shutdown:
+                self.logger.info("Shutting down Redis connection")
+            if self._redis is not None:
+                self._redis.close()
+                self._redis = None
+        finally:
+            self._stop_services_compose(log_shutdown=log_shutdown)
 
     def exit_handler(self, signum=None, frame=None):
         """Gracefully stop connectors and close Redis, then exit main thread.
