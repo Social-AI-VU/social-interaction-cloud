@@ -23,19 +23,19 @@ class MiniCameraConf(SICConfMessage):
 
     - It opens a TCP server socket on the Alphamini (or host running SIC).
     - An external Android camera app connects as a client and streams frames.
-    - Each frame is sent as: 4‑byte big‑endian length header + JPEG‑encoded image bytes.
+    - Each frame is sent as: 4-byte big-endian length header + JPEG-encoded image bytes.
 
     The Android app is responsible for:
     - Capturing frames from the Alphamini camera.
-    - JPEG‑encoding each frame to a byte array.
-    - Sending ``len(frame_bytes)`` as a 4‑byte big‑endian integer, followed by the bytes.
+    - JPEG-encoding each frame to a byte array.
+    - Sending ``len(frame_bytes)`` as a 4-byte big-endian integer, followed by the bytes.
 
     Additionally, this configuration can control basic camera streaming parameters
     on the Android side by passing intent extras when the app is started:
 
     - target_width / target_height: desired preview resolution (if supported).
     - scale: fractional scale of the default preview size.
-    - jpeg_quality: JPEG quality (0–100).
+    - jpeg_quality: JPEG quality (0-100).
     """
 
     def __init__(
@@ -57,13 +57,13 @@ class MiniCameraConf(SICConfMessage):
             Desired preview width in pixels. Default 0 lets the Android Camera API
             pick its preferred preview size (typically 640x480 on Alphamini).
         :param target_height:
-            Desired preview height in pixels. Default 0 uses the camera’s preferred
+            Desired preview height in pixels. Default 0 uses the camera's preferred
             preview height.
         :param scale:
             Fractional scaling factor applied on top of the desired size chosen by
             the Android side. Concretely, the Android ``CameraActivity``:
 
-            - starts from the camera’s preferred preview size,
+            - starts from the camera's preferred preview size,
             - optionally overrides that with ``target_width``/``target_height`` if
               both are > 0,
             - and then multiplies the resulting width/height by ``scale`` before
@@ -72,9 +72,9 @@ class MiniCameraConf(SICConfMessage):
             For example, if the preferred size is 640x480, ``scale=0.5`` yields an
             effective target of ~320x240. If you also set ``target_width`` and
             ``target_height``, they are used first and then scaled; they are *not*
-            ignored when a non‑default ``scale`` is provided.
+            ignored when a non-default ``scale`` is provided.
         :param jpeg_quality:
-            JPEG quality (0–100). Default 80, which is the quality used in the
+            JPEG quality (0-100). Default 80, which is the quality used in the
             original implementation before we started tuning for latency.
         :param send_fps:
             Optional maximum send rate from this sensor into SIC/Redis (in Hz).
@@ -95,12 +95,12 @@ class MiniCameraConf(SICConfMessage):
 
 class MiniCameraSensor(SICSensor):
     """
-    A SICSensor component that receives JPEG‑compressed image frames over TCP
+    A SICSensor component that receives JPEG-compressed image frames over TCP
     from an external Android camera application running on Alphamini.
 
     Protocol (one frame):
-        [4 bytes]  big‑endian unsigned int N  = length of JPEG payload
-        [N bytes]  JPEG‑encoded image bytes
+        [4 bytes]  big-endian unsigned int N  = length of JPEG payload
+        [N bytes]  JPEG-encoded image bytes
 
     For each complete frame, this sensor:
         - Decodes the JPEG bytes to a NumPy RGB array.
@@ -292,7 +292,7 @@ class MiniCameraSensor(SICSensor):
                 if not self.client_conn:
                     return None
 
-            # Read 8-byte capture timestamp (ms since epoch) and 4‑byte length header
+            # Read 8-byte capture timestamp (ms since epoch) and 4-byte length header
             ts_bytes = self._recv_exactly(8)
             if ts_bytes is None:
                 self.logger.warning("MiniCameraSensor: client disconnected before timestamp")
@@ -319,7 +319,7 @@ class MiniCameraSensor(SICSensor):
             (frame_len,) = struct.unpack("!I", header)
             if frame_len <= 0:
                 self.logger.warning(
-                    "MiniCameraSensor received non‑positive frame length: {length}".format(
+                    "MiniCameraSensor received non-positive frame length: {length}".format(
                         length=frame_len
                     )
                 )
@@ -348,7 +348,7 @@ class MiniCameraSensor(SICSensor):
                 self.logger.error("MiniCameraSensor JPEG decode error: {!r}".format(e))
                 return None
 
-            # Ensure we have a proper 3‑channel image
+            # Ensure we have a proper 3-channel image
             if not isinstance(image_np, np.ndarray) or image_np.ndim < 2:
                 self.logger.warning("MiniCameraSensor received invalid image array")
                 return None

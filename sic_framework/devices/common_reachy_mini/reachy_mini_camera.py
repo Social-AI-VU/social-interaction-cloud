@@ -22,7 +22,7 @@ class ReachyMiniCameraSensor(SICSensor):
 
     Uses the singleton Reachy Mini SDK instance created by `ReachyMiniDevice`
     (stored on `ReachyMiniDevice._mini_instance`) to grab frames from
-    `mini.media.get_frame()`, then applies optional flipping and BGR→RGB
+    `mini.media.get_frame()`, then applies optional flipping and BGR->RGB
     conversion before emitting a `CompressedImageMessage`.
     """
 

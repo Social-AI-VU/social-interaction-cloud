@@ -27,7 +27,7 @@ All functionality is accessed via SIC service requests through RedisDatastoreCom
 
 === USAGE ===
 
-**Single command (Docker + datastore service)** — requires Docker installed:
+**Single command (Docker + datastore service)** - requires Docker installed:
 
     run-redis --data-dir /path/to/persist/redis-data
 
@@ -963,7 +963,7 @@ def _ingest_one_index(
     if not files:
         raise RuntimeError("No files matched under {} with glob {!r}".format(input_path, glob_pattern))
     
-    # Process each file: read → chunk → embed → store
+    # Process each file: read -> chunk -> embed -> store
     total_chunks = 0
     pipe = redis_conn.pipeline(transaction=False)
     for file_path in files:

@@ -30,7 +30,7 @@ DOCKER_ROOT_MISSING_MESSAGE = (
     "pre-built images in your compose file."
 )
 
-# Set by start(), cleared by stop_running() — used so shutdown always finds the stack.
+# Set by start(), cleared by stop_running() - used so shutdown always finds the stack.
 _running_stack: Optional[tuple[Path, str, str]] = None
 
 
@@ -377,7 +377,7 @@ def start(
     built = _ensure_images(base, env, resolved_project)
     if built:
         _notify(
-            "Hold tight — building Docker images can take a few minutes on first run."
+            "Hold tight - building Docker images can take a few minutes on first run."
         )
     else:
         _notify("Using existing Docker images, starting containers...")

@@ -22,7 +22,37 @@ try:
 except ImportError:  # pragma: no cover
     import Queue as queue  # Python 2
 from sic_framework.core.sic_redis import SICRedisConnection
-from sic_framework.core import sic_compose
+
+if sys.version_info[0] >= 3:
+    from sic_framework.core import sic_compose
+else:
+
+    class _ComposeStub(object):
+        """Docker compose helpers are Python 3+ only (not used on NAO/robot runtimes)."""
+
+        @staticmethod
+        def resolve_compose_path(path, caller_file=None):
+            raise RuntimeError(
+                "services_compose requires Python 3 (not available on this device)."
+            )
+
+        @staticmethod
+        def compose_project_name(compose_path, override=None):
+            return ""
+
+        @staticmethod
+        def start(*args, **kwargs):
+            pass
+
+        @staticmethod
+        def start_service_monitor(*args, **kwargs):
+            return None
+
+        @staticmethod
+        def stop_running():
+            pass
+
+    sic_compose = _ComposeStub()
 
 class SICApplication(object):
     """
@@ -110,6 +140,10 @@ class SICApplication(object):
 
     def _start_services_compose(self, services_compose, caller_file):
         """Resolve, start, and monitor the demo docker-compose stack."""
+        if sys.version_info[0] < 3:
+            raise RuntimeError(
+                "services_compose requires Python 3 (not available on this device)."
+            )
         compose_path = sic_compose.resolve_compose_path(
             services_compose, caller_file=caller_file
         )
