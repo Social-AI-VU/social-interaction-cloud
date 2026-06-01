@@ -92,13 +92,19 @@ SIC builds missing images automatically on first startup. Rebuild when:
 - You changed local SIC framework code and need the container to include it.
 - A container is still running an older image than expected.
 
-To force SIC to rebuild before starting:
+**Docker Desktop (recommended):** Open **Containers**, find the compose project
+(matching the top-level ``name:`` field, for example ``sic-my-demo``). Stop the
+stack, then delete the project or its containers so the next demo run builds and
+starts fresh images. You can also rebuild from the **Images** or **Builds** view
+if you use Docker Desktop's image build UI.
+
+**From your demo script:** force a rebuild on the next startup:
 
 .. code-block:: bash
 
    SIC_COMPOSE_REBUILD=1 python demo_RAG_chat.py
 
-You can also rebuild manually from the demo directory:
+**Command line (advanced):** from the demo directory:
 
 .. code-block:: bash
 
@@ -109,15 +115,19 @@ Then start the demo normally.
 Looking at container logs
 -------------------------
 
-Use the compose project name from the top-level ``name:`` field:
+**Docker Desktop (recommended):** Open **Containers** and select the compose
+project (same name as the top-level ``name:`` field, for example
+``sic-my-demo``). Click a service to stream its logs, or open the project view
+to see all services in the stack together.
+
+**Command line (advanced):** use the compose project name from that ``name:``
+field:
 
 .. code-block:: bash
 
    docker compose -f docker-compose.yml -p sic-my-demo logs
    docker compose -f docker-compose.yml -p sic-my-demo logs -f
    docker compose -f docker-compose.yml -p sic-my-demo logs -f gpt
-
-Docker Desktop shows the same containers grouped under the compose project name.
 
 How containers know the SIC version
 -----------------------------------
@@ -173,43 +183,40 @@ Use manual mode when:
 Troubleshooting
 ---------------
 
+Most issues are easiest to fix in **Docker Desktop** before using the command
+line. Open **Containers**, find the compose project (its name matches the
+top-level ``name:`` in your ``docker-compose.yml``), then inspect logs, stop
+individual services, or delete the whole stack.
+
 ``SIC_HOST_IP`` is missing
-   You are probably running ``docker compose`` manually. Set it before the
-   command:
+   Prefer starting the stack by running the demo (``SICApplication`` sets
+   ``SIC_HOST_IP`` for you). If you start compose yourself, set the variable
+   before ``docker compose up``:
 
    .. code-block:: bash
 
       SIC_HOST_IP=<your-host-ip> docker compose -f docker-compose.yml -p sic-my-demo up
 
 Port ``6379`` is already allocated
-   Another Redis container or local Redis process is running. Check:
+   Another Redis container or a local Redis process is using the port.
+
+   **Docker Desktop:** In **Containers**, look for anything publishing port
+   ``6379`` (often an old demo stack). Stop or delete those containers. To remove
+   an entire old compose project, select it and choose **Delete** (or stop all
+   services in that project).
+
+   **Command line (advanced):**
 
    .. code-block:: bash
 
       docker ps --filter publish=6379
-
-   Stop the old compose project:
-
-   .. code-block:: bash
-
       docker compose -f docker-compose.yml -p sic-my-demo down --remove-orphans
 
-Containers remain after Ctrl+C
-   Make sure the demo is using the SIC checkout you edited. Prefer running with
-   the project virtual environment rather than a system Python:
-
-   .. code-block:: bash
-
-      /path/to/.venv/bin/python demo_RAG_chat.py
-
-   If you use ``sudo``, preserve the environment and explicit Python path:
-
-   .. code-block:: bash
-
-      sudo -E /path/to/.venv/bin/python demo_RAG_chat.py
-
 Image changes are not picked up
-   Rebuild with ``SIC_COMPOSE_REBUILD=1`` or run ``docker compose build``.
+   **Docker Desktop:** Rebuild or remove the affected service containers (see
+   `Rebuilding containers`_). **From the demo:**
+   ``SIC_COMPOSE_REBUILD=1 python <your_demo>.py``. **Command line:**
+   ``docker compose build``.
 
 Service cannot connect to Redis
    Inside Docker, services should use ``DB_IP: redis``. Host-side SIC code should
