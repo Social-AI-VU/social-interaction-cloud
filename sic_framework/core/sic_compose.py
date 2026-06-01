@@ -1,7 +1,49 @@
 """
 Docker Compose lifecycle helpers for SICApplication.
 
-Starts and stops per-demo service stacks declared in a docker-compose.yml file.
+Starts and stops per-demo service stacks declared in a demo's ``docker-compose.yml``.
+Used by ``SICApplication._start_services_compose`` / ``_stop_services_compose``.
+
+Call graph (entry points from ``sic_application`` in **bold**):
+
+::
+
+    **resolve_compose_path**
+        (optional: inspect stack for caller ``__file__``)
+
+    **start**
+        |-- compose_project_name --> default_project_name (fallback)
+        |-- _compose_env
+        |       |-- resolve_docker_root --> _sic_framework_dir
+        |       |-- resolve_build_context --> resolve_docker_root
+        |       |-- resolve_build_target --> resolve_docker_root
+        |       +-- resolve_sic_version --> _sic_framework_dir
+        |-- _compose_cmd --> _docker_compose_base_cmd
+        |                 --> _compose_file_paths
+        |-- _ensure_images
+        |       |-- _rebuild_requested
+        |       |-- _image_exists
+        |       |-- _buildable_services --> _run_compose (config)
+        |       |-- _service_image_names
+        |       +-- _run_compose (build sic-base / services)
+        |-- _run_compose (up -d --wait)
+        |-- on failure: **stop**
+        +-- _wait_for_tcp (Redis on host)
+
+    **stop**
+        |-- _compose_cmd
+        +-- _compose_env
+
+    **start_service_monitor** --> ComposeServiceMonitor.start --> _run (daemon thread)
+        +-- check_service_errors (poll loop)
+                |-- _compose_cmd, _compose_env
+                |-- _parse_compose_ps_json
+                +-- _fetch_service_logs --> _monitor_log_tail
+
+Environment variables
+---------------------
+SIC_DOCKER_ROOT, SIC_BUILD_CONTEXT, SIC_BUILD_TARGET, SIC_VERSION, SIC_HOST_IP,
+SIC_COMPOSE_REBUILD, SIC_COMPOSE_MONITOR_INTERVAL, SIC_COMPOSE_MONITOR_LOG_TAIL
 """
 
 from __future__ import annotations
@@ -32,6 +74,7 @@ DOCKER_ROOT_MISSING_MESSAGE = (
 
 
 def _sic_framework_dir() -> Path:
+    """Return the installed ``sic_framework`` package directory (contains ``docker/``)."""
     import sic_framework
 
     return Path(sic_framework.__file__).resolve().parent
@@ -52,6 +95,7 @@ def resolve_docker_root() -> Path:
 
     dockerfile = root / "docker" / "sic-base" / "Dockerfile"
     if not dockerfile.is_file():
+        # Older layouts kept docker/ at the repo root instead of sic_framework/docker/.
         legacy = root.parent / "docker" / "sic-base" / "Dockerfile"
         if legacy.is_file():
             return root.parent
@@ -92,6 +136,12 @@ def resolve_build_target(docker_root: Optional[Path] = None) -> str:
 
 
 def resolve_sic_version() -> str:
+    """
+    Return the installed ``social-interaction-cloud`` package version string.
+
+    Uses ``SIC_VERSION`` when set, otherwise ``importlib.metadata``, then parses
+    ``setup.py`` for editable/source checkouts.
+    """
     override = os.environ.get("SIC_VERSION")
     if override:
         return override
@@ -117,6 +167,16 @@ def resolve_sic_version() -> str:
 
 
 def _compose_env(host_ip: Optional[str] = None) -> dict[str, str]:
+    """
+    Return a copy of the current environment with SIC Docker-related variables set.
+
+    Adds:
+      - SIC_DOCKER_ROOT: Path to the Docker root directory of the repo.
+      - SIC_BUILD_CONTEXT: Path to the build context (usually repo root).
+      - SIC_BUILD_TARGET: "local" for source checkouts, "pypi" for PyPI installs.
+      - SIC_VERSION: The SIC package version.
+      - SIC_HOST_IP: The given host IP if provided.
+    """
     env = os.environ.copy()
     docker_root = resolve_docker_root()
     env["SIC_DOCKER_ROOT"] = str(docker_root)
@@ -183,12 +243,18 @@ def default_project_name(compose_path: Path) -> str:
 
 
 def _docker_compose_base_cmd() -> list[str]:
+    """Return ``['docker', 'compose']`` or raise if Docker is not on PATH."""
     if shutil.which("docker") is None:
         raise RuntimeError(DOCKER_NOT_INSTALLED_MESSAGE)
     return ["docker", "compose"]
 
 
 def _wait_for_tcp(host: str, port: int, timeout_sec: float = 60.0) -> None:
+    """
+    Block until ``host:port`` accepts a TCP connection.
+
+    Used after ``compose up`` so the demo can connect to Redis published on the host.
+    """
     deadline = time.time() + timeout_sec
     last_err = None
     while time.time() < deadline:
@@ -206,12 +272,18 @@ def _wait_for_tcp(host: str, port: int, timeout_sec: float = 60.0) -> None:
 
 
 def _compose_file_paths(compose_path: Path) -> list[str]:
+    """Return compose file path(s) for repeated ``-f`` flags (single file today)."""
     return [str(compose_path)]
 
 
 def _compose_cmd(
     compose_path: Path, project_name: Optional[str] = None
 ) -> list[str]:
+    """
+    Build a ``docker compose`` argv prefix: base command, ``-f`` file(s), optional ``-p``.
+
+    Does not include subcommands (``up``, ``down``, ``ps``, etc.).
+    """
     cmd = _docker_compose_base_cmd()
     for compose_file in _compose_file_paths(compose_path):
         cmd.extend(["-f", compose_file])
@@ -226,6 +298,7 @@ def _notify(message: str) -> None:
 
 
 def _image_exists(image_ref: str) -> bool:
+    """Return True if ``docker image inspect`` succeeds for the given reference."""
     ref = image_ref if ":" in image_ref else image_ref + ":latest"
     return (
         subprocess.run(
@@ -237,6 +310,7 @@ def _image_exists(image_ref: str) -> bool:
 
 
 def _rebuild_requested() -> bool:
+    """Return True when ``SIC_COMPOSE_REBUILD`` is set to a truthy value."""
     return os.environ.get("SIC_COMPOSE_REBUILD", "").lower() in (
         "1",
         "true",
@@ -271,6 +345,11 @@ def _buildable_services(base: list[str], env: dict[str, str]) -> list[str]:
 
 
 def _service_image_names(project_name: str, service_names: list[str]) -> list[str]:
+    """
+    Map compose service names to local image tags Docker Compose assigns.
+
+    Compose names images ``{project}-{service}`` (no registry prefix).
+    """
     return ["{}-{}".format(project_name, svc) for svc in service_names]
 
 
@@ -287,6 +366,7 @@ def _ensure_images(
     built = False
     rebuild = _rebuild_requested()
 
+    # sic-base is built via the compose "build" profile, not as a runtime service.
     if rebuild or not _image_exists("sic-base:local"):
         _notify("Building shared sic-base image...")
         _run_compose(
@@ -314,6 +394,7 @@ def _ensure_images(
 
 
 def _run_compose(cmd: list[str], env: dict[str, str], action: str) -> None:
+    """Run a full ``docker compose`` command; raise ``RuntimeError`` on non-zero exit."""
     result = subprocess.run(cmd, env=env, capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(
@@ -361,17 +442,24 @@ def start(
         _notify("Using existing Docker images, starting containers...")
 
     try:
+        # --wait blocks until healthchecks pass (when defined in the compose file).
         _run_compose(base + ["up", "-d", "--wait"], env, "up")
     except RuntimeError:
+        # Avoid leaving a half-started stack if up fails mid-way.
         stop(compose_path, project_name)
         raise
 
+    # Redis is published on the host; confirm the port is open before returning.
     _wait_for_tcp(redis_host, redis_port, timeout_sec=startup_timeout_sec)
     _notify("Background services are ready.")
 
 
 def stop(compose_path: Path, project_name: Optional[str] = None) -> None:
-    """Stop and remove containers for the compose project."""
+    """
+    Stop and remove containers for the compose project.
+
+    No-op when Docker is not installed (cleanup during partial setup).
+    """
     if shutil.which("docker") is None:
         return
 
@@ -383,6 +471,7 @@ def stop(compose_path: Path, project_name: Optional[str] = None) -> None:
 
 
 def _monitor_poll_interval_sec() -> float:
+    """Poll interval for ``ComposeServiceMonitor`` (``SIC_COMPOSE_MONITOR_INTERVAL``)."""
     raw = os.environ.get("SIC_COMPOSE_MONITOR_INTERVAL", "3.0")
     try:
         return max(0.5, float(raw))
@@ -391,6 +480,7 @@ def _monitor_poll_interval_sec() -> float:
 
 
 def _monitor_log_tail() -> int:
+    """Number of log lines to attach to monitor error messages."""
     raw = os.environ.get("SIC_COMPOSE_MONITOR_LOG_TAIL", "25")
     try:
         return max(5, int(raw))
@@ -399,6 +489,7 @@ def _monitor_log_tail() -> int:
 
 
 def _parse_compose_ps_json(stdout: str) -> list[dict]:
+    """Parse newline-delimited JSON objects from ``docker compose ps --format json``."""
     entries = []
     for line in stdout.splitlines():
         stripped = line.strip()
@@ -416,6 +507,7 @@ def _fetch_service_logs(
     tail: int,
     host_ip: Optional[str] = None,
 ) -> str:
+    """Fetch recent logs for the given service names (used in error reports)."""
     if not services:
         return ""
     cmd = _compose_cmd(compose_path, project_name) + [
@@ -455,6 +547,7 @@ def check_service_errors(
 
     for entry in _parse_compose_ps_json(result.stdout):
         service = entry.get("Service") or entry.get("Name") or "unknown"
+        # sic-base is build-only; it never appears as a long-running container.
         if service == "sic-base":
             continue
 
@@ -502,7 +595,11 @@ def check_service_errors(
 
 
 class ComposeServiceMonitor(object):
-    """Background poll of ``docker compose ps`` for exited/unhealthy services."""
+    """
+    Background poll of ``docker compose ps`` for exited/unhealthy services.
+
+    On failure, invokes ``on_error`` once and exits the monitor thread.
+    """
 
     def __init__(
         self,
@@ -512,6 +609,13 @@ class ComposeServiceMonitor(object):
         on_error: Callable[[Exception], None],
         poll_interval_sec: Optional[float] = None,
     ):
+        """
+        :param compose_path: Resolved path to the demo compose file.
+        :param project_name: Optional ``-p`` override (usually ``None``; use compose ``name:``).
+        :param host_ip: Host IP passed through to compose env for log commands.
+        :param on_error: Callback (e.g. ``SICApplication.report_background_exception``).
+        :param poll_interval_sec: Override default poll interval from env.
+        """
         self._compose_path = compose_path
         self._project_name = project_name
         self._host_ip = host_ip
@@ -525,6 +629,7 @@ class ComposeServiceMonitor(object):
         self._thread = None
 
     def start(self) -> None:
+        """Start the daemon polling thread."""
         self._stop_event.clear()
         self._thread = threading.Thread(
             target=self._run,
@@ -534,11 +639,13 @@ class ComposeServiceMonitor(object):
         self._thread.start()
 
     def stop(self, timeout_sec: float = 5.0) -> None:
+        """Signal the monitor to exit and wait for the thread to finish."""
         self._stop_event.set()
         if self._thread is not None:
             self._thread.join(timeout=timeout_sec)
 
     def _run(self) -> None:
+        """Poll ``check_service_errors`` until shutdown or a failure is reported."""
         while not self._stop_event.is_set():
             try:
                 error = check_service_errors(
@@ -560,7 +667,11 @@ def start_service_monitor(
     host_ip: str,
     on_error: Callable[[Exception], None],
 ) -> ComposeServiceMonitor:
-    """Start a daemon thread that reports compose service failures via ``on_error``."""
+    """
+    Create a ``ComposeServiceMonitor`` and start its daemon thread.
+
+    See module docstring for how this fits into the overall call graph.
+    """
     monitor = ComposeServiceMonitor(compose_path, project_name, host_ip, on_error)
     monitor.start()
     return monitor

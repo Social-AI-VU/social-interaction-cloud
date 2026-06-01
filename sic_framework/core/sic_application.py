@@ -47,19 +47,13 @@ class SICApplication(object):
                 cls._instance = super(SICApplication, cls).__new__(cls)
         return cls._instance
 
-    def __init__(
-        self,
-        services_compose=None,
-        services_compose_project=None,
-    ):
+    def __init__(self, services_compose=None):
         """
         Initialize runtime state and register exit handler once.
 
         :param services_compose: Optional path to a docker-compose.yml (relative to the
             caller's source file). When set, the stack is started before Redis connects
             and stopped during cleanup.
-        :param services_compose_project: Optional override for the Docker Compose
-            project name. By default the ``name:`` field in the compose file is used.
         """
         # Only initialize once (singleton pattern)
         if getattr(self, "_initialized", False):
@@ -73,9 +67,10 @@ class SICApplication(object):
         self._shutdown_handler_registered = False
         self._services_compose_path = None
         self._services_compose_project = None
-        self._services_compose_project_override = None
         self._services_compose_started = False
         self._services_compose_monitor = None
+
+        self.client_ip = utils.get_ip_adress()
 
         if services_compose:
             frame = inspect.currentframe()
@@ -84,29 +79,7 @@ class SICApplication(object):
                 caller_file = caller.f_globals.get("__file__") if caller else None
             finally:
                 del frame
-            compose_path = sic_compose.resolve_compose_path(
-                services_compose, caller_file=caller_file
-            )
-            self.client_ip = utils.get_ip_adress()
-            sic_compose.start(
-                compose_path,
-                self.client_ip,
-                project_name=services_compose_project,
-            )
-            self._services_compose_path = compose_path
-            self._services_compose_project = sic_compose.compose_project_name(
-                compose_path, services_compose_project
-            )
-            self._services_compose_project_override = services_compose_project
-            self._services_compose_started = True
-            self._services_compose_monitor = sic_compose.start_service_monitor(
-                compose_path,
-                services_compose_project,
-                self.client_ip,
-                self.report_background_exception,
-            )
-        else:
-            self.client_ip = utils.get_ip_adress()
+            self._start_services_compose(services_compose, caller_file)
 
         self.shutdown_event = threading.Event()
 
@@ -126,6 +99,39 @@ class SICApplication(object):
         self.register_exit_handler()
 
         self._initialized = True
+
+    def _start_services_compose(self, services_compose, caller_file):
+        """Resolve, start, and monitor the demo docker-compose stack."""
+        compose_path = sic_compose.resolve_compose_path(
+            services_compose, caller_file=caller_file
+        )
+        sic_compose.start(compose_path, self.client_ip)
+        self._services_compose_path = compose_path
+        self._services_compose_project = sic_compose.compose_project_name(compose_path)
+        self._services_compose_started = True
+        self._services_compose_monitor = sic_compose.start_service_monitor(
+            compose_path,
+            None,
+            self.client_ip,
+            self.report_background_exception,
+        )
+
+    def _stop_services_compose(self, log_shutdown=True):
+        """Stop the compose monitor and tear down containers."""
+        if not self._services_compose_started:
+            return
+
+        if self._services_compose_monitor is not None:
+            self._services_compose_monitor.stop()
+            self._services_compose_monitor = None
+        if log_shutdown:
+            self.logger.info(
+                "Stopping docker compose stack {}".format(
+                    self._services_compose_project
+                )
+            )
+        sic_compose.stop(self._services_compose_path)
+        self._services_compose_started = False
 
     # ------------ Public API (instance methods) ------------
     def register_connector(self, connector):
@@ -328,21 +334,7 @@ class SICApplication(object):
             self._redis.close()
             self._redis = None
 
-        if self._services_compose_started:
-            if self._services_compose_monitor is not None:
-                self._services_compose_monitor.stop()
-                self._services_compose_monitor = None
-            if log_shutdown:
-                self.logger.info(
-                    "Stopping docker compose stack {}".format(
-                        self._services_compose_project
-                    )
-                )
-            sic_compose.stop(
-                self._services_compose_path,
-                project_name=self._services_compose_project_override,
-            )
-            self._services_compose_started = False
+        self._stop_services_compose(log_shutdown=log_shutdown)
 
     def exit_handler(self, signum=None, frame=None):
         """Gracefully stop connectors and close Redis, then exit main thread.
