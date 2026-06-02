@@ -16,7 +16,7 @@ McpClientTransport = Literal["stdio", "sse"]
 DEFAULT_SSE_MCP_URL = "http://127.0.0.1:8000/sse"
 PRIMARY_ROBOT_IP_ENV = "ROBOT_IP"
 # Voice clients pass Google STT settings to the stdio MCP subprocess via this env var.
-NAO_STT_CONF_ENV = "SIC_NAO_STT_CONF"
+ROBOT_STT_CONF_ENV = "SIC_ROBOT_STT_CONF"
 
 
 @dataclass(frozen=True)
@@ -102,7 +102,7 @@ def mcp_stdio_connection(
     env = {**os.environ, **dict(config.stdio_extra_env)}
     if stt_conf is not None:
         # Server reads this JSON in main() so mic+STT live in one process (not the LangChain client).
-        env[NAO_STT_CONF_ENV] = json.dumps(stt_conf)
+        env[ROBOT_STT_CONF_ENV] = json.dumps(stt_conf)
     return {
         config.server_name: {
             # LangChain spawns the server module as a child process with these args/env.

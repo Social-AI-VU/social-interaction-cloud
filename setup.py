@@ -162,6 +162,7 @@ setup(
             "run-redis=sic_framework.services.datastore.redis_datastore:main",
             "run-sortformer=sic_framework.services.streaming_sortformer.stm_sortformer:main",
             "run-nao-mcp=sic_framework.mcp.nao.nao_mcp_server:main",
+            "run-pepper-mcp=sic_framework.mcp.pepper.pepper_mcp_server:main",
         ],
     },
 )
