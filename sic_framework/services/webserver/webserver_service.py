@@ -296,7 +296,7 @@ class WebserverComponent(SICService):
             allowed = getattr(self.params, "cors_allowed_origins", None)
             self.logger.error(
                 "Socket.IO CORS rejected origin '%s' (allowed=%r). "
-                "This usually shows up in the browser as 'Connecting…' forever. "
+                "This usually shows up in the browser as 'Connecting...' forever. "
                 "Fix by setting WebserverConf(cors_allowed_origins=[...]) to include the page origin (scheme+host+port).",
                 origin,
                 allowed,

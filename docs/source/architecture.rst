@@ -34,6 +34,13 @@ Redis registries (multi-user)
 
    architecture/redis_registries
 
+Docker
+------
+
+.. toctree::
+
+   architecture/docker
+
 Model Context Protocol (MCP)
 ----------------------------
 

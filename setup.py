@@ -134,6 +134,9 @@ setup(
     long_description_content_type="text/markdown",
     packages=find_packages(),
     package_data={
+        "sic_framework": [
+            "docker/**",
+        ],
         "sic_framework.services.face_detection": [
             "haarcascade_frontalface_default.xml",
         ],

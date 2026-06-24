@@ -43,8 +43,8 @@ class ElevenLabsTTSConf(SICConfMessage):
     :param voice_id: voice id
     :param model_id: model id (e.g., "eleven_flash_v2_5")
     :param sample_rate: used in output_format=pcm_<sample_rate>
-    :param speaking_rate: ElevenLabs "speed" (roughly 0.7–1.2)
-    :param stability: (0.0–1.0)
+    :param speaking_rate: ElevenLabs "speed" (roughly 0.7-1.2)
+    :param stability: (0.0-1.0)
     :param default_mode: "ws" or "batch"
     """
     def __init__(
