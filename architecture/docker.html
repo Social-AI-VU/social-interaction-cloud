@@ -1,0 +1,334 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Docker in SIC &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=b8b12719"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Model Context Protocol (MCP) in SIC" href="mcp.html" />
+    <link rel="prev" title="Redis registries (multi-user and shared Redis)" href="redis_registries.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../architecture.html">How SIC Works</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../architecture.html#sic-101-building-blocks">SIC 101: Building Blocks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../architecture.html#messaging-system">Messaging System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../architecture.html#processes-and-threads">Processes and Threads</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../architecture.html#redis-registries-multi-user">Redis registries (multi-user)</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../architecture.html#docker">Docker</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Docker in SIC</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#how-compose-files-work">How compose files work</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-a-compose-file">Creating a compose file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#rebuilding-containers">Rebuilding containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#looking-at-container-logs">Looking at container logs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-containers-know-the-sic-version">How containers know the SIC version</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#manual-runs-without-compose">Manual runs without compose</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../architecture.html#model-context-protocol-mcp">Model Context Protocol (MCP)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../architecture.html">How SIC Works</a></li>
+      <li class="breadcrumb-item active">Docker in SIC</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/architecture/docker.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="docker-in-sic">
+<h1>Docker in SIC<a class="headerlink" href="#docker-in-sic" title="Link to this heading"></a></h1>
+<p>SIC can run services in Docker containers so demos do not require you to start
+Redis and every component service manually. This is optional: if an application
+does not pass a compose file to <code class="docutils literal notranslate"><span class="pre">SICApplication</span></code>, SIC assumes the required
+services are already running.</p>
+<section id="how-compose-files-work">
+<h2>How compose files work<a class="headerlink" href="#how-compose-files-work" title="Link to this heading"></a></h2>
+<p>A demo can ask SIC to start a Docker Compose stack by passing a compose file:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="n">SICApplication</span><span class="p">(</span><span class="n">services_compose</span><span class="o">=</span><span class="s2">&quot;docker-compose.yml&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For class-based demos:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">super</span><span class="p">(</span><span class="n">MyDemo</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">services_compose</span><span class="o">=</span><span class="s2">&quot;docker-compose.yml&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The path is resolved relative to the demo file that creates the
+<code class="docutils literal notranslate"><span class="pre">SICApplication</span></code>. During startup, SIC:</p>
+<ol class="arabic simple">
+<li><p>Resolves the compose file path.</p></li>
+<li><p>Determines the compose project name from the top-level <code class="docutils literal notranslate"><span class="pre">name:</span></code> field.</p></li>
+<li><p>Sets SIC-specific compose environment variables.</p></li>
+<li><p>Builds missing service images when needed.</p></li>
+<li><p>Runs <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">compose</span> <span class="pre">up</span> <span class="pre">-d</span> <span class="pre">--wait</span></code>.</p></li>
+<li><p>Waits until Redis is reachable on the host.</p></li>
+</ol>
+<p>On shutdown, SIC runs <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">compose</span> <span class="pre">down</span> <span class="pre">--remove-orphans</span></code> for the same
+compose project.</p>
+</section>
+<section id="creating-a-compose-file">
+<h2>Creating a compose file<a class="headerlink" href="#creating-a-compose-file" title="Link to this heading"></a></h2>
+<p>Start with a top-level <code class="docutils literal notranslate"><span class="pre">name:</span></code> so Docker Desktop and CLI commands show a stable
+project name:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sic-my-demo</span>
+
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">redis</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis/redis-stack:latest</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;6379:6379&quot;</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">REDIS_ARGS</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;--requirepass</span><span class="nv"> </span><span class="s">changemeplease</span><span class="nv"> </span><span class="s">--appendonly</span><span class="nv"> </span><span class="s">yes&quot;</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;redis-cli&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-a&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;changemeplease&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;ping&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2s</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+
+<span class="w">  </span><span class="nt">gpt</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SIC_BUILD_CONTEXT}</span>
+<span class="w">      </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SIC_DOCKER_ROOT}/docker/services/gpt/Dockerfile</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SIC_BUILD_TARGET}</span>
+<span class="w">      </span><span class="nt">args</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">SIC_VERSION</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SIC_VERSION}</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">SIC_IP</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${SIC_HOST_IP}</span>
+<span class="w">      </span><span class="nt">DB_IP</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis</span>
+<span class="w">      </span><span class="nt">DB_PORT</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;6379&quot;</span>
+<span class="w">      </span><span class="nt">DB_PASS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">changemeplease</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">redis</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_healthy</span>
+</pre></div>
+</div>
+<p>Use <code class="docutils literal notranslate"><span class="pre">DB_IP:</span> <span class="pre">redis</span></code> inside containers because Redis is another compose service.
+Use <code class="docutils literal notranslate"><span class="pre">SIC_IP:</span> <span class="pre">${SIC_HOST_IP}</span></code> so services know how to identify the client host
+running the SIC application.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">build.dockerfile</span></code> entry is optional. If you provide it, Compose builds the
+service image from SIC’s Dockerfiles. If you use an <code class="docutils literal notranslate"><span class="pre">image:</span></code> instead, Compose
+pulls or reuses that image. If neither a compose service nor a Dockerfile/image
+is provided, then that SIC service must already be running manually.</p>
+</section>
+<section id="rebuilding-containers">
+<h2>Rebuilding containers<a class="headerlink" href="#rebuilding-containers" title="Link to this heading"></a></h2>
+<p>SIC builds missing images automatically on first startup. Rebuild when:</p>
+<ul class="simple">
+<li><p>You changed a SIC Dockerfile.</p></li>
+<li><p>You changed service dependencies or package extras.</p></li>
+<li><p>You changed local SIC framework code and need the container to include it.</p></li>
+<li><p>A container is still running an older image than expected.</p></li>
+</ul>
+<p><strong>Docker Desktop (recommended):</strong> Open <strong>Containers</strong>, find the compose project
+(matching the top-level <code class="docutils literal notranslate"><span class="pre">name:</span></code> field, for example <code class="docutils literal notranslate"><span class="pre">sic-my-demo</span></code>). Stop the
+stack, then delete the project or its containers so the next demo run builds and
+starts fresh images. You can also rebuild from the <strong>Images</strong> or <strong>Builds</strong> view
+if you use Docker Desktop’s image build UI.</p>
+<p><strong>From your demo script:</strong> force a rebuild on the next startup:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">SIC_COMPOSE_REBUILD</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>python<span class="w"> </span>demo_RAG_chat.py
+</pre></div>
+</div>
+<p><strong>Command line (advanced):</strong> from the demo directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">SIC_HOST_IP</span><span class="o">=</span>&lt;your-host-ip&gt;<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-p<span class="w"> </span>sic-my-demo<span class="w"> </span>build
+</pre></div>
+</div>
+<p>Then start the demo normally.</p>
+</section>
+<section id="looking-at-container-logs">
+<h2>Looking at container logs<a class="headerlink" href="#looking-at-container-logs" title="Link to this heading"></a></h2>
+<p><strong>Docker Desktop (recommended):</strong> Open <strong>Containers</strong> and select the compose
+project (same name as the top-level <code class="docutils literal notranslate"><span class="pre">name:</span></code> field, for example
+<code class="docutils literal notranslate"><span class="pre">sic-my-demo</span></code>). Click a service to stream its logs, or open the project view
+to see all services in the stack together.</p>
+<p><strong>Command line (advanced):</strong> use the compose project name from that <code class="docutils literal notranslate"><span class="pre">name:</span></code>
+field:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-p<span class="w"> </span>sic-my-demo<span class="w"> </span>logs
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-p<span class="w"> </span>sic-my-demo<span class="w"> </span>logs<span class="w"> </span>-f
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-p<span class="w"> </span>sic-my-demo<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>gpt
+</pre></div>
+</div>
+</section>
+<section id="how-containers-know-the-sic-version">
+<h2>How containers know the SIC version<a class="headerlink" href="#how-containers-know-the-sic-version" title="Link to this heading"></a></h2>
+<p>When SIC starts a compose stack, it sets these environment variables for Compose:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">SIC_DOCKER_ROOT</span></code></dt><dd><p>Location of SIC’s packaged Dockerfiles.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">SIC_BUILD_CONTEXT</span></code></dt><dd><p>The Docker build context. In a source checkout this is the repository root;
+in an installed package it is the package directory.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">SIC_BUILD_TARGET</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">local</span></code> for source checkouts, <code class="docutils literal notranslate"><span class="pre">pypi</span></code> for installed packages.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">SIC_VERSION</span></code></dt><dd><p>The <code class="docutils literal notranslate"><span class="pre">social-interaction-cloud</span></code> package version. You can override it by
+setting <code class="docutils literal notranslate"><span class="pre">SIC_VERSION</span></code> yourself.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">SIC_HOST_IP</span></code></dt><dd><p>The host IP of the running SIC application. Services use this as <code class="docutils literal notranslate"><span class="pre">SIC_IP</span></code>.</p>
+</dd>
+</dl>
+<p>The service Dockerfiles use <code class="docutils literal notranslate"><span class="pre">SIC_VERSION</span></code> as a build argument. This lets
+containers install the same released SIC package version as the host, unless you
+are running from a local source checkout with the <code class="docutils literal notranslate"><span class="pre">local</span></code> build target.</p>
+</section>
+<section id="manual-runs-without-compose">
+<h2>Manual runs without compose<a class="headerlink" href="#manual-runs-without-compose" title="Link to this heading"></a></h2>
+<p>Compose is only a convenience. If you omit <code class="docutils literal notranslate"><span class="pre">services_compose</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="n">SICApplication</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>SIC does not start or stop any containers. In that mode, you must start Redis
+and the service processes yourself, for example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>run-redis
+run-gpt
+run-elevenlabs-tts
+</pre></div>
+</div>
+<p>Use manual mode when:</p>
+<ul class="simple">
+<li><p>You are debugging a service directly in Python.</p></li>
+<li><p>A service runs on another machine.</p></li>
+<li><p>You already have Redis or a component manager running.</p></li>
+<li><p>You do not want Docker Desktop involved in the lifecycle.</p></li>
+</ul>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<p>Most issues are easiest to fix in <strong>Docker Desktop</strong> before using the command
+line. Open <strong>Containers</strong>, find the compose project (its name matches the
+top-level <code class="docutils literal notranslate"><span class="pre">name:</span></code> in your <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>), then inspect logs, stop
+individual services, or delete the whole stack.</p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">SIC_HOST_IP</span></code> is missing</dt><dd><p>Prefer starting the stack by running the demo (<code class="docutils literal notranslate"><span class="pre">SICApplication</span></code> sets
+<code class="docutils literal notranslate"><span class="pre">SIC_HOST_IP</span></code> for you). If you start compose yourself, set the variable
+before <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">compose</span> <span class="pre">up</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">SIC_HOST_IP</span><span class="o">=</span>&lt;your-host-ip&gt;<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-p<span class="w"> </span>sic-my-demo<span class="w"> </span>up
+</pre></div>
+</div>
+</dd>
+<dt>Port <code class="docutils literal notranslate"><span class="pre">6379</span></code> is already allocated</dt><dd><p>Another Redis container or a local Redis process is using the port.</p>
+<p><strong>Docker Desktop:</strong> In <strong>Containers</strong>, look for anything publishing port
+<code class="docutils literal notranslate"><span class="pre">6379</span></code> (often an old demo stack). Stop or delete those containers. To remove
+an entire old compose project, select it and choose <strong>Delete</strong> (or stop all
+services in that project).</p>
+<p><strong>Command line (advanced):</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>ps<span class="w"> </span>--filter<span class="w"> </span><span class="nv">publish</span><span class="o">=</span><span class="m">6379</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.yml<span class="w"> </span>-p<span class="w"> </span>sic-my-demo<span class="w"> </span>down<span class="w"> </span>--remove-orphans
+</pre></div>
+</div>
+</dd>
+<dt>Image changes are not picked up</dt><dd><p><strong>Docker Desktop:</strong> Rebuild or remove the affected service containers (see
+<a class="reference internal" href="#rebuilding-containers">Rebuilding containers</a>). <strong>From the demo:</strong>
+<code class="docutils literal notranslate"><span class="pre">SIC_COMPOSE_REBUILD=1</span> <span class="pre">python</span> <span class="pre">&lt;your_demo&gt;.py</span></code>. <strong>Command line:</strong>
+<code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">compose</span> <span class="pre">build</span></code>.</p>
+</dd>
+<dt>Service cannot connect to Redis</dt><dd><p>Inside Docker, services should use <code class="docutils literal notranslate"><span class="pre">DB_IP:</span> <span class="pre">redis</span></code>. Host-side SIC code should
+use <code class="docutils literal notranslate"><span class="pre">127.0.0.1</span></code> with the published port.</p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="redis_registries.html" class="btn btn-neutral float-left" title="Redis registries (multi-user and shared Redis)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mcp.html" class="btn btn-neutral float-right" title="Model Context Protocol (MCP) in SIC" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
