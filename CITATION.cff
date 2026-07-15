@@ -1,0 +1,60 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Social Interaction Cloud
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Mike E.U.
+    family-names: Ligthart
+    email: m.e.u.ligthart@vu.nl
+    affiliation: Vrije Universiteit Amsterdam
+    orcid: 'https://orcid.org/0000-0002-0768-9977'
+  - given-names: Landon
+    family-names: Brown
+  - given-names: Lilly
+    family-names: Schwarzenbach
+    orcid: 'https://orcid.org/0009-0009-1143-4369'
+    affiliation: Vrije Universiteit Amsterdam
+    email: l.m.schwarzenbach@vu.nl
+  - given-names: Koen V.
+    family-names: Hindriks
+    email: k.v.hindriks@vu.nl
+    affiliation: Vrije Universiteit Amsterdam
+    orcid: 'https://orcid.org/0000-0002-5707-5236'
+repository-code: 'https://github.com/Social-AI-VU/social-interaction-cloud'
+url: 'https://social-ai-vu.github.io/social-interaction-cloud/'
+repository: 'https://github.com/Social-AI-VU/sic_applications'
+abstract: >-
+  The Social Interaction Cloud (SIC) is a Python framework
+  for building social robot and human-AI interaction
+  applications. It addresses a common problem in human-robot
+  interaction research: a typical study needs a robot to
+  simultaneously coordinate sensors, actuators, and external
+  AI services such as speech recognition, natural language
+  processing, and computer vision, often across multiple
+  devices and SDKs that do not natively interoperate.
+
+  SIC lets researchers build applications by connecting
+  modular components, sensors, actuators, and services, over
+  a Redis-based messaging layer, with ComponentManagers
+  handling deployment on distributed hosts and Connectors
+  providing a single interface for application scripts.
+
+  The framework supports multiple robot platforms, including
+  Pepper, NAO, AlphaMini, and Reachy Mini, integrates with
+  external AI APIs, and includes a Model Context Protocol
+  (MCP) layer for driving robot components as tools for
+  LLM-based agents. Its goal is to let researchers and
+  students focus on interaction design and study logic
+  rather than reimplementing device drivers,
+  message-passing, and multi-user robot access control for
+  each new project.
+keywords:
+  - Social Interaction
+  - Human-Robot Interaction
+  - Hybrid Intelligence
+license: MIT
