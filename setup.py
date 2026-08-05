@@ -123,6 +123,14 @@ else:
             "mcp>=1.0",
             "python-dotenv>=1.0.0",
         ],
+        "local-whisper-stt": [
+            "faster-whisper",
+            "SpeechRecognition>=3.11.0",
+        ],
+        "local-whisper-stt-mac": [
+            "mlx-whisper",
+            "SpeechRecognition>=3.11.0",
+        ],
     }
 
 setup(
@@ -165,6 +173,7 @@ setup(
             "run-redis=sic_framework.services.datastore.redis_datastore:main",
             "run-sortformer=sic_framework.services.streaming_sortformer.stm_sortformer:main",
             "run-nao-mcp=sic_framework.mcp.nao.nao_mcp_server:main",
+            "run-local-whisper=sic_framework.services.local_whisper_stt.local_whisper:main",
         ],
     },
 )
