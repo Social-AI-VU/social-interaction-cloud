@@ -31,8 +31,13 @@ class LocalWhisperConf(SICConfMessage):
 
     :param language: Language code (e.g. "nl", "en") or None for auto-detect.
     :param model_size: Whisper model to use. Default is "large-v3-turbo".
-    :param beam_size: Beam search width — higher is more accurate but slower. Default 5.
+        Smaller models are faster but less accurate. For low-latency CPU use,
+        consider "base" or "small".
+    :param beam_size: Beam search width — higher is more accurate but slower.
+        Use beam_size=1 for greedy (fastest) decoding. Default 5.
     :param task: "transcribe" keeps original language. "translate" converts to English.
+    :param pause_threshold: Seconds of silence that mark end of a spoken phrase.
+        Lower values cut off sooner and reduce end-of-speech latency. Default 0.8.
     """
     def __init__(
         self,
@@ -40,12 +45,14 @@ class LocalWhisperConf(SICConfMessage):
         model_size="large-v3-turbo",
         beam_size=5,
         task="transcribe",
+        pause_threshold=0.8,
     ):
         super(SICConfMessage, self).__init__()
         self.language = language
         self.model_size = model_size
         self.beam_size = beam_size
         self.task = task
+        self.pause_threshold = pause_threshold
 
 
 class GetTranscript(SICRequest):
@@ -116,7 +123,7 @@ class LocalWhisperComponent(SICService):
     Selects faster-whisper or mlx-whisper automatically based on the platform.
     """
 
-    COMPONENT_STARTUP_TIMEOUT = 30
+    COMPONENT_STARTUP_TIMEOUT = 120
 
     def __init__(self, *args, **kwargs):
         super(LocalWhisperComponent, self).__init__(*args, **kwargs)
@@ -151,6 +158,7 @@ class LocalWhisperComponent(SICService):
                 )
 
         self.recognizer = sr.Recognizer()
+        self.recognizer.pause_threshold = self.params.pause_threshold
         self._stream_stop_event = threading.Event()
         self.source = RemoteAudioDevice(stop_event=self._stream_stop_event)
         self.parameters_are_inferred = False
@@ -176,7 +184,11 @@ class LocalWhisperComponent(SICService):
             return
         if not self.parameters_are_inferred:
             self.source.SAMPLE_RATE = message.sample_rate
-            self.source.CHUNK = min(len(message.waveform), self.source.CHUNK)
+            # CHUNK must be in samples (frames), not bytes. speech_recognition uses it
+            # to compute seconds_per_buffer = CHUNK / SAMPLE_RATE for VAD timing.
+            # stream.read() returns the full waveform bytes per call, so CHUNK must
+            # match the actual number of samples delivered to keep timing correct.
+            self.source.CHUNK = len(message.waveform) // self.source.SAMPLE_WIDTH
             self.parameters_are_inferred = True
             self.logger.info(
                 "Inferred sample_rate={} chunk_size={}".format(
@@ -202,11 +214,14 @@ class LocalWhisperComponent(SICService):
         self.source.stream.clear()
         self.logger.info("Listening...")
 
-        audio = self.recognizer.listen(
-            self.source,
-            timeout=request.timeout,
-            phrase_time_limit=request.phrase_time_limit,
-        )
+        try:
+            audio = self.recognizer.listen(
+                self.source,
+                timeout=request.timeout,
+                phrase_time_limit=request.phrase_time_limit,
+            )
+        except sr.WaitTimeoutError:
+            return Transcript("")
 
         self.logger.info("Transcribing...")
 
