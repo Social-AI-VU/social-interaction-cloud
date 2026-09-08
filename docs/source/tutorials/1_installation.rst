@@ -76,7 +76,7 @@ In these instructions we will perform Git operations through a basic terminal an
 
 .. toggle:: Windows
 
-   For Windows users, the installation is not as as straightforward as for Ubuntu or Mac users, but it’s also fairly simple.
+   For Windows users, the installation is not as as straightforward as for Ubuntu or Mac users, but it's also fairly simple.
 
    Go to the official Git `Download for Windows <https://git-scm.com/downloads/win>`_ and download the latest version of the installer. A file named **Git-2.xx.xx-64-bit.exe** should be downloaded.
 
@@ -125,6 +125,22 @@ If you want to upgrade to the latest version, run this command in your venv:
    .. code-block:: bash
 
       pip install social-interaction-cloud --upgrade
+
+**Setup your .env file**
+~~~~~~~~~~~~~~~~~~~~~~~~~
+The .env file contains the configuration for your environment and things like keys for external services. You can find an example in ``sic_applications/conf/.example_env``.
+It contains the following information:
+
+
+   .. code-block:: python
+
+      DB_IP=localhost
+      DB_PASS=changemeplease
+      OPENAI_API_KEY="XXX"
+
+Copy the example file and rename it to ``.env``, the whole path needs to be ``sic_applications/conf/.env``. For now, we're not concerned with your ``OPENAI_API_KEY`` as we're not calling any external services. Feel free to add it already if you have one, though.
+``DB_IP`` can remain ``localhost`` too. But please change your ``DB_PASS`` to something suitable.
+
 
 **Running your first application**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
