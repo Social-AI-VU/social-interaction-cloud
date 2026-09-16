@@ -101,6 +101,9 @@ class ReachyMiniDevice(SICDeviceManager):
 
             self._connect_sdk()
 
+            if self.mode == "wireless" and wake_up_on_start:
+                self.wake_up()
+
             # Build component list; IMU only for wireless
             components = [
                 ReachyMiniCameraSensor,
@@ -299,6 +302,13 @@ class ReachyMiniDevice(SICDeviceManager):
                 ReachyMiniDevice._mini_instance = self._create_sdk_instance(connection_mode)
                 return
 
+    def wake_up(self):
+        """Enable the motors and play the wake-up motion."""
+        if ReachyMiniDevice._mini_instance is None:
+            raise RuntimeError("Reachy Mini SDK is not connected")
+        ReachyMiniDevice._mini_instance.enable_motors()
+        ReachyMiniDevice._mini_instance.wake_up()
+        
     def stop_device(self):
         """Stop the Reachy Mini device and all its components."""
         global reachy_mini_active
