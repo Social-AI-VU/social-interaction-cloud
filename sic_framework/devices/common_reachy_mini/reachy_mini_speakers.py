@@ -1,3 +1,4 @@
+import time
 from math import gcd
 
 import numpy as np
@@ -42,7 +43,11 @@ class ReachyMiniSpeakersActuator(SICActuator):
         return SICMessage
 
     def on_request(self, request):
-        self._play_audio(request.waveform, request.sample_rate)
+        # push_audio_sample only queues the samples in the GStreamer appsrc and
+        # returns immediately, so block for the audio duration to make the
+        # request return once playback is done (like the desktop speakers).
+        duration = self._play_audio(request.waveform, request.sample_rate)
+        time.sleep(duration)
         return SICMessage()
 
     def on_message(self, message):
@@ -53,6 +58,7 @@ class ReachyMiniSpeakersActuator(SICActuator):
             self.logger.warning("Expected message with waveform attribute")
 
     def _play_audio(self, waveform, source_rate):
+        """Queue audio for playback and return its duration in seconds (0 on failure)."""
         pcm = np.frombuffer(waveform, dtype=np.int16)
         samples = pcm.astype(np.float32) / 32767.0
 
@@ -65,6 +71,8 @@ class ReachyMiniSpeakersActuator(SICActuator):
             self.mini.media.push_audio_sample(samples)
         except Exception as e:
             self.logger.warning("Failed to push audio: {}".format(e))
+            return 0.0
+        return float(len(samples)) / self._sdk_rate
 
     def _cleanup(self):
         try:
