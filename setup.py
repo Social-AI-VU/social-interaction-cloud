@@ -208,11 +208,19 @@ else:
             "mcp>=1.0",
             "python-dotenv>=1.0.0",
         ],
+        "local-whisper-stt": [
+            "faster-whisper",
+            "SpeechRecognition>=3.11.0",
+        ],
+        "local-whisper-stt-mac": [
+            "mlx-whisper",
+            "SpeechRecognition>=3.11.0",
+        ],
     }
 
 setup(
     name="social-interaction-cloud",
-    version="2.2.3",
+    version="2.2.4",
     author="Mike Ligthart",
     author_email="m.e.u.ligthart@vu.nl",
     long_description=open("README.md").read(),
@@ -257,6 +265,7 @@ setup(
             "run-nao-mcp=sic_framework.mcp.nao.nao_mcp_server:main",
             "run-localvqe=sic_framework.services.localvqe.localvqe_service:main",
             "sic-build-localvqe=sic_framework.services.localvqe.build_localvqe:main",
+            "run-local-whisper=sic_framework.services.local_whisper_stt.local_whisper:main",
         ],
     },
     ext_modules=[LocalVQEExtension()],

@@ -50,6 +50,9 @@ class ReachyMiniDevice(SICDeviceManager):
     :type headless: bool
     :param wake_up_on_start: Wake up the robot when the daemon starts.
     :type wake_up_on_start: bool
+    :param robot_ip: IP or hostname of the robot (wireless only). If None,
+    the SDK falls back to ``reachy-mini.local``.
+    :type robot_ip: str or None
     :param camera_conf: Configuration for the camera sensor.
     :param mic_conf: Configuration for the microphone sensor.
     :param speakers_conf: Configuration for the speaker actuator.
@@ -70,11 +73,13 @@ class ReachyMiniDevice(SICDeviceManager):
     _daemon_proc = None
 
     def __init__(self, mode="sim", headless=False, wake_up_on_start=True,
+                 robot_ip=None,
                  camera_conf=None, mic_conf=None, speakers_conf=None,
                  motion_conf=None, imu_conf=None):
         super(ReachyMiniDevice, self).__init__(ip="127.0.0.1")
 
         self.mode = mode
+        self.robot_ip = robot_ip
         self.manager = None
 
         self.configs[ReachyMiniCamera] = camera_conf
@@ -95,6 +100,9 @@ class ReachyMiniDevice(SICDeviceManager):
                 )
 
             self._connect_sdk()
+
+            if self.mode == "wireless" and wake_up_on_start:
+                self.wake_up()
 
             # Build component list; IMU only for wireless
             components = [
@@ -242,14 +250,18 @@ class ReachyMiniDevice(SICDeviceManager):
         from gi.repository import GLib
         from reachy_mini import ReachyMini
 
+        kwargs = dict(
+            connection_mode=connection_mode,
+            spawn_daemon=False,
+            log_level="ERROR",
+        )
+        if self.mode == "wireless" and self.robot_ip:
+            kwargs["host"] = self.robot_ip
+
         ctx = GLib.MainContext.new()
         ctx.push_thread_default()
         try:
-            return ReachyMini(
-                connection_mode=connection_mode,
-                spawn_daemon=False,
-                log_level="ERROR",
-            )
+            return ReachyMini(**kwargs)
         finally:
             ctx.pop_thread_default()
 
@@ -265,8 +277,8 @@ class ReachyMiniDevice(SICDeviceManager):
         connection_mode = self._MODE_TO_CONNECTION.get(self.mode, "auto")
         max_attempts = 8 if self.mode in self._SPAWN_MODES else 1
 
-        self.logger.info("Connecting to Reachy Mini SDK (mode={}, connection_mode={})".format(
-            self.mode, connection_mode))
+        self.logger.info("Connecting to Reachy Mini SDK (mode={}, connection_mode={}, host={})".format(
+            self.mode, connection_mode, self.robot_ip or "reachy-mini.local"))
 
         for attempt in range(max_attempts):
             try:
@@ -290,6 +302,13 @@ class ReachyMiniDevice(SICDeviceManager):
                 ReachyMiniDevice._mini_instance = self._create_sdk_instance(connection_mode)
                 return
 
+    def wake_up(self):
+        """Enable the motors and play the wake-up motion."""
+        if ReachyMiniDevice._mini_instance is None:
+            raise RuntimeError("Reachy Mini SDK is not connected")
+        ReachyMiniDevice._mini_instance.enable_motors()
+        ReachyMiniDevice._mini_instance.wake_up()
+        
     def stop_device(self):
         """Stop the Reachy Mini device and all its components."""
         global reachy_mini_active
