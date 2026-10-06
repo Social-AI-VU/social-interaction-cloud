@@ -12,7 +12,7 @@ Imagine you want a robot to:
 
 1. 📷 **See** — use its camera to detect faces  
 2. 🎤 **Listen** — transcribe what a person says  
-3. 🧠 **Think** — generate a response with ChatGPT  
+3. 🧠 **Think** — generate a response with a large language model
 4. 🗣️ **Speak** — say the answer out loud  
 
 Normally, you'd need to integrate each SDK, manage network communication between devices, and synchronize everything yourself. **SIC handles all of that.** You write a short Python script; SIC takes care of the rest.
