@@ -4,6 +4,7 @@ import time
 from contextlib import contextmanager
 
 import numpy as np
+from reachy_mini.reachy_mini import INIT_ANTENNAS_JOINT_POSITIONS, INIT_HEAD_POSE
 from reachy_mini.utils import create_head_pose
 from reachy_mini.utils.interpolation import (
     compose_world_offset,
@@ -97,7 +98,8 @@ class ReachyMiniAutonomousActuator(SICActuator):
       speaks so the head holds still on the user instead of fighting the wobble.
     - Breathing: while it is enabled, this component owns the head, antenna and
       body-yaw targets. A control loop sends ``set_target`` at ``control_rate``
-      Hz, composed of a base pose plus the breathing offset. Motion requests
+      Hz, composed of a base pose plus the breathing offset. The base pose is
+      the neutral pose until a motion request moves it elsewhere. Motion requests
       handled by :class:`ReachyMiniMotionActuator` are interpolated inside this
       loop, so they blend with breathing instead of fighting it. Breathing
       fades in once no motion was requested for ``breathing_idle_delay``
@@ -111,6 +113,10 @@ class ReachyMiniAutonomousActuator(SICActuator):
     _FADE_S = 0.4
     # Seconds to blend the antennas back after listening
     _ANTENNA_UNFREEZE_S = 0.4
+    # Seconds to move to the base pose when breathing takes over the motors
+    _TAKEOVER_S = 1.0
+    # Antennas folded further than this (rad) mean the robot is asleep
+    _ASLEEP_ANTENNA = 2.5
 
     _instance = None
 
@@ -125,8 +131,9 @@ class ReachyMiniAutonomousActuator(SICActuator):
         self._breathing_enabled = self.params.breathing
         self._head_tracking = False
 
-        self._base_head = None
-        self._base_antennas = None
+        # Pose to breathe around: neutral until a motion request moves it
+        self._base_head = np.array(INIT_HEAD_POSE, dtype=np.float64)
+        self._base_antennas = list(INIT_ANTENNAS_JOINT_POSITIONS)
         self._last_antennas = None
         self._move = None
         self._pending_body_yaw = None
@@ -249,22 +256,34 @@ class ReachyMiniAutonomousActuator(SICActuator):
                 self.mini.goto_target(head=head, antennas=antennas, body_yaw=body_yaw,
                                       duration=duration, method=method)
                 self._last_activity = time.time()
+                self._remember_base(head, antennas)
                 return
-            if self._move is not None:
-                # Start the new move from wherever the previous one got to
-                self._move["done"].set()
-            start_yaw = None
-            if body_yaw is not None:
-                start_yaw = self.mini.get_current_joint_positions()[0][0]
-            self._move = dict(
-                t0=time.time(), duration=max(duration, 1e-3), method=method,
-                start_head=self._base_head, target_head=head,
-                start_antennas=list(self._base_antennas), target_antennas=antennas,
-                start_yaw=start_yaw, target_yaw=body_yaw,
-                done=threading.Event(),
-            )
-            done = self._move["done"]
+            done = self._start_move(head, antennas, body_yaw, duration, method)
         done.wait(duration + 1.0)
+
+    def _start_move(self, head, antennas, body_yaw, duration, method):
+        """Start interpolating the base pose inside the loop; return the move's done event."""
+        if self._move is not None:
+            # Start the new move from wherever the previous one got to
+            self._move["done"].set()
+        start_yaw = None
+        if body_yaw is not None:
+            start_yaw = self.mini.get_current_joint_positions()[0][0]
+        self._move = dict(
+            t0=time.time(), duration=max(duration, 1e-3), method=method,
+            start_head=self._base_head, target_head=head,
+            start_antennas=list(self._base_antennas), target_antennas=antennas,
+            start_yaw=start_yaw, target_yaw=body_yaw,
+            done=threading.Event(),
+        )
+        return self._move["done"]
+
+    def _remember_base(self, head, antennas):
+        """Keep the pose the robot was sent to, to breathe around it later."""
+        if head is not None:
+            self._base_head = np.array(head, dtype=np.float64)
+        if antennas is not None:
+            self._base_antennas = list(antennas)
 
     def set_target(self, head=None, antennas=None, body_yaw=None):
         """Immediate target, used as the new base pose if breathing is active."""
@@ -272,12 +291,10 @@ class ReachyMiniAutonomousActuator(SICActuator):
             self._last_activity = time.time()
             if not self._owns_motors or self._paused:
                 self.mini.set_target(head=head, antennas=antennas, body_yaw=body_yaw)
+                self._remember_base(head, antennas)
                 return
             self._finish_move()
-            if head is not None:
-                self._base_head = np.array(head, dtype=np.float64)
-            if antennas is not None:
-                self._base_antennas = list(antennas)
+            self._remember_base(head, antennas)
             if body_yaw is not None:
                 self._pending_body_yaw = body_yaw
 
@@ -285,8 +302,8 @@ class ReachyMiniAutonomousActuator(SICActuator):
     def paused(self):
         """Suspend autonomous movement while the caller drives the motors directly.
 
-        On exit the base pose is re-read from the robot and breathing fades
-        back in once the robot is idle.
+        On exit the pose the caller left the robot in becomes the base pose,
+        and breathing fades back in once the robot is idle.
         """
         with self._lock:
             self._paused = True
@@ -297,8 +314,9 @@ class ReachyMiniAutonomousActuator(SICActuator):
             with self._lock:
                 self._paused = False
                 self._last_activity = time.time()
-                if self._owns_motors:
-                    self._sync_base_from_robot()
+                self._remember_base(self.mini.get_current_head_pose(),
+                                    self.mini.get_present_antenna_joint_positions())
+                self._breathing_gain = 0.0
 
     # ------------------------------------------------------------------
     # Control loop
@@ -347,13 +365,12 @@ class ReachyMiniAutonomousActuator(SICActuator):
 
     def _tick(self, now, dt):
         if not self._owns_motors:
-            if not self._breathing_enabled:
+            if not self._breathing_enabled or self._is_asleep():
                 return
-            # Don't freeze the robot halfway through a motion it is still
-            # finishing, e.g. the daemon's wake-up animation.
+            # Don't interrupt a motion the robot is still finishing, e.g. the
+            # daemon's wake-up animation.
             self._wait_until_still()
-            self._sync_base_from_robot()
-            self._owns_motors = True
+            self._take_over_motors()
 
         body_yaw = self._advance_move(now)
 
@@ -390,7 +407,7 @@ class ReachyMiniAutonomousActuator(SICActuator):
         if move is None:
             return None
         self._last_activity = now
-        t = min(1.0, (now - move["t0"]) / move["duration"])
+        t = max(0.0, min(1.0, (now - move["t0"]) / move["duration"]))
         s = time_trajectory(t, move["method"])
         if move["target_head"] is not None:
             self._base_head = linear_pose_interpolation(move["start_head"], move["target_head"], s)
@@ -454,12 +471,20 @@ class ReachyMiniAutonomousActuator(SICActuator):
                 return
             previous = current
 
-    def _sync_base_from_robot(self):
-        """Take the robot's current pose as base and fade breathing in from zero."""
+    def _is_asleep(self):
+        """True while the robot is in its sleep pose; breathing waits for a wake-up."""
+        antennas = self.mini.get_present_antenna_joint_positions()
+        return max(abs(a) for a in antennas) > self._ASLEEP_ANTENNA
+
+    def _take_over_motors(self):
+        """Start sending targets: glide from the robot's current pose to the base pose."""
+        target_head, target_antennas = self._base_head, self._base_antennas
         self._base_head = np.array(self.mini.get_current_head_pose(), dtype=np.float64)
         self._base_antennas = list(self.mini.get_present_antenna_joint_positions())
         self._last_antennas = list(self._base_antennas)
         self._breathing_gain = 0.0
+        self._owns_motors = True
+        self._start_move(target_head, target_antennas, None, self._TAKEOVER_S, "minjerk")
 
     def _cleanup(self):
         if ReachyMiniAutonomousActuator._instance is self:
