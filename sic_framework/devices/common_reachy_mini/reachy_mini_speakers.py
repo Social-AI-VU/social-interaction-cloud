@@ -76,10 +76,11 @@ class ReachyMiniSpeakersActuator(SICActuator):
             self.logger.warning("Failed to push audio: {}".format(e))
             return 0.0
 
+        duration = float(len(samples)) / self._sdk_rate
         autonomous = ReachyMiniAutonomousActuator.get_instance()
         if autonomous is not None:
-            autonomous.feed_speech(samples[:, 0], self._sdk_rate)
-        return float(len(samples)) / self._sdk_rate
+            autonomous.notify_speech(duration)
+        return duration
 
     def _cleanup(self):
         try:

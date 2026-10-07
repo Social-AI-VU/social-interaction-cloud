@@ -20,35 +20,35 @@ from sic_framework.core.utils import is_sic_instance
 
 class ReachyMiniAutonomousConf(SICConfMessage):
     """
-    :param speaking_movement: Move the head and antennas along with audio played on the speakers.
-    :param breathing: Play a subtle idle breathing motion.
-    :param speaking_movement_intensity: Scale factor for the speaking movement amplitude.
-    :param audio_latency: Seconds between queueing audio and hearing it, used to sync movement with speech.
-    :param control_rate: Rate (Hz) at which motor targets are sent while autonomous movement is active.
+    :param speaking_movement: Wobble the head along with audio played on the speakers.
+    :param breathing: Play a subtle breathing motion whenever the robot is idle.
+    :param head_tracking: Follow the face of the person in front of the robot.
+    :param breathing_idle_delay: Seconds without motion requests before breathing starts.
+    :param audio_latency: Seconds between queueing audio and hearing it, used to
+        pause head tracking while the robot speaks.
+    :param control_rate: Rate (Hz) at which motor targets are sent while breathing.
     """
 
-    def __init__(self, speaking_movement=True, breathing=True,
-                 speaking_movement_intensity=1.0, audio_latency=0.1,
-                 control_rate=50):
+    def __init__(self, speaking_movement=True, breathing=True, head_tracking=False,
+                 breathing_idle_delay=0.3, audio_latency=0.1, control_rate=50):
         super(ReachyMiniAutonomousConf, self).__init__()
         self.speaking_movement = speaking_movement
         self.breathing = breathing
-        self.speaking_movement_intensity = speaking_movement_intensity
+        self.head_tracking = head_tracking
+        self.breathing_idle_delay = breathing_idle_delay
         self.audio_latency = audio_latency
         self.control_rate = control_rate
 
 
 class ReachyMiniSpeakingMovementRequest(SICRequest):
-    """Enable or disable movement while the robot speaks.
+    """Enable or disable head movement while the robot speaks.
 
     :param value: True to enable, False to disable speaking movement.
-    :param intensity: Optional new amplitude scale factor (1.0 is the default).
     """
 
-    def __init__(self, value, intensity=None):
+    def __init__(self, value):
         super(ReachyMiniSpeakingMovementRequest, self).__init__()
         self.value = value
-        self.intensity = intensity
 
 
 class ReachyMiniBreathingRequest(SICRequest):
@@ -62,30 +62,55 @@ class ReachyMiniBreathingRequest(SICRequest):
         self.value = value
 
 
+class ReachyMiniListeningRequest(SICRequest):
+    """Tell the robot whether it is listening to the user.
+
+    While listening the antennas freeze and breathing pauses; afterwards they
+    blend back. Send ``True`` when the user starts speaking (e.g. on a voice
+    activity or speech recognition event) and ``False`` when they stop.
+
+    :param value: True while the user is speaking, False otherwise.
+    """
+
+    def __init__(self, value):
+        super(ReachyMiniListeningRequest, self).__init__()
+        self.value = value
+
+
+class ReachyMiniHeadTrackingRequest(SICRequest):
+    """Enable or disable following the user's face with the head.
+
+    :param value: True to enable, False to disable head tracking.
+    """
+
+    def __init__(self, value):
+        super(ReachyMiniHeadTrackingRequest, self).__init__()
+        self.value = value
+
+
 class ReachyMiniAutonomousActuator(SICActuator):
     """Autonomous "life" movements for Reachy Mini.
 
-    While any autonomous behaviour is enabled, this component owns the head,
-    antenna and body-yaw targets: a control loop sends ``set_target`` at
-    ``control_rate`` Hz, composed of a base pose plus additive offsets
-    (speaking movement, breathing). Motion requests handled by
-    :class:`ReachyMiniMotionActuator` are interpolated inside this loop, so
-    the robot keeps moving naturally during scripted motions instead of the
-    two fighting over the motors.
+    - Speaking movement: the SDK's audio-reactive head wobble, applied by the
+      daemon on top of whatever pose the robot is in.
+    - Head tracking: the daemon's face tracking. It is paused while the robot
+      speaks so the head holds still on the user instead of fighting the wobble.
+    - Breathing: while it is enabled, this component owns the head, antenna and
+      body-yaw targets. A control loop sends ``set_target`` at ``control_rate``
+      Hz, composed of a base pose plus the breathing offset. Motion requests
+      handled by :class:`ReachyMiniMotionActuator` are interpolated inside this
+      loop, so they blend with breathing instead of fighting it. Breathing
+      fades in once no motion was requested for ``breathing_idle_delay``
+      seconds and fades out again for the next motion.
+    - Listening: freezes the antennas and pauses breathing while the user speaks.
 
-    Speaking movement is driven by audio pushed to
-    :class:`ReachyMiniSpeakersActuator`, which forwards it via
-    :meth:`feed_speech`.
+    The speakers report played audio via :meth:`notify_speech`.
     """
 
-    # Loudness (dBFS) mapped to speech level 0 and 1 respectively
-    _SILENCE_DB = -45.0
-    _LOUD_DB = -15.0
-    _HOP_S = 0.02
-    _ATTACK_S = 0.05
-    _RELEASE_S = 0.15
-    # Time constant for fading behaviours in and out
+    # Time constant for fading breathing in and out
     _FADE_S = 0.4
+    # Seconds to blend the antennas back after listening
+    _ANTENNA_UNFREEZE_S = 0.4
 
     _instance = None
 
@@ -97,22 +122,27 @@ class ReachyMiniAutonomousActuator(SICActuator):
 
         # _lock guards all state below and serialises motor commands
         self._lock = threading.RLock()
-        self._speaking_enabled = self.params.speaking_movement
         self._breathing_enabled = self.params.breathing
-        self._intensity = self.params.speaking_movement_intensity
+        self._head_tracking = False
 
         self._base_head = None
         self._base_antennas = None
+        self._last_antennas = None
         self._move = None
         self._pending_body_yaw = None
         self._paused = False
         self._owns_motors = False
-
-        self._speaking_gain = 0.0
+        self._last_activity = time.time()
         self._breathing_gain = 0.0
-        self._speech_env = np.zeros(0)
-        self._speech_t0 = 0.0
-        self._speech_level = 0.0
+        self._breathing_t0 = 0.0
+
+        self._listening = False
+        self._frozen_antennas = None
+        self._antenna_unfreeze = 1.0
+
+        self._speech_start = 0.0
+        self._speech_end = 0.0
+        self._speaking = False
 
         self._loop_thread = None
 
@@ -122,7 +152,12 @@ class ReachyMiniAutonomousActuator(SICActuator):
 
     @staticmethod
     def get_inputs():
-        return [ReachyMiniSpeakingMovementRequest, ReachyMiniBreathingRequest]
+        return [
+            ReachyMiniSpeakingMovementRequest,
+            ReachyMiniBreathingRequest,
+            ReachyMiniListeningRequest,
+            ReachyMiniHeadTrackingRequest,
+        ]
 
     @staticmethod
     def get_output():
@@ -135,6 +170,8 @@ class ReachyMiniAutonomousActuator(SICActuator):
 
     def start(self):
         super(ReachyMiniAutonomousActuator, self).start()
+        self._set_speaking_movement(self.params.speaking_movement)
+        self._set_head_tracking(self.params.head_tracking)
         ReachyMiniAutonomousActuator._instance = self
         self._loop_thread = threading.Thread(
             target=self._control_loop, name="ReachyMiniAutonomousLoop", daemon=True,
@@ -144,59 +181,74 @@ class ReachyMiniAutonomousActuator(SICActuator):
     def execute(self, request):
         with self._lock:
             if is_sic_instance(request, ReachyMiniSpeakingMovementRequest):
-                self._speaking_enabled = bool(request.value)
-                if request.intensity is not None:
-                    self._intensity = request.intensity
+                self._set_speaking_movement(request.value)
             elif is_sic_instance(request, ReachyMiniBreathingRequest):
                 self._breathing_enabled = bool(request.value)
+            elif is_sic_instance(request, ReachyMiniListeningRequest):
+                self._set_listening(bool(request.value))
+            elif is_sic_instance(request, ReachyMiniHeadTrackingRequest):
+                self._set_head_tracking(request.value)
         return SICMessage()
+
+    def _set_speaking_movement(self, enabled):
+        if enabled:
+            self.mini.enable_wobbling()
+        else:
+            self.mini.disable_wobbling()
+
+    def _set_head_tracking(self, enabled):
+        enabled = bool(enabled)
+        if enabled == self._head_tracking:
+            return
+        self._head_tracking = enabled
+        self._speaking = False
+        if enabled:
+            self.mini.start_head_tracking(weight=1.0)
+        else:
+            self.mini.stop_head_tracking()
+
+    def _set_listening(self, listening):
+        if listening == self._listening:
+            return
+        self._listening = listening
+        self._last_activity = time.time()
+        if listening and self._last_antennas is not None:
+            self._frozen_antennas = list(self._last_antennas)
+        self._antenna_unfreeze = 0.0
 
     # ------------------------------------------------------------------
     # In-process API used by the other Reachy Mini components
     # ------------------------------------------------------------------
 
-    def feed_speech(self, samples, sample_rate):
-        """Schedule speaking movement for audio that was just queued for playback.
+    def notify_speech(self, duration):
+        """Register audio that was just queued for playback on the speakers.
 
-        Consecutive chunks are appended to the schedule, matching the
+        Consecutive chunks extend the current utterance, matching the
         sequential playback of the speaker queue.
 
-        :param samples: Mono float samples in [-1, 1].
-        :param sample_rate: Sample rate of ``samples``.
+        :param duration: Duration of the queued audio in seconds.
         """
-        hop = int(sample_rate * self._HOP_S)
-        n = len(samples) // hop
-        if n == 0:
-            return
-        frames = np.asarray(samples[: n * hop], dtype=np.float32).reshape(n, hop)
-        rms = np.sqrt(np.mean(frames ** 2, axis=1)) + 1e-9
-        db = 20.0 * np.log10(rms)
-        env = np.clip((db - self._SILENCE_DB) / (self._LOUD_DB - self._SILENCE_DB), 0.0, 1.0)
-
         now = time.time()
         with self._lock:
-            speech_end = self._speech_t0 + len(self._speech_env) * self._HOP_S
             start = now + self.params.audio_latency
-            if speech_end > start:
-                # Still playing earlier audio: drop the part already played and append
-                played = max(0, int((now - self._speech_t0) / self._HOP_S))
-                self._speech_env = np.concatenate([self._speech_env[played:], env])
-                self._speech_t0 += played * self._HOP_S
-            else:
-                self._speech_env = env
-                self._speech_t0 = start
+            if self._speech_end < start:
+                self._speech_start = start
+                self._speech_end = start
+            self._speech_end += duration
 
     def goto(self, head=None, antennas=None, body_yaw=None, duration=1.0, method="minjerk"):
-        """Interpolated move, blending with the autonomous movement if it is active.
+        """Interpolated move, blending with the breathing if it is active.
 
         Blocks until the move is finished, like ``ReachyMini.goto_target``.
         """
         with self._lock:
+            self._last_activity = time.time()
             if not self._owns_motors or self._paused:
-                # Autonomous movement is off: let the SDK do the move. Holding the
-                # lock prevents the loop from taking over halfway through.
+                # Breathing is off: let the SDK do the move. Holding the lock
+                # prevents the loop from taking over halfway through.
                 self.mini.goto_target(head=head, antennas=antennas, body_yaw=body_yaw,
                                       duration=duration, method=method)
+                self._last_activity = time.time()
                 return
             if self._move is not None:
                 # Start the new move from wherever the previous one got to
@@ -215,8 +267,9 @@ class ReachyMiniAutonomousActuator(SICActuator):
         done.wait(duration + 1.0)
 
     def set_target(self, head=None, antennas=None, body_yaw=None):
-        """Immediate target, used as the new base pose if autonomous movement is active."""
+        """Immediate target, used as the new base pose if breathing is active."""
         with self._lock:
+            self._last_activity = time.time()
             if not self._owns_motors or self._paused:
                 self.mini.set_target(head=head, antennas=antennas, body_yaw=body_yaw)
                 return
@@ -232,8 +285,8 @@ class ReachyMiniAutonomousActuator(SICActuator):
     def paused(self):
         """Suspend autonomous movement while the caller drives the motors directly.
 
-        On exit the base pose is re-read from the robot and the autonomous
-        movement fades back in.
+        On exit the base pose is re-read from the robot and breathing fades
+        back in once the robot is idle.
         """
         with self._lock:
             self._paused = True
@@ -243,6 +296,7 @@ class ReachyMiniAutonomousActuator(SICActuator):
         finally:
             with self._lock:
                 self._paused = False
+                self._last_activity = time.time()
                 if self._owns_motors:
                     self._sync_base_from_robot()
 
@@ -260,6 +314,7 @@ class ReachyMiniAutonomousActuator(SICActuator):
                 last = now
                 try:
                     with self._lock:
+                        self._update_head_tracking(now)
                         if not self._paused:
                             self._tick(now, dt)
                 except Exception as e:
@@ -268,14 +323,31 @@ class ReachyMiniAutonomousActuator(SICActuator):
         finally:
             self._stopped.set()
 
-    def _tick(self, now, dt):
-        enabled = self._speaking_enabled or self._breathing_enabled
-        fade = 1.0 - math.exp(-dt / self._FADE_S)
-        self._speaking_gain += fade * (float(self._speaking_enabled) - self._speaking_gain)
-        self._breathing_gain += fade * (float(self._breathing_enabled) - self._breathing_gain)
+    def _update_head_tracking(self, now):
+        """Pause head tracking while speaking, holding the head on the user."""
+        if not self._head_tracking:
+            return
+        speaking = self._speech_start <= now < self._speech_end
+        if speaking == self._speaking:
+            return
+        if speaking:
+            # Only pause once a face is locked, else speech blocks acquiring one
+            if not self.mini.get_tracked_face(wait=False).detected:
+                return
+            anchor = np.array(self.mini.get_current_head_pose(), dtype=np.float64)
+            if self._owns_motors:
+                self._finish_move()
+                self._base_head = anchor
+            else:
+                self.mini.set_target(head=anchor)
+            self.mini.start_head_tracking(weight=0.0)
+        else:
+            self.mini.start_head_tracking(weight=1.0)
+        self._speaking = speaking
 
+    def _tick(self, now, dt):
         if not self._owns_motors:
-            if not enabled:
+            if not self._breathing_enabled:
                 return
             # Don't freeze the robot halfway through a motion it is still
             # finishing, e.g. the daemon's wake-up animation.
@@ -283,30 +355,41 @@ class ReachyMiniAutonomousActuator(SICActuator):
             self._sync_base_from_robot()
             self._owns_motors = True
 
-        active = enabled or self._speaking_gain > 1e-2 or self._breathing_gain > 1e-2
-        if not active and self._move is None:
+        body_yaw = self._advance_move(now)
+
+        idle = (self._move is None and not self._listening
+                and now - self._last_activity >= self.params.breathing_idle_delay)
+        breathe = self._breathing_enabled and idle
+        if breathe and self._breathing_gain < 1e-2:
+            # Start each breathing cycle from its neutral phase
+            self._breathing_t0 = now
+        fade = 1.0 - math.exp(-dt / self._FADE_S)
+        self._breathing_gain += fade * (float(breathe) - self._breathing_gain)
+
+        if not self._breathing_enabled and self._breathing_gain < 1e-2 and self._move is None:
             # Faded out: send the clean base pose once and hand the motors back
             self.mini.set_target(head=self._base_head, antennas=self._base_antennas)
+            self._last_antennas = list(self._base_antennas)
             self._owns_motors = False
             return
 
-        body_yaw = self._advance_move(now)
-        level = self._update_speech_level(now, dt)
-        head_offset, antenna_offset = self._offsets(now, level)
-
+        head_offset, antenna_offset = self._breathing_offsets(now - self._breathing_t0)
         head = compose_world_offset(self._base_head, head_offset)
-        antennas = [self._base_antennas[0] + antenna_offset[0],
-                    self._base_antennas[1] + antenna_offset[1]]
+        antennas = self._blend_listening_antennas(
+            [self._base_antennas[0] + antenna_offset, self._base_antennas[1] - antenna_offset], dt,
+        )
         if self._pending_body_yaw is not None:
             body_yaw = self._pending_body_yaw
             self._pending_body_yaw = None
         self.mini.set_target(head=head, antennas=antennas, body_yaw=body_yaw)
+        self._last_antennas = antennas
 
     def _advance_move(self, now):
         """Advance the current interpolated move; return the body yaw to send (or None)."""
         move = self._move
         if move is None:
             return None
+        self._last_activity = now
         t = min(1.0, (now - move["t0"]) / move["duration"])
         s = time_trajectory(t, move["method"])
         if move["target_head"] is not None:
@@ -336,34 +419,30 @@ class ReachyMiniAutonomousActuator(SICActuator):
         self._move = None
         move["done"].set()
 
-    def _update_speech_level(self, now, dt):
-        i = int((now - self._speech_t0) / self._HOP_S)
-        target = self._speech_env[i] if 0 <= i < len(self._speech_env) else 0.0
-        tau = self._ATTACK_S if target > self._speech_level else self._RELEASE_S
-        self._speech_level += (1.0 - math.exp(-dt / tau)) * (target - self._speech_level)
-        return self._speech_level
+    def _breathing_offsets(self, t):
+        """Head offset pose (world frame) and antenna sway for breathing time ``t``.
 
-    def _offsets(self, now, level):
-        """Head offset pose (world frame) and antenna offsets for this tick."""
-        s = level * self._speaking_gain * self._intensity
-        b = self._breathing_gain
-        tau = 2.0 * math.pi
+        Same breathing as Pollen's conversation app: a slow 5 mm vertical bob
+        with the antennas swaying in opposite directions, but around the
+        current pose instead of returning to neutral.
+        """
+        g = self._breathing_gain
+        z = g * 5.0 * math.sin(2.0 * math.pi * 0.1 * t)
+        sway = g * math.radians(15.0) * math.sin(2.0 * math.pi * 0.5 * t)
+        return create_head_pose(z=z, mm=True, degrees=True), sway
 
-        # Speaking: a loudness-modulated mix of incommensurate oscillations so the
-        # motion does not look periodic, plus a slight lift of the head when loud.
-        pitch = s * (4.0 * math.sin(tau * 2.1 * now) - 2.0)
-        roll = s * 3.0 * math.sin(tau * 1.3 * now + 0.7)
-        yaw = s * 4.0 * math.sin(tau * 0.9 * now + 1.9)
-        z = s * 2.0 * math.sin(tau * 2.1 * now + 0.3)
-        antenna = s * 0.25 * math.sin(tau * 2.7 * now)
-
-        # Breathing: slow vertical bob with a hint of pitch, gently swaying antennas
-        z += b * 2.5 * math.sin(tau * 0.2 * now)
-        pitch += b * 1.5 * math.sin(tau * 0.2 * now - 0.5)
-        sway = b * 0.1 * math.sin(tau * 0.12 * now)
-
-        head_offset = create_head_pose(z=z, roll=roll, pitch=pitch, yaw=yaw, mm=True, degrees=True)
-        return head_offset, (antenna + sway, -antenna - sway)
+    def _blend_listening_antennas(self, target, dt):
+        """Hold the antennas while listening, then blend them back to ``target``."""
+        if self._frozen_antennas is None:
+            return target
+        if self._listening:
+            return list(self._frozen_antennas)
+        self._antenna_unfreeze = min(1.0, self._antenna_unfreeze + dt / self._ANTENNA_UNFREEZE_S)
+        b = self._antenna_unfreeze
+        blended = [f + (a - f) * b for f, a in zip(self._frozen_antennas, target)]
+        if b >= 1.0:
+            self._frozen_antennas = None
+        return blended
 
     def _wait_until_still(self, timeout=2.0, tolerance=1e-3):
         deadline = time.time() + timeout
@@ -376,10 +455,10 @@ class ReachyMiniAutonomousActuator(SICActuator):
             previous = current
 
     def _sync_base_from_robot(self):
-        """Take the robot's current pose as base and fade the offsets in from zero."""
+        """Take the robot's current pose as base and fade breathing in from zero."""
         self._base_head = np.array(self.mini.get_current_head_pose(), dtype=np.float64)
         self._base_antennas = list(self.mini.get_present_antenna_joint_positions())
-        self._speaking_gain = 0.0
+        self._last_antennas = list(self._base_antennas)
         self._breathing_gain = 0.0
 
     def _cleanup(self):
@@ -387,11 +466,14 @@ class ReachyMiniAutonomousActuator(SICActuator):
             ReachyMiniAutonomousActuator._instance = None
         with self._lock:
             self._finish_move()
-            if self._owns_motors:
-                try:
+            try:
+                if self._owns_motors:
                     self.mini.set_target(head=self._base_head, antennas=self._base_antennas)
-                except Exception:
-                    pass
+                self.mini.disable_wobbling()
+                if self._head_tracking:
+                    self.mini.stop_head_tracking()
+            except Exception:
+                pass
             self._owns_motors = False
 
 

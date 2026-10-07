@@ -62,8 +62,9 @@ class ReachyMiniDevice(SICDeviceManager):
     :param speakers_conf: Configuration for the speaker actuator.
     :param motion_conf: Configuration for the motion actuator.
     :param imu_conf: Configuration for the IMU sensor (wireless only).
-    :param autonomous_conf: Configuration for the autonomous movements
-        (speaking movement and breathing, both enabled by default). Pass
+    :param autonomous_conf: Configuration for the autonomous movements:
+        speaking movement and breathing (enabled by default) and head
+        tracking (disabled by default). Pass
         ``ReachyMiniAutonomousConf(speaking_movement=False, breathing=False)``
         to start without them.
     """
@@ -166,7 +167,7 @@ class ReachyMiniDevice(SICDeviceManager):
             if daemon_bin is None:
                 raise RuntimeError(
                     "reachy-mini-daemon not found on PATH. "
-                    "Install the reachy-mini package: pip install 'reachy-mini>=1.6.0'"
+                    "Install the reachy-mini package: pip install 'reachy-mini>=1.9.0'"
                 )
             cmd = [mjpython, daemon_bin]
         else:
@@ -174,7 +175,7 @@ class ReachyMiniDevice(SICDeviceManager):
             if daemon_bin is None:
                 raise RuntimeError(
                     "reachy-mini-daemon not found on PATH. "
-                    "Install the reachy-mini package: pip install 'reachy-mini>=1.6.0'"
+                    "Install the reachy-mini package: pip install 'reachy-mini>=1.9.0'"
                 )
             cmd = [daemon_bin]
 
