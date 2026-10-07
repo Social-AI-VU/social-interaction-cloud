@@ -115,8 +115,6 @@ class ReachyMiniAutonomousActuator(SICActuator):
     _ANTENNA_UNFREEZE_S = 0.4
     # Seconds to move to the base pose when breathing takes over the motors
     _TAKEOVER_S = 1.0
-    # Seconds to settle into the end pose of a paused() motion
-    _SETTLE_S = 0.5
     # Antennas folded further than this (rad) mean the robot is asleep
     _ASLEEP_ANTENNA = 2.5
 
@@ -309,9 +307,8 @@ class ReachyMiniAutonomousActuator(SICActuator):
             has physically arrived, so reading the pose back is unreliable.
         :param antennas: Antenna positions the caller's motion ends in.
 
-        Without them, the robot's pose on exit becomes the base pose. If
-        breathing is active the robot then glides to the base pose, and
-        breathing fades back in once the robot is idle.
+        Without them, the robot's pose on exit becomes the base pose.
+        Breathing fades back in once the robot is idle.
         """
         with self._lock:
             self._paused = True
@@ -322,16 +319,15 @@ class ReachyMiniAutonomousActuator(SICActuator):
             with self._lock:
                 self._paused = False
                 self._last_activity = time.time()
-                current_head = np.array(self.mini.get_current_head_pose(), dtype=np.float64)
-                current_antennas = list(self.mini.get_present_antenna_joint_positions())
-                target_head = current_head if head is None else head
-                target_antennas = current_antennas if antennas is None else antennas
-                if self._owns_motors:
-                    self._base_head, self._base_antennas = current_head, current_antennas
-                    self._breathing_gain = 0.0
-                    self._start_move(target_head, target_antennas, None, self._SETTLE_S, "minjerk")
-                else:
-                    self._remember_base(target_head, target_antennas)
+                # The caller's last motion is still targeting this pose, so the
+                # loop just keeps sending it: no glide from the (lagging)
+                # measured pose, which would pull the head back mid-motion.
+                if head is None:
+                    head = self.mini.get_current_head_pose()
+                if antennas is None:
+                    antennas = self.mini.get_present_antenna_joint_positions()
+                self._remember_base(head, antennas)
+                self._breathing_gain = 0.0
 
     # ------------------------------------------------------------------
     # Control loop
