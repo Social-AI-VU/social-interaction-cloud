@@ -27,6 +27,10 @@ from sic_framework.devices.common_reachy_mini.reachy_mini_imu import (
     ReachyMiniIMU,
     ReachyMiniIMUSensor,
 )
+from sic_framework.devices.common_reachy_mini.reachy_mini_autonomous import (
+    ReachyMiniAutonomous,
+    ReachyMiniAutonomousActuator,
+)
 from sic_framework.devices.device import SICDeviceManager
 
 reachy_mini_active = False
@@ -58,6 +62,10 @@ class ReachyMiniDevice(SICDeviceManager):
     :param speakers_conf: Configuration for the speaker actuator.
     :param motion_conf: Configuration for the motion actuator.
     :param imu_conf: Configuration for the IMU sensor (wireless only).
+    :param autonomous_conf: Configuration for the autonomous movements
+        (speaking movement and breathing, both enabled by default). Pass
+        ``ReachyMiniAutonomousConf(speaking_movement=False, breathing=False)``
+        to start without them.
     """
 
     _MODE_TO_CONNECTION = {
@@ -75,7 +83,7 @@ class ReachyMiniDevice(SICDeviceManager):
     def __init__(self, mode="sim", headless=False, wake_up_on_start=True,
                  robot_ip=None,
                  camera_conf=None, mic_conf=None, speakers_conf=None,
-                 motion_conf=None, imu_conf=None):
+                 motion_conf=None, imu_conf=None, autonomous_conf=None):
         super(ReachyMiniDevice, self).__init__(ip="127.0.0.1")
 
         self.mode = mode
@@ -87,6 +95,7 @@ class ReachyMiniDevice(SICDeviceManager):
         self.configs[ReachyMiniSpeakers] = speakers_conf
         self.configs[ReachyMiniMotion] = motion_conf
         self.configs[ReachyMiniIMU] = imu_conf
+        self.configs[ReachyMiniAutonomous] = autonomous_conf
 
         global reachy_mini_active
 
@@ -110,6 +119,7 @@ class ReachyMiniDevice(SICDeviceManager):
                 ReachyMiniMicrophoneSensor,
                 ReachyMiniSpeakersActuator,
                 ReachyMiniMotionActuator,
+                ReachyMiniAutonomousActuator,
             ]
             if self.mode == "wireless":
                 components.append(ReachyMiniIMUSensor)
@@ -137,6 +147,10 @@ class ReachyMiniDevice(SICDeviceManager):
 
             atexit.register(self.stop_device)
             reachy_mini_active = True
+
+            # Start the autonomous movements right away so the robot comes
+            # alive without the user having to touch reachy.autonomous.
+            self.autonomous
 
     def _start_daemon(self, sim=False, mockup_sim=False, headless=False,
                       wake_up_on_start=True):
@@ -306,8 +320,14 @@ class ReachyMiniDevice(SICDeviceManager):
         """Enable the motors and play the wake-up motion."""
         if ReachyMiniDevice._mini_instance is None:
             raise RuntimeError("Reachy Mini SDK is not connected")
-        ReachyMiniDevice._mini_instance.enable_motors()
-        ReachyMiniDevice._mini_instance.wake_up()
+        autonomous = ReachyMiniAutonomousActuator.get_instance()
+        if autonomous is None:
+            ReachyMiniDevice._mini_instance.enable_motors()
+            ReachyMiniDevice._mini_instance.wake_up()
+            return
+        with autonomous.paused():
+            ReachyMiniDevice._mini_instance.enable_motors()
+            ReachyMiniDevice._mini_instance.wake_up()
         
     def stop_device(self):
         """Stop the Reachy Mini device and all its components."""
@@ -356,6 +376,10 @@ class ReachyMiniDevice(SICDeviceManager):
     def imu(self):
         return self._get_connector(ReachyMiniIMU)
 
+    @property
+    def autonomous(self):
+        return self._get_connector(ReachyMiniAutonomous)
+
 
 reachy_mini_component_list = [
     ReachyMiniCameraSensor,
@@ -363,6 +387,7 @@ reachy_mini_component_list = [
     ReachyMiniSpeakersActuator,
     ReachyMiniMotionActuator,
     ReachyMiniIMUSensor,
+    ReachyMiniAutonomousActuator,
 ]
 
 
