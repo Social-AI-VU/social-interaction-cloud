@@ -326,7 +326,10 @@ class ReachyMiniDevice(SICDeviceManager):
             ReachyMiniDevice._mini_instance.enable_motors()
             ReachyMiniDevice._mini_instance.wake_up()
             return
-        with autonomous.paused():
+        from reachy_mini.reachy_mini import INIT_ANTENNAS_JOINT_POSITIONS, INIT_HEAD_POSE
+
+        # The wake-up motion ends in the neutral pose
+        with autonomous.paused(head=INIT_HEAD_POSE, antennas=INIT_ANTENNAS_JOINT_POSITIONS):
             ReachyMiniDevice._mini_instance.enable_motors()
             ReachyMiniDevice._mini_instance.wake_up()
         
