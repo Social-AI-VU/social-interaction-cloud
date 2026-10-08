@@ -5,6 +5,9 @@ from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import SICConfMessage, SICMessage, SICRequest
 from sic_framework.core.actuator_python2 import SICActuator
 from sic_framework.core.utils import is_sic_instance
+from sic_framework.devices.common_reachy_mini.reachy_mini_autonomous import (
+    ReachyMiniAutonomousActuator,
+)
 
 
 class ReachyMiniMotionConf(SICConfMessage):
@@ -161,30 +164,24 @@ class ReachyMiniMotionActuator(SICActuator):
             roll=request.roll, pitch=request.pitch, yaw=request.yaw,
             degrees=request.degrees, mm=request.mm,
         )
-        self.mini.goto_target(
-            head=pose,
-            duration=request.duration,
-            method=request.method,
-            body_yaw=None,
-        )
+        self._goto(head=pose, duration=request.duration, method=request.method)
 
     def _move_antennas(self, request):
-        self.mini.goto_target(
+        self._goto(
             antennas=[request.right, request.left],
             duration=request.duration,
             method=request.method,
-            body_yaw=None,
         )
 
     def _move_body(self, request):
-        self.mini.goto_target(
+        self._goto(
             body_yaw=request.yaw,
             duration=request.duration,
             method=request.method,
         )
 
     def _move_full(self, request):
-        self.mini.goto_target(
+        self._goto(
             head=request.head,
             antennas=request.antennas,
             body_yaw=request.body_yaw,
@@ -193,11 +190,23 @@ class ReachyMiniMotionActuator(SICActuator):
         )
 
     def _set_target(self, request):
-        self.mini.set_target(
-            head=request.head,
-            antennas=request.antennas,
-            body_yaw=request.body_yaw,
-        )
+        autonomous = ReachyMiniAutonomousActuator.get_instance()
+        if autonomous is not None:
+            autonomous.set_target(head=request.head, antennas=request.antennas,
+                                  body_yaw=request.body_yaw)
+        else:
+            self.mini.set_target(head=request.head, antennas=request.antennas,
+                                 body_yaw=request.body_yaw)
+
+    def _goto(self, head=None, antennas=None, body_yaw=None, duration=1.0, method="minjerk"):
+        """Run an interpolated move, blended with the autonomous movement when it is running."""
+        autonomous = ReachyMiniAutonomousActuator.get_instance()
+        if autonomous is not None:
+            autonomous.goto(head=head, antennas=antennas, body_yaw=body_yaw,
+                            duration=duration, method=method)
+        else:
+            self.mini.goto_target(head=head, antennas=antennas, body_yaw=body_yaw,
+                                  duration=duration, method=method)
 
     def _cleanup(self):
         pass

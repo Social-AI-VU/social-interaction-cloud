@@ -8,6 +8,9 @@ from sic_framework.core.component_manager_python2 import SICComponentManager
 from sic_framework.core.connector import SICConnector
 from sic_framework.core.message_python2 import AudioMessage, SICConfMessage, SICMessage
 from sic_framework.core.actuator_python2 import SICActuator
+from sic_framework.devices.common_reachy_mini.reachy_mini_autonomous import (
+    ReachyMiniAutonomousActuator,
+)
 
 
 class ReachyMiniSpeakersConf(SICConfMessage):
@@ -72,7 +75,12 @@ class ReachyMiniSpeakersActuator(SICActuator):
         except Exception as e:
             self.logger.warning("Failed to push audio: {}".format(e))
             return 0.0
-        return float(len(samples)) / self._sdk_rate
+
+        duration = float(len(samples)) / self._sdk_rate
+        autonomous = ReachyMiniAutonomousActuator.get_instance()
+        if autonomous is not None:
+            autonomous.notify_speech(duration)
+        return duration
 
     def _cleanup(self):
         try:
