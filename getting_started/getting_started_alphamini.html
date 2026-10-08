@@ -1,0 +1,417 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getting started with Alphamini &mdash; Social Interaction Cloud 2.0.38 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=1e3ee441" />
+
+  
+    <link rel="shortcut icon" href="../_static/sic_mini_logo.svg"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=a7c45ed8"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=f281be69"></script>
+      <script>let toggleHintShow = '';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../_static/togglebutton.js?v=b8b12719"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Getting started with the Reachy Mini" href="getting_started_reachymini.html" />
+    <link rel="prev" title="Getting started with the Franka Emika Research 3" href="getting_started_franka.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Social Interaction Cloud
+              <img src="../_static/sic_mini_logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../tutorials.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../getting_started.html">Getting started with the robots</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../getting_started.html#getting-started-with-the-nao">Getting started with the Nao</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started.html#getting-started-with-the-franka-emika-robot-arm">Getting started with the Franka Emika robot arm</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../getting_started.html#getting-started-with-the-alphamini">Getting started with the Alphamini</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Getting started with Alphamini</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#why-custom-android-apps-are-needed">Why custom Android apps are needed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#tooling-adb-android-studio-and-vysor">Tooling: ADB, Android Studio, and Vysor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#installing-adb-on-your-computer">Installing ADB on your computer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#connecting-to-alphamini-with-adb-usb">Connecting to Alphamini with ADB (USB)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#troubleshooting-ssh-on-alphamini">Troubleshooting SSH on Alphamini</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#installing-the-alphamini-camera-and-microphone-apps">Installing the Alphamini camera and microphone apps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#uninstalling-the-alphamini-camera-and-microphone-apps">Uninstalling the Alphamini camera and microphone apps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-vysor-with-alphamini">Using Vysor with Alphamini</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-this-ties-into-sic">How this ties into SIC</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started.html#getting-started-with-the-reachy-mini">Getting started with the Reachy Mini</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../getting_started.html#getting-started-with-the-spacemouse">Getting started with the Spacemouse</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../external_apis.html">Connecting to External APIs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">How SIC Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributions.html">Contribution</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Social Interaction Cloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../getting_started.html">Getting started with the robots</a></li>
+      <li class="breadcrumb-item active">Getting started with Alphamini</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/getting_started/getting_started_alphamini.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="getting-started-with-alphamini">
+<h1>Getting started with Alphamini<a class="headerlink" href="#getting-started-with-alphamini" title="Link to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The Alphamini robot runs Android internally and provides an official Python SDK
+(<cite>mini_sdk</cite>) for motion, LEDs, face expressions, and other capabilities.
+However, the SDK does <strong>not</strong> expose continuous streaming for the on‑board
+microphone or camera.</p>
+<p>To integrate Alphamini’s audio and video into SIC, we therefore provide custom
+Android applications that:</p>
+<ul class="simple">
+<li><p>run directly on the Alphamini,</p></li>
+<li><p>connect back to SIC via local TCP sockets, and</p></li>
+<li><p>stream compressed audio and video frames into the SIC framework.</p></li>
+</ul>
+<p>This page explains:</p>
+<ul class="simple">
+<li><p>why custom Android apps are needed for microphone and camera streaming,</p></li>
+<li><p>how to install these apps onto a Mini using <code class="docutils literal notranslate"><span class="pre">adb</span></code> over USB, and</p></li>
+<li><p>which tools (ADB, Android Studio, Vysor) are useful when working with Alphamini.</p></li>
+</ul>
+</section>
+<section id="why-custom-android-apps-are-needed">
+<h2>Why custom Android apps are needed<a class="headerlink" href="#why-custom-android-apps-are-needed" title="Link to this heading"></a></h2>
+<p>The Alphamini SDK is designed around discrete commands (e.g., move, speak,
+play animation) rather than continuous media pipelines. In particular:</p>
+<ul class="simple">
+<li><p>there is <strong>no built‑in API</strong> to expose a live microphone stream to your own
+process on the robot;</p></li>
+<li><p>there is <strong>no built‑in API</strong> to expose a live camera frame stream with
+controllable resolution, compression, and frame rate.</p></li>
+</ul>
+<p>To work around this, SIC ships standalone Android apps that run on the robot:</p>
+<ul class="simple">
+<li><p>a <strong>camera app</strong> that</p>
+<ul>
+<li><p>opens the Alphamini camera with the Android Camera API,</p></li>
+<li><p>encodes preview frames as JPEG, and</p></li>
+<li><p>streams them over TCP to a SIC component (e.g. <code class="docutils literal notranslate"><span class="pre">MiniCameraSensor</span></code>);</p></li>
+</ul>
+</li>
+<li><p>a <strong>microphone app</strong> that</p>
+<ul>
+<li><p>captures PCM audio from the Android audio stack,</p></li>
+<li><p>chunks and (optionally) compresses samples, and</p></li>
+<li><p>streams them over TCP to a SIC component (e.g. <code class="docutils literal notranslate"><span class="pre">MiniMicrophoneSensor</span></code>).</p></li>
+</ul>
+</li>
+</ul>
+<p>On the SIC side, Python components (running in Termux on the robot) act as
+servers that:</p>
+<ul class="simple">
+<li><p>accept TCP connections from these Android apps,</p></li>
+<li><p>decode the incoming byte streams (audio or images), and</p></li>
+<li><p>publish them into SIC/Redis as standard SIC messages.</p></li>
+</ul>
+</section>
+<section id="tooling-adb-android-studio-and-vysor">
+<h2>Tooling: ADB, Android Studio, and Vysor<a class="headerlink" href="#tooling-adb-android-studio-and-vysor" title="Link to this heading"></a></h2>
+<section id="adb-android-debug-bridge">
+<h3>ADB (Android Debug Bridge)<a class="headerlink" href="#adb-android-debug-bridge" title="Link to this heading"></a></h3>
+<p><strong>ADB</strong> is a command‑line tool used to communicate with Android devices. It
+allows you to:</p>
+<ul class="simple">
+<li><p>install and uninstall APKs,</p></li>
+<li><p>view logs (<code class="docutils literal notranslate"><span class="pre">adb</span> <span class="pre">logcat</span></code>),</p></li>
+<li><p>run shell commands (<code class="docutils literal notranslate"><span class="pre">adb</span> <span class="pre">shell</span></code>).</p></li>
+</ul>
+<p>For Alphamini, ADB is the primary way to:</p>
+<ul class="simple">
+<li><p>install or update the custom microphone and camera apps,</p></li>
+<li><p>inspect logs from those apps while they interact with SIC,</p></li>
+<li><p>and debug issues in the media pipeline.</p></li>
+</ul>
+</section>
+<section id="android-studio">
+<h3>Android Studio<a class="headerlink" href="#android-studio" title="Link to this heading"></a></h3>
+<p><strong>Android Studio</strong> is the official IDE for Android development. It provides:</p>
+<ul class="simple">
+<li><p>a code editor with Android‑specific tooling,</p></li>
+<li><p>Gradle build integration,</p></li>
+<li><p>device and emulator management,</p></li>
+<li><p>and a graphical interface for installing and debugging apps.</p></li>
+</ul>
+<p>You do <em>not</em> strictly need Android Studio to deploy APKs (you can use plain
+<code class="docutils literal notranslate"><span class="pre">adb</span> <span class="pre">install</span></code>), but it is very helpful for:</p>
+<ul class="simple">
+<li><p>editing and building the Alphamini camera/microphone apps,</p></li>
+<li><p>running them on a test device or on the Alphamini,</p></li>
+<li><p>and inspecting performance, logs, and exceptions during development.</p></li>
+</ul>
+</section>
+<section id="vysor">
+<h3>Vysor<a class="headerlink" href="#vysor" title="Link to this heading"></a></h3>
+<p><strong>Vysor</strong> is a desktop tool that mirrors an Android device’s screen to your
+computer and lets you control it with mouse/keyboard. For Alphamini, Vysor is
+useful because:</p>
+<ul class="simple">
+<li><p>the robot does not have an easily accessible touch screen in the usual sense,</p></li>
+<li><p>you often want to <em>see</em> what the Android UI is doing (camera preview, error
+dialogs, permissions prompts),</p></li>
+<li><p>and you may need to grant permissions or confirm prompts the first time an
+app runs.</p></li>
+</ul>
+<p>In practice, Vysor lets you interact with the Alphamini’s Android UI as if it
+were a phone attached to your computer.</p>
+</section>
+</section>
+<section id="installing-adb-on-your-computer">
+<h2>Installing ADB on your computer<a class="headerlink" href="#installing-adb-on-your-computer" title="Link to this heading"></a></h2>
+<p>On macOS, the easiest way to install the Android platform tools (including ADB)
+is via Homebrew:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>brew<span class="w"> </span>install<span class="w"> </span>--cask<span class="w"> </span>android-platform-tools
+</pre></div>
+</div>
+<p>Verify that <code class="docutils literal notranslate"><span class="pre">adb</span></code> is available:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>adb<span class="w"> </span>version
+</pre></div>
+</div>
+<p>You should see version information printed to the terminal.</p>
+</section>
+<section id="connecting-to-alphamini-with-adb-usb">
+<h2>Connecting to Alphamini with ADB (USB)<a class="headerlink" href="#connecting-to-alphamini-with-adb-usb" title="Link to this heading"></a></h2>
+<p>For this workflow we <strong>use USB only</strong> and do <em>not</em> rely on ADB over the
+network, to avoid extra configuration and authentication issues.</p>
+<ol class="arabic">
+<li><p>Connect Alphamini to your computer via USB.</p></li>
+<li><p>In a terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>adb<span class="w"> </span>devices
+</pre></div>
+</div>
+</li>
+<li><p>Once the device appears as <code class="docutils literal notranslate"><span class="pre">device</span></code>, you can install APKs, view logs, and
+run shell commands.</p></li>
+</ol>
+</section>
+<section id="troubleshooting-ssh-on-alphamini">
+<h2>Troubleshooting SSH on Alphamini<a class="headerlink" href="#troubleshooting-ssh-on-alphamini" title="Link to this heading"></a></h2>
+<p>If SIC reports SSH on port <code class="docutils literal notranslate"><span class="pre">8022</span></code> as unavailable, that does <strong>not</strong> always
+mean OpenSSH must be reinstalled. A common failure mode is that <code class="docutils literal notranslate"><span class="pre">sshd</span></code> is
+installed but not currently running.</p>
+<p>Use the SIC helper script first:</p>
+<ol class="arabic">
+<li><p>From the repository root, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>sic_applications/utils/alphamini_restart_ssh.py<span class="w"> </span>--mini-id<span class="w"> </span>&lt;mini-id&gt;
+</pre></div>
+</div>
+<p>This sends a lightweight command via <code class="docutils literal notranslate"><span class="pre">Tool.run_py_pkg</span></code>. In environments
+where shell startup triggers <code class="docutils literal notranslate"><span class="pre">sshd</span></code>, this restores SSH availability
+without a full reinstall.</p>
+</li>
+<li><p>Verify from your computer:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ssh<span class="w"> </span>u0_a25@&lt;mini-ip&gt;<span class="w"> </span>-p<span class="w"> </span><span class="m">8022</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>If <code class="docutils literal notranslate"><span class="pre">sshd</span></code> is missing or restart fails, run any Alphamini demo and SSH will be reinstalled.</p>
+</section>
+<section id="installing-the-alphamini-camera-and-microphone-apps">
+<h2>Installing the Alphamini camera and microphone apps<a class="headerlink" href="#installing-the-alphamini-camera-and-microphone-apps" title="Link to this heading"></a></h2>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>The camera and microphone Android apps have been built into APK files
+(for example, <code class="docutils literal notranslate"><span class="pre">camera_app-debug.apk</span></code> and <code class="docutils literal notranslate"><span class="pre">microphone_app-debug.apk</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">adb</span> <span class="pre">devices</span></code> lists your Alphamini as <code class="docutils literal notranslate"><span class="pre">device</span></code> over USB.</p></li>
+</ul>
+</section>
+<section id="installing-via-adb-usb">
+<h3>Installing via ADB (USB)<a class="headerlink" href="#installing-via-adb-usb" title="Link to this heading"></a></h3>
+<p>From the directory where your APK is located:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># First install</span>
+adb<span class="w"> </span>install<span class="w"> </span>camera_app-debug.apk
+
+<span class="c1"># If updating an existing install</span>
+adb<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>camera_app-debug.apk
+</pre></div>
+</div>
+<p>Repeat this for the microphone app.</p>
+<p>Once installed, the apps will appear in the Alphamini’s Android launcher, and
+SIC components (e.g. <code class="docutils literal notranslate"><span class="pre">MiniCameraSensor</span></code> / <code class="docutils literal notranslate"><span class="pre">MiniMicrophoneSensor</span></code>) can start
+them via the Android Activity Manager (<code class="docutils literal notranslate"><span class="pre">am</span></code>) inside Termux.</p>
+</section>
+</section>
+<section id="uninstalling-the-alphamini-camera-and-microphone-apps">
+<h2>Uninstalling the Alphamini camera and microphone apps<a class="headerlink" href="#uninstalling-the-alphamini-camera-and-microphone-apps" title="Link to this heading"></a></h2>
+<p>If you need to remove old versions before reinstalling, you can uninstall the
+apps either from the command line (ADB) or from the Android UI (via Vysor).</p>
+<section id="uninstall-via-adb-safe-to-re-run">
+<h3>Uninstall via ADB (safe to re-run)<a class="headerlink" href="#uninstall-via-adb-safe-to-re-run" title="Link to this heading"></a></h3>
+<p>Use the package names directly:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Camera app</span>
+adb<span class="w"> </span>uninstall<span class="w"> </span>com.example.alphamini.camera
+
+<span class="c1"># Microphone app</span>
+adb<span class="w"> </span>uninstall<span class="w"> </span>com.example.micarraytest
+</pre></div>
+</div>
+<p>If an app is not installed, <code class="docutils literal notranslate"><span class="pre">adb</span> <span class="pre">uninstall</span></code> returns a failure message. That is
+normal; you can ignore it and continue with installation.</p>
+</section>
+<section id="uninstall-via-vysor-gui">
+<h3>Uninstall via Vysor (GUI)<a class="headerlink" href="#uninstall-via-vysor-gui" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Connect Alphamini over USB and open it in Vysor.</p></li>
+<li><p>Open Android <strong>Settings</strong> on the mirrored device.</p></li>
+<li><p>Go to <strong>Apps</strong> (or <strong>Apps &amp; notifications</strong>, depending on Android build).</p></li>
+<li><p>Find and open:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">com.example.alphamini.camera</span></code> (camera app), and/or</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">com.example.micarraytest</span></code> (microphone app).</p></li>
+</ul>
+</li>
+<li><p>Tap <strong>Uninstall</strong>.</p></li>
+</ol>
+</section>
+</section>
+<section id="using-vysor-with-alphamini">
+<h2>Using Vysor with Alphamini<a class="headerlink" href="#using-vysor-with-alphamini" title="Link to this heading"></a></h2>
+<p>To observe and interact with the Alphamini’s Android UI:</p>
+<ol class="arabic simple">
+<li><p>Connect Alphamini to your computer via USB.</p></li>
+<li><p>Open Vysor and select the Alphamini device.</p></li>
+<li><p>You should now see the Alphamini’s Android home screen mirrored on your
+desktop.</p></li>
+</ol>
+<p>Typical uses:</p>
+<ul class="simple">
+<li><p>confirm that the camera or microphone app is in the foreground and running;</p></li>
+<li><p>grant camera/microphone permissions the first time the app is launched;</p></li>
+<li><p>observe whether the camera preview or recording UI looks correct while SIC
+is running;</p></li>
+<li><p>manually stop or start the app if needed during debugging.</p></li>
+</ul>
+</section>
+<section id="how-this-ties-into-sic">
+<h2>How this ties into SIC<a class="headerlink" href="#how-this-ties-into-sic" title="Link to this heading"></a></h2>
+<p>The overall data flow is:</p>
+<ul class="simple">
+<li><p>On Alphamini:</p>
+<ul>
+<li><p>Termux runs the SIC device script (<code class="docutils literal notranslate"><span class="pre">alphamini.py</span></code>) and the media
+components (<code class="docutils literal notranslate"><span class="pre">MiniCameraSensor</span></code>, <code class="docutils literal notranslate"><span class="pre">MiniMicrophoneSensor</span></code>).</p></li>
+<li><p>These components open local TCP server sockets (e.g., <code class="docutils literal notranslate"><span class="pre">127.0.0.1:6001</span></code> for
+camera, and another port for microphone).</p></li>
+</ul>
+</li>
+<li><p>On Android (same device):</p>
+<ul>
+<li><p>The camera and microphone apps connect to those local sockets.</p></li>
+<li><p>They stream encoded frames/samples according to simple binary protocols
+(length headers + compressed payload).</p></li>
+</ul>
+</li>
+<li><p>On your development machine:</p>
+<ul>
+<li><p>A SIC application (for example, a demo script) connects to the remote SIC
+device,</p></li>
+<li><p>subscribes to the media components, and</p></li>
+<li><p>receives decoded images/audio.</p></li>
+</ul>
+</li>
+</ul>
+<p>In this architecture, ADB, Android Studio, and Vysor are tooling layers that
+help you build, install, observe, and debug the Android side of the pipeline,
+while SIC components and Python code manage the robot‑facing and
+application‑facing parts of the integration.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="getting_started_franka.html" class="btn btn-neutral float-left" title="Getting started with the Franka Emika Research 3" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="getting_started_reachymini.html" class="btn btn-neutral float-right" title="Getting started with the Reachy Mini" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Koen Hindriks.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
