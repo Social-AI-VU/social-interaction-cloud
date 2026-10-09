@@ -1,0 +1,5 @@
+# Native build artifacts installed by the setup.py build_ext hook / sic-build-localvqe.
+*.so
+*.so.*
+*.dylib
+!.gitignore
