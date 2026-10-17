@@ -1,0 +1,61 @@
+{
+  "method": "Median and range of per-trial summaries from three independent trials; each trial used 20 warm-up and 200 measured sequential requests.",
+  "trial_files": [
+    "local-windows-trial-1.json",
+    "local-windows-trial-2.json",
+    "local-windows-trial-3.json"
+  ],
+  "raw_redis_ping": {
+    "p50_ms_median": 0.056,
+    "p50_ms_range": [0.049, 0.134],
+    "p95_ms_median": 0.062,
+    "p95_ms_range": [0.057, 0.279]
+  },
+  "listener_create_teardown": {
+    "p50_ms_median": 13.560,
+    "p50_ms_range": [1.605, 15.729],
+    "p95_ms_median": 17.756,
+    "p95_ms_range": [16.956, 32.732]
+  },
+  "payload_results": [
+    {
+      "payload_bytes": 0,
+      "current_request_p50_ms_median": 5.101,
+      "current_request_p50_ms_range": [3.003, 14.418],
+      "current_request_p95_ms_median": 117.262,
+      "current_request_p95_ms_range": [27.364, 123.580],
+      "persistent_listener_p50_ms_median": 0.501,
+      "persistent_listener_p50_ms_range": [0.500, 0.786],
+      "persistent_listener_p95_ms_median": 0.837,
+      "persistent_listener_p95_ms_range": [0.658, 1.369],
+      "ratio_of_median_p50": 10.18
+    },
+    {
+      "payload_bytes": 4096,
+      "current_request_p50_ms_median": 6.846,
+      "current_request_p50_ms_range": [3.443, 16.065],
+      "current_request_p95_ms_median": 38.862,
+      "current_request_p95_ms_range": [27.458, 106.647],
+      "persistent_listener_p50_ms_median": 0.694,
+      "persistent_listener_p50_ms_range": [0.485, 0.899],
+      "persistent_listener_p95_ms_median": 0.891,
+      "persistent_listener_p95_ms_range": [0.715, 1.331],
+      "ratio_of_median_p50": 9.87
+    },
+    {
+      "payload_bytes": 65536,
+      "current_request_p50_ms_median": 14.694,
+      "current_request_p50_ms_range": [4.254, 14.763],
+      "current_request_p95_ms_median": 33.003,
+      "current_request_p95_ms_range": [28.851, 34.774],
+      "persistent_listener_p50_ms_median": 1.541,
+      "persistent_listener_p50_ms_range": [1.451, 2.241],
+      "persistent_listener_p95_ms_median": 1.841,
+      "persistent_listener_p95_ms_range": [1.836, 3.503],
+      "ratio_of_median_p50": 9.54
+    }
+  ],
+  "serialization": {
+    "finding": "Across all three trials, serialize and deserialize p50 remained at or below 0.013 ms for payloads up to 64 KiB."
+  }
+}

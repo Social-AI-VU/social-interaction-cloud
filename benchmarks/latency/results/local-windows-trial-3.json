@@ -1,0 +1,140 @@
+{
+  "environment": {
+    "python": "3.12.13",
+    "platform": "win32",
+    "redis_host": "127.0.0.1",
+    "redis_port": 6389,
+    "iterations": 200,
+    "warmup": 20,
+    "sic_repo": "C:\\Users\\Semih\\Downloads\\social-interaction-cloud-main\\social-interaction-cloud-main"
+  },
+  "raw_redis_ping": {
+    "count": 200,
+    "min_ms": 0.051,
+    "mean_ms": 0.058,
+    "p50_ms": 0.056,
+    "p95_ms": 0.062,
+    "max_ms": 0.219
+  },
+  "listener_create_teardown": {
+    "count": 200,
+    "min_ms": 0.508,
+    "mean_ms": 11.251,
+    "p50_ms": 13.56,
+    "p95_ms": 16.956,
+    "max_ms": 127.133
+  },
+  "payload_results": [
+    {
+      "payload_bytes": 0,
+      "serialized_bytes": 214,
+      "current_request": {
+        "count": 200,
+        "min_ms": 1.332,
+        "mean_ms": 17.132,
+        "p50_ms": 3.003,
+        "p95_ms": 117.262,
+        "max_ms": 127.247
+      },
+      "persistent_listener_poc": {
+        "count": 200,
+        "min_ms": 0.378,
+        "mean_ms": 0.522,
+        "p50_ms": 0.501,
+        "p95_ms": 0.658,
+        "max_ms": 0.888
+      },
+      "p50_speedup_x": 5.99,
+      "serialize": {
+        "count": 2000,
+        "min_ms": 0.003,
+        "mean_ms": 0.004,
+        "p50_ms": 0.004,
+        "p95_ms": 0.004,
+        "max_ms": 0.069
+      },
+      "deserialize": {
+        "count": 2000,
+        "min_ms": 0.002,
+        "mean_ms": 0.003,
+        "p50_ms": 0.003,
+        "p95_ms": 0.003,
+        "max_ms": 0.014
+      }
+    },
+    {
+      "payload_bytes": 4096,
+      "serialized_bytes": 4328,
+      "current_request": {
+        "count": 200,
+        "min_ms": 1.407,
+        "mean_ms": 14.696,
+        "p50_ms": 6.846,
+        "p95_ms": 106.647,
+        "max_ms": 126.012
+      },
+      "persistent_listener_poc": {
+        "count": 200,
+        "min_ms": 0.352,
+        "mean_ms": 0.505,
+        "p50_ms": 0.485,
+        "p95_ms": 0.715,
+        "max_ms": 0.875
+      },
+      "p50_speedup_x": 14.12,
+      "serialize": {
+        "count": 2000,
+        "min_ms": 0.004,
+        "mean_ms": 0.005,
+        "p50_ms": 0.004,
+        "p95_ms": 0.005,
+        "max_ms": 0.222
+      },
+      "deserialize": {
+        "count": 2000,
+        "min_ms": 0.003,
+        "mean_ms": 0.004,
+        "p50_ms": 0.004,
+        "p95_ms": 0.004,
+        "max_ms": 0.028
+      }
+    },
+    {
+      "payload_bytes": 65536,
+      "serialized_bytes": 65769,
+      "current_request": {
+        "count": 200,
+        "min_ms": 2.705,
+        "mean_ms": 18.939,
+        "p50_ms": 14.763,
+        "p95_ms": 34.774,
+        "max_ms": 137.484
+      },
+      "persistent_listener_poc": {
+        "count": 200,
+        "min_ms": 1.014,
+        "mean_ms": 1.471,
+        "p50_ms": 1.451,
+        "p95_ms": 1.836,
+        "max_ms": 2.077
+      },
+      "p50_speedup_x": 10.17,
+      "serialize": {
+        "count": 2000,
+        "min_ms": 0.007,
+        "mean_ms": 0.01,
+        "p50_ms": 0.009,
+        "p95_ms": 0.011,
+        "max_ms": 0.334
+      },
+      "deserialize": {
+        "count": 2000,
+        "min_ms": 0.007,
+        "mean_ms": 0.011,
+        "p50_ms": 0.009,
+        "p95_ms": 0.014,
+        "max_ms": 0.218
+      }
+    }
+  ]
+}
