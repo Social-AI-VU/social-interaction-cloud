@@ -332,7 +332,33 @@ class ReachyMiniDevice(SICDeviceManager):
         with autonomous.paused(head=INIT_HEAD_POSE, antennas=INIT_ANTENNAS_JOINT_POSITIONS):
             ReachyMiniDevice._mini_instance.enable_motors()
             ReachyMiniDevice._mini_instance.wake_up()
-        
+
+    def rest(self, disable_motors=True):
+        """Play the go-to-sleep motion and optionally disable the motors.
+
+        Counterpart of :meth:`wake_up`, similar to NAOqi's rest.
+
+        :param disable_motors: Disable the motors once the robot is in its sleep pose.
+        :type disable_motors: bool
+        """
+        if ReachyMiniDevice._mini_instance is None:
+            raise RuntimeError("Reachy Mini SDK is not connected")
+        mini = ReachyMiniDevice._mini_instance
+        autonomous = ReachyMiniAutonomousActuator.get_instance()
+        if autonomous is None:
+            mini.goto_sleep()
+            if disable_motors:
+                mini.disable_motors()
+            return
+        from reachy_mini.reachy_mini import SLEEP_ANTENNAS_JOINT_POSITIONS, SLEEP_HEAD_POSE
+
+        # The sleep motion ends in the sleep pose; breathing waits for a wake-up
+        with autonomous.paused(head=SLEEP_HEAD_POSE, antennas=SLEEP_ANTENNAS_JOINT_POSITIONS,
+                               asleep=True):
+            mini.goto_sleep()
+            if disable_motors:
+                mini.disable_motors()
+
     def stop_device(self):
         """Stop the Reachy Mini device and all its components."""
         global reachy_mini_active

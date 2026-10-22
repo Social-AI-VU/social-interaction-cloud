@@ -129,7 +129,11 @@ class ReachyMiniAutonomousActuator(SICActuator):
         # _lock guards all state below and serialises motor commands
         self._lock = threading.RLock()
         self._breathing_enabled = self.params.breathing
+        self._speaking_movement = False
         self._head_tracking = False
+        # Set by a go-to-sleep motion; the daemon's wobble and face tracking
+        # stay off until the next wake-up
+        self._asleep = False
 
         # Pose to breathe around: neutral until a motion request moves it
         self._base_head = np.array(INIT_HEAD_POSE, dtype=np.float64)
@@ -197,8 +201,15 @@ class ReachyMiniAutonomousActuator(SICActuator):
                 self._set_head_tracking(request.value)
         return SICMessage()
 
+    def _daemon_movements_active(self):
+        """Whether the daemon's wobble and face tracking may move the head now."""
+        return not (self._paused or self._asleep)
+
     def _set_speaking_movement(self, enabled):
-        if enabled:
+        self._speaking_movement = bool(enabled)
+        if not self._daemon_movements_active():
+            return
+        if self._speaking_movement:
             self.mini.enable_wobbling()
         else:
             self.mini.disable_wobbling()
@@ -209,10 +220,26 @@ class ReachyMiniAutonomousActuator(SICActuator):
             return
         self._head_tracking = enabled
         self._speaking = False
+        if not self._daemon_movements_active():
+            return
         if enabled:
             self.mini.start_head_tracking(weight=1.0)
         else:
             self.mini.stop_head_tracking()
+
+    def _switch_daemon_movements(self, active):
+        """Turn the enabled daemon movements on or off, keeping their settings."""
+        self._speaking = False
+        if self._speaking_movement:
+            if active:
+                self.mini.enable_wobbling()
+            else:
+                self.mini.disable_wobbling()
+        if self._head_tracking:
+            if active:
+                self.mini.start_head_tracking(weight=1.0)
+            else:
+                self.mini.stop_head_tracking()
 
     def _set_listening(self, listening):
         if listening == self._listening:
@@ -299,18 +326,26 @@ class ReachyMiniAutonomousActuator(SICActuator):
                 self._pending_body_yaw = body_yaw
 
     @contextmanager
-    def paused(self, head=None, antennas=None):
+    def paused(self, head=None, antennas=None, asleep=False):
         """Suspend autonomous movement while the caller drives the motors directly.
+
+        Speaking movement and head tracking are suspended too: the SDK's
+        motions play sounds, which would otherwise make the head wobble.
 
         :param head: Pose the caller's motion ends in, used as the new base pose.
             Pass it when known: the SDK's motions can return before the robot
             has physically arrived, so reading the pose back is unreliable.
         :param antennas: Antenna positions the caller's motion ends in.
+        :param asleep: The caller's motion puts the robot to sleep. All
+            autonomous movement then stays off until the next motion that
+            is not a go-to-sleep one, e.g. a wake-up.
 
         Without them, the robot's pose on exit becomes the base pose.
         Breathing fades back in once the robot is idle.
         """
         with self._lock:
+            if self._daemon_movements_active():
+                self._switch_daemon_movements(False)
             self._paused = True
             self._finish_move()
         try:
@@ -328,6 +363,12 @@ class ReachyMiniAutonomousActuator(SICActuator):
                     antennas = self.mini.get_present_antenna_joint_positions()
                 self._remember_base(head, antennas)
                 self._breathing_gain = 0.0
+                self._asleep = asleep
+                if asleep:
+                    # Breathing only takes the motors back once the robot is awake
+                    self._owns_motors = False
+                else:
+                    self._switch_daemon_movements(True)
 
     # ------------------------------------------------------------------
     # Control loop
@@ -354,7 +395,7 @@ class ReachyMiniAutonomousActuator(SICActuator):
 
     def _update_head_tracking(self, now):
         """Pause head tracking while speaking, holding the head on the user."""
-        if not self._head_tracking:
+        if not self._head_tracking or not self._daemon_movements_active():
             return
         speaking = self._speech_start <= now < self._speech_end
         if speaking == self._speaking:
