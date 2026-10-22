@@ -18,13 +18,13 @@ Install GStreamer according to your platform:
 Starting up the Reachy Mini
 -----------------------------
 
-To start up the Reachy Mini, push the button at the back of the black foot. The light turns green. The robot should make some soft motor noises, after which the robot is usually ready for connection. It does not make a custom noise to indicate that it has started up.
+To start up the Reachy Mini, press the button at the back of the black foot. The light turns green. The robot should make some soft motor noises, after which the robot is usually ready for connection. It does not make a custom noise to indicate that it has started up.
 
 .. image:: ../_static/reachy_mini_start_button.png
    :alt: Reachy Mini start button
    :width: 400px
 
-Important: the green light does not automatically mean the robot is turned on. The light is also green when the robot is charging. It is only on when the button is pushed in.
+Important: the green light does not automatically mean the robot is turned on. The light is also green when the robot is charging. It is only turned on when the button is pushed in.
 
 IP addresses of the Reachy Minis are found on the bottom of the robot.
 
