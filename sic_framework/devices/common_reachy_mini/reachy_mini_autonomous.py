@@ -105,6 +105,9 @@ class ReachyMiniAutonomousActuator(SICActuator):
       fades in once no motion was requested for ``breathing_idle_delay``
       seconds and fades out again for the next motion.
     - Listening: freezes the antennas and pauses breathing while the user speaks.
+    - Animations: recorded moves (emotions, dances) requested via
+      :class:`ReachyMiniMotionActuator` are played inside the control loop, see
+      :meth:`play_animation`.
 
     The speakers report played audio via :meth:`notify_speech`.
     """
@@ -117,6 +120,10 @@ class ReachyMiniAutonomousActuator(SICActuator):
     _TAKEOVER_S = 1.0
     # Antennas folded further than this (rad) mean the robot is asleep
     _ASLEEP_ANTENNA = 2.5
+    # Seconds to blend from the current pose into an animation
+    _ANIMATION_BLEND_IN_S = 0.4
+    # Seconds to glide back to the base pose after an animation
+    _ANIMATION_RETURN_S = 0.8
 
     _instance = None
 
@@ -138,8 +145,11 @@ class ReachyMiniAutonomousActuator(SICActuator):
         # Pose to breathe around: neutral until a motion request moves it
         self._base_head = np.array(INIT_HEAD_POSE, dtype=np.float64)
         self._base_antennas = list(INIT_ANTENNAS_JOINT_POSITIONS)
+        self._last_head = None
         self._last_antennas = None
+        self._last_body_yaw = None
         self._move = None
+        self._animation = None
         self._pending_body_yaw = None
         self._paused = False
         self._owns_motors = False
@@ -153,7 +163,7 @@ class ReachyMiniAutonomousActuator(SICActuator):
 
         self._speech_start = 0.0
         self._speech_end = 0.0
-        self._speaking = False
+        self._tracking_paused = False
 
         self._loop_thread = None
 
@@ -219,7 +229,7 @@ class ReachyMiniAutonomousActuator(SICActuator):
         if enabled == self._head_tracking:
             return
         self._head_tracking = enabled
-        self._speaking = False
+        self._tracking_paused = False
         if not self._daemon_movements_active():
             return
         if enabled:
@@ -277,6 +287,7 @@ class ReachyMiniAutonomousActuator(SICActuator):
         """
         with self._lock:
             self._last_activity = time.time()
+            self._stop_animation()
             if not self._owns_motors or self._paused:
                 # Breathing is off: let the SDK do the move. Holding the lock
                 # prevents the loop from taking over halfway through.
@@ -288,13 +299,12 @@ class ReachyMiniAutonomousActuator(SICActuator):
             done = self._start_move(head, antennas, body_yaw, duration, method)
         done.wait(duration + 1.0)
 
-    def _start_move(self, head, antennas, body_yaw, duration, method):
+    def _start_move(self, head, antennas, body_yaw, duration, method, start_yaw=None):
         """Start interpolating the base pose inside the loop; return the move's done event."""
         if self._move is not None:
             # Start the new move from wherever the previous one got to
             self._move["done"].set()
-        start_yaw = None
-        if body_yaw is not None:
+        if body_yaw is not None and start_yaw is None:
             start_yaw = self.mini.get_current_joint_positions()[0][0]
         self._move = dict(
             t0=time.time(), duration=max(duration, 1e-3), method=method,
@@ -316,6 +326,7 @@ class ReachyMiniAutonomousActuator(SICActuator):
         """Immediate target, used as the new base pose if breathing is active."""
         with self._lock:
             self._last_activity = time.time()
+            self._stop_animation()
             if not self._owns_motors or self._paused:
                 self.mini.set_target(head=head, antennas=antennas, body_yaw=body_yaw)
                 self._remember_base(head, antennas)
@@ -324,6 +335,92 @@ class ReachyMiniAutonomousActuator(SICActuator):
             self._remember_base(head, antennas)
             if body_yaw is not None:
                 self._pending_body_yaw = body_yaw
+
+    def play_animation(self, move, sound_path=None):
+        """Play a recorded move (e.g. an emotion or dance) inside the control loop.
+
+        The animation blends in from the current pose, pauses head tracking
+        while it plays, and glides back to the base pose afterwards. A new
+        motion request or animation interrupts it. Blocks until it is done.
+
+        :param move: A ``reachy_mini.motion.move.Move``, e.g. a ``RecordedMove``.
+        :param sound_path: Optional sound file to play along with the move.
+        """
+        with self._lock:
+            now = time.time()
+            self._last_activity = now
+            if self._paused:
+                raise RuntimeError("Cannot play an animation while autonomous movement is paused")
+            if not self._owns_motors:
+                # Take over right away: the animation blends in from where the
+                # robot is, and returns to the remembered base pose afterwards.
+                self._last_head = np.array(self.mini.get_current_head_pose(), dtype=np.float64)
+                self._last_antennas = list(self.mini.get_present_antenna_joint_positions())
+                self._breathing_gain = 0.0
+                self._owns_motors = True
+
+            previous = self._animation
+            if previous is not None:
+                previous["done"].set()
+            if self._move is not None:
+                # Keep the base where the interrupted move got to
+                self._move["done"].set()
+                self._move = None
+
+            if self._head_tracking:
+                # The head follows the user's face: start from (and come back
+                # to) where it actually is, and hold tracking while animating.
+                start_head = np.array(self.mini.get_current_head_pose(), dtype=np.float64)
+                if not self._tracking_paused:
+                    self.mini.start_head_tracking(weight=0.0)
+                    self._tracking_paused = True
+                return_head = start_head
+            else:
+                start_head = self._last_head if self._last_head is not None else self._base_head
+                return_head = self._base_head
+            start_antennas = self._last_antennas if self._last_antennas is not None else self._base_antennas
+            start_yaw = self._last_body_yaw
+            if start_yaw is None:
+                start_yaw = self.mini.get_current_joint_positions()[0][0]
+
+            if previous is not None:
+                # Interrupting another animation: still return to the pose from before it
+                return_head = previous["return_head"]
+                return_antennas = previous["return_antennas"]
+                return_yaw = previous["return_yaw"]
+            else:
+                return_antennas = list(self._base_antennas)
+                return_yaw = start_yaw
+
+            self._animation = dict(
+                move=move, t0=now, duration=float(move.duration),
+                start_head=np.array(start_head, dtype=np.float64),
+                start_antennas=list(start_antennas), start_yaw=start_yaw,
+                return_head=np.array(return_head, dtype=np.float64),
+                return_antennas=list(return_antennas), return_yaw=return_yaw,
+                done=threading.Event(),
+            )
+            done = self._animation["done"]
+            duration = self._animation["duration"]
+
+        if sound_path is not None:
+            try:
+                self.mini.media.play_sound(str(sound_path))
+            except Exception as e:
+                self.logger.warning("Could not play animation sound: {}".format(e))
+        done.wait(duration + self._ANIMATION_RETURN_S + 2.0)
+
+    def _stop_animation(self):
+        """Interrupt the current animation, keeping the pose it got to as base."""
+        animation = self._animation
+        if animation is None:
+            return
+        if self._last_head is not None:
+            self._base_head = np.array(self._last_head, dtype=np.float64)
+        if self._last_antennas is not None:
+            self._base_antennas = list(self._last_antennas)
+        self._animation = None
+        animation["done"].set()
 
     @contextmanager
     def paused(self, head=None, antennas=None, asleep=False):
@@ -344,6 +441,7 @@ class ReachyMiniAutonomousActuator(SICActuator):
         Breathing fades back in once the robot is idle.
         """
         with self._lock:
+            self._stop_animation()
             if self._daemon_movements_active():
                 self._switch_daemon_movements(False)
             self._paused = True
@@ -394,14 +492,16 @@ class ReachyMiniAutonomousActuator(SICActuator):
             self._stopped.set()
 
     def _update_head_tracking(self, now):
-        """Pause head tracking while speaking, holding the head on the user."""
+        """Pause head tracking while speaking or animating, holding the head on the user."""
         if not self._head_tracking or not self._daemon_movements_active():
             return
         speaking = self._speech_start <= now < self._speech_end
-        if speaking == self._speaking:
+        pause = speaking or self._animation is not None
+        if pause == self._tracking_paused:
             return
-        if speaking:
-            # Only pause once a face is locked, else speech blocks acquiring one
+        if pause:
+            # Animations pause tracking themselves; speech only pauses once a
+            # face is locked, else speech blocks acquiring one.
             if not self.mini.get_tracked_face(wait=False).detected:
                 return
             anchor = np.array(self.mini.get_current_head_pose(), dtype=np.float64)
@@ -413,7 +513,7 @@ class ReachyMiniAutonomousActuator(SICActuator):
             self.mini.start_head_tracking(weight=0.0)
         else:
             self.mini.start_head_tracking(weight=1.0)
-        self._speaking = speaking
+        self._tracking_paused = pause
 
     def _tick(self, now, dt):
         if not self._owns_motors:
@@ -425,8 +525,11 @@ class ReachyMiniAutonomousActuator(SICActuator):
             self._take_over_motors()
 
         body_yaw = self._advance_move(now)
+        base_head, base_antennas = self._base_head, self._base_antennas
+        if self._animation is not None:
+            base_head, base_antennas, body_yaw = self._advance_animation(now)
 
-        idle = (self._move is None and not self._listening
+        idle = (self._move is None and self._animation is None and not self._listening
                 and now - self._last_activity >= self.params.breathing_idle_delay)
         breathe = self._breathing_enabled and idle
         if breathe and self._breathing_gain < 1e-2:
@@ -435,23 +538,28 @@ class ReachyMiniAutonomousActuator(SICActuator):
         fade = 1.0 - math.exp(-dt / self._FADE_S)
         self._breathing_gain += fade * (float(breathe) - self._breathing_gain)
 
-        if not self._breathing_enabled and self._breathing_gain < 1e-2 and self._move is None:
+        if (not self._breathing_enabled and self._breathing_gain < 1e-2
+                and self._move is None and self._animation is None):
             # Faded out: send the clean base pose once and hand the motors back
             self.mini.set_target(head=self._base_head, antennas=self._base_antennas)
+            self._last_head = np.array(self._base_head, dtype=np.float64)
             self._last_antennas = list(self._base_antennas)
             self._owns_motors = False
             return
 
         head_offset, antenna_offset = self._breathing_offsets(now - self._breathing_t0)
-        head = compose_world_offset(self._base_head, head_offset)
+        head = compose_world_offset(base_head, head_offset)
         antennas = self._blend_listening_antennas(
-            [self._base_antennas[0] + antenna_offset, self._base_antennas[1] - antenna_offset], dt,
+            [base_antennas[0] + antenna_offset, base_antennas[1] - antenna_offset], dt,
         )
         if self._pending_body_yaw is not None:
             body_yaw = self._pending_body_yaw
             self._pending_body_yaw = None
         self.mini.set_target(head=head, antennas=antennas, body_yaw=body_yaw)
+        self._last_head = head
         self._last_antennas = antennas
+        if body_yaw is not None:
+            self._last_body_yaw = body_yaw
 
     def _advance_move(self, now):
         """Advance the current interpolated move; return the body yaw to send (or None)."""
@@ -473,6 +581,34 @@ class ReachyMiniAutonomousActuator(SICActuator):
         if t >= 1.0:
             self._finish_move()
         return body_yaw
+
+    def _advance_animation(self, now):
+        """Sample the current animation; return its (head, antennas, body_yaw) for this tick."""
+        animation = self._animation
+        self._last_activity = now
+        t = now - animation["t0"]
+        duration = animation["duration"]
+        head, antennas, body_yaw = animation["move"].evaluate(min(max(t, 0.0), max(duration - 1e-2, 0.0)))
+        head = animation["start_head"] if head is None else np.array(head, dtype=np.float64)
+        antennas = animation["start_antennas"] if antennas is None else [float(a) for a in antennas]
+        body_yaw = animation["start_yaw"] if body_yaw is None else float(body_yaw)
+
+        if t < self._ANIMATION_BLEND_IN_S:
+            # Blend in from where the robot was, so the animation never jumps
+            w = time_trajectory(max(t, 0.0) / self._ANIMATION_BLEND_IN_S, "minjerk")
+            head = linear_pose_interpolation(animation["start_head"], head, w)
+            antennas = [a + (b - a) * w for a, b in zip(animation["start_antennas"], antennas)]
+            body_yaw = animation["start_yaw"] + (body_yaw - animation["start_yaw"]) * w
+
+        if t >= duration:
+            # Done: glide back to the pose from before the animation
+            self._animation = None
+            self._base_head, self._base_antennas = head, list(antennas)
+            self._start_move(animation["return_head"], animation["return_antennas"],
+                             animation["return_yaw"], self._ANIMATION_RETURN_S, "minjerk",
+                             start_yaw=body_yaw)
+            animation["done"].set()
+        return head, antennas, body_yaw
 
     def _finish_move(self):
         """Jump the base to the current move's target and release its waiter."""
@@ -542,6 +678,7 @@ class ReachyMiniAutonomousActuator(SICActuator):
         if ReachyMiniAutonomousActuator._instance is self:
             ReachyMiniAutonomousActuator._instance = None
         with self._lock:
+            self._stop_animation()
             self._finish_move()
             try:
                 if self._owns_motors:

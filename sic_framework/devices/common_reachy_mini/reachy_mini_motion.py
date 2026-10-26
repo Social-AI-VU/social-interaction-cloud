@@ -1,3 +1,5 @@
+import threading
+
 from reachy_mini.utils import create_head_pose
 
 from sic_framework.core.component_manager_python2 import SICComponentManager
@@ -10,8 +12,27 @@ from sic_framework.devices.common_reachy_mini.reachy_mini_autonomous import (
 )
 
 
+DEFAULT_ANIMATION_LIBRARIES = {
+    "emotions": "pollen-robotics/reachy-mini-emotions-library",
+    "dances": "pollen-robotics/reachy-mini-dances-library",
+}
+
+
 class ReachyMiniMotionConf(SICConfMessage):
-    pass
+    """
+    :param animation_libraries: Mapping of library name to the Hugging Face
+        dataset holding its recorded moves. Defaults to Pollen's emotions and
+        dances libraries; add your own recorded-move datasets here.
+    :param preload_animations: Download/load the libraries in the background
+        on start, so the first animation request does not have to wait.
+    """
+
+    def __init__(self, animation_libraries=None, preload_animations=True):
+        super(ReachyMiniMotionConf, self).__init__()
+        if animation_libraries is None:
+            animation_libraries = dict(DEFAULT_ANIMATION_LIBRARIES)
+        self.animation_libraries = animation_libraries
+        self.preload_animations = preload_animations
 
 
 class ReachyMiniHeadRequest(SICRequest):
@@ -114,6 +135,49 @@ class ReachyMiniSetTargetRequest(SICRequest):
         self.body_yaw = body_yaw
 
 
+class ReachyMiniAnimationRequest(SICRequest):
+    """Play a recorded animation, such as an emotion or a dance, by name.
+
+    Either the short or full name works, like ``NaoqiAnimationRequest``:
+
+    - ``"cheerful1"``, ``"sad1"``, ``"simple_nod"``: searched in all libraries
+    - ``"emotions/cheerful1"``, ``"dances/simple_nod"``: from that library
+
+    Use :class:`ReachyMiniGetAnimationsRequest` to list the available names.
+    The request returns once the animation has finished.
+
+    :param animation_name: The animation name or path.
+    :param sound: Play the sound that comes with the animation, if any
+        (most emotions have one).
+    """
+
+    def __init__(self, animation_name, sound=True):
+        super(ReachyMiniAnimationRequest, self).__init__()
+        self.animation_name = animation_name
+        self.sound = sound
+
+
+class ReachyMiniGetAnimationsRequest(SICRequest):
+    """List the animations available to :class:`ReachyMiniAnimationRequest`.
+
+    Replies with a :class:`ReachyMiniAnimationsMessage`.
+    """
+
+    pass
+
+
+class ReachyMiniAnimationsMessage(SICMessage):
+    """Available animations per library.
+
+    :param animations: Dict of library name to a sorted list of animation names,
+        e.g. ``{"emotions": ["amazed1", ...], "dances": ["chicken_peck", ...]}``.
+    """
+
+    def __init__(self, animations):
+        super(ReachyMiniAnimationsMessage, self).__init__()
+        self.animations = animations
+
+
 class ReachyMiniMotionActuator(SICActuator):
     """Controls Reachy Mini head, antenna, and body motion."""
 
@@ -122,6 +186,13 @@ class ReachyMiniMotionActuator(SICActuator):
         from sic_framework.devices.reachy_mini import ReachyMiniDevice
 
         self.mini = ReachyMiniDevice._mini_instance
+
+        self._animation_libraries = {}
+        self._animation_lock = threading.Lock()
+        if self.params.preload_animations:
+            threading.Thread(
+                target=self._preload_animations, name="ReachyMiniAnimationPreload", daemon=True,
+            ).start()
 
     @staticmethod
     def get_conf():
@@ -135,6 +206,8 @@ class ReachyMiniMotionActuator(SICActuator):
             ReachyMiniBodyYawRequest,
             ReachyMiniFullMotionRequest,
             ReachyMiniSetTargetRequest,
+            ReachyMiniAnimationRequest,
+            ReachyMiniGetAnimationsRequest,
         ]
 
     @staticmethod
@@ -153,6 +226,10 @@ class ReachyMiniMotionActuator(SICActuator):
                 self._move_full(request)
             elif is_sic_instance(request, ReachyMiniSetTargetRequest):
                 self._set_target(request)
+            elif is_sic_instance(request, ReachyMiniAnimationRequest):
+                self._play_animation(request)
+            elif is_sic_instance(request, ReachyMiniGetAnimationsRequest):
+                return ReachyMiniAnimationsMessage(self._list_animations())
         except Exception as e:
             self.logger.warning("Motion command failed: {}".format(e))
 
@@ -207,6 +284,58 @@ class ReachyMiniMotionActuator(SICActuator):
         else:
             self.mini.goto_target(head=head, antennas=antennas, body_yaw=body_yaw,
                                   duration=duration, method=method)
+
+    def _play_animation(self, request):
+        move = self._find_animation(request.animation_name)
+        sound_path = move.sound_path if request.sound else None
+        autonomous = ReachyMiniAutonomousActuator.get_instance()
+        if autonomous is not None:
+            autonomous.play_animation(move, sound_path=sound_path)
+        else:
+            self.mini.play_move(move, initial_goto_duration=0.5, sound=request.sound)
+
+    def _find_animation(self, name):
+        """Resolve a short (``"sad1"``) or full (``"emotions/sad1"``) name to a recorded move."""
+        library_name, _, short_name = name.rpartition("/")
+        if library_name:
+            if library_name not in self.params.animation_libraries:
+                raise ValueError("Unknown animation library '{}'. Available: {}".format(
+                    library_name, sorted(self.params.animation_libraries)))
+            candidates = [library_name]
+        else:
+            candidates = list(self.params.animation_libraries)
+
+        for candidate in candidates:
+            library = self._get_animation_library(candidate)
+            if short_name in library.moves:
+                return library.get(short_name)
+        raise ValueError(
+            "Unknown animation '{}'. Use ReachyMiniGetAnimationsRequest to list the "
+            "available animations.".format(name))
+
+    def _list_animations(self):
+        return {
+            name: sorted(self._get_animation_library(name).list_moves())
+            for name in self.params.animation_libraries
+        }
+
+    def _get_animation_library(self, name):
+        """Load a library on first use; downloads it from Hugging Face if not cached yet."""
+        from reachy_mini.motion.recorded_move import RecordedMoves
+
+        with self._animation_lock:
+            if name not in self._animation_libraries:
+                dataset = self.params.animation_libraries[name]
+                self.logger.info("Loading animation library '{}' ({})".format(name, dataset))
+                self._animation_libraries[name] = RecordedMoves(dataset)
+            return self._animation_libraries[name]
+
+    def _preload_animations(self):
+        for name in self.params.animation_libraries:
+            try:
+                self._get_animation_library(name)
+            except Exception as e:
+                self.logger.warning("Could not load animation library '{}': {}".format(name, e))
 
     def _cleanup(self):
         pass
