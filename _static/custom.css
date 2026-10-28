@@ -1,0 +1,27 @@
+/* Custom styles for SIC documentation */
+
+/* Make the logo in the navigation bar smaller to fit like the home icon */
+.wy-side-nav-search .wy-side-nav-search__logo {
+    max-width: 32px;
+    max-height: 32px;
+}
+
+/* Ensure proper spacing around the logo */
+.wy-side-nav-search {
+    padding: 1em;
+}
+
+/* Style the project name text */
+.wy-side-nav-search .wy-side-nav-search__project-name {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #fcfcfc;
+} 
+
+/* Allow text wrapping in all docutils and list-table cells */
+table.docutils td, table.docutils th,
+table.align-default td, table.align-default th {
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
