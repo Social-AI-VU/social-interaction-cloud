@@ -8,16 +8,16 @@ This is only a brief introductory guide on how to use the Franka Emika robot. Fo
 
 1. Follow the :doc:`tutorial <../tutorials/1_installation>` to have the SIC framework up and running (If you are not going to use SIC, you can skip this step) 
 2. If you want to control the robot directly on your machine without using ROS, there is a lightweight Python package you can install in your virtual environment (venv or conda): `panda-py <https://github.com/JeanElsner/panda-py?tab=readme-ov-file#install>`_. With this package, you don't even need to install libfranka or a real-time kernel. 
-3. Since our robot version is ``5.3.2`` (which is ≥ ``5.2.0``), the libfranka version should be  :math:`\geq 0.10.0 \lt 0.13.3`. That means you should download a stable version ending with ``0.10.0.zip``. For example, ``0.13.3.zip`` won’t work because it is not lower than ``0.13.3``.
+3. Since our robot version is ``5.3.2`` (which is ≥ ``5.2.0``), the libfranka version should be  :math:`\geq 0.10.0 \lt 0.13.3`. That means you should download a stable version ending with ``0.13.2.zip``. For example, ``0.13.3.zip`` won’t work because it is not lower than ``0.13.3``.
 
 We recommend downloading the release we have confirmed works with our robot:
-https://github.com/JeanElsner/panda-py/releases/download/v0.7.5/panda_py_0.7.5_libfranka_0.10.0.zip
+https://github.com/JeanElsner/panda-py/releases/download/v1.1.1/panda_py_1.1.1_libfranka_0.13.2.zip
 
 After downloading, use ``pip`` to install the version of **panda-py** that corresponds to your current Python version. For example, if you are using Python 3.10, install the package built for Python 3.10.
 
 .. code-block:: bash
 
-    pip install panda_python-0.7.5+libfranka.0.10.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+    pip install panda_python-1.1.1+libfranka.0.13.2-cp312-cp312-manylinux_2_28_x86_64.whl
 
 4. More documentation on how to use panda-py can be found `here <https://jeanelsner.github.io/panda-py/panda_py.html>`_
 
