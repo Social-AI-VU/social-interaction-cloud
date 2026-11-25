@@ -22,9 +22,9 @@ In these instructions we will perform Git operations through a basic terminal an
 
    .. code-block:: bash
 
-      # Install git/redis/system dependencies for pyaudio
+      # Install git/redis and PortAudio (for sounddevice)
       sudo apt update
-      sudo apt install git redis portaudio19-dev python3-pyaudio
+      sudo apt install git redis libportaudio2
 
       # Clone the sic_applications repo
       git clone https://github.com/Social-AI-VU/sic_applications.git
@@ -52,8 +52,8 @@ In these instructions we will perform Git operations through a basic terminal an
 
    .. code-block:: bash
 
-      # Install git/redis/system dependencies for pyaudio
-      brew install git redis portaudio
+      # Install git/redis
+      brew install git redis
 
       # Clone the sic_applications repo
       git clone https://github.com/Social-AI-VU/sic_applications.git

@@ -228,54 +228,54 @@ Microphone not capturing audio on Desktop
 
    **Solution:**
 
-   1. List available audio input devices and their default sample rates:
+   1. List available audio devices with sounddevice (installed together with SIC):
 
       .. code-block:: bash
 
-         python sic_applications/utils/available_audio.py
+         python -c "import sounddevice as sd; print(sd.query_devices())"
 
-   2. In the output, pick the microphone you want and note:
+      Each line shows the device index, the device name and its number of input/output channels
+      (for example ``(2 in, 0 out)`` for a microphone). The default input device is marked with ``>``.
 
-      - ``Index`` (device id)
-      - ``Sample rate`` (default sample rate)
+   2. Pick the microphone you want and note its index. To see its default sample rate, run:
 
-   3. Pass those values into your ``DesktopMicrophoneConf`` so SIC uses the intended microphone configuration.
+      .. code-block:: bash
+
+         python -c "import sounddevice as sd; print(sd.query_devices(3)['default_samplerate'])"
+
+      (replace ``3`` with your device index).
+
+   3. Pass those values into ``MicrophoneConf`` so SIC uses the intended microphone:
 
       .. code-block:: python
 
-         # Example values from available_audio.py output
-         mic_conf = DesktopMicrophoneConf(
+         from sic_framework.devices.common_desktop.desktop_microphone import MicrophoneConf
+         from sic_framework.devices.desktop import Desktop
+
+         # Example values from the sounddevice output
+         mic_conf = MicrophoneConf(
              device_index=3,
-             sampling_rate=48000,
+             sample_rate=48000,
          )
+         desktop = Desktop(mic_conf=mic_conf)
 
-   If the selected device still does not capture audio, rerun the utility and verify the device index did not change.
+   If the selected device still does not capture audio, list the devices again and check that the index did not change
+   (indexes can change when you plug in or remove audio devices).
 
 
-Portaudio.h file not found
----------------------------
+PortAudio library not found [Linux]
+-----------------------------------
 
 .. toggle::
 
-   **Problem:** "Portaudio.h file not found" when installing PyAudio.
+   **Problem:** ``OSError: PortAudio library not found`` when using the desktop microphone or speakers.
 
-   **Solution:**
-
-   On MacOs
-
-   .. code-block:: bash
-
-      brew install portaudio
-      pip install pyaudio
-      pip install opencv-python six
-
-   On Ubuntu
+   **Solution:** SIC uses sounddevice for desktop audio, which needs the PortAudio system library on Linux
+   (on Mac and Windows it is included automatically):
 
    .. code-block:: bash
 
-      sudo apt install portaudio19-dev python3-pyaudio
-      pip install pyaudio
-      pip install opencv-python six
+      sudo apt install libportaudio2
 
 
 ImportError: libGL.so.1: cannot open shared object file

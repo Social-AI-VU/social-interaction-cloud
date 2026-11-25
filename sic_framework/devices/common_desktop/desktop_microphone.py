@@ -1,4 +1,4 @@
-import pyaudio
+import sounddevice as sd
 
 from sic_framework import SICComponentManager
 from sic_framework.core.connector import SICConnector
@@ -19,23 +19,16 @@ class DesktopMicrophoneSensor(SICSensor):
 
         self.audio_buffer = None
 
-        self.device = pyaudio.PyAudio()
-
-        # If no device index specified, use default input device
-        device_index = self.params.device_index
-        if device_index is None:
-            device_index = self.device.get_default_input_device_info()['index']
-
-        # open stream using callback (3)
-        self.stream = self.device.open(
-            format=pyaudio.paInt16,
+        # device_index is a PortAudio device index (same numbering as PyAudio);
+        # None selects the default input device.
+        self.stream = sd.RawInputStream(
+            samplerate=self.params.sample_rate,
             channels=1,
-            rate=self.params.sample_rate,
-            input=True,
-            output=False,
-            input_device_index=device_index,
-            frames_per_buffer=int(self.params.sample_rate // 4),  # 250ms chunks
+            dtype="int16",
+            device=self.params.device_index,
+            blocksize=int(self.params.sample_rate // 4),  # 250ms chunks
         )
+        self.stream.start()
 
     @staticmethod
     def get_conf():
@@ -51,11 +44,10 @@ class DesktopMicrophoneSensor(SICSensor):
 
     def execute(self):
         try:
-            # read without exception on overflow to prevent the stream from closing
-            # if Redis is non-local, delays in network communication can cause overflows
-            # this is a workaround to keep the stream alive
-            data = self.stream.read(int(self.params.sample_rate // 4), exception_on_overflow=False)
-            return AudioMessage(data, sample_rate=self.params.sample_rate)
+            # sounddevice reports overflows via a flag instead of raising, so the
+            # stream stays alive if Redis is non-local and network delays cause overflows
+            data, _overflowed = self.stream.read(int(self.params.sample_rate // 4))
+            return AudioMessage(bytes(data), sample_rate=self.params.sample_rate)
         except Exception as e:
             self.logger.error("Error reading audio data: {e}".format(e=e))
             # Return empty audio data to keep the stream alive
@@ -65,11 +57,8 @@ class DesktopMicrophoneSensor(SICSensor):
     def _cleanup(self):
         self.logger.info("Stopped microphone")
         try:
+            self.stream.stop()
             self.stream.close()
-        except Exception:
-            pass
-        try:
-            self.device.terminate()
         except Exception:
             pass
 

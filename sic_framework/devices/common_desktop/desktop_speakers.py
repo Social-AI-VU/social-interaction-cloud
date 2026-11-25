@@ -1,4 +1,4 @@
-import pyaudio
+import sounddevice as sd
 
 from sic_framework import SICActuator, SICComponentManager
 from sic_framework.core.connector import SICConnector
@@ -21,17 +21,15 @@ class DesktopSpeakersActuator(SICActuator):
     def __init__(self, *args, **kwargs):
         super(DesktopSpeakersActuator, self).__init__(*args, **kwargs)
 
-        self.device = pyaudio.PyAudio()
-
-        # open stream using callback (3)
-        self.stream = self.device.open(
-            format=pyaudio.paInt16,
+        # device_index is a PortAudio device index (same numbering as PyAudio);
+        # None selects the default output device.
+        self.stream = sd.RawOutputStream(
+            samplerate=self.params.sample_rate,
             channels=self.params.channels,
-            rate=self.params.sample_rate,
-            input=False,
-            output=True,
-            output_device_index=self.params.device_index,
+            dtype="int16",
+            device=self.params.device_index,
         )
+        self.stream.start()
 
     @staticmethod
     def get_conf():
@@ -58,11 +56,8 @@ class DesktopSpeakersActuator(SICActuator):
     def _cleanup(self):
         self.logger.info("Stopped speakers")
         try:
+            self.stream.stop()
             self.stream.close()
-        except Exception:
-            pass
-        try:
-            self.device.terminate()
         except Exception:
             pass
 

@@ -1,5 +1,3 @@
-import pyaudio
-
 from sic_framework import SICComponentManager
 from sic_framework.core.component_python2 import SICComponent
 from sic_framework.core.connector import SICConnector
@@ -20,6 +18,10 @@ class MiniSpeakerComponent(SICComponent):
     def __init__(self, *args, **kwargs):
         super(MiniSpeakerComponent, self).__init__(*args, **kwargs)
 
+        # Imported here so the laptop can import this module (for the
+        # MiniSpeaker connector) without pyaudio installed. This component
+        # only runs on the Alphamini, where Alphamini.install_sic() installs pyaudio.
+        import pyaudio
 
         self.device = pyaudio.PyAudio()
         # open an audio stream

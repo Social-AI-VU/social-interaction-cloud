@@ -7,7 +7,7 @@ requirements = [
     "opencv-python",
     "paramiko",
     "Pillow",
-    "pyaudio",
+    "sounddevice",
     "PyTurboJPEG",
     "redis",
     "scp",
